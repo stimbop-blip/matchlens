@@ -4,7 +4,6 @@ import asyncio
 import logging
 
 from aiogram import Bot
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 from app.config import settings
 from app.services.backend_client import BackendClient
@@ -21,27 +20,30 @@ async def run_notification_worker(bot: Bot, backend_client: BackendClient) -> No
                 await backend_client.queue_expiring_subscriptions(hours_before=24)
 
             items = await backend_client.pull_notifications(limit=20)
+            sent_ok = 0
+            sent_failed = 0
             for item in items:
                 notification_id = item.get("id")
                 telegram_id = item.get("telegram_id")
                 title = item.get("title", "Уведомление")
                 message = item.get("message", "")
                 if not notification_id or not telegram_id:
+                    logger.warning("Notification skipped: missing id/telegram_id (%s)", item)
                     continue
 
                 try:
-                    keyboard = InlineKeyboardMarkup(
-                        inline_keyboard=[[InlineKeyboardButton(text="Открыть приложение", url=settings.mini_app_url)]]
-                    )
                     await bot.send_message(
                         chat_id=int(telegram_id),
                         text=f"{title}\n\n{message}",
-                        reply_markup=keyboard,
                     )
                     await backend_client.mark_notification_sent(notification_id)
+                    sent_ok += 1
                 except Exception as exc:
-                    logger.warning("Notification send failed: %s", exc)
+                    sent_failed += 1
+                    logger.warning("Notification send failed id=%s telegram_id=%s reason=%s", notification_id, telegram_id, exc)
                     await backend_client.mark_notification_failed(notification_id)
+            if items:
+                logger.info("Notification worker cycle: pulled=%s sent=%s failed=%s", len(items), sent_ok, sent_failed)
         except Exception as exc:
             logger.warning("Notification worker loop error: %s", exc)
 

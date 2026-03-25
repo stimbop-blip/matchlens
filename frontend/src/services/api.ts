@@ -230,4 +230,22 @@ export const api = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
+  adminCampaignPreview: (payload: { segment: string; access_level?: string; notifications_enabled_only?: boolean }) =>
+    request<{ ok: boolean; count: number; sample: Array<{ telegram_id: number; username: string | null; role: string }> }>(
+      "/admin/notifications/preview",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }
+    ),
+  adminCampaignSend: (payload: { title: string; message: string; segment: string; access_level?: string; notifications_enabled_only?: boolean }) =>
+    request<{ ok: boolean; queued: number; recipients: number }>("/admin/notifications/campaign", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  adminDirectSend: (payload: { title: string; message: string; telegram_id?: number; user_id?: string }) =>
+    request<{ ok: boolean; queued: number; reason?: string }>("/admin/notifications/direct", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
 };

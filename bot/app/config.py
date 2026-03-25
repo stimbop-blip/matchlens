@@ -10,6 +10,15 @@ class Settings(BaseSettings):
     bot_support_url: str = "https://t.me/your_support"
     bot_log_level: str = "INFO"
     notifications_poll_interval: int = 10
+    admin_telegram_ids: str = ""
+
+    def admin_ids(self) -> set[int]:
+        ids: set[int] = set()
+        for item in self.admin_telegram_ids.split(","):
+            value = item.strip()
+            if value.isdigit():
+                ids.add(int(value))
+        return ids
 
 
 settings = Settings()

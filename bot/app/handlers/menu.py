@@ -5,7 +5,9 @@ from aiogram.types import Message
 from app.config import settings
 from app.services.container import get_backend_client
 from app.utils.texts import (
+    ADMIN_TEXT,
     FREE_PREDICTIONS_TEXT,
+    NOTIFICATIONS_TEXT,
     STATS_PLACEHOLDER_TEXT,
     SUPPORT_PLACEHOLDER_TEXT,
     TARIFFS_TEXT,
@@ -21,7 +23,7 @@ async def free_predictions(message: Message) -> None:
 
 @router.message(F.text == "Тарифы")
 async def tariffs(message: Message) -> None:
-    await message.answer(f"{TARIFFS_TEXT}\n\n{settings.mini_app_url}")
+    await message.answer(TARIFFS_TEXT)
 
 
 @router.message(F.text == "Мой профиль")
@@ -36,15 +38,29 @@ async def my_profile(message: Message) -> None:
     payload = await backend_client.get_my_subscription(user.id) if backend_client else None
 
     if payload:
-        plan = str(payload.get("tariff", "free")).upper()
-        status = str(payload.get("status", "unknown")).upper()
+        tariff = str(payload.get("tariff", "free"))
+        if tariff == "premium":
+            plan = "Премиум"
+        elif tariff == "vip":
+            plan = "VIP"
+        else:
+            plan = "Бесплатный"
+
+        raw_status = str(payload.get("status", "unknown")).lower()
+        if raw_status == "active":
+            status = "Активна"
+        elif raw_status == "expired":
+            status = "Истекла"
+        else:
+            status = raw_status
+
         ends_at = payload.get("ends_at") or "-"
-        access_text = "Расширенный доступ активен" if status == "ACTIVE" else "Проверьте статус подписки в Mini App"
+        access_text = "Расширенный доступ активен" if raw_status == "active" else "Проверьте статус подписки в Mini App"
     else:
-        plan = "FREE"
-        status = "ACTIVE"
+        plan = "Бесплатный"
+        status = "Активна"
         ends_at = "-"
-        access_text = "Доступен базовый функционал Free"
+        access_text = "Доступен базовый функционал"
 
     await message.answer(
         "<b>Профиль</b>\n"
@@ -71,10 +87,23 @@ async def stats(message: Message) -> None:
     await message.answer(
         "<b>Статистика MatchLens</b>\n"
         f"Всего прогнозов: <b>{payload.get('total', 0)}</b>\n"
-        f"Winrate: <b>{payload.get('winrate', 0)}%</b>\n"
+        f"Точность: <b>{payload.get('hit_rate', payload.get('winrate', 0))}%</b>\n"
         f"ROI: <b>{payload.get('roi', 0)}%</b>\n\n"
         "Данные обновляются автоматически и помогают оценивать качество решений на дистанции."
     )
+
+
+@router.message(F.text == "Настройки уведомлений")
+async def notification_settings(message: Message) -> None:
+    await message.answer(NOTIFICATIONS_TEXT)
+
+
+@router.message(F.text == "Админка")
+async def admin_panel(message: Message) -> None:
+    if not message.from_user or message.from_user.id not in settings.admin_ids():
+        await message.answer("Эта секция доступна только администраторам.")
+        return
+    await message.answer(ADMIN_TEXT)
 
 
 @router.message(F.text == "Поддержка")

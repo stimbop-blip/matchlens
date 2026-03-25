@@ -27,6 +27,6 @@ async def cmd_start(message: Message) -> None:
 
     await message.answer(
         WELCOME_TEXT,
-        reply_markup=main_menu_keyboard(settings.mini_app_url),
+        reply_markup=main_menu_keyboard(is_admin=bool(user and user.id in settings.admin_ids())),
     )
     await message.answer(ONBOARDING_TEXT)

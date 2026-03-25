@@ -50,6 +50,16 @@ export function ProfilePage() {
     };
   }, []);
 
+  const updateNotify = async (payload: Partial<NotificationSettings>) => {
+    try {
+      const updated = await api.updateMyNotificationSettings(payload);
+      setNotify(updated);
+      setNotifyMessage("Настройки сохранены");
+    } catch {
+      setNotifyMessage("Не удалось сохранить настройки");
+    }
+  };
+
   return (
     <Layout>
       <section className="card">
@@ -101,11 +111,7 @@ export function ProfilePage() {
                   type="checkbox"
                   checked={notify.notifications_enabled}
                   onChange={async (e) => {
-                    const next = { ...notify, notifications_enabled: e.target.checked };
-                    setNotify(next);
-                    const updated = await api.updateMyNotificationSettings({ notifications_enabled: e.target.checked });
-                    setNotify(updated);
-                    setNotifyMessage("Настройки сохранены");
+                    void updateNotify({ notifications_enabled: e.target.checked });
                   }}
                 />
               </label>
@@ -115,9 +121,7 @@ export function ProfilePage() {
                   type="checkbox"
                   checked={notify.notify_free}
                   onChange={async (e) => {
-                    const updated = await api.updateMyNotificationSettings({ notify_free: e.target.checked });
-                    setNotify(updated);
-                    setNotifyMessage("Настройки сохранены");
+                    void updateNotify({ notify_free: e.target.checked });
                   }}
                 />
               </label>
@@ -127,9 +131,7 @@ export function ProfilePage() {
                   type="checkbox"
                   checked={notify.notify_premium}
                   onChange={async (e) => {
-                    const updated = await api.updateMyNotificationSettings({ notify_premium: e.target.checked });
-                    setNotify(updated);
-                    setNotifyMessage("Настройки сохранены");
+                    void updateNotify({ notify_premium: e.target.checked });
                   }}
                 />
               </label>
@@ -139,9 +141,7 @@ export function ProfilePage() {
                   type="checkbox"
                   checked={notify.notify_vip}
                   onChange={async (e) => {
-                    const updated = await api.updateMyNotificationSettings({ notify_vip: e.target.checked });
-                    setNotify(updated);
-                    setNotifyMessage("Настройки сохранены");
+                    void updateNotify({ notify_vip: e.target.checked });
                   }}
                 />
               </label>
@@ -151,9 +151,7 @@ export function ProfilePage() {
                   type="checkbox"
                   checked={notify.notify_results}
                   onChange={async (e) => {
-                    const updated = await api.updateMyNotificationSettings({ notify_results: e.target.checked });
-                    setNotify(updated);
-                    setNotifyMessage("Настройки сохранены");
+                    void updateNotify({ notify_results: e.target.checked });
                   }}
                 />
               </label>

@@ -3,13 +3,14 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Layout } from "../components/Layout";
 import { api, type AdminPayment, type AdminStats, type AdminSubscription, type AdminUser, type Prediction } from "../services/api";
 
-type TabKey = "predictions" | "users" | "subscriptions" | "payments" | "events";
+type TabKey = "predictions" | "users" | "subscriptions" | "payments" | "broadcasts" | "events";
 
 const TABS: Array<{ key: TabKey; label: string }> = [
   { key: "predictions", label: "Прогнозы" },
   { key: "users", label: "Пользователи" },
   { key: "subscriptions", label: "Подписки" },
   { key: "payments", label: "Платежи" },
+  { key: "broadcasts", label: "Рассылки" },
   { key: "events", label: "Статистика" },
 ];
 
@@ -56,6 +57,12 @@ export function AdminPage() {
   const [paymentQuery, setPaymentQuery] = useState("");
   const [paymentStatusFilter, setPaymentStatusFilter] = useState("all");
   const [editingPredictionId, setEditingPredictionId] = useState<string | null>(null);
+  const [campaignSegment, setCampaignSegment] = useState("all");
+  const [campaignAccess, setCampaignAccess] = useState("all");
+  const [campaignNotifOnly, setCampaignNotifOnly] = useState(false);
+  const [campaignTitle, setCampaignTitle] = useState("");
+  const [campaignMessage, setCampaignMessage] = useState("");
+  const [campaignPreviewCount, setCampaignPreviewCount] = useState<number | null>(null);
 
   const loadAll = async () => {
     const role = usersRoleFilter === "all" ? undefined : usersRoleFilter;
@@ -226,6 +233,62 @@ export function AdminPage() {
       await loadAll();
     } catch (e) {
       setMessage(textError(e, "Не удалось обновить платеж"));
+    }
+  };
+
+  const onDirectMessageUser = async (user: AdminUser) => {
+    const text = window.prompt(`Сообщение для @${user.username || user.telegram_id}:`);
+    if (!text || !text.trim()) return;
+    try {
+      const result = await api.adminDirectSend({
+        title: "Сообщение от MatchLens",
+        message: text.trim(),
+        user_id: user.id,
+      });
+      if (result.queued > 0) {
+        setMessage("Личное сообщение поставлено в очередь");
+      } else {
+        setMessage("Не удалось поставить сообщение в очередь");
+      }
+    } catch (e) {
+      setMessage(textError(e, "Ошибка отправки личного сообщения"));
+    }
+  };
+
+  const onCampaignPreview = async () => {
+    try {
+      const preview = await api.adminCampaignPreview({
+        segment: campaignSegment,
+        access_level: campaignAccess === "all" ? undefined : campaignAccess,
+        notifications_enabled_only: campaignNotifOnly,
+      });
+      setCampaignPreviewCount(preview.count);
+      setMessage(`Найдено получателей: ${preview.count}`);
+    } catch (e) {
+      setMessage(textError(e, "Не удалось сделать превью рассылки"));
+    }
+  };
+
+  const onCampaignSend = async () => {
+    if (!campaignTitle.trim() || !campaignMessage.trim()) {
+      setMessage("Заполните заголовок и текст рассылки");
+      return;
+    }
+    if (!window.confirm("Подтвердить массовую рассылку?")) return;
+    try {
+      const result = await api.adminCampaignSend({
+        title: campaignTitle.trim(),
+        message: campaignMessage.trim(),
+        segment: campaignSegment,
+        access_level: campaignAccess === "all" ? undefined : campaignAccess,
+        notifications_enabled_only: campaignNotifOnly,
+      });
+      setMessage(`Рассылка поставлена в очередь: ${result.queued}`);
+      setCampaignTitle("");
+      setCampaignMessage("");
+      setCampaignPreviewCount(null);
+    } catch (e) {
+      setMessage(textError(e, "Не удалось запустить рассылку"));
     }
   };
 
@@ -417,6 +480,7 @@ export function AdminPage() {
                         </>
                       ) : null}
                       <button className="btn danger" onClick={() => onDeleteUser(user.id)}>Удалить</button>
+                      <button className="btn" onClick={() => onDirectMessageUser(user)}>Сообщение</button>
                     </div>
                   </article>
                 );
@@ -503,6 +567,43 @@ export function AdminPage() {
                   </div>
                 </article>
               ))}
+            </div>
+          </div>
+        ) : null}
+
+        {tab === "broadcasts" ? (
+          <div className="admin-panel">
+            <h3>Рассылки</h3>
+            <p className="muted">Массовые и сегментные уведомления пользователям.</p>
+            <div className="admin-form">
+              <input value={campaignTitle} onChange={(e) => setCampaignTitle(e.target.value)} placeholder="Заголовок рассылки" />
+              <textarea value={campaignMessage} onChange={(e) => setCampaignMessage(e.target.value)} rows={4} placeholder="Текст сообщения" />
+              <div className="admin-grid-3">
+                <select value={campaignSegment} onChange={(e) => setCampaignSegment(e.target.value)}>
+                  <option value="all">Все пользователи</option>
+                  <option value="free">Только бесплатные</option>
+                  <option value="premium">Только Премиум</option>
+                  <option value="vip">Только VIP</option>
+                  <option value="active_subscription">С активной подпиской</option>
+                  <option value="admin">Только админы</option>
+                  <option value="notifications_enabled">Только с включенными уведомлениями</option>
+                </select>
+                <select value={campaignAccess} onChange={(e) => setCampaignAccess(e.target.value)}>
+                  <option value="all">Любой доступ</option>
+                  <option value="free">Free</option>
+                  <option value="premium">Премиум+</option>
+                  <option value="vip">VIP</option>
+                </select>
+                <label className="switch-row" style={{ padding: "0 4px" }}>
+                  <span>Только с включенными уведомлениями</span>
+                  <input type="checkbox" checked={campaignNotifOnly} onChange={(e) => setCampaignNotifOnly(e.target.checked)} />
+                </label>
+              </div>
+              <div className="cta-row">
+                <button className="btn ghost" onClick={onCampaignPreview}>Превью аудитории</button>
+                <button className="btn" onClick={onCampaignSend}>Отправить рассылку</button>
+              </div>
+              {campaignPreviewCount !== null ? <p className="muted">Оценка получателей: {campaignPreviewCount}</p> : null}
             </div>
           </div>
         ) : null}

@@ -58,7 +58,8 @@ def admin_create_prediction(
                 f"Лига: {league_text}\n"
                 f"Сигнал: {item.signal_type}\n"
                 f"Коэффициент: {float(item.odds)}\n"
-                f"Доступ: {item.access_level.value.upper()}"
+                f"Доступ: {item.access_level.value.upper()}\n\n"
+                "Откройте Mini App через кнопку меню Telegram"
             ),
         )
     return PredictionOut(
@@ -103,7 +104,8 @@ def admin_update_prediction(
                 f"Лига: {league_text}\n"
                 f"Сигнал: {item.signal_type}\n"
                 f"Коэффициент: {float(item.odds)}\n"
-                f"Доступ: {item.access_level.value.upper()}"
+                f"Доступ: {item.access_level.value.upper()}\n\n"
+                "Откройте Mini App через кнопку меню Telegram"
             ),
         )
 
