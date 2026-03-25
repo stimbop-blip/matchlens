@@ -1,33 +1,40 @@
-import { Layout } from "../components/Layout";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
-import { api } from "../services/api";
+import { Layout } from "../components/Layout";
+import { api, type Me } from "../services/api";
 import { waitForTelegramInitData } from "../services/telegram";
 
 export function ProfilePage() {
-  const [me, setMe] = useState<{ first_name: string | null; username: string | null; role: string; is_admin: boolean; telegram_id: number } | null>(null);
+  const [me, setMe] = useState<Me | null>(null);
   const [sub, setSub] = useState<{ tariff: string; status: string; ends_at: string | null } | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let alive = true;
-
-    const loadProfile = async () => {
+    const load = async () => {
       const initData = await waitForTelegramInitData();
-      if (!alive) return;
-
-      if (!initData) {
-        setMe(null);
-        setSub(null);
+      if (!alive || !initData) {
+        setLoading(false);
         return;
       }
-
-      api.me().then((value) => alive && setMe(value)).catch(() => alive && setMe(null));
-      api.mySubscription().then((value) => alive && setSub(value)).catch(() => alive && setSub(null));
+      Promise.all([api.me(), api.mySubscription()])
+        .then(([meData, subData]) => {
+          if (!alive) return;
+          setMe(meData);
+          setSub(subData);
+        })
+        .catch(() => {
+          if (!alive) return;
+          setMe(null);
+          setSub(null);
+        })
+        .finally(() => {
+          if (!alive) return;
+          setLoading(false);
+        });
     };
-
-    void loadProfile();
-
+    void load();
     return () => {
       alive = false;
     };
@@ -36,20 +43,47 @@ export function ProfilePage() {
   return (
     <Layout>
       <section className="card">
-        <h2>Профиль</h2>
-        {!me ? <p>Профиль недоступен.</p> : null}
+        <div className="section-head">
+          <h2>Профиль</h2>
+          <span className="muted">Личный доступ и статус</span>
+        </div>
+
+        {loading ? <p>Загружаем профиль...</p> : null}
+        {!loading && !me ? <p className="empty-state">Профиль временно недоступен.</p> : null}
+
         {me ? (
-          <p>
-            Пользователь: {me.first_name || "-"} (@{me.username || "-"}) • ID {me.telegram_id}
-          </p>
+          <div className="profile-grid">
+            <div className="profile-row">
+              <span>Пользователь</span>
+              <strong>{me.first_name || "-"}</strong>
+            </div>
+            <div className="profile-row">
+              <span>Username</span>
+              <strong>@{me.username || "-"}</strong>
+            </div>
+            <div className="profile-row">
+              <span>Telegram ID</span>
+              <strong>{me.telegram_id}</strong>
+            </div>
+            <div className="profile-row">
+              <span>Роль</span>
+              <strong>{me.is_admin ? "admin" : me.role}</strong>
+            </div>
+          </div>
         ) : null}
-        {sub ? <p>Подписка: {sub.tariff.toUpperCase()} • {sub.status}</p> : null}
+
+        {sub ? (
+          <div className="subscription-box">
+            <span className={`access-pill ${sub.tariff}`}>{sub.tariff.toUpperCase()}</span>
+            <p>Статус: {sub.status}</p>
+            <p>Доступ до: {sub.ends_at ? new Date(sub.ends_at).toLocaleString("ru-RU") : "—"}</p>
+          </div>
+        ) : null}
+
         {me?.is_admin || me?.role === "admin" ? (
-          <p>
-            <Link className="btn admin-link-btn" to="/admin">
-              Перейти в админку
-            </Link>
-          </p>
+          <Link className="btn" to="/admin">
+            Перейти в админку
+          </Link>
         ) : null}
       </section>
     </Layout>

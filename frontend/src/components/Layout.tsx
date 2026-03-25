@@ -1,24 +1,18 @@
-import { Link } from "react-router-dom";
 import { type PropsWithChildren, useEffect, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 
 import { api } from "../services/api";
 import { waitForTelegramInitData } from "../services/telegram";
 
 export function Layout({ children }: PropsWithChildren) {
   const [isAdmin, setIsAdmin] = useState(false);
+  const location = useLocation();
 
   useEffect(() => {
     let alive = true;
-
     const loadMe = async () => {
       const initData = await waitForTelegramInitData();
-      if (!alive) return;
-
-      if (!initData) {
-        setIsAdmin(false);
-        return;
-      }
-
+      if (!alive || !initData) return;
       api
         .me()
         .then((me) => {
@@ -30,29 +24,37 @@ export function Layout({ children }: PropsWithChildren) {
           setIsAdmin(false);
         });
     };
-
     void loadMe();
-
     return () => {
       alive = false;
     };
   }, []);
 
+  const links = [
+    { to: "/", label: "Главная" },
+    { to: "/feed", label: "Лента" },
+    { to: "/stats", label: "Статистика" },
+    { to: "/tariffs", label: "Тарифы" },
+    { to: "/profile", label: "Профиль" },
+    ...(isAdmin ? [{ to: "/admin", label: "Админка" }] : []),
+  ];
+
   return (
     <div className="app-shell">
       <header className="topbar">
-        <h1>MatchLens</h1>
+        <div className="brand-chip">MatchLens Pro</div>
+        <h1>Sports Analytics</h1>
+        <p>Точные данные, прозрачная статистика, контроль доступа</p>
       </header>
 
       <main className="content">{children}</main>
 
       <nav className={`tabbar ${isAdmin ? "tabbar-admin" : ""}`}>
-        <Link to="/">Главная</Link>
-        <Link to="/feed">Лента</Link>
-        <Link to="/stats">Статистика</Link>
-        <Link to="/tariffs">Тарифы</Link>
-        <Link to="/profile">Профиль</Link>
-        {isAdmin ? <Link to="/admin">Админка</Link> : null}
+        {links.map((item) => (
+          <Link key={item.to} to={item.to} className={location.pathname === item.to ? "active" : ""}>
+            {item.label}
+          </Link>
+        ))}
       </nav>
     </div>
   );
