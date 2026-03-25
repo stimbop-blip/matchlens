@@ -29,4 +29,9 @@ def auth_telegram(payload: TelegramInitDataIn, db: Session = Depends(get_db)) ->
             "language_code": user_data.get("language_code", "ru"),
         },
     )
-    return AuthResponse(user_id=str(user.id), telegram_id=user.telegram_id, role=user.role.value)
+    return AuthResponse(
+        user_id=str(user.id),
+        telegram_id=user.telegram_id,
+        role=user.role.value,
+        is_admin=user.role.value == "admin",
+    )

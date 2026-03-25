@@ -32,6 +32,7 @@ class PredictionCreateIn(BaseModel):
     risk_level: str = Field(default="medium")
     access_level: str = Field(default="free")
     mode: str = Field(default="prematch")
+    status: str = Field(default="pending")
     publish_now: bool = False
 
 

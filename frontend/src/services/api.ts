@@ -39,6 +39,16 @@ export type Prediction = {
   published_at: string | null;
 };
 
+export type Me = {
+  id: string;
+  role: string;
+  is_admin: boolean;
+  telegram_id: number;
+  username: string | null;
+  first_name: string | null;
+  last_name: string | null;
+};
+
 export type AdminUser = {
   id: string;
   telegram_id: number;
@@ -63,7 +73,7 @@ export type AdminPayment = {
 };
 
 export const api = {
-  me: () => request<{ id: string; role: string; telegram_id: number; username: string | null; first_name: string | null; last_name: string | null }>("/users/me"),
+  me: () => request<Me>("/users/me"),
   mySubscription: () => request<{ tariff: string; status: string; ends_at: string | null }>("/subscriptions/me"),
   tariffs: () => request<Array<{ code: string; name: string; price_rub: number; duration_days: number; access_level: string; description: string | null }>>("/tariffs"),
   predictions: () => request<Prediction[]>("/predictions"),

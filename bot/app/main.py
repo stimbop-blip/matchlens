@@ -3,6 +3,7 @@ import contextlib
 import logging
 
 from aiogram import Bot, Dispatcher
+from aiogram.client.default import DefaultBotProperties
 
 from app.config import settings
 from app.handlers.menu import router as menu_router
@@ -15,7 +16,7 @@ from app.services.notification_worker import run_notification_worker
 async def main() -> None:
     logging.basicConfig(level=getattr(logging, settings.bot_log_level.upper(), logging.INFO))
 
-    bot = Bot(token=settings.bot_token)
+    bot = Bot(token=settings.bot_token, default=DefaultBotProperties(parse_mode="HTML"))
     backend_client = BackendClient(settings.backend_api_base_url)
     set_backend_client(backend_client)
 

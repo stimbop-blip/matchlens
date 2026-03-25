@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import { api } from "../services/api";
 
 export function ProfilePage() {
-  const [me, setMe] = useState<{ first_name: string | null; username: string | null; role: string; telegram_id: number } | null>(null);
+  const [me, setMe] = useState<{ first_name: string | null; username: string | null; role: string; is_admin: boolean; telegram_id: number } | null>(null);
   const [sub, setSub] = useState<{ tariff: string; status: string; ends_at: string | null } | null>(null);
 
   useEffect(() => {
@@ -24,9 +24,11 @@ export function ProfilePage() {
           </p>
         ) : null}
         {sub ? <p>Подписка: {sub.tariff.toUpperCase()} • {sub.status}</p> : null}
-        {me?.role === "admin" ? (
+        {me?.is_admin || me?.role === "admin" ? (
           <p>
-            <Link to="/admin">Открыть админку</Link>
+            <Link className="btn admin-link-btn" to="/admin">
+              Перейти в админку
+            </Link>
           </p>
         ) : null}
       </section>

@@ -63,6 +63,7 @@ def create_prediction(db: Session, payload: dict, created_by: str | None) -> Pre
         short_description=payload.get("short_description"),
         risk_level=payload.get("risk_level", "medium"),
         access_level=AccessLevel(payload.get("access_level", "free")),
+        status=PredictionStatus(payload.get("status", "pending")),
         mode=payload.get("mode", "prematch"),
         published_at=published_at,
         created_by=created_by,
