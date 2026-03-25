@@ -6,7 +6,7 @@ import { api, type Tariff } from "../services/api";
 const PAYMENTS_ENABLED = (import.meta.env.VITE_PAYMENTS_ENABLED || "false") === "true";
 
 const FEATURES: Record<string, string[]> = {
-  free: ["Базовая лента", "Ограниченный объем сигналов", "Стартовый доступ"],
+  free: ["Базовая лента", "Ограниченный объем сигналов", "Ознакомительный доступ"],
   premium: ["Расширенная аналитика", "Больше прогнозов", "Более частые обновления"],
   vip: ["Максимальный доступ", "Приоритетные уведомления", "Полный набор сигналов"],
 };
@@ -45,7 +45,7 @@ export function TariffsPage() {
             <article key={item.code} className={`tariff-card ${item.code}`}>
               <div className="prediction-top">
                 <strong>{item.name}</strong>
-                <span className={`access-pill ${item.access_level}`}>{item.access_level.toUpperCase()}</span>
+                <span className={`access-pill ${item.access_level}`}>{item.access_level === "premium" ? "Премиум" : item.access_level === "vip" ? "VIP" : "Бесплатный"}</span>
               </div>
               <p className="price">{item.price_rub} RUB</p>
               <p className="muted">{item.duration_days} дней доступа</p>

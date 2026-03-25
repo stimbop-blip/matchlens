@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { Layout } from "../components/Layout";
-import { api } from "../services/api";
+import { api, type PublicStats } from "../services/api";
 
 export function HomePage() {
-  const [stats, setStats] = useState<{ total: number; winrate: number; roi: number } | null>(null);
+  const [stats, setStats] = useState<PublicStats | null>(null);
   const [sub, setSub] = useState<{ tariff: string; status: string } | null>(null);
 
   useEffect(() => {
@@ -32,7 +32,7 @@ export function HomePage() {
         <article>
           <span>Ваш доступ</span>
           <strong>{sub?.tariff?.toUpperCase() || "FREE"}</strong>
-          <small>{sub?.status || "inactive"}</small>
+          <small>{sub?.status || "неактивен"}</small>
         </article>
         <article>
           <span>Прогнозов</span>
@@ -40,14 +40,14 @@ export function HomePage() {
           <small>в открытой витрине</small>
         </article>
         <article>
-          <span>Winrate</span>
-          <strong>{stats ? `${stats.winrate}%` : "--"}</strong>
+          <span>Точность</span>
+          <strong>{stats ? `${stats.hit_rate}%` : "--"}</strong>
           <small>по закрытым исходам</small>
         </article>
         <article>
           <span>ROI</span>
           <strong>{stats ? `${stats.roi}%` : "--"}</strong>
-          <small>сейчас в разработке</small>
+          <small>пересчитывается по статусам</small>
         </article>
       </section>
 

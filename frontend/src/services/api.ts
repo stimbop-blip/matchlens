@@ -100,7 +100,21 @@ export type AdminStats = {
   predictions_by_status: Record<string, number>;
   active_subscriptions: number;
   users_by_access: Record<string, number>;
+  hit_rate: number;
+  roi: number;
   events_placeholder: string[];
+};
+
+export type PublicStats = {
+  total: number;
+  wins: number;
+  loses: number;
+  refunds: number;
+  pending: number;
+  hit_rate: number;
+  winrate: number;
+  roi: number;
+  by_access: Record<string, number>;
 };
 
 export const api = {
@@ -116,7 +130,7 @@ export const api = {
     const suffix = search.toString() ? `?${search.toString()}` : "";
     return request<Prediction[]>(`/predictions${suffix}`);
   },
-  stats: () => request<{ total: number; winrate: number; roi: number }>("/stats/overview"),
+  stats: () => request<PublicStats>("/stats/overview"),
   createPayment: (tariffCode: "premium" | "vip") =>
     request<{ payment_id: string; payment_url: string; amount_rub: number; status: string }>("/payments/create", {
       method: "POST",

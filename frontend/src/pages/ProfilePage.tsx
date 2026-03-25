@@ -5,6 +5,12 @@ import { Layout } from "../components/Layout";
 import { api, type Me } from "../services/api";
 import { waitForTelegramInitData } from "../services/telegram";
 
+function tariffLabel(value: string): string {
+  if (value === "premium") return "Премиум";
+  if (value === "vip") return "VIP";
+  return "Бесплатный";
+}
+
 export function ProfilePage() {
   const [me, setMe] = useState<Me | null>(null);
   const [sub, setSub] = useState<{ tariff: string; status: string; ends_at: string | null } | null>(null);
@@ -67,15 +73,15 @@ export function ProfilePage() {
             </div>
             <div className="profile-row">
               <span>Роль</span>
-              <strong>{me.is_admin ? "admin" : me.role}</strong>
+              <strong>{me.is_admin ? "Администратор" : "Пользователь"}</strong>
             </div>
           </div>
         ) : null}
 
         {sub ? (
           <div className="subscription-box">
-            <span className={`access-pill ${sub.tariff}`}>{sub.tariff.toUpperCase()}</span>
-            <p>Статус: {sub.status}</p>
+            <span className={`access-pill ${sub.tariff}`}>{tariffLabel(sub.tariff)}</span>
+            <p>Статус: {sub.status === "active" ? "Активна" : sub.status === "expired" ? "Истекла" : sub.status}</p>
             <p>Доступ до: {sub.ends_at ? new Date(sub.ends_at).toLocaleString("ru-RU") : "—"}</p>
           </div>
         ) : null}
