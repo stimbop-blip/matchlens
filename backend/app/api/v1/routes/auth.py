@@ -1,22 +1,31 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.db import get_db
-from app.core.security import validate_telegram_init_data
+from app.core.security import validate_telegram_init_data_with_reason
 from app.schemas.auth import AuthResponse, TelegramInitDataIn
 from app.services.user_service import upsert_user_by_telegram
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+logger = logging.getLogger(__name__)
 
 
 @router.post("/telegram", response_model=AuthResponse)
 def auth_telegram(payload: TelegramInitDataIn, db: Session = Depends(get_db)) -> AuthResponse:
     if not settings.bot_token:
+        logger.error("telegram_auth_failed reason=invalid_bot_token")
         raise HTTPException(status_code=500, detail="BOT_TOKEN is not configured")
 
-    user_data = validate_telegram_init_data(payload.init_data, settings.bot_token)
+    if not payload.init_data.strip():
+        logger.warning("telegram_auth_failed reason=init_data_empty")
+        raise HTTPException(status_code=401, detail="Invalid telegram initData")
+
+    user_data, reason = validate_telegram_init_data_with_reason(payload.init_data, settings.bot_token)
     if not user_data:
+        logger.warning("telegram_auth_failed reason=%s", reason)
         raise HTTPException(status_code=401, detail="Invalid telegram initData")
 
     user = upsert_user_by_telegram(
