@@ -1,0 +1,8 @@
+services:
+  - type: web
+    name: matchlens-backend
+    env: docker
+    dockerContext: ./backend
+    dockerfilePath: ./backend/Dockerfile
+    healthCheckPath: /api/v1/health
+    autoDeploy: true
