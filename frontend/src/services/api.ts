@@ -8,8 +8,6 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const initData = await waitForTelegramInitData();
   if (initData) {
     headers.set("X-Telegram-Init-Data", initData);
-  } else {
-    console.warn("[telegram-auth] Telegram initData not received");
   }
 
   const response = await fetch(`${API_URL}${path}`, {

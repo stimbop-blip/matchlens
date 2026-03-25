@@ -8,7 +8,6 @@ import { waitForTelegramInitData } from "../services/telegram";
 export function ProfilePage() {
   const [me, setMe] = useState<{ first_name: string | null; username: string | null; role: string; is_admin: boolean; telegram_id: number } | null>(null);
   const [sub, setSub] = useState<{ tariff: string; status: string; ends_at: string | null } | null>(null);
-  const [authDebug, setAuthDebug] = useState("");
 
   useEffect(() => {
     let alive = true;
@@ -18,14 +17,11 @@ export function ProfilePage() {
       if (!alive) return;
 
       if (!initData) {
-        setAuthDebug("Telegram initData не получен");
         setMe(null);
         setSub(null);
-        console.warn("[telegram-auth] Telegram initData not received before profile requests");
         return;
       }
 
-      setAuthDebug("");
       api.me().then((value) => alive && setMe(value)).catch(() => alive && setMe(null));
       api.mySubscription().then((value) => alive && setSub(value)).catch(() => alive && setSub(null));
     };
@@ -41,7 +37,6 @@ export function ProfilePage() {
     <Layout>
       <section className="card">
         <h2>Профиль</h2>
-        {authDebug ? <p>{authDebug}</p> : null}
         {!me ? <p>Профиль недоступен.</p> : null}
         {me ? (
           <p>
