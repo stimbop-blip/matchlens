@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { Layout } from "../components/Layout";
-import { api, type Me } from "../services/api";
+import { api, type Me, type NotificationSettings } from "../services/api";
 import { waitForTelegramInitData } from "../services/telegram";
 
 function tariffLabel(value: string): string {
@@ -14,6 +14,8 @@ function tariffLabel(value: string): string {
 export function ProfilePage() {
   const [me, setMe] = useState<Me | null>(null);
   const [sub, setSub] = useState<{ tariff: string; status: string; ends_at: string | null } | null>(null);
+  const [notify, setNotify] = useState<NotificationSettings | null>(null);
+  const [notifyMessage, setNotifyMessage] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -24,16 +26,18 @@ export function ProfilePage() {
         setLoading(false);
         return;
       }
-      Promise.all([api.me(), api.mySubscription()])
-        .then(([meData, subData]) => {
+      Promise.all([api.me(), api.mySubscription(), api.myNotificationSettings()])
+        .then(([meData, subData, notifyData]) => {
           if (!alive) return;
           setMe(meData);
           setSub(subData);
+          setNotify(notifyData);
         })
         .catch(() => {
           if (!alive) return;
           setMe(null);
           setSub(null);
+          setNotify(null);
         })
         .finally(() => {
           if (!alive) return;
@@ -85,6 +89,78 @@ export function ProfilePage() {
             <p>Доступ до: {sub.ends_at ? new Date(sub.ends_at).toLocaleString("ru-RU") : "—"}</p>
           </div>
         ) : null}
+
+        <div className="card-lite" style={{ marginTop: 10 }}>
+          <h3 style={{ margin: 0 }}>Уведомления</h3>
+          {!notify ? <p className="muted">Настройки уведомлений недоступны.</p> : null}
+          {notify ? (
+            <div className="admin-form" style={{ marginTop: 8 }}>
+              <label className="switch-row">
+                <span>Получать уведомления</span>
+                <input
+                  type="checkbox"
+                  checked={notify.notifications_enabled}
+                  onChange={async (e) => {
+                    const next = { ...notify, notifications_enabled: e.target.checked };
+                    setNotify(next);
+                    const updated = await api.updateMyNotificationSettings({ notifications_enabled: e.target.checked });
+                    setNotify(updated);
+                    setNotifyMessage("Настройки сохранены");
+                  }}
+                />
+              </label>
+              <label className="switch-row">
+                <span>Новые бесплатные прогнозы</span>
+                <input
+                  type="checkbox"
+                  checked={notify.notify_free}
+                  onChange={async (e) => {
+                    const updated = await api.updateMyNotificationSettings({ notify_free: e.target.checked });
+                    setNotify(updated);
+                    setNotifyMessage("Настройки сохранены");
+                  }}
+                />
+              </label>
+              <label className="switch-row">
+                <span>Новые прогнозы Премиум</span>
+                <input
+                  type="checkbox"
+                  checked={notify.notify_premium}
+                  onChange={async (e) => {
+                    const updated = await api.updateMyNotificationSettings({ notify_premium: e.target.checked });
+                    setNotify(updated);
+                    setNotifyMessage("Настройки сохранены");
+                  }}
+                />
+              </label>
+              <label className="switch-row">
+                <span>Новые прогнозы VIP</span>
+                <input
+                  type="checkbox"
+                  checked={notify.notify_vip}
+                  onChange={async (e) => {
+                    const updated = await api.updateMyNotificationSettings({ notify_vip: e.target.checked });
+                    setNotify(updated);
+                    setNotifyMessage("Настройки сохранены");
+                  }}
+                />
+              </label>
+              <label className="switch-row">
+                <span>Результаты (выигрыш/проигрыш/возврат)</span>
+                <input
+                  type="checkbox"
+                  checked={notify.notify_results}
+                  onChange={async (e) => {
+                    const updated = await api.updateMyNotificationSettings({ notify_results: e.target.checked });
+                    setNotify(updated);
+                    setNotifyMessage("Настройки сохранены");
+                  }}
+                />
+              </label>
+              {notifyMessage ? <p className="muted">{notifyMessage}</p> : null}
+            </div>
+          ) : null}
+        </div>
 
         {me?.is_admin || me?.role === "admin" ? (
           <Link className="btn" to="/admin">

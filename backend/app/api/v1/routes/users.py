@@ -1,8 +1,11 @@
 from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
+from app.core.db import get_db
 from app.models.user import User
-from app.schemas.user import MeOut
+from app.schemas.user import MeOut, NotificationSettingsOut, NotificationSettingsUpdateIn
+from app.services.notification_service import get_notification_settings, update_notification_settings
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -18,3 +21,22 @@ def me(current_user: User = Depends(get_current_user)) -> MeOut:
         role=current_user.role.value,
         is_admin=current_user.role.value == "admin",
     )
+
+
+@router.get("/me/notification-settings", response_model=NotificationSettingsOut)
+def me_notification_settings(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> NotificationSettingsOut:
+    payload = get_notification_settings(db, current_user)
+    return NotificationSettingsOut(**payload)
+
+
+@router.patch("/me/notification-settings", response_model=NotificationSettingsOut)
+def patch_me_notification_settings(
+    payload: NotificationSettingsUpdateIn,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> NotificationSettingsOut:
+    updated = update_notification_settings(db, current_user, payload.model_dump())
+    return NotificationSettingsOut(**updated)

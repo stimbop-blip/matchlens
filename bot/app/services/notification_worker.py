@@ -4,6 +4,7 @@ import asyncio
 import logging
 
 from aiogram import Bot
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 from app.config import settings
 from app.services.backend_client import BackendClient
@@ -29,7 +30,14 @@ async def run_notification_worker(bot: Bot, backend_client: BackendClient) -> No
                     continue
 
                 try:
-                    await bot.send_message(chat_id=int(telegram_id), text=f"{title}\n\n{message}")
+                    keyboard = InlineKeyboardMarkup(
+                        inline_keyboard=[[InlineKeyboardButton(text="Открыть приложение", url=settings.mini_app_url)]]
+                    )
+                    await bot.send_message(
+                        chat_id=int(telegram_id),
+                        text=f"{title}\n\n{message}",
+                        reply_markup=keyboard,
+                    )
                     await backend_client.mark_notification_sent(notification_id)
                 except Exception as exc:
                     logger.warning("Notification send failed: %s", exc)

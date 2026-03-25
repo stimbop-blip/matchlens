@@ -105,6 +105,14 @@ export type AdminStats = {
   events_placeholder: string[];
 };
 
+export type NotificationSettings = {
+  notifications_enabled: boolean;
+  notify_free: boolean;
+  notify_premium: boolean;
+  notify_vip: boolean;
+  notify_results: boolean;
+};
+
 export type PublicStats = {
   total: number;
   wins: number;
@@ -119,6 +127,12 @@ export type PublicStats = {
 
 export const api = {
   me: () => request<Me>("/users/me"),
+  myNotificationSettings: () => request<NotificationSettings>("/users/me/notification-settings"),
+  updateMyNotificationSettings: (payload: Partial<NotificationSettings>) =>
+    request<NotificationSettings>("/users/me/notification-settings", {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
   mySubscription: () => request<{ tariff: string; status: string; ends_at: string | null }>("/subscriptions/me"),
   tariffs: () => request<Tariff[]>("/tariffs"),
   predictions: (params?: { mode?: string; status?: string; access_level?: string; risk_level?: string }) => {
