@@ -10,7 +10,7 @@ declare global {
   }
 }
 
-const TELEGRAM_INIT_WAIT_MS = 3000;
+const TELEGRAM_INIT_WAIT_MS = 10000;
 const TELEGRAM_POLL_MS = 100;
 
 export function getTelegramInitData(): string {
