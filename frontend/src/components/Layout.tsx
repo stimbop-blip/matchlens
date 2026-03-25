@@ -2,21 +2,51 @@ import { Link } from "react-router-dom";
 import { type PropsWithChildren, useEffect, useState } from "react";
 
 import { api } from "../services/api";
+import { waitForTelegramInitData } from "../services/telegram";
 
 export function Layout({ children }: PropsWithChildren) {
   const [isAdmin, setIsAdmin] = useState(false);
+  const [initDataMissing, setInitDataMissing] = useState(false);
 
   useEffect(() => {
-    api
-      .me()
-      .then((me) => setIsAdmin(Boolean(me.is_admin || me.role === "admin")))
-      .catch(() => setIsAdmin(false));
+    let alive = true;
+
+    const loadMe = async () => {
+      const initData = await waitForTelegramInitData();
+      if (!alive) return;
+
+      if (!initData) {
+        setInitDataMissing(true);
+        setIsAdmin(false);
+        console.warn("[telegram-auth] Telegram initData not received before /users/me");
+        return;
+      }
+
+      setInitDataMissing(false);
+      api
+        .me()
+        .then((me) => {
+          if (!alive) return;
+          setIsAdmin(Boolean(me.is_admin || me.role === "admin"));
+        })
+        .catch(() => {
+          if (!alive) return;
+          setIsAdmin(false);
+        });
+    };
+
+    void loadMe();
+
+    return () => {
+      alive = false;
+    };
   }, []);
 
   return (
     <div className="app-shell">
       <header className="topbar">
         <h1>MatchLens</h1>
+        {initDataMissing ? <p className="muted">Telegram initData не получен</p> : null}
       </header>
 
       <main className="content">{children}</main>

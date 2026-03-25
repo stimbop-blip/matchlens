@@ -1,13 +1,15 @@
-import { getTelegramInitData } from "./telegram";
+import { waitForTelegramInitData } from "./telegram";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const headers = new Headers(options?.headers || {});
   headers.set("Content-Type", "application/json");
-  const initData = getTelegramInitData();
+  const initData = await waitForTelegramInitData();
   if (initData) {
     headers.set("X-Telegram-Init-Data", initData);
+  } else {
+    console.warn("[telegram-auth] Telegram initData not received");
   }
 
   const response = await fetch(`${API_URL}${path}`, {

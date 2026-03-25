@@ -3,20 +3,45 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { api } from "../services/api";
+import { waitForTelegramInitData } from "../services/telegram";
 
 export function ProfilePage() {
   const [me, setMe] = useState<{ first_name: string | null; username: string | null; role: string; is_admin: boolean; telegram_id: number } | null>(null);
   const [sub, setSub] = useState<{ tariff: string; status: string; ends_at: string | null } | null>(null);
+  const [authDebug, setAuthDebug] = useState("");
 
   useEffect(() => {
-    api.me().then(setMe).catch(() => setMe(null));
-    api.mySubscription().then(setSub).catch(() => setSub(null));
+    let alive = true;
+
+    const loadProfile = async () => {
+      const initData = await waitForTelegramInitData();
+      if (!alive) return;
+
+      if (!initData) {
+        setAuthDebug("Telegram initData не получен");
+        setMe(null);
+        setSub(null);
+        console.warn("[telegram-auth] Telegram initData not received before profile requests");
+        return;
+      }
+
+      setAuthDebug("");
+      api.me().then((value) => alive && setMe(value)).catch(() => alive && setMe(null));
+      api.mySubscription().then((value) => alive && setSub(value)).catch(() => alive && setSub(null));
+    };
+
+    void loadProfile();
+
+    return () => {
+      alive = false;
+    };
   }, []);
 
   return (
     <Layout>
       <section className="card">
         <h2>Профиль</h2>
+        {authDebug ? <p>{authDebug}</p> : null}
         {!me ? <p>Профиль недоступен.</p> : null}
         {me ? (
           <p>
