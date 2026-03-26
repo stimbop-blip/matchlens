@@ -7,8 +7,9 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import require_admin
 from app.core.db import get_db
-from app.models.enums import UserRole
+from app.models.enums import SubscriptionStatus, UserRole
 from app.models.payment import Payment
+from app.models.referral_bonus import ReferralBonus
 from app.models.subscription import Subscription
 from app.models.tariff import Tariff
 from app.models.user import User
@@ -60,6 +61,27 @@ def admin_list_users(
             tariff_code = tariff.code
             subscription_ends_at = subscription.ends_at.isoformat() if subscription.ends_at else None
 
+        referred_by_code = None
+        if item.referred_by_user_id:
+            referred_by_code = db.scalar(select(User.referral_code).where(User.id == item.referred_by_user_id))
+
+        referrals_invited = int(db.scalar(select(func.count(User.id)).where(User.referred_by_user_id == item.id)) or 0)
+        referrals_activated = int(
+            db.scalar(
+                select(func.count(func.distinct(Subscription.user_id)))
+                .join(Tariff, Tariff.id == Subscription.tariff_id)
+                .join(User, User.id == Subscription.user_id)
+                .where(User.referred_by_user_id == item.id)
+                .where(Subscription.status == SubscriptionStatus.active)
+                .where(Tariff.code.in_(["premium", "vip"]))
+            )
+            or 0
+        )
+        referral_bonus_days = int(
+            db.scalar(select(func.coalesce(func.sum(ReferralBonus.bonus_days), 0)).where(ReferralBonus.referrer_user_id == item.id))
+            or 0
+        )
+
         result.append(
             {
                 "id": str(item.id),
@@ -69,6 +91,11 @@ def admin_list_users(
                 "role": item.role.value,
                 "tariff": tariff_code,
                 "subscription_ends_at": subscription_ends_at,
+                "referral_code": item.referral_code,
+                "referred_by_code": referred_by_code,
+                "referrals_invited": referrals_invited,
+                "referrals_activated": referrals_activated,
+                "referral_bonus_days": referral_bonus_days,
                 "created_at": item.created_at.isoformat() if item.created_at else None,
                 "is_blocked": False,
             }

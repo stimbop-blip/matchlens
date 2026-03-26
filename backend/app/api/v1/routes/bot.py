@@ -21,6 +21,12 @@ from app.services.user_service import upsert_user_by_telegram
 
 router = APIRouter(prefix="/bot", tags=["bot"])
 
+TARIFF_DESCRIPTION = {
+    "free": "Знакомство с PIT BET: часть бесплатных сигналов и базовый доступ.",
+    "premium": "Основной тариф: полная Premium-лента, уведомления и разборы.",
+    "vip": "Максимум: VIP-сигналы, ранний доступ и лайв-отбор.",
+}
+
 
 @router.post("/users/sync")
 def bot_user_sync(payload: BotUserSyncIn, db: Session = Depends(get_db)) -> dict:
@@ -74,7 +80,7 @@ def bot_tariffs(db: Session = Depends(get_db)) -> list[BotTariffOut]:
             name=item.name,
             price_rub=item.price_rub,
             duration_days=item.duration_days,
-            description=item.description,
+            description=item.description or TARIFF_DESCRIPTION.get(item.code),
         )
         for item in records
     ]

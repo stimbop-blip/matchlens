@@ -45,7 +45,7 @@ TARIFF_PRESENTATION = {
         "tag": "👑 Максимальный пакет",
         "points": [
             "VIP-сигналы сильнейшего отбора",
-            "ранний доступ и live/hot picks",
+            "ранний доступ и лайв-сигналы",
             "расширенные разборы и приоритет",
         ],
         "upgrade": "Для тех, кому нужен максимум доступа и скорости.",
@@ -181,7 +181,7 @@ async def my_profile(message: Message) -> None:
     await message.answer(
         "<b>👤 Мой профиль</b>\n"
         f"Telegram ID: <code>{user.id}</code>\n"
-        f"Username: {escape(username)}\n\n"
+        f"Ник: {escape(username)}\n\n"
         f"Тариф: <b>{_tariff_label(tariff)}</b>\n"
         f"Статус: <b>{_subscription_status_label(status)}</b>\n"
         f"Доступ до: <b>{escape(ends_at)}</b>\n\n"

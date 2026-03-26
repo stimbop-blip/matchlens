@@ -25,3 +25,11 @@ class NotificationSettingsUpdateIn(BaseModel):
     notify_premium: bool | None = None
     notify_vip: bool | None = None
     notify_results: bool | None = None
+
+
+class ReferralOut(BaseModel):
+    referral_code: str
+    referral_link: str
+    invited: int
+    activated: int
+    bonus_days: int

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { Layout } from "../components/Layout";
-import { api, type Me, type NotificationSettings } from "../services/api";
+import { api, type Me, type NotificationSettings, type PromoApplyResult, type ReferralStats } from "../services/api";
 import { waitForTelegramInitData } from "../services/telegram";
 
 function tariffLabel(value: string): string {
@@ -28,6 +28,10 @@ export function ProfilePage() {
   const [me, setMe] = useState<Me | null>(null);
   const [sub, setSub] = useState<{ tariff: string; status: string; ends_at: string | null } | null>(null);
   const [notify, setNotify] = useState<NotificationSettings | null>(null);
+  const [referral, setReferral] = useState<ReferralStats | null>(null);
+  const [promoCode, setPromoCode] = useState("");
+  const [promoTariff, setPromoTariff] = useState<"free" | "premium" | "vip">("premium");
+  const [promoResult, setPromoResult] = useState<PromoApplyResult | null>(null);
   const [notifyMessage, setNotifyMessage] = useState<{ tone: "success" | "error"; text: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -39,18 +43,20 @@ export function ProfilePage() {
         setLoading(false);
         return;
       }
-      Promise.all([api.me(), api.mySubscription(), api.myNotificationSettings()])
-        .then(([meData, subData, notifyData]) => {
+      Promise.all([api.me(), api.mySubscription(), api.myNotificationSettings(), api.myReferral()])
+        .then(([meData, subData, notifyData, referralData]) => {
           if (!alive) return;
           setMe(meData);
           setSub(subData);
           setNotify(notifyData);
+          setReferral(referralData);
         })
         .catch(() => {
           if (!alive) return;
           setMe(null);
           setSub(null);
           setNotify(null);
+          setReferral(null);
         })
         .finally(() => {
           if (!alive) return;
@@ -73,6 +79,36 @@ export function ProfilePage() {
     }
   };
 
+  const applyPromo = async () => {
+    const code = promoCode.trim();
+    if (!code) return;
+    try {
+      const result = await api.applyPromoCode({ code, tariff_code: promoTariff });
+      setPromoResult(result);
+      setPromoCode("");
+      if (result.mode === "bonus_applied") {
+        const [subData, referralData] = await Promise.all([api.mySubscription(), api.myReferral()]);
+        setSub(subData);
+        setReferral(referralData);
+      }
+    } catch (e) {
+      const text = e instanceof Error ? e.message : "Не удалось применить промокод";
+      setPromoResult({
+        ok: false,
+        mode: "error",
+        kind: "error",
+        code,
+        message: text,
+      });
+    }
+  };
+
+  const copyReferral = async () => {
+    if (!referral?.referral_link) return;
+    await navigator.clipboard.writeText(referral.referral_link);
+    setNotifyMessage({ tone: "success", text: "Реферальная ссылка скопирована" });
+  };
+
   return (
     <Layout>
       <section className="card">
@@ -91,11 +127,11 @@ export function ProfilePage() {
               <strong>{me.first_name || "-"}</strong>
             </div>
             <div className="profile-row">
-              <span>Username</span>
+              <span>Ник в Telegram</span>
               <strong>@{me.username || "-"}</strong>
             </div>
             <div className="profile-row">
-              <span>Telegram ID</span>
+              <span>ID в Telegram</span>
               <strong>{me.telegram_id}</strong>
             </div>
             <div className="profile-row">
@@ -114,6 +150,47 @@ export function ProfilePage() {
             <p>Доступ до: {sub.ends_at ? new Date(sub.ends_at).toLocaleString("ru-RU") : "—"}</p>
           </div>
         ) : null}
+
+        <div className="card-lite" style={{ marginTop: 10 }}>
+          <h3 style={{ margin: 0 }}>Реферальная программа PIT BET</h3>
+          {!referral ? <p className="muted">Реферальные данные недоступны.</p> : null}
+          {referral ? (
+            <div className="admin-form" style={{ marginTop: 8 }}>
+              <p className="stacked">
+                Код: <b>{referral.referral_code}</b>
+              </p>
+              <p className="stacked">Приглашено: {referral.invited} • Активировано: {referral.activated} • Бонусные дни: {referral.bonus_days}</p>
+              <input value={referral.referral_link} readOnly />
+              <button className="btn ghost" onClick={copyReferral}>
+                Скопировать ссылку
+              </button>
+            </div>
+          ) : null}
+        </div>
+
+        <div className="card-lite" style={{ marginTop: 10 }}>
+          <h3 style={{ margin: 0 }}>Промокод PIT BET</h3>
+          <p className="stacked">Введите промокод, чтобы получить скидку на тариф или бонусные дни доступа.</p>
+          <div className="admin-form" style={{ marginTop: 8 }}>
+            <input value={promoCode} onChange={(e) => setPromoCode(e.target.value.toUpperCase())} placeholder="Введите промокод" />
+            <select value={promoTariff} onChange={(e) => setPromoTariff(e.target.value as "free" | "premium" | "vip")}>
+              <option value="free">Тариф Free</option>
+              <option value="premium">Тариф Premium</option>
+              <option value="vip">Тариф VIP</option>
+            </select>
+            <button className="btn" onClick={applyPromo}>
+              Применить промокод
+            </button>
+            {promoResult ? (
+              <p className={`notice ${promoResult.ok ? "success" : "error"}`}>
+                {promoResult.message}
+                {promoResult.final_price_rub !== undefined && promoResult.final_price_rub !== null
+                  ? ` Итог: ${promoResult.final_price_rub} RUB.`
+                  : ""}
+              </p>
+            ) : null}
+          </div>
+        </div>
 
         <div className="card-lite" style={{ marginTop: 10 }}>
           <h3 style={{ margin: 0 }}>Уведомления PIT BET</h3>

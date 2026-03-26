@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     debug: bool = True
     database_url: str = "postgresql+psycopg://matchlens:matchlens@postgres:5432/matchlens"
     bot_token: str = ""
+    bot_username: str = "your_bot"
     auto_create_tables: bool = True
     yoomoney_wallet: str = ""
     yoomoney_notification_secret: str = ""

@@ -20,9 +20,11 @@ export function StatsPage() {
     <Layout>
       <section className="card">
         <div className="section-head">
-          <h2>Статистика эффективности</h2>
-          <span className="muted">PIT BET: прозрачные расчеты по закрытым исходам</span>
+          <h2>Статистика PIT BET</h2>
+          <span className="muted">Прозрачные расчеты по сигналам и результатам</span>
         </div>
+
+        <p className="stacked">Все показатели считаются по фактическим исходам без ручной подгонки.</p>
 
         {loading ? <p className="muted">Обновляем показатели...</p> : null}
         {!loading && !stats ? <p className="empty-state">Не удалось загрузить статистику PIT BET.</p> : null}

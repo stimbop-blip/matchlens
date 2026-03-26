@@ -1,15 +1,26 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
 import { Layout } from "../components/Layout";
-import { api, type AdminPayment, type AdminStats, type AdminSubscription, type AdminUser, type Prediction } from "../services/api";
+import {
+  api,
+  type AdminPayment,
+  type AdminPromoCode,
+  type AdminStats,
+  type AdminSubscription,
+  type AdminUser,
+  type NewsPost,
+  type Prediction,
+} from "../services/api";
 
-type TabKey = "predictions" | "users" | "subscriptions" | "payments" | "broadcasts" | "events";
+type TabKey = "predictions" | "users" | "subscriptions" | "payments" | "news" | "promocodes" | "broadcasts" | "events";
 
 const TABS: Array<{ key: TabKey; label: string }> = [
   { key: "predictions", label: "Прогнозы" },
   { key: "users", label: "Пользователи" },
   { key: "subscriptions", label: "Подписки" },
   { key: "payments", label: "Платежи" },
+  { key: "news", label: "Новости" },
+  { key: "promocodes", label: "Промокоды" },
   { key: "broadcasts", label: "Рассылки" },
   { key: "events", label: "Статистика" },
 ];
@@ -37,6 +48,14 @@ function statusLabel(value: string): string {
   return "В ожидании";
 }
 
+function toDateTimeLocal(value: string | null | undefined): string {
+  if (!value) return "";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export function AdminPage() {
   const [tab, setTab] = useState<TabKey>("predictions");
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
@@ -48,6 +67,8 @@ export function AdminPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [subscriptions, setSubscriptions] = useState<AdminSubscription[]>([]);
   const [payments, setPayments] = useState<AdminPayment[]>([]);
+  const [news, setNews] = useState<NewsPost[]>([]);
+  const [promoCodes, setPromoCodes] = useState<AdminPromoCode[]>([]);
   const [stats, setStats] = useState<AdminStats | null>(null);
 
   const [predQuery, setPredQuery] = useState("");
@@ -85,17 +106,21 @@ export function AdminPage() {
     const role = usersRoleFilter === "all" ? undefined : usersRoleFilter;
     const subStatus = subStatusFilter === "all" ? undefined : subStatusFilter;
     const payStatus = paymentStatusFilter === "all" ? undefined : paymentStatusFilter;
-    const [p, u, s, pay, st] = await Promise.all([
+    const [p, u, s, pay, n, promos, st] = await Promise.all([
       api.adminPredictions(),
       api.adminUsers({ q: usersQuery || undefined, role }),
       api.adminSubscriptions({ q: subQuery || undefined, status: subStatus }),
       api.adminPayments({ user_query: paymentQuery || undefined, status: payStatus }),
+      api.adminNews(),
+      api.adminPromoCodes(),
       api.adminStats(),
     ]);
     setPredictions(p);
     setUsers(u);
     setSubscriptions(s);
     setPayments(pay);
+    setNews(n);
+    setPromoCodes(promos);
     setStats(st);
     api.adminNotificationStats().then((v) => setDeliveryStats(v)).catch(() => setDeliveryStats(null));
   };
@@ -253,6 +278,92 @@ export function AdminPage() {
       await loadAll();
     } catch (e) {
       notifyError(textError(e, "Не удалось обновить платеж"));
+    }
+  };
+
+  const onCreateNews = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    try {
+      await api.adminCreateNews({
+        title: String(fd.get("title") || "").trim(),
+        body: String(fd.get("body") || "").trim(),
+        category: String(fd.get("category") || "news").trim(),
+        is_published: fd.get("is_published") === "on",
+      });
+      notifySuccess("Новость добавлена");
+      e.currentTarget.reset();
+      await loadAll();
+    } catch (e) {
+      notifyError(textError(e, "Не удалось добавить новость"));
+    }
+  };
+
+  const onToggleNews = async (item: NewsPost) => {
+    try {
+      await api.adminUpdateNews(item.id, { is_published: !item.is_published });
+      notifySuccess(item.is_published ? "Новость снята с публикации" : "Новость опубликована");
+      await loadAll();
+    } catch (e) {
+      notifyError(textError(e, "Не удалось обновить новость"));
+    }
+  };
+
+  const onDeleteNews = async (newsId: string) => {
+    if (!window.confirm("Удалить новость?")) return;
+    try {
+      await api.adminDeleteNews(newsId);
+      notifySuccess("Новость удалена");
+      await loadAll();
+    } catch (e) {
+      notifyError(textError(e, "Не удалось удалить новость"));
+    }
+  };
+
+  const onCreatePromo = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    const kind = String(fd.get("kind") || "percent_discount") as "percent_discount" | "fixed_discount" | "extra_days" | "free_access";
+    const tariffCodeValue = String(fd.get("tariff_code") || "").trim();
+    const expiresAtValue = String(fd.get("expires_at") || "").trim();
+    try {
+      await api.adminCreatePromoCode({
+        code: String(fd.get("code") || "").trim(),
+        title: String(fd.get("title") || "").trim(),
+        description: String(fd.get("description") || "").trim() || undefined,
+        kind,
+        value: Number(fd.get("value") || 0),
+        tariff_code: (tariffCodeValue || undefined) as "free" | "premium" | "vip" | undefined,
+        max_activations: String(fd.get("max_activations") || "").trim() ? Number(fd.get("max_activations")) : undefined,
+        expires_at: expiresAtValue ? new Date(expiresAtValue).toISOString() : undefined,
+        is_active: fd.get("is_active") === "on",
+      });
+      notifySuccess("Промокод добавлен");
+      e.currentTarget.reset();
+      await loadAll();
+    } catch (e) {
+      notifyError(textError(e, "Не удалось создать промокод"));
+    }
+  };
+
+  const onTogglePromo = async (item: AdminPromoCode) => {
+    try {
+      await api.adminUpdatePromoCode(item.id, { is_active: !item.is_active });
+      notifySuccess(item.is_active ? "Промокод отключен" : "Промокод активирован");
+      await loadAll();
+    } catch (e) {
+      notifyError(textError(e, "Не удалось обновить промокод"));
+    }
+  };
+
+  const onDeletePromo = async (id: string) => {
+    if (!window.confirm("Удалить промокод?")) return;
+    try {
+      await api.adminDeletePromoCode(id);
+      notifySuccess("Промокод удален");
+      await loadAll();
+    } catch (e) {
+      notifyError(textError(e, "Не удалось удалить промокод"));
     }
   };
 
@@ -462,6 +573,9 @@ export function AdminPage() {
                     </div>
                     <p className="muted">@{user.username || "-"} • tg: {user.telegram_id}</p>
                     <p className="muted">Тариф: {accessLabel(user.tariff)} • до: {user.subscription_ends_at || "—"}</p>
+                    <p className="muted">
+                      Рефкод: {user.referral_code || "—"} • приглашено: {user.referrals_invited ?? 0} • активировано: {user.referrals_activated ?? 0} • бонусных дней: {user.referral_bonus_days ?? 0}
+                    </p>
                     <div className="cta-row wrap">
                       {user.role === "admin" ? (
                         <button className="btn ghost" onClick={() => onUpdateRole(user.id, "user")}>Снять админку</button>
@@ -584,6 +698,164 @@ export function AdminPage() {
                   <div className="admin-grid-2">
                     <button className="btn" onClick={() => onPaymentStatus(payment.id, "succeeded")}>Пометить успешным</button>
                     <button className="btn danger" onClick={() => onPaymentStatus(payment.id, "failed")}>Пометить ошибкой</button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {tab === "news" ? (
+          <div className="admin-panel">
+            <h3>Новости PIT BET</h3>
+            <form className="admin-form" onSubmit={onCreateNews}>
+              <input name="title" placeholder="Заголовок" required />
+              <textarea name="body" placeholder="Текст новости" rows={4} required />
+              <div className="admin-grid-3">
+                <input name="category" placeholder="Категория" defaultValue="news" />
+                <label className="switch-row" style={{ padding: "0 4px" }}>
+                  <span>Опубликовать сразу</span>
+                  <input name="is_published" type="checkbox" defaultChecked />
+                </label>
+                <button className="btn" type="submit">
+                  Добавить новость
+                </button>
+              </div>
+            </form>
+
+            <div className="admin-list">
+              {news.map((item) => (
+                <article key={item.id} className="prediction-card admin-item">
+                  <div className="prediction-top">
+                    <strong>{item.title}</strong>
+                    <span className={`badge ${item.is_published ? "success" : "pending"}`}>{item.is_published ? "Опубликовано" : "Черновик"}</span>
+                  </div>
+                  <p className="muted">Категория: {item.category} • {item.published_at ? new Date(item.published_at).toLocaleString("ru-RU") : "без даты публикации"}</p>
+                  <p className="stacked">{item.body}</p>
+                  <div className="cta-row wrap">
+                    <button className="btn ghost" onClick={() => onToggleNews(item)}>
+                      {item.is_published ? "Снять с публикации" : "Опубликовать"}
+                    </button>
+                    <button className="btn danger" onClick={() => onDeleteNews(item.id)}>
+                      Удалить
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {tab === "promocodes" ? (
+          <div className="admin-panel">
+            <h3>Промокоды</h3>
+            <form className="admin-form" onSubmit={onCreatePromo}>
+              <input name="code" placeholder="Код (например PIT20)" required />
+              <input name="title" placeholder="Название для админки" required />
+              <textarea name="description" placeholder="Комментарий" rows={2} />
+              <div className="admin-grid-3">
+                <select name="kind" defaultValue="percent_discount">
+                  <option value="percent_discount">Скидка в процентах</option>
+                  <option value="fixed_discount">Фиксированная скидка</option>
+                  <option value="extra_days">Бонусные дни</option>
+                  <option value="free_access">Бесплатный доступ</option>
+                </select>
+                <input name="value" type="number" min="0" defaultValue="20" placeholder="Значение" required />
+                <select name="tariff_code" defaultValue="premium">
+                  <option value="">Любой тариф</option>
+                  <option value="free">Free</option>
+                  <option value="premium">Premium</option>
+                  <option value="vip">VIP</option>
+                </select>
+              </div>
+              <div className="admin-grid-3">
+                <input name="max_activations" type="number" min="1" placeholder="Лимит активаций" />
+                <input name="expires_at" type="datetime-local" placeholder="Срок действия" />
+                <label className="switch-row" style={{ padding: "0 4px" }}>
+                  <span>Активен</span>
+                  <input name="is_active" type="checkbox" defaultChecked />
+                </label>
+              </div>
+              <button className="btn" type="submit">
+                Создать промокод
+              </button>
+            </form>
+
+            <div className="admin-list">
+              {promoCodes.map((promo) => (
+                <article key={promo.id} className="prediction-card admin-item">
+                  <div className="prediction-top">
+                    <strong>{promo.code}</strong>
+                    <span className={`badge ${promo.is_active ? "success" : "lost"}`}>{promo.is_active ? "Активен" : "Отключен"}</span>
+                  </div>
+                  <p className="muted">
+                    {promo.title} • тип: {promo.kind} • значение: {promo.value}
+                  </p>
+                  <p className="muted">
+                    Тариф: {promo.tariff_code ? accessLabel(promo.tariff_code) : "любой"} • активации: {promo.activations}
+                    {promo.max_activations ? `/${promo.max_activations}` : ""}
+                  </p>
+                  <p className="muted">
+                    Действует до: {promo.expires_at ? new Date(promo.expires_at).toLocaleString("ru-RU") : "без ограничения"}
+                  </p>
+                  <div className="admin-grid-3">
+                    <input
+                      type="number"
+                      min="0"
+                      defaultValue={promo.value}
+                      onBlur={(e) => {
+                        const nextValue = Number(e.target.value);
+                        if (!Number.isFinite(nextValue) || nextValue < 0 || nextValue === promo.value) return;
+                        void api
+                          .adminUpdatePromoCode(promo.id, { value: nextValue })
+                          .then(async () => {
+                            notifySuccess("Значение промокода обновлено");
+                            await loadAll();
+                          })
+                          .catch((err) => notifyError(textError(err, "Не удалось обновить значение")));
+                      }}
+                    />
+                    <select
+                      defaultValue={promo.kind}
+                      onChange={(e) => {
+                        const nextKind = e.target.value as "percent_discount" | "fixed_discount" | "extra_days" | "free_access";
+                        if (nextKind === promo.kind) return;
+                        void api
+                          .adminUpdatePromoCode(promo.id, { kind: nextKind })
+                          .then(async () => {
+                            notifySuccess("Тип промокода обновлен");
+                            await loadAll();
+                          })
+                          .catch((err) => notifyError(textError(err, "Не удалось обновить тип")));
+                      }}
+                    >
+                      <option value="percent_discount">% скидка</option>
+                      <option value="fixed_discount">фикс. скидка</option>
+                      <option value="extra_days">бонусные дни</option>
+                      <option value="free_access">бесплатный доступ</option>
+                    </select>
+                    <input
+                      type="datetime-local"
+                      defaultValue={toDateTimeLocal(promo.expires_at)}
+                      onBlur={(e) => {
+                        const value = e.target.value.trim();
+                        void api
+                          .adminUpdatePromoCode(promo.id, { expires_at: value ? new Date(value).toISOString() : undefined })
+                          .then(async () => {
+                            notifySuccess("Срок действия обновлен");
+                            await loadAll();
+                          })
+                          .catch((err) => notifyError(textError(err, "Не удалось обновить срок")));
+                      }}
+                    />
+                  </div>
+                  <div className="cta-row wrap">
+                    <button className="btn ghost" onClick={() => onTogglePromo(promo)}>
+                      {promo.is_active ? "Отключить" : "Активировать"}
+                    </button>
+                    <button className="btn danger" onClick={() => onDeletePromo(promo.id)}>
+                      Удалить
+                    </button>
                   </div>
                 </article>
               ))}

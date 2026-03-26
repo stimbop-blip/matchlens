@@ -66,6 +66,11 @@ export type AdminUser = {
   role: "user" | "admin";
   tariff: "free" | "premium" | "vip";
   subscription_ends_at: string | null;
+  referral_code?: string | null;
+  referred_by_code?: string | null;
+  referrals_invited?: number;
+  referrals_activated?: number;
+  referral_bonus_days?: number;
   created_at: string | null;
   is_blocked?: boolean;
 };
@@ -113,6 +118,49 @@ export type NotificationSettings = {
   notify_results: boolean;
 };
 
+export type NewsPost = {
+  id: string;
+  title: string;
+  body: string;
+  category: string;
+  is_published: boolean;
+  published_at: string | null;
+};
+
+export type ReferralStats = {
+  referral_code: string;
+  referral_link: string;
+  invited: number;
+  activated: number;
+  bonus_days: number;
+};
+
+export type PromoApplyResult = {
+  ok: boolean;
+  mode: string;
+  kind: string;
+  code: string;
+  message: string;
+  tariff_code?: string | null;
+  discount_rub?: number | null;
+  final_price_rub?: number | null;
+  bonus_days?: number | null;
+};
+
+export type AdminPromoCode = {
+  id: string;
+  code: string;
+  title: string;
+  description: string | null;
+  kind: "percent_discount" | "fixed_discount" | "extra_days" | "free_access";
+  value: number;
+  tariff_code: "free" | "premium" | "vip" | null;
+  max_activations: number | null;
+  activations: number;
+  is_active: boolean;
+  expires_at: string | null;
+};
+
 export type PublicStats = {
   total: number;
   wins: number;
@@ -145,10 +193,17 @@ export const api = {
     return request<Prediction[]>(`/predictions${suffix}`);
   },
   stats: () => request<PublicStats>("/stats/overview"),
-  createPayment: (tariffCode: "premium" | "vip") =>
-    request<{ payment_id: string; payment_url: string; amount_rub: number; status: string }>("/payments/create", {
+  news: () => request<NewsPost[]>("/news"),
+  myReferral: () => request<ReferralStats>("/users/me/referral"),
+  applyPromoCode: (payload: { code: string; tariff_code?: "free" | "premium" | "vip" }) =>
+    request<PromoApplyResult>("/promocodes/apply", {
       method: "POST",
-      body: JSON.stringify({ tariff_code: tariffCode }),
+      body: JSON.stringify(payload),
+    }),
+  createPayment: (tariffCode: "premium" | "vip", promoCode?: string) =>
+    request<{ payment_id: string; payment_url: string; amount_rub: number; original_amount_rub?: number | null; discount_rub?: number; promo_code?: string | null; promo_message?: string | null; status: string }>("/payments/create", {
+      method: "POST",
+      body: JSON.stringify({ tariff_code: tariffCode, promo_code: promoCode || undefined }),
     }),
 
   adminPredictions: () => request<Prediction[]>("/admin/predictions"),
@@ -225,6 +280,58 @@ export const api = {
     }),
 
   adminStats: () => request<AdminStats>("/admin/stats"),
+  adminNews: () => request<NewsPost[]>("/admin/news"),
+  adminCreateNews: (payload: { title: string; body: string; category?: string; is_published?: boolean }) =>
+    request<NewsPost>("/admin/news", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  adminUpdateNews: (id: string, payload: { title?: string; body?: string; category?: string; is_published?: boolean }) =>
+    request<NewsPost>(`/admin/news/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+  adminDeleteNews: (id: string) =>
+    request<{ ok: boolean }>(`/admin/news/${id}`, {
+      method: "DELETE",
+    }),
+  adminPromoCodes: () => request<AdminPromoCode[]>("/admin/promocodes"),
+  adminCreatePromoCode: (payload: {
+    code: string;
+    title: string;
+    description?: string;
+    kind: "percent_discount" | "fixed_discount" | "extra_days" | "free_access";
+    value: number;
+    tariff_code?: "free" | "premium" | "vip";
+    max_activations?: number;
+    expires_at?: string;
+    is_active?: boolean;
+  }) =>
+    request<AdminPromoCode>("/admin/promocodes", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  adminUpdatePromoCode: (
+    id: string,
+    payload: {
+      title?: string;
+      description?: string;
+      kind?: "percent_discount" | "fixed_discount" | "extra_days" | "free_access";
+      value?: number;
+      tariff_code?: "free" | "premium" | "vip";
+      max_activations?: number;
+      expires_at?: string;
+      is_active?: boolean;
+    }
+  ) =>
+    request<AdminPromoCode>(`/admin/promocodes/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+  adminDeletePromoCode: (id: string) =>
+    request<{ ok: boolean }>(`/admin/promocodes/${id}`, {
+      method: "DELETE",
+    }),
   adminBroadcast: (payload: { title: string; message: string; access_level: string }) =>
     request<{ ok: boolean; queued: number }>("/admin/notifications/broadcast", {
       method: "POST",

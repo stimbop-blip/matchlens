@@ -7,6 +7,7 @@ class BotUserSyncIn(BaseModel):
     first_name: str | None = None
     last_name: str | None = None
     language_code: str | None = "ru"
+    referral_code: str | None = None
 
 
 class BotSubscriptionOut(BaseModel):

@@ -21,7 +21,7 @@ function statusClass(status: Prediction["status"]): string {
 }
 
 function modeLabel(mode: Prediction["mode"]): string {
-  return mode === "live" ? "Лайв" : "Прематч";
+  return mode === "live" ? "Live" : "Прематч";
 }
 
 function accessLabel(access: Prediction["access_level"]): string {
@@ -33,7 +33,12 @@ function accessLabel(access: Prediction["access_level"]): string {
 function formatKickoff(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+  return date.toLocaleString("ru-RU", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function dayHeading(date: Date): string {
@@ -86,6 +91,9 @@ export function FeedPage() {
           <h2>Лента прогнозов</h2>
           <span className="muted">{items.length} позиций PIT BET</span>
         </div>
+        <p className="stacked">
+          Лента отражает рыночный контекст: движение линии, коэффициенты и отбор сильных игровых ситуаций.
+        </p>
 
         <div className="filter-row">
           <label>
@@ -140,7 +148,7 @@ export function FeedPage() {
                     <p>{item.risk_level}</p>
                   </div>
                 </div>
-                {item.short_description ? <p className="desc">{item.short_description}</p> : null}
+                <p className="desc">{item.short_description || "Комментарий аналитика будет добавлен при обновлении сигнала."}</p>
                 <div className="prediction-bottom">
                   <span className={`badge ${statusClass(item.status)}`}>{statusLabel(item.status)}</span>
                   <span className="badge mode">{modeLabel(item.mode)}</span>

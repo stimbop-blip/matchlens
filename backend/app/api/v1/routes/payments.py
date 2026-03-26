@@ -25,11 +25,19 @@ def create_payment(
 ) -> CreatePaymentOut:
     if not settings.payments_enabled:
         raise HTTPException(status_code=503, detail="Payments are temporarily disabled")
-    payment = create_payment_for_tariff(db, current_user, payload.tariff_code)
+    try:
+        payment, discount = create_payment_for_tariff(db, current_user, payload.tariff_code, payload.promo_code)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     return CreatePaymentOut(
         payment_id=str(payment.id),
         status=payment.status.value,
         amount_rub=payment.amount_rub,
+        original_amount_rub=discount.get("original_amount_rub"),
+        discount_rub=int(discount.get("discount_rub", 0)),
+        promo_code=discount.get("promo_code"),
+        promo_message=discount.get("message"),
         payment_url=payment.payment_url or "",
     )
 
