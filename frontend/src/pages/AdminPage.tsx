@@ -143,7 +143,8 @@ export function AdminPage() {
     e.preventDefault();
     setLoading(true);
     notifyInfo("");
-    const formData = new FormData(e.currentTarget);
+    const form = e.currentTarget;
+    const formData = new FormData(form);
     const matchName = String(formData.get("match_name") || "").trim();
     const signalType = String(formData.get("signal_type") || "").trim();
     try {
@@ -163,7 +164,7 @@ export function AdminPage() {
         publish_now: true,
       });
       notifySuccess("Прогноз создан");
-      e.currentTarget.reset();
+      form.reset();
       await loadAll();
     } catch (e) {
       notifyError(textError(e, "Не удалось создать прогноз"));
@@ -216,7 +217,8 @@ export function AdminPage() {
 
   const onGrantSubscription = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
+    const form = e.currentTarget;
+    const formData = new FormData(form);
     try {
       await api.adminGrantSubscription({
         user_id: String(formData.get("user_id") || "").trim() || undefined,
@@ -227,7 +229,7 @@ export function AdminPage() {
         duration_days: Number(formData.get("duration_days") || 30),
       });
       notifySuccess("Подписка выдана");
-      e.currentTarget.reset();
+      form.reset();
       await loadAll();
     } catch (e) {
       notifyError(textError(e, "Не удалось выдать подписку"));

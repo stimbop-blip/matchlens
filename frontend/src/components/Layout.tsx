@@ -44,7 +44,6 @@ export function Layout({ children }: PropsWithChildren) {
       <header className="topbar">
         <div className="brand-chip">MatchLens Elite</div>
         <h1>Спортивная аналитика без шума</h1>
-        <p>Премиальный dark-интерфейс, четкие сигналы и прозрачная статистика</p>
       </header>
 
       <main className="content">{children}</main>

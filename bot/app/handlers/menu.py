@@ -56,8 +56,7 @@ def _subscription_status_label(value: str) -> str:
     return value
 
 
-@router.message(F.text == "⚽ Бесплатные прогнозы")
-@router.message(F.text == "Бесплатные прогнозы")
+@router.message(F.text.regexp(r"^(?:⚽️?\s*)?Бесплатные прогнозы$"))
 async def free_predictions(message: Message) -> None:
     backend_client = get_backend_client()
     if not backend_client:
@@ -95,8 +94,7 @@ async def free_predictions(message: Message) -> None:
         await message.answer("\n".join(lines))
 
 
-@router.message(F.text == "📊 Статистика")
-@router.message(F.text == "Статистика")
+@router.message(F.text.regexp(r"^(?:📊\s*)?Статистика$"))
 async def stats(message: Message) -> None:
     backend_client = get_backend_client()
     if not backend_client:
@@ -126,8 +124,7 @@ async def stats(message: Message) -> None:
     )
 
 
-@router.message(F.text == "👤 Мой профиль")
-@router.message(F.text == "Мой профиль")
+@router.message(F.text.regexp(r"^(?:👤\s*)?Мой профиль$"))
 async def my_profile(message: Message) -> None:
     if not message.from_user:
         await message.answer("Профиль временно недоступен.")
@@ -159,8 +156,7 @@ async def my_profile(message: Message) -> None:
     )
 
 
-@router.message(F.text == "💎 Тарифы")
-@router.message(F.text == "Тарифы")
+@router.message(F.text.regexp(r"^(?:💎\s*)?Тарифы$"))
 async def tariffs(message: Message) -> None:
     backend_client = get_backend_client()
     items = await backend_client.get_tariffs() if backend_client else []
@@ -188,14 +184,12 @@ async def tariffs(message: Message) -> None:
     await message.answer("\n".join(lines))
 
 
-@router.message(F.text == "🔔 Уведомления")
-@router.message(F.text == "Уведомления")
+@router.message(F.text.regexp(r"^(?:🔔\s*)?Уведомления$"))
 async def notification_settings(message: Message) -> None:
     await message.answer(NOTIFICATIONS_TEXT)
 
 
-@router.message(F.text == "🛠 Админка")
-@router.message(F.text == "Админка")
+@router.message(F.text.regexp(r"^(?:🛠\s*)?Админка$"))
 async def admin_panel(message: Message) -> None:
     if not message.from_user or message.from_user.id not in settings.admin_ids():
         await message.answer("Эта секция доступна только администраторам.")
@@ -203,8 +197,7 @@ async def admin_panel(message: Message) -> None:
     await message.answer(ADMIN_TEXT)
 
 
-@router.message(F.text == "🛟 Поддержка")
-@router.message(F.text == "Поддержка")
+@router.message(F.text.regexp(r"^(?:🛟\s*)?Поддержка$"))
 async def support(message: Message) -> None:
     support_url = settings.bot_support_url.strip()
     if not support_url or "your_support" in support_url:
