@@ -131,6 +131,8 @@ def _legacy_action_map() -> dict[str, str]:
         button("en", "support"): "menu:support",
         button("ru", "admin"): "menu:admin",
         button("en", "admin"): "menu:admin",
+        button("ru", "about"): "menu:about",
+        button("en", "about"): "menu:about",
         "Меню": "menu:main",
         "Menu": "menu:main",
     }
@@ -254,7 +256,7 @@ async def _build_free_details_screen(language: str, user_id: int | None, detail_
     if short_description:
         lines.append(short_description)
     else:
-        lines.append(t(language, "profile_hint"))
+        lines.append(t(language, "free_details_fallback"))
 
     return (
         "\n".join(lines),
@@ -382,13 +384,11 @@ async def _build_tariffs_screen(language: str) -> tuple[str, InlineKeyboardMarku
         price = escape(str(item.get("price_rub", 0)))
         duration = escape(str(item.get("duration_days", 0)))
         tag = escape(str(data["tag"]))
-        raw_points = data.get("points", [])
-        points = cast(list[object], raw_points) if isinstance(raw_points, list) else []
-        features = "\n".join(f"• {escape(str(point))}" for point in points)
+        short = escape(str(data.get("short") or ""))
         lines.append(
             f"\n<b>{name}</b> — <i>{tag}</i>\n"
             f"{price} RUB • {duration} {t(language, 'tariffs_days')}\n"
-            f"{features}"
+            f"{short}"
         )
 
     lines.append(f"\n{t(language, 'tariffs_footer')}")
@@ -453,6 +453,17 @@ async def _build_admin_screen(language: str, user_id: int | None) -> tuple[str, 
     )
 
 
+async def _build_about_screen(language: str) -> tuple[str, InlineKeyboardMarkup]:
+    return (
+        f"{t(language, 'about_title')}\n\n{t(language, 'about_text')}",
+        section_nav_keyboard(
+            language=language,
+            back_callback="menu:main",
+            primary_button=(t(language, "open_mini_app"), settings.mini_app_url),
+        ),
+    )
+
+
 async def _build_screen(
     action: str,
     *,
@@ -483,6 +494,8 @@ async def _build_screen(
         return await _build_support_screen(language)
     if action == "menu:admin":
         return await _build_admin_screen(language, user_id)
+    if action == "menu:about":
+        return await _build_about_screen(language)
     return await _build_menu_screen(language, user_id)
 
 

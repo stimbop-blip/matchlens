@@ -7,6 +7,7 @@ from app.utils.texts import button, normalize_language, t
 def main_menu_keyboard(language: str = "ru", is_admin: bool = False) -> InlineKeyboardMarkup:
     lang = normalize_language(language)
     rows: list[list[InlineKeyboardButton]] = [
+        [InlineKeyboardButton(text=t(lang, "open_mini_app"), url=settings.mini_app_url)],
         [
             InlineKeyboardButton(text=button(lang, "free"), callback_data="menu:free"),
             InlineKeyboardButton(text=button(lang, "stats"), callback_data="menu:stats"),
@@ -19,11 +20,12 @@ def main_menu_keyboard(language: str = "ru", is_admin: bool = False) -> InlineKe
             InlineKeyboardButton(text=button(lang, "notifications"), callback_data="menu:notifications"),
             InlineKeyboardButton(text=button(lang, "support"), callback_data="menu:support"),
         ],
-        [InlineKeyboardButton(text=t(lang, "open_mini_app"), url=settings.mini_app_url)],
     ]
 
     if is_admin:
         rows.append([InlineKeyboardButton(text=button(lang, "admin"), callback_data="menu:admin")])
+
+    rows.append([InlineKeyboardButton(text=button(lang, "about"), callback_data="menu:about")])
 
     return InlineKeyboardMarkup(inline_keyboard=rows)
 

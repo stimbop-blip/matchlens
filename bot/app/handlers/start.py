@@ -1,3 +1,5 @@
+import contextlib
+
 from aiogram import Router
 from aiogram.filters import CommandStart
 from aiogram.types import Message
@@ -43,6 +45,9 @@ async def cmd_start(message: Message) -> None:
         preferences = await backend_client.get_user_preferences(user.id)
         if preferences:
             language = normalize_language(str(preferences.get("language") or language))
+
+    with contextlib.suppress(Exception):
+        await message.delete()
 
     await message.answer(
         t(language, "start_message"),
