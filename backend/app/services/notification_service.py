@@ -19,6 +19,8 @@ from app.models.user_settings import UserSettings
 logger = logging.getLogger(__name__)
 
 _LEVEL_PRIORITY = {"free": 0, "premium": 1, "vip": 2}
+_SUPPORTED_LANGUAGES = {"ru", "en"}
+_SUPPORTED_THEMES = {"dark", "light"}
 
 
 def _allowed_levels(access_level: str) -> set[str]:
@@ -143,6 +145,20 @@ def _news_preview(body: str) -> str:
     return f"{compact[:217].rstrip()}..."
 
 
+def _normalize_language(value: str | None) -> str:
+    candidate = (value or "").strip().lower()
+    if candidate in _SUPPORTED_LANGUAGES:
+        return candidate
+    return "ru"
+
+
+def _normalize_theme(value: str | None) -> str:
+    candidate = (value or "").strip().lower()
+    if candidate in _SUPPORTED_THEMES:
+        return candidate
+    return "dark"
+
+
 def _build_prediction_created_payload(prediction: Prediction) -> tuple[str, str]:
     access_level = prediction.access_level.value
     title = f"PIT BET • Новый прогноз • {_access_label(access_level)}"
@@ -199,6 +215,8 @@ def get_or_create_user_settings(db: Session, user: User) -> UserSettings:
         notify_results=True,
         notify_news=True,
         notify_subscription=True,
+        preferred_language=_normalize_language(user.language_code),
+        preferred_theme="dark",
     )
     db.add(settings)
     db.commit()
@@ -216,6 +234,35 @@ def get_notification_settings(db: Session, user: User) -> dict:
         "notify_results": bool(settings.notify_results),
         "notify_news": bool(settings.notify_news),
     }
+
+
+def get_user_preferences(db: Session, user: User) -> dict:
+    settings = get_or_create_user_settings(db, user)
+    language = _normalize_language(settings.preferred_language or user.language_code)
+    theme = _normalize_theme(settings.preferred_theme)
+    return {
+        "language": language,
+        "theme": theme,
+    }
+
+
+def update_user_preferences(db: Session, user: User, payload: dict) -> dict:
+    settings = get_or_create_user_settings(db, user)
+
+    if payload.get("language") is not None:
+        language = _normalize_language(str(payload.get("language")))
+        settings.preferred_language = language
+        user.language_code = language
+        db.add(user)
+
+    if payload.get("theme") is not None:
+        settings.preferred_theme = _normalize_theme(str(payload.get("theme")))
+
+    db.add(settings)
+    db.commit()
+    db.refresh(settings)
+    db.refresh(user)
+    return get_user_preferences(db, user)
 
 
 def update_notification_settings(db: Session, user: User, payload: dict) -> dict:

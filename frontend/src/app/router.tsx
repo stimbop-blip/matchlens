@@ -11,6 +11,7 @@ import { ResponsiblePage } from "../pages/ResponsiblePage";
 import { RulesPage } from "../pages/RulesPage";
 import { StatsPage } from "../pages/StatsPage";
 import { TariffsPage } from "../pages/TariffsPage";
+import { ThemePage } from "../pages/ThemePage";
 
 export function AppRouter() {
   return (
@@ -22,6 +23,7 @@ export function AppRouter() {
       <Route path="/profile" element={<ProfilePage />} />
       <Route path="/menu" element={<MenuPage />} />
       <Route path="/menu/language" element={<LanguagePage />} />
+      <Route path="/menu/theme" element={<ThemePage />} />
       <Route path="/news" element={<NewsPage />} />
       <Route path="/menu/rules" element={<RulesPage />} />
       <Route path="/menu/responsible" element={<ResponsiblePage />} />

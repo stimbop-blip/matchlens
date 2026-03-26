@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
+import { useLanguage } from "../app/language";
 import { Layout } from "../components/Layout";
 import {
   api,
@@ -14,15 +15,15 @@ import {
 
 type TabKey = "predictions" | "users" | "subscriptions" | "payments" | "news" | "promocodes" | "broadcasts" | "events";
 
-const TABS: Array<{ key: TabKey; label: string }> = [
-  { key: "predictions", label: "Прогнозы" },
-  { key: "users", label: "Пользователи" },
-  { key: "subscriptions", label: "Подписки" },
-  { key: "payments", label: "Платежи" },
-  { key: "news", label: "Новости" },
-  { key: "promocodes", label: "Промокоды" },
-  { key: "broadcasts", label: "Рассылки" },
-  { key: "events", label: "Статистика" },
+const TABS: Array<{ key: TabKey; ru: string; en: string }> = [
+  { key: "predictions", ru: "Прогнозы", en: "Predictions" },
+  { key: "users", ru: "Пользователи", en: "Users" },
+  { key: "subscriptions", ru: "Подписки", en: "Subscriptions" },
+  { key: "payments", ru: "Платежи", en: "Payments" },
+  { key: "news", ru: "Новости", en: "News" },
+  { key: "promocodes", ru: "Промокоды", en: "Promo codes" },
+  { key: "broadcasts", ru: "Рассылки", en: "Campaigns" },
+  { key: "events", ru: "Статистика", en: "Stats" },
 ];
 
 function textError(e: unknown, fallback: string): string {
@@ -30,22 +31,22 @@ function textError(e: unknown, fallback: string): string {
   return fallback;
 }
 
-function accessLabel(value: string): string {
-  if (value === "premium") return "Премиум";
+function accessLabel(value: string, language: "ru" | "en"): string {
+  if (value === "premium") return language === "ru" ? "Премиум" : "Premium";
   if (value === "vip") return "VIP";
-  return "Бесплатный";
+  return language === "ru" ? "Бесплатный" : "Free";
 }
 
-function statusLabel(value: string): string {
-  if (value === "won") return "Выигрыш";
-  if (value === "lost") return "Проигрыш";
-  if (value === "refund") return "Возврат";
-  if (value === "succeeded") return "Успешный";
-  if (value === "failed") return "Ошибка";
-  if (value === "canceled") return "Отменен";
-  if (value === "active") return "Активна";
-  if (value === "expired") return "Истекла";
-  return "В ожидании";
+function statusLabel(value: string, language: "ru" | "en"): string {
+  if (value === "won") return language === "ru" ? "Выигрыш" : "Won";
+  if (value === "lost") return language === "ru" ? "Проигрыш" : "Lost";
+  if (value === "refund") return language === "ru" ? "Возврат" : "Refund";
+  if (value === "succeeded") return language === "ru" ? "Успешный" : "Succeeded";
+  if (value === "failed") return language === "ru" ? "Ошибка" : "Failed";
+  if (value === "canceled") return language === "ru" ? "Отменен" : "Canceled";
+  if (value === "active") return language === "ru" ? "Активна" : "Active";
+  if (value === "expired") return language === "ru" ? "Истекла" : "Expired";
+  return language === "ru" ? "В ожидании" : "Pending";
 }
 
 function toDateTimeLocal(value: string | null | undefined): string {
@@ -57,6 +58,10 @@ function toDateTimeLocal(value: string | null | undefined): string {
 }
 
 export function AdminPage() {
+  const { language } = useLanguage();
+  const isRu = language === "ru";
+  const tx = (ru: string, en: string) => (isRu ? ru : en);
+
   const [tab, setTab] = useState<TabKey>("predictions");
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [message, setMessage] = useState("");
@@ -196,11 +201,11 @@ export function AdminPage() {
         status: String(formData.get("status") || "pending").replace("win", "won").replace("lose", "lost"),
         publish_now: true,
       });
-      notifySuccess("Прогноз создан");
+      notifySuccess(tx("Прогноз создан", "Prediction created"));
       form.reset();
       await loadAll();
     } catch (e) {
-      notifyError(textError(e, "Не удалось создать прогноз"));
+      notifyError(textError(e, tx("Не удалось создать прогноз", "Failed to create prediction")));
     } finally {
       setLoading(false);
     }
@@ -209,42 +214,46 @@ export function AdminPage() {
   const onUpdatePrediction = async (id: string, payload: Record<string, unknown>) => {
     try {
       await api.adminUpdatePrediction(id, payload);
-      notifySuccess("Прогноз обновлен");
+      notifySuccess(tx("Прогноз обновлен", "Prediction updated"));
       await loadAll();
     } catch (e) {
-      notifyError(textError(e, "Ошибка обновления прогноза"));
+      notifyError(textError(e, tx("Ошибка обновления прогноза", "Failed to update prediction")));
     }
   };
 
   const onDeletePrediction = async (id: string) => {
-    if (!window.confirm("Удалить прогноз из ленты?")) return;
+    if (!window.confirm(tx("Удалить прогноз из ленты?", "Delete prediction from feed?"))) return;
     try {
       await api.adminDeletePrediction(id);
-      notifySuccess("Прогноз удален");
+      notifySuccess(tx("Прогноз удален", "Prediction deleted"));
       await loadAll();
     } catch (e) {
-      notifyError(textError(e, "Ошибка удаления прогноза"));
+      notifyError(textError(e, tx("Ошибка удаления прогноза", "Failed to delete prediction")));
     }
   };
 
   const onUpdateRole = async (userId: string, role: "user" | "admin") => {
     try {
       await api.adminUpdateUserRole(userId, role);
-      notifySuccess(role === "admin" ? "Права администратора выданы" : "Права администратора сняты");
+      notifySuccess(
+        role === "admin"
+          ? tx("Права администратора выданы", "Admin permissions granted")
+          : tx("Права администратора сняты", "Admin permissions revoked")
+      );
       await loadAll();
     } catch (e) {
-      notifyError(textError(e, "Не удалось изменить роль"));
+      notifyError(textError(e, tx("Не удалось изменить роль", "Failed to update role")));
     }
   };
 
   const onDeleteUser = async (userId: string) => {
-    if (!window.confirm("Удалить пользователя? Действие необратимо.")) return;
+    if (!window.confirm(tx("Удалить пользователя? Действие необратимо.", "Delete user? This action is irreversible."))) return;
     try {
       await api.adminDeleteUser(userId);
-      notifySuccess("Пользователь удален");
+      notifySuccess(tx("Пользователь удален", "User deleted"));
       await loadAll();
     } catch (e) {
-      notifyError(textError(e, "Удаление пользователя недоступно"));
+      notifyError(textError(e, tx("Удаление пользователя недоступно", "User deletion is unavailable")));
     }
   };
 
@@ -261,11 +270,11 @@ export function AdminPage() {
         tariff_code: String(formData.get("tariff_code") || "free") as "free" | "premium" | "vip",
         duration_days: Number(formData.get("duration_days") || 30),
       });
-      notifySuccess("Подписка выдана");
+      notifySuccess(tx("Подписка выдана", "Subscription granted"));
       form.reset();
       await loadAll();
     } catch (e) {
-      notifyError(textError(e, "Не удалось выдать подписку"));
+      notifyError(textError(e, tx("Не удалось выдать подписку", "Failed to grant subscription")));
     }
   };
 
@@ -282,10 +291,10 @@ export function AdminPage() {
   const onPaymentStatus = async (paymentId: string, status: "pending" | "succeeded" | "failed" | "canceled") => {
     try {
       await api.adminUpdatePaymentStatus(paymentId, status);
-      notifySuccess("Статус платежа обновлен");
+      notifySuccess(tx("Статус платежа обновлен", "Payment status updated"));
       await loadAll();
     } catch (e) {
-      notifyError(textError(e, "Не удалось обновить платеж"));
+      notifyError(textError(e, tx("Не удалось обновить платеж", "Failed to update payment")));
     }
   };
 
@@ -299,32 +308,36 @@ export function AdminPage() {
         category: String(fd.get("category") || "news").trim(),
         is_published: fd.get("is_published") === "on",
       });
-      notifySuccess("Новость добавлена");
+      notifySuccess(tx("Новость добавлена", "News post created"));
       e.currentTarget.reset();
       await loadAll();
     } catch (e) {
-      notifyError(textError(e, "Не удалось добавить новость"));
+      notifyError(textError(e, tx("Не удалось добавить новость", "Failed to create news post")));
     }
   };
 
   const onToggleNews = async (item: NewsPost) => {
     try {
       await api.adminUpdateNews(item.id, { is_published: !item.is_published });
-      notifySuccess(item.is_published ? "Новость снята с публикации" : "Новость опубликована");
+      notifySuccess(
+        item.is_published
+          ? tx("Новость снята с публикации", "News post unpublished")
+          : tx("Новость опубликована", "News post published")
+      );
       await loadAll();
     } catch (e) {
-      notifyError(textError(e, "Не удалось обновить новость"));
+      notifyError(textError(e, tx("Не удалось обновить новость", "Failed to update news post")));
     }
   };
 
   const onDeleteNews = async (newsId: string) => {
-    if (!window.confirm("Удалить новость?")) return;
+    if (!window.confirm(tx("Удалить новость?", "Delete news post?"))) return;
     try {
       await api.adminDeleteNews(newsId);
-      notifySuccess("Новость удалена");
+      notifySuccess(tx("Новость удалена", "News post deleted"));
       await loadAll();
     } catch (e) {
-      notifyError(textError(e, "Не удалось удалить новость"));
+      notifyError(textError(e, tx("Не удалось удалить новость", "Failed to delete news post")));
     }
   };
 
@@ -346,46 +359,50 @@ export function AdminPage() {
         expires_at: expiresAtValue ? new Date(expiresAtValue).toISOString() : undefined,
         is_active: fd.get("is_active") === "on",
       });
-      notifySuccess("Промокод добавлен");
+      notifySuccess(tx("Промокод добавлен", "Promo code created"));
       e.currentTarget.reset();
       await loadAll();
     } catch (e) {
-      notifyError(textError(e, "Не удалось создать промокод"));
+      notifyError(textError(e, tx("Не удалось создать промокод", "Failed to create promo code")));
     }
   };
 
   const onTogglePromo = async (item: AdminPromoCode) => {
     try {
       await api.adminUpdatePromoCode(item.id, { is_active: !item.is_active });
-      notifySuccess(item.is_active ? "Промокод отключен" : "Промокод активирован");
+      notifySuccess(item.is_active ? tx("Промокод отключен", "Promo code disabled") : tx("Промокод активирован", "Promo code enabled"));
       await loadAll();
     } catch (e) {
-      notifyError(textError(e, "Не удалось обновить промокод"));
+      notifyError(textError(e, tx("Не удалось обновить промокод", "Failed to update promo code")));
     }
   };
 
   const onDeletePromo = async (id: string) => {
-    if (!window.confirm("Удалить промокод?")) return;
+    if (!window.confirm(tx("Удалить промокод?", "Delete promo code?"))) return;
     try {
       await api.adminDeletePromoCode(id);
-      notifySuccess("Промокод удален");
+      notifySuccess(tx("Промокод удален", "Promo code deleted"));
       await loadAll();
     } catch (e) {
-      notifyError(textError(e, "Не удалось удалить промокод"));
+      notifyError(textError(e, tx("Не удалось удалить промокод", "Failed to delete promo code")));
     }
   };
 
   const onDirectMessageUser = async (user: AdminUser) => {
-    const text = window.prompt(`Сообщение для @${user.username || user.telegram_id}:`);
+    const text = window.prompt(
+      tx(`Сообщение для @${user.username || user.telegram_id}:`, `Message for @${user.username || user.telegram_id}:`)
+    );
     if (!text || !text.trim()) return;
 
-    const buttonTextRaw = window.prompt("Текст кнопки (опционально). Оставьте пустым, если кнопка не нужна:") || "";
+    const buttonTextRaw = window.prompt(
+      tx("Текст кнопки (опционально). Оставьте пустым, если кнопка не нужна:", "Button text (optional). Leave empty for no button:")
+    ) || "";
     const buttonText = buttonTextRaw.trim();
     let buttonUrl: string | undefined;
     if (buttonText) {
-      const buttonUrlRaw = window.prompt("Ссылка кнопки (https://...):") || "";
+      const buttonUrlRaw = window.prompt(tx("Ссылка кнопки (https://...):", "Button URL (https://...):")) || "";
       if (!buttonUrlRaw.trim()) {
-        notifyError("Чтобы отправить кнопку, укажите ссылку");
+        notifyError(tx("Чтобы отправить кнопку, укажите ссылку", "Provide a URL to send a button"));
         return;
       }
       buttonUrl = buttonUrlRaw.trim();
@@ -393,19 +410,19 @@ export function AdminPage() {
 
     try {
       const result = await api.adminDirectSend({
-        title: "Сообщение от PIT BET",
+        title: tx("Сообщение от PIT BET", "Message from PIT BET"),
         message: text.trim(),
         user_id: user.id,
         button_text: buttonText || undefined,
         button_url: buttonUrl,
       });
       if (result.queued > 0) {
-        notifySuccess("Личное сообщение поставлено в очередь");
+        notifySuccess(tx("Личное сообщение поставлено в очередь", "Direct message queued"));
       } else {
-        notifyError("Не удалось поставить сообщение в очередь");
+        notifyError(tx("Не удалось поставить сообщение в очередь", "Failed to queue direct message"));
       }
     } catch (e) {
-      notifyError(textError(e, "Ошибка отправки личного сообщения"));
+      notifyError(textError(e, tx("Ошибка отправки личного сообщения", "Failed to send direct message")));
     }
   };
 
@@ -413,7 +430,7 @@ export function AdminPage() {
     const buttonText = campaignButtonText.trim();
     const buttonUrl = campaignButtonUrl.trim();
     if ((buttonText && !buttonUrl) || (!buttonText && buttonUrl)) {
-      notifyError("Для кнопки укажите и текст, и ссылку");
+      notifyError(tx("Для кнопки укажите и текст, и ссылку", "For button, provide both text and URL"));
       return;
     }
 
@@ -429,24 +446,24 @@ export function AdminPage() {
       });
       setCampaignPreviewCount(preview.count);
       setCampaignPreviewPayload(preview.preview || null);
-      notifyInfo(`Найдено получателей: ${preview.count}`);
+      notifyInfo(tx(`Найдено получателей: ${preview.count}`, `Recipients found: ${preview.count}`));
     } catch (e) {
-      notifyError(textError(e, "Не удалось сделать превью рассылки"));
+      notifyError(textError(e, tx("Не удалось сделать превью рассылки", "Failed to preview campaign")));
     }
   };
 
   const onCampaignSend = async () => {
     if (!campaignTitle.trim() || !campaignMessage.trim()) {
-      notifyError("Заполните заголовок и текст рассылки");
+      notifyError(tx("Заполните заголовок и текст рассылки", "Fill in campaign title and message"));
       return;
     }
     const buttonText = campaignButtonText.trim();
     const buttonUrl = campaignButtonUrl.trim();
     if ((buttonText && !buttonUrl) || (!buttonText && buttonUrl)) {
-      notifyError("Для кнопки укажите и текст, и ссылку");
+      notifyError(tx("Для кнопки укажите и текст, и ссылку", "For button, provide both text and URL"));
       return;
     }
-    if (!window.confirm("Подтвердить массовую рассылку?")) return;
+    if (!window.confirm(tx("Подтвердить массовую рассылку?", "Confirm mass campaign send?"))) return;
     try {
       const result = await api.adminCampaignSend({
         title: campaignTitle.trim(),
@@ -457,7 +474,7 @@ export function AdminPage() {
         button_text: buttonText || undefined,
         button_url: buttonUrl || undefined,
       });
-      notifySuccess(`Рассылка поставлена в очередь: ${result.queued}`);
+      notifySuccess(tx(`Рассылка поставлена в очередь: ${result.queued}`, `Campaign queued: ${result.queued}`));
       setCampaignTitle("");
       setCampaignMessage("");
       setCampaignButtonText("");
@@ -465,7 +482,7 @@ export function AdminPage() {
       setCampaignPreviewCount(null);
       setCampaignPreviewPayload(null);
     } catch (e) {
-      notifyError(textError(e, "Не удалось запустить рассылку"));
+      notifyError(textError(e, tx("Не удалось запустить рассылку", "Failed to start campaign")));
     }
   };
 
@@ -473,8 +490,8 @@ export function AdminPage() {
     return (
       <Layout>
         <section className="card">
-          <h2>Админка</h2>
-          <p className="empty-state">Доступ открыт только администраторам.</p>
+          <h2>{tx("Админка", "Admin")}</h2>
+          <p className="empty-state">{tx("Доступ открыт только администраторам.", "Access is available to admins only.")}</p>
         </section>
       </Layout>
     );
@@ -484,89 +501,89 @@ export function AdminPage() {
     <Layout>
       <section className="card">
         <div className="section-head">
-          <h2>Админка управления</h2>
-          <span className="muted">Ручное управление контентом и доступом</span>
+          <h2>{tx("Админка управления", "Admin control panel")}</h2>
+          <span className="muted">{tx("Ручное управление контентом и доступом", "Manual content and access operations")}</span>
         </div>
 
         <div className="admin-tabs">
           {TABS.map((item) => (
             <button key={item.key} className={tab === item.key ? "tab active" : "tab"} onClick={() => setTab(item.key)}>
-              {item.label}
+              {isRu ? item.ru : item.en}
             </button>
           ))}
         </div>
 
         {message ? <p className={`notice admin-toast ${messageTone}`}>{message}</p> : null}
-        {loading ? <p className="muted">Обновляем данные...</p> : null}
+        {loading ? <p className="muted">{tx("Обновляем данные...", "Refreshing data...")}</p> : null}
 
         {tab === "predictions" ? (
           <div className="admin-panel">
-            <h3>Прогнозы</h3>
+            <h3>{tx("Прогнозы", "Predictions")}</h3>
             <form className="admin-form" onSubmit={onCreatePrediction}>
-              <input name="title" placeholder="Заголовок (необязательно)" />
-              <input name="match_name" placeholder="Матч" required />
-              <input name="league" placeholder="Лига" required />
-              <input name="sport_type" placeholder="Вид спорта" defaultValue="football" required />
+              <input name="title" placeholder={tx("Заголовок (необязательно)", "Title (optional)")} />
+              <input name="match_name" placeholder={tx("Матч", "Match")} required />
+              <input name="league" placeholder={tx("Лига", "League")} required />
+              <input name="sport_type" placeholder={tx("Вид спорта", "Sport type")} defaultValue="football" required />
               <input name="event_start_at" type="datetime-local" required />
-              <input name="signal_type" placeholder="Тип сигнала" required />
+              <input name="signal_type" placeholder={tx("Тип сигнала", "Signal type")} required />
               <input name="odds" type="number" min="1.01" step="0.01" defaultValue="1.80" required />
               <div className="admin-grid-3">
                 <select name="risk_level" defaultValue="medium">
-                  <option value="low">Риск: низкий</option>
-                  <option value="medium">Риск: средний</option>
-                  <option value="high">Риск: высокий</option>
+                  <option value="low">{tx("Риск: низкий", "Risk: low")}</option>
+                  <option value="medium">{tx("Риск: средний", "Risk: medium")}</option>
+                  <option value="high">{tx("Риск: высокий", "Risk: high")}</option>
                 </select>
                 <select name="access_level" defaultValue="free">
-                  <option value="free">Доступ: Бесплатный</option>
-                  <option value="premium">Доступ: Премиум</option>
-                  <option value="vip">Доступ: VIP</option>
+                  <option value="free">{tx("Доступ: Бесплатный", "Access: Free")}</option>
+                  <option value="premium">{tx("Доступ: Премиум", "Access: Premium")}</option>
+                  <option value="vip">{tx("Доступ: VIP", "Access: VIP")}</option>
                 </select>
                 <select name="mode" defaultValue="prematch">
-                  <option value="prematch">Формат: Прематч</option>
-                  <option value="live">Формат: Лайв</option>
+                  <option value="prematch">{tx("Формат: Прематч", "Mode: Prematch")}</option>
+                  <option value="live">{tx("Формат: Лайв", "Mode: Live")}</option>
                 </select>
               </div>
               <select name="status" defaultValue="pending">
-                <option value="pending">Статус: в ожидании</option>
-                <option value="win">Статус: выигрыш</option>
-                <option value="lose">Статус: проигрыш</option>
-                <option value="refund">Статус: возврат</option>
+                <option value="pending">{tx("Статус: в ожидании", "Status: pending")}</option>
+                <option value="win">{tx("Статус: выигрыш", "Status: won")}</option>
+                <option value="lose">{tx("Статус: проигрыш", "Status: lost")}</option>
+                <option value="refund">{tx("Статус: возврат", "Status: refund")}</option>
               </select>
-              <textarea name="short_description" placeholder="Краткое описание" rows={3} />
+              <textarea name="short_description" placeholder={tx("Краткое описание", "Short description")} rows={3} />
               <button className="btn" type="submit">
-                Добавить прогноз
+                {tx("Добавить прогноз", "Create prediction")}
               </button>
             </form>
 
-            <input value={predQuery} onChange={(e) => setPredQuery(e.target.value)} placeholder="Поиск по матчу / сигналу" />
+            <input value={predQuery} onChange={(e) => setPredQuery(e.target.value)} placeholder={tx("Поиск по матчу / сигналу", "Search by match / signal")} />
             <div className="admin-list">
               {visiblePredictions.slice(0, 80).map((item) => (
                 <article key={item.id} className="prediction-card admin-item">
                   <div className="prediction-top">
                     <strong>{item.match_name}</strong>
-                    <span className={`access-pill ${item.access_level}`}>{accessLabel(item.access_level)}</span>
+                    <span className={`access-pill ${item.access_level}`}>{accessLabel(item.access_level, language)}</span>
                   </div>
-                  <p className="muted">{item.signal_type} • кф {item.odds} • {item.mode === "live" ? "Лайв" : "Прематч"}</p>
+                  <p className="muted">{item.signal_type} • {tx("кф", "odds")} {item.odds} • {item.mode === "live" ? "Live" : tx("Прематч", "Prematch")}</p>
                   <div className="admin-grid-3">
                     <select defaultValue={item.status} onChange={(e) => onUpdatePrediction(item.id, { status: e.target.value })}>
-                      <option value="pending">В ожидании</option>
-                      <option value="won">Выигрыш</option>
-                      <option value="lost">Проигрыш</option>
-                      <option value="refund">Возврат</option>
+                      <option value="pending">{tx("В ожидании", "Pending")}</option>
+                      <option value="won">{tx("Выигрыш", "Won")}</option>
+                      <option value="lost">{tx("Проигрыш", "Lost")}</option>
+                      <option value="refund">{tx("Возврат", "Refund")}</option>
                     </select>
                     <select defaultValue={item.access_level} onChange={(e) => onUpdatePrediction(item.id, { access_level: e.target.value })}>
-                      <option value="free">Бесплатный</option>
-                      <option value="premium">Премиум</option>
+                      <option value="free">{tx("Бесплатный", "Free")}</option>
+                      <option value="premium">{tx("Премиум", "Premium")}</option>
                       <option value="vip">VIP</option>
                     </select>
                     <input type="number" step="0.01" min="1.01" defaultValue={item.odds} onBlur={(e) => onUpdatePrediction(item.id, { odds: Number(e.target.value) })} />
                   </div>
                   <div className="cta-row">
                     <button className="btn ghost" type="button" onClick={() => setEditingPredictionId(item.id)}>
-                      Редактировать
+                      {tx("Редактировать", "Edit")}
                     </button>
                     <button className="btn danger" type="button" onClick={() => onDeletePrediction(item.id)}>
-                      Удалить
+                      {tx("Удалить", "Delete")}
                     </button>
                   </div>
                   {editingPredictionId === item.id ? (
@@ -583,11 +600,11 @@ export function AdminPage() {
                         setEditingPredictionId(null);
                       }}
                     >
-                      <input name="title" defaultValue={item.title} placeholder="Заголовок" />
-                      <input name="league" defaultValue={item.league || ""} placeholder="Лига" />
+                      <input name="title" defaultValue={item.title} placeholder={tx("Заголовок", "Title")} />
+                      <input name="league" defaultValue={item.league || ""} placeholder={tx("Лига", "League")} />
                       <textarea name="short_description" defaultValue={item.short_description || ""} rows={3} />
                       <button className="btn" type="submit">
-                        Сохранить изменения
+                        {tx("Сохранить изменения", "Save changes")}
                       </button>
                     </form>
                   ) : null}
@@ -599,13 +616,13 @@ export function AdminPage() {
 
         {tab === "users" ? (
           <div className="admin-panel">
-            <h3>Пользователи</h3>
+            <h3>{tx("Пользователи", "Users")}</h3>
             <div className="filter-row">
-              <input value={usersQuery} onChange={(e) => setUsersQuery(e.target.value)} placeholder="Поиск по telegram_id / username" />
+              <input value={usersQuery} onChange={(e) => setUsersQuery(e.target.value)} placeholder={tx("Поиск по telegram_id / username", "Search by telegram_id / username")} />
               <select value={usersRoleFilter} onChange={(e) => setUsersRoleFilter(e.target.value)}>
-                <option value="all">Все роли</option>
-                <option value="user">Пользователь</option>
-                <option value="admin">Администратор</option>
+                <option value="all">{tx("Все роли", "All roles")}</option>
+                <option value="user">{tx("Пользователь", "User")}</option>
+                <option value="admin">{tx("Администратор", "Admin")}</option>
               </select>
             </div>
             <div className="admin-list">
@@ -614,53 +631,53 @@ export function AdminPage() {
                 return (
                   <article key={user.id} className="prediction-card admin-item">
                     <div className="prediction-top">
-                      <strong>{user.first_name || "Без имени"}</strong>
-                      <span className={user.role === "admin" ? "badge success" : "badge"}>{user.role === "admin" ? "администратор" : "пользователь"}</span>
+                      <strong>{user.first_name || tx("Без имени", "No name")}</strong>
+                      <span className={user.role === "admin" ? "badge success" : "badge"}>{user.role === "admin" ? tx("администратор", "admin") : tx("пользователь", "user")}</span>
                     </div>
                     <p className="muted">@{user.username || "-"} • tg: {user.telegram_id}</p>
-                    <p className="muted">Тариф: {accessLabel(user.tariff)} • до: {user.subscription_ends_at || "—"}</p>
+                    <p className="muted">{tx("Тариф", "Tariff")}: {accessLabel(user.tariff, language)} • {tx("до", "until")}: {user.subscription_ends_at || "—"}</p>
                     <p className="muted">
-                      Рефкод: {user.referral_code || "—"} • приглашено: {user.referrals_invited ?? 0} • активировано: {user.referrals_activated ?? 0} • бонусных дней: {user.referral_bonus_days ?? 0}
+                      {tx("Рефкод", "Referral code")}: {user.referral_code || "—"} • {tx("приглашено", "invited")}: {user.referrals_invited ?? 0} • {tx("активировано", "activated")}: {user.referrals_activated ?? 0} • {tx("бонусных дней", "bonus days")}: {user.referral_bonus_days ?? 0}
                     </p>
                     <div className="cta-row wrap">
                       {user.role === "admin" ? (
-                        <button className="btn ghost" onClick={() => onUpdateRole(user.id, "user")}>Снять админку</button>
+                        <button className="btn ghost" onClick={() => onUpdateRole(user.id, "user")}>{tx("Снять админку", "Revoke admin")}</button>
                       ) : (
-                        <button className="btn" onClick={() => onUpdateRole(user.id, "admin")}>Выдать админку</button>
+                        <button className="btn" onClick={() => onUpdateRole(user.id, "admin")}>{tx("Выдать админку", "Grant admin")}</button>
                       )}
                       <button
                         className="btn ghost"
                         onClick={() =>
                           onSubAction(
                             () => api.adminGrantSubscription({ user_id: user.id, tariff_code: "premium", duration_days: 30 }),
-                            "Премиум выдан на 30 дней",
-                            "Не удалось выдать Премиум"
+                            tx("Премиум выдан на 30 дней", "Premium granted for 30 days"),
+                            tx("Не удалось выдать Премиум", "Failed to grant Premium")
                           )
                         }
                       >
-                        Выдать Премиум
+                        {tx("Выдать Премиум", "Grant Premium")}
                       </button>
                       <button
                         className="btn ghost"
                         onClick={() =>
                           onSubAction(
                             () => api.adminGrantSubscription({ user_id: user.id, tariff_code: "vip", duration_days: 30 }),
-                            "VIP выдан на 30 дней",
-                            "Не удалось выдать VIP"
+                            tx("VIP выдан на 30 дней", "VIP granted for 30 days"),
+                            tx("Не удалось выдать VIP", "Failed to grant VIP")
                           )
                         }
                       >
-                        Выдать VIP
+                        {tx("Выдать VIP", "Grant VIP")}
                       </button>
                       {latestSub ? (
                         <>
-                          <button className="btn" onClick={() => onSubAction(() => api.adminExtendSubscription(latestSub.id, 30), "Подписка продлена на 30 дней", "Не удалось продлить")}>Продлить +30</button>
-                          <button className="btn" onClick={() => onSubAction(() => api.adminChangeSubscriptionTariff(latestSub.id, { tariff_code: "free" }), "Тариф переведен на бесплатный", "Не удалось сменить тариф")}>На бесплатный</button>
-                          <button className="btn danger" onClick={() => onSubAction(() => api.adminCancelSubscription(latestSub.id), "Подписка отменена", "Не удалось отменить")}>Отменить подписку</button>
+                          <button className="btn" onClick={() => onSubAction(() => api.adminExtendSubscription(latestSub.id, 30), tx("Подписка продлена на 30 дней", "Subscription extended by 30 days"), tx("Не удалось продлить", "Failed to extend"))}>{tx("Продлить +30", "Extend +30")}</button>
+                          <button className="btn" onClick={() => onSubAction(() => api.adminChangeSubscriptionTariff(latestSub.id, { tariff_code: "free" }), tx("Тариф переведен на бесплатный", "Tariff switched to Free"), tx("Не удалось сменить тариф", "Failed to switch tariff"))}>{tx("На бесплатный", "Switch to Free")}</button>
+                          <button className="btn danger" onClick={() => onSubAction(() => api.adminCancelSubscription(latestSub.id), tx("Подписка отменена", "Subscription canceled"), tx("Не удалось отменить", "Failed to cancel"))}>{tx("Отменить подписку", "Cancel subscription")}</button>
                         </>
                       ) : null}
-                      <button className="btn danger" onClick={() => onDeleteUser(user.id)}>Удалить</button>
-                      <button className="btn" onClick={() => onDirectMessageUser(user)}>Сообщение</button>
+                      <button className="btn danger" onClick={() => onDeleteUser(user.id)}>{tx("Удалить", "Delete")}</button>
+                      <button className="btn" onClick={() => onDirectMessageUser(user)}>{tx("Сообщение", "Message")}</button>
                     </div>
                   </article>
                 );
@@ -671,30 +688,30 @@ export function AdminPage() {
 
         {tab === "subscriptions" ? (
           <div className="admin-panel">
-            <h3>Подписки</h3>
+            <h3>{tx("Подписки", "Subscriptions")}</h3>
             <form className="admin-form" onSubmit={onGrantSubscription}>
               <div className="admin-grid-2">
-                <input name="user_id" placeholder="user_id (или оставьте пустым)" />
+                <input name="user_id" placeholder={tx("user_id (или оставьте пустым)", "user_id (or leave empty)")} />
                 <input name="telegram_id" placeholder="telegram_id" />
               </div>
               <div className="admin-grid-3">
                 <select name="tariff_code" defaultValue="premium">
-                  <option value="free">Бесплатный</option>
-                  <option value="premium">Премиум</option>
+                  <option value="free">{tx("Бесплатный", "Free")}</option>
+                  <option value="premium">{tx("Премиум", "Premium")}</option>
                   <option value="vip">VIP</option>
                 </select>
                 <input name="duration_days" type="number" min="1" defaultValue="30" />
-                <button className="btn" type="submit">Выдать подписку</button>
+                <button className="btn" type="submit">{tx("Выдать подписку", "Grant subscription")}</button>
               </div>
             </form>
 
             <div className="filter-row">
-              <input value={subQuery} onChange={(e) => setSubQuery(e.target.value)} placeholder="Поиск по пользователю" />
+              <input value={subQuery} onChange={(e) => setSubQuery(e.target.value)} placeholder={tx("Поиск по пользователю", "Search by user")} />
               <select value={subStatusFilter} onChange={(e) => setSubStatusFilter(e.target.value)}>
-                <option value="all">Все статусы</option>
-                <option value="active">Активна</option>
-                <option value="expired">Истекла</option>
-                <option value="canceled">Отменена</option>
+                <option value="all">{tx("Все статусы", "All statuses")}</option>
+                <option value="active">{tx("Активна", "Active")}</option>
+                <option value="expired">{tx("Истекла", "Expired")}</option>
+                <option value="canceled">{tx("Отменена", "Canceled")}</option>
               </select>
             </div>
 
@@ -703,15 +720,15 @@ export function AdminPage() {
                 <article key={sub.id} className="prediction-card admin-item">
                   <div className="prediction-top">
                     <strong>@{sub.username || sub.telegram_id}</strong>
-                    <span className={`access-pill ${sub.tariff_code}`}>{accessLabel(sub.tariff_code)}</span>
+                    <span className={`access-pill ${sub.tariff_code}`}>{accessLabel(sub.tariff_code, language)}</span>
                   </div>
-                  <p className="muted">{statusLabel(sub.status)} • до {new Date(sub.ends_at).toLocaleDateString("ru-RU")}</p>
+                  <p className="muted">{statusLabel(sub.status, language)} • {tx("до", "until")} {new Date(sub.ends_at).toLocaleDateString(isRu ? "ru-RU" : "en-US")}</p>
                   <div className="cta-row wrap">
-                    <button className="btn ghost" onClick={() => onSubAction(() => api.adminExtendSubscription(sub.id, 7), "Подписка продлена на 7 дней", "Не удалось продлить")}>+7 дней</button>
-                    <button className="btn ghost" onClick={() => onSubAction(() => api.adminExtendSubscription(sub.id, 30), "Подписка продлена на 30 дней", "Не удалось продлить")}>+30 дней</button>
-                    <button className="btn" onClick={() => onSubAction(() => api.adminChangeSubscriptionTariff(sub.id, { tariff_code: "premium" }), "Тариф обновлен", "Не удалось сменить тариф")}>На Премиум</button>
-                    <button className="btn" onClick={() => onSubAction(() => api.adminChangeSubscriptionTariff(sub.id, { tariff_code: "vip" }), "Тариф обновлен", "Не удалось сменить тариф")}>На VIP</button>
-                    <button className="btn danger" onClick={() => onSubAction(() => api.adminCancelSubscription(sub.id), "Подписка отменена", "Не удалось отменить подписку")}>Отменить</button>
+                    <button className="btn ghost" onClick={() => onSubAction(() => api.adminExtendSubscription(sub.id, 7), tx("Подписка продлена на 7 дней", "Subscription extended by 7 days"), tx("Не удалось продлить", "Failed to extend"))}>{tx("+7 дней", "+7 days")}</button>
+                    <button className="btn ghost" onClick={() => onSubAction(() => api.adminExtendSubscription(sub.id, 30), tx("Подписка продлена на 30 дней", "Subscription extended by 30 days"), tx("Не удалось продлить", "Failed to extend"))}>{tx("+30 дней", "+30 days")}</button>
+                    <button className="btn" onClick={() => onSubAction(() => api.adminChangeSubscriptionTariff(sub.id, { tariff_code: "premium" }), tx("Тариф обновлен", "Tariff updated"), tx("Не удалось сменить тариф", "Failed to switch tariff"))}>{tx("На Премиум", "Switch to Premium")}</button>
+                    <button className="btn" onClick={() => onSubAction(() => api.adminChangeSubscriptionTariff(sub.id, { tariff_code: "vip" }), tx("Тариф обновлен", "Tariff updated"), tx("Не удалось сменить тариф", "Failed to switch tariff"))}>{tx("На VIP", "Switch to VIP")}</button>
+                    <button className="btn danger" onClick={() => onSubAction(() => api.adminCancelSubscription(sub.id), tx("Подписка отменена", "Subscription canceled"), tx("Не удалось отменить подписку", "Failed to cancel subscription"))}>{tx("Отменить", "Cancel")}</button>
                   </div>
                 </article>
               ))}
@@ -721,29 +738,29 @@ export function AdminPage() {
 
         {tab === "payments" ? (
           <div className="admin-panel">
-            <h3>Платежи</h3>
+            <h3>{tx("Платежи", "Payments")}</h3>
             <div className="filter-row">
-              <input value={paymentQuery} onChange={(e) => setPaymentQuery(e.target.value)} placeholder="Поиск по пользователю" />
+              <input value={paymentQuery} onChange={(e) => setPaymentQuery(e.target.value)} placeholder={tx("Поиск по пользователю", "Search by user")} />
               <select value={paymentStatusFilter} onChange={(e) => setPaymentStatusFilter(e.target.value)}>
-                <option value="all">Все статусы</option>
-                <option value="pending">В ожидании</option>
-                <option value="succeeded">Успешный</option>
-                <option value="failed">Ошибка</option>
-                <option value="canceled">Отменен</option>
+                <option value="all">{tx("Все статусы", "All statuses")}</option>
+                <option value="pending">{tx("В ожидании", "Pending")}</option>
+                <option value="succeeded">{tx("Успешный", "Succeeded")}</option>
+                <option value="failed">{tx("Ошибка", "Failed")}</option>
+                <option value="canceled">{tx("Отменен", "Canceled")}</option>
               </select>
             </div>
             <div className="admin-list">
               {payments.map((payment) => (
                 <article key={payment.id} className="prediction-card admin-item">
                   <div className="prediction-top">
-                    <strong>{payment.amount_rub} RUB • {accessLabel(payment.tariff_code)}</strong>
-                    <span className={`badge ${payment.status}`}>{statusLabel(payment.status)}</span>
+                    <strong>{payment.amount_rub} RUB • {accessLabel(payment.tariff_code, language)}</strong>
+                    <span className={`badge ${payment.status}`}>{statusLabel(payment.status, language)}</span>
                   </div>
                   <p className="muted">@{payment.username || "-"} • tg: {payment.telegram_id}</p>
                   <p className="muted">order: {payment.provider_order_id}</p>
                   <div className="admin-grid-2">
-                    <button className="btn" onClick={() => onPaymentStatus(payment.id, "succeeded")}>Пометить успешным</button>
-                    <button className="btn danger" onClick={() => onPaymentStatus(payment.id, "failed")}>Пометить ошибкой</button>
+                    <button className="btn" onClick={() => onPaymentStatus(payment.id, "succeeded")}>{tx("Пометить успешным", "Mark succeeded")}</button>
+                    <button className="btn danger" onClick={() => onPaymentStatus(payment.id, "failed")}>{tx("Пометить ошибкой", "Mark failed")}</button>
                   </div>
                 </article>
               ))}
@@ -753,18 +770,18 @@ export function AdminPage() {
 
         {tab === "news" ? (
           <div className="admin-panel">
-            <h3>Новости PIT BET</h3>
+            <h3>{tx("Новости PIT BET", "PIT BET News")}</h3>
             <form className="admin-form" onSubmit={onCreateNews}>
-              <input name="title" placeholder="Заголовок" required />
-              <textarea name="body" placeholder="Текст новости" rows={4} required />
+              <input name="title" placeholder={tx("Заголовок", "Title")} required />
+              <textarea name="body" placeholder={tx("Текст новости", "News text")} rows={4} required />
               <div className="admin-grid-3">
-                <input name="category" placeholder="Категория" defaultValue="news" />
+                <input name="category" placeholder={tx("Категория", "Category")} defaultValue="news" />
                 <label className="switch-row" style={{ padding: "0 4px" }}>
-                  <span>Опубликовать сразу</span>
+                  <span>{tx("Опубликовать сразу", "Publish immediately")}</span>
                   <input name="is_published" type="checkbox" defaultChecked />
                 </label>
                 <button className="btn" type="submit">
-                  Добавить новость
+                  {tx("Добавить новость", "Create news")}
                 </button>
               </div>
             </form>
@@ -774,16 +791,16 @@ export function AdminPage() {
                 <article key={item.id} className="prediction-card admin-item">
                   <div className="prediction-top">
                     <strong>{item.title}</strong>
-                    <span className={`badge ${item.is_published ? "success" : "pending"}`}>{item.is_published ? "Опубликовано" : "Черновик"}</span>
+                    <span className={`badge ${item.is_published ? "success" : "pending"}`}>{item.is_published ? tx("Опубликовано", "Published") : tx("Черновик", "Draft")}</span>
                   </div>
-                  <p className="muted">Категория: {item.category} • {item.published_at ? new Date(item.published_at).toLocaleString("ru-RU") : "без даты публикации"}</p>
+                  <p className="muted">{tx("Категория", "Category")}: {item.category} • {item.published_at ? new Date(item.published_at).toLocaleString(isRu ? "ru-RU" : "en-US") : tx("без даты публикации", "no publish date")}</p>
                   <p className="stacked">{item.body}</p>
                   <div className="cta-row wrap">
                     <button className="btn ghost" onClick={() => onToggleNews(item)}>
-                      {item.is_published ? "Снять с публикации" : "Опубликовать"}
+                      {item.is_published ? tx("Снять с публикации", "Unpublish") : tx("Опубликовать", "Publish")}
                     </button>
                     <button className="btn danger" onClick={() => onDeleteNews(item.id)}>
-                      Удалить
+                      {tx("Удалить", "Delete")}
                     </button>
                   </div>
                 </article>
@@ -794,36 +811,36 @@ export function AdminPage() {
 
         {tab === "promocodes" ? (
           <div className="admin-panel">
-            <h3>Промокоды</h3>
+            <h3>{tx("Промокоды", "Promo codes")}</h3>
             <form className="admin-form" onSubmit={onCreatePromo}>
-              <input name="code" placeholder="Код (например PIT20)" required />
-              <input name="title" placeholder="Название для админки" required />
-              <textarea name="description" placeholder="Комментарий" rows={2} />
+              <input name="code" placeholder={tx("Код (например PIT20)", "Code (e.g. PIT20)")} required />
+              <input name="title" placeholder={tx("Название для админки", "Admin title")} required />
+              <textarea name="description" placeholder={tx("Комментарий", "Comment")} rows={2} />
               <div className="admin-grid-3">
                 <select name="kind" defaultValue="percent_discount">
-                  <option value="percent_discount">Скидка в процентах</option>
-                  <option value="fixed_discount">Фиксированная скидка</option>
-                  <option value="extra_days">Бонусные дни</option>
-                  <option value="free_access">Бесплатный доступ</option>
+                  <option value="percent_discount">{tx("Скидка в процентах", "Percent discount")}</option>
+                  <option value="fixed_discount">{tx("Фиксированная скидка", "Fixed discount")}</option>
+                  <option value="extra_days">{tx("Бонусные дни", "Bonus days")}</option>
+                  <option value="free_access">{tx("Бесплатный доступ", "Free access")}</option>
                 </select>
-                <input name="value" type="number" min="0" defaultValue="20" placeholder="Значение" required />
+                <input name="value" type="number" min="0" defaultValue="20" placeholder={tx("Значение", "Value")} required />
                 <select name="tariff_code" defaultValue="premium">
-                  <option value="">Любой тариф</option>
+                  <option value="">{tx("Любой тариф", "Any tariff")}</option>
                   <option value="free">Free</option>
                   <option value="premium">Premium</option>
                   <option value="vip">VIP</option>
                 </select>
               </div>
               <div className="admin-grid-3">
-                <input name="max_activations" type="number" min="1" placeholder="Лимит активаций" />
-                <input name="expires_at" type="datetime-local" placeholder="Срок действия" />
+                <input name="max_activations" type="number" min="1" placeholder={tx("Лимит активаций", "Activation limit")} />
+                <input name="expires_at" type="datetime-local" placeholder={tx("Срок действия", "Expires at")} />
                 <label className="switch-row" style={{ padding: "0 4px" }}>
-                  <span>Активен</span>
+                  <span>{tx("Активен", "Active")}</span>
                   <input name="is_active" type="checkbox" defaultChecked />
                 </label>
               </div>
               <button className="btn" type="submit">
-                Создать промокод
+                {tx("Создать промокод", "Create promo code")}
               </button>
             </form>
 
@@ -832,17 +849,17 @@ export function AdminPage() {
                 <article key={promo.id} className="prediction-card admin-item">
                   <div className="prediction-top">
                     <strong>{promo.code}</strong>
-                    <span className={`badge ${promo.is_active ? "success" : "lost"}`}>{promo.is_active ? "Активен" : "Отключен"}</span>
+                    <span className={`badge ${promo.is_active ? "success" : "lost"}`}>{promo.is_active ? tx("Активен", "Active") : tx("Отключен", "Disabled")}</span>
                   </div>
                   <p className="muted">
-                    {promo.title} • тип: {promo.kind} • значение: {promo.value}
+                    {promo.title} • {tx("тип", "kind")}: {promo.kind} • {tx("значение", "value")}: {promo.value}
                   </p>
                   <p className="muted">
-                    Тариф: {promo.tariff_code ? accessLabel(promo.tariff_code) : "любой"} • активации: {promo.activations}
+                    {tx("Тариф", "Tariff")}: {promo.tariff_code ? accessLabel(promo.tariff_code, language) : tx("любой", "any")} • {tx("активации", "activations")}: {promo.activations}
                     {promo.max_activations ? `/${promo.max_activations}` : ""}
                   </p>
                   <p className="muted">
-                    Действует до: {promo.expires_at ? new Date(promo.expires_at).toLocaleString("ru-RU") : "без ограничения"}
+                    {tx("Действует до", "Valid until")}: {promo.expires_at ? new Date(promo.expires_at).toLocaleString(isRu ? "ru-RU" : "en-US") : tx("без ограничения", "no limit")}
                   </p>
                   <div className="admin-grid-3">
                     <input
@@ -855,10 +872,10 @@ export function AdminPage() {
                         void api
                           .adminUpdatePromoCode(promo.id, { value: nextValue })
                           .then(async () => {
-                            notifySuccess("Значение промокода обновлено");
+                            notifySuccess(tx("Значение промокода обновлено", "Promo code value updated"));
                             await loadAll();
                           })
-                          .catch((err) => notifyError(textError(err, "Не удалось обновить значение")));
+                          .catch((err) => notifyError(textError(err, tx("Не удалось обновить значение", "Failed to update value"))));
                       }}
                     />
                     <select
@@ -869,16 +886,16 @@ export function AdminPage() {
                         void api
                           .adminUpdatePromoCode(promo.id, { kind: nextKind })
                           .then(async () => {
-                            notifySuccess("Тип промокода обновлен");
+                            notifySuccess(tx("Тип промокода обновлен", "Promo code type updated"));
                             await loadAll();
                           })
-                          .catch((err) => notifyError(textError(err, "Не удалось обновить тип")));
+                          .catch((err) => notifyError(textError(err, tx("Не удалось обновить тип", "Failed to update type"))));
                       }}
                     >
-                      <option value="percent_discount">% скидка</option>
-                      <option value="fixed_discount">фикс. скидка</option>
-                      <option value="extra_days">бонусные дни</option>
-                      <option value="free_access">бесплатный доступ</option>
+                      <option value="percent_discount">{tx("% скидка", "% discount")}</option>
+                      <option value="fixed_discount">{tx("фикс. скидка", "fixed discount")}</option>
+                      <option value="extra_days">{tx("бонусные дни", "bonus days")}</option>
+                      <option value="free_access">{tx("бесплатный доступ", "free access")}</option>
                     </select>
                     <input
                       type="datetime-local"
@@ -888,19 +905,19 @@ export function AdminPage() {
                         void api
                           .adminUpdatePromoCode(promo.id, { expires_at: value ? new Date(value).toISOString() : undefined })
                           .then(async () => {
-                            notifySuccess("Срок действия обновлен");
+                            notifySuccess(tx("Срок действия обновлен", "Expiration updated"));
                             await loadAll();
                           })
-                          .catch((err) => notifyError(textError(err, "Не удалось обновить срок")));
+                          .catch((err) => notifyError(textError(err, tx("Не удалось обновить срок", "Failed to update expiration"))));
                       }}
                     />
                   </div>
                   <div className="cta-row wrap">
                     <button className="btn ghost" onClick={() => onTogglePromo(promo)}>
-                      {promo.is_active ? "Отключить" : "Активировать"}
+                      {promo.is_active ? tx("Отключить", "Disable") : tx("Активировать", "Enable")}
                     </button>
                     <button className="btn danger" onClick={() => onDeletePromo(promo.id)}>
-                      Удалить
+                      {tx("Удалить", "Delete")}
                     </button>
                   </div>
                 </article>
@@ -911,58 +928,58 @@ export function AdminPage() {
 
         {tab === "broadcasts" ? (
           <div className="admin-panel">
-            <h3>Рассылки</h3>
-            <p className="muted">Массовые и сегментные уведомления пользователям.</p>
+            <h3>{tx("Рассылки", "Campaigns")}</h3>
+            <p className="muted">{tx("Массовые и сегментные уведомления пользователям.", "Mass and segmented user notifications.")}</p>
             <div className="admin-form">
-              <input value={campaignTitle} onChange={(e) => setCampaignTitle(e.target.value)} placeholder="Заголовок рассылки" />
-              <textarea value={campaignMessage} onChange={(e) => setCampaignMessage(e.target.value)} rows={4} placeholder="Текст сообщения" />
+              <input value={campaignTitle} onChange={(e) => setCampaignTitle(e.target.value)} placeholder={tx("Заголовок рассылки", "Campaign title")} />
+              <textarea value={campaignMessage} onChange={(e) => setCampaignMessage(e.target.value)} rows={4} placeholder={tx("Текст сообщения", "Message text")} />
               <div className="admin-grid-2">
-                <input value={campaignButtonText} onChange={(e) => setCampaignButtonText(e.target.value)} placeholder="Текст кнопки (опционально)" />
-                <input value={campaignButtonUrl} onChange={(e) => setCampaignButtonUrl(e.target.value)} placeholder="Ссылка кнопки https://..." />
+                <input value={campaignButtonText} onChange={(e) => setCampaignButtonText(e.target.value)} placeholder={tx("Текст кнопки (опционально)", "Button text (optional)")} />
+                <input value={campaignButtonUrl} onChange={(e) => setCampaignButtonUrl(e.target.value)} placeholder={tx("Ссылка кнопки https://...", "Button URL https://...")} />
               </div>
               <div className="admin-grid-3">
                 <select value={campaignSegment} onChange={(e) => setCampaignSegment(e.target.value)}>
-                  <option value="all">Все пользователи</option>
-                  <option value="free">Только бесплатные</option>
-                  <option value="premium">Только Премиум</option>
-                  <option value="vip">Только VIP</option>
-                  <option value="active_subscription">С активной подпиской</option>
-                  <option value="admin">Только админы</option>
-                  <option value="notifications_enabled">Только с включенными уведомлениями</option>
+                  <option value="all">{tx("Все пользователи", "All users")}</option>
+                  <option value="free">{tx("Только бесплатные", "Free only")}</option>
+                  <option value="premium">{tx("Только Премиум", "Premium only")}</option>
+                  <option value="vip">{tx("Только VIP", "VIP only")}</option>
+                  <option value="active_subscription">{tx("С активной подпиской", "With active subscription")}</option>
+                  <option value="admin">{tx("Только админы", "Admins only")}</option>
+                  <option value="notifications_enabled">{tx("Только с включенными уведомлениями", "Notifications enabled only")}</option>
                 </select>
                 <select value={campaignAccess} onChange={(e) => setCampaignAccess(e.target.value)}>
-                  <option value="all">Любой доступ</option>
+                  <option value="all">{tx("Любой доступ", "Any access")}</option>
                   <option value="free">Free</option>
-                  <option value="premium">Премиум+</option>
+                  <option value="premium">{tx("Премиум+", "Premium+")}</option>
                   <option value="vip">VIP</option>
                 </select>
                 <label className="switch-row" style={{ padding: "0 4px" }}>
-                  <span>Только с включенными уведомлениями</span>
+                  <span>{tx("Только с включенными уведомлениями", "Notifications enabled only")}</span>
                   <input type="checkbox" checked={campaignNotifOnly} onChange={(e) => setCampaignNotifOnly(e.target.checked)} />
                 </label>
               </div>
               <div className="cta-row">
-                <button className="btn ghost" onClick={onCampaignPreview}>Превью аудитории</button>
-                <button className="btn" onClick={onCampaignSend}>Отправить рассылку</button>
+                <button className="btn ghost" onClick={onCampaignPreview}>{tx("Превью аудитории", "Audience preview")}</button>
+                <button className="btn" onClick={onCampaignSend}>{tx("Отправить рассылку", "Send campaign")}</button>
               </div>
-              {campaignPreviewCount !== null ? <p className="muted">Оценка получателей: {campaignPreviewCount}</p> : null}
+              {campaignPreviewCount !== null ? <p className="muted">{tx("Оценка получателей", "Estimated recipients")}: {campaignPreviewCount}</p> : null}
               {campaignPreviewPayload ? (
                 <div className="card-lite">
-                  <p className="stacked"><b>Предпросмотр сообщения</b></p>
-                  <p className="stacked"><b>{campaignPreviewPayload.title || "Без заголовка"}</b></p>
+                  <p className="stacked"><b>{tx("Предпросмотр сообщения", "Message preview")}</b></p>
+                  <p className="stacked"><b>{campaignPreviewPayload.title || tx("Без заголовка", "No title")}</b></p>
                   <p className="stacked">{campaignPreviewPayload.message || ""}</p>
                   {campaignPreviewPayload.button_text && campaignPreviewPayload.button_url ? (
                     <p className="stacked">
-                      Кнопка: <b>{campaignPreviewPayload.button_text}</b> ({campaignPreviewPayload.button_url})
+                      {tx("Кнопка", "Button")}: <b>{campaignPreviewPayload.button_text}</b> ({campaignPreviewPayload.button_url})
                     </p>
                   ) : (
-                    <p className="stacked muted">Без кнопки</p>
+                    <p className="stacked muted">{tx("Без кнопки", "No button")}</p>
                   )}
                 </div>
               ) : null}
               {deliveryStats ? (
                 <p className="muted">
-                  Доставка (последние 500): всего {deliveryStats.total} • отправлено {deliveryStats.sent} • ошибок {deliveryStats.failed} • в очереди {deliveryStats.queued}
+                  {tx("Доставка (последние 500)", "Delivery (last 500)")}: {tx("всего", "total")} {deliveryStats.total} • {tx("отправлено", "sent")} {deliveryStats.sent} • {tx("ошибок", "failed")} {deliveryStats.failed} • {tx("в очереди", "queued")} {deliveryStats.queued}
                 </p>
               ) : null}
             </div>
@@ -971,35 +988,35 @@ export function AdminPage() {
 
         {tab === "events" ? (
           <div className="admin-panel">
-            <h3>События и агрегаты</h3>
+            <h3>{tx("События и агрегаты", "Events and aggregates")}</h3>
             <div className="metrics-grid">
               <article>
-                <span>Пользователи</span>
+                <span>{tx("Пользователи", "Users")}</span>
                 <strong>{stats?.users_total ?? 0}</strong>
               </article>
               <article>
-                <span>Активные подписки</span>
+                <span>{tx("Активные подписки", "Active subscriptions")}</span>
                 <strong>{stats?.active_subscriptions ?? 0}</strong>
               </article>
               <article>
-                <span>Прогнозов</span>
+                <span>{tx("Прогнозов", "Predictions")}</span>
                 <strong>{stats?.predictions_total ?? 0}</strong>
               </article>
               <article>
-                <span>Точность / ROI</span>
+                <span>{tx("Точность / ROI", "Hit rate / ROI")}</span>
                 <strong>{stats?.hit_rate ?? 0}% / {stats?.roi ?? 0}%</strong>
               </article>
             </div>
             <div className="admin-grid-3">
-              <div className="card-lite">Бесплатный: {stats?.users_by_access?.free ?? 0}</div>
-              <div className="card-lite">Премиум: {stats?.users_by_access?.premium ?? 0}</div>
+              <div className="card-lite">{tx("Бесплатный", "Free")}: {stats?.users_by_access?.free ?? 0}</div>
+              <div className="card-lite">{tx("Премиум", "Premium")}: {stats?.users_by_access?.premium ?? 0}</div>
               <div className="card-lite">VIP: {stats?.users_by_access?.vip ?? 0}</div>
             </div>
             <div className="admin-grid-4">
-              <div className="card-lite">В ожидании: {stats?.predictions_by_status?.pending ?? 0}</div>
-              <div className="card-lite">Выигрыш: {stats?.predictions_by_status?.won ?? 0}</div>
-              <div className="card-lite">Проигрыш: {stats?.predictions_by_status?.lost ?? 0}</div>
-              <div className="card-lite">Возврат: {stats?.predictions_by_status?.refund ?? 0}</div>
+              <div className="card-lite">{tx("В ожидании", "Pending")}: {stats?.predictions_by_status?.pending ?? 0}</div>
+              <div className="card-lite">{tx("Выигрыш", "Won")}: {stats?.predictions_by_status?.won ?? 0}</div>
+              <div className="card-lite">{tx("Проигрыш", "Lost")}: {stats?.predictions_by_status?.lost ?? 0}</div>
+              <div className="card-lite">{tx("Возврат", "Refund")}: {stats?.predictions_by_status?.refund ?? 0}</div>
             </div>
             <ul className="event-list">
               {(stats?.events_placeholder || []).map((event) => (

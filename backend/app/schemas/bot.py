@@ -42,3 +42,8 @@ class BotTariffOut(BaseModel):
     price_rub: int
     duration_days: int
     description: str | None = None
+
+
+class BotUserPreferencesOut(BaseModel):
+    language: str = "ru"
+    theme: str = "dark"

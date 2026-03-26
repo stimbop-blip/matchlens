@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class MeOut(BaseModel):
@@ -7,6 +7,8 @@ class MeOut(BaseModel):
     username: str | None
     first_name: str | None
     last_name: str | None
+    language: str
+    theme: str
     role: str
     is_admin: bool
 
@@ -35,3 +37,13 @@ class ReferralOut(BaseModel):
     invited: int
     activated: int
     bonus_days: int
+
+
+class UserPreferencesOut(BaseModel):
+    language: str
+    theme: str
+
+
+class UserPreferencesUpdateIn(BaseModel):
+    language: str | None = Field(default=None, pattern="^(ru|en)$")
+    theme: str | None = Field(default=None, pattern="^(dark|light)$")

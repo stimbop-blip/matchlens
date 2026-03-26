@@ -2,55 +2,33 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from html import escape
+from typing import cast
 
 from aiogram import F, Router
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message
 
 from app.config import settings
+from app.keyboards.main_menu import main_menu_keyboard
 from app.services.container import get_backend_client
-from app.utils.texts import (
-    ADMIN_TEXT,
-    FREE_PREDICTIONS_TEXT,
-    NOTIFICATIONS_TEXT,
-    STATS_PLACEHOLDER_TEXT,
-    SUPPORT_PLACEHOLDER_TEXT,
-    TARIFFS_TEXT,
-)
+from app.utils.texts import normalize_language, t, tariff_presentation
 
 router = Router()
 
-TARIFF_PRESENTATION = {
-    "free": {
-        "label": "Free",
-        "tag": "🟢 Входной уровень",
-        "points": [
-            "знакомство с продуктом",
-            "часть бесплатных сигналов",
-            "базовый доступ к статистике",
-        ],
-        "upgrade": "Подходит, чтобы понять подход PIT BET и стиль сигналов.",
-    },
-    "premium": {
-        "label": "Premium",
-        "tag": "🔥 Основной выбор",
-        "points": [
-            "полная Premium-лента",
-            "оперативные уведомления",
-            "разборы и рабочие комментарии",
-        ],
-        "upgrade": "Лучший баланс цены и глубины для регулярной работы.",
-    },
-    "vip": {
-        "label": "VIP",
-        "tag": "👑 Максимальный пакет",
-        "points": [
-            "VIP-сигналы сильнейшего отбора",
-            "ранний доступ и лайв-сигналы",
-            "расширенные разборы и приоритет",
-        ],
-        "upgrade": "Для тех, кому нужен максимум доступа и скорости.",
-    },
-}
+
+async def _message_language(message: Message) -> str:
+    fallback = normalize_language(message.from_user.language_code if message.from_user else None)
+    if not message.from_user:
+        return fallback
+
+    backend_client = get_backend_client()
+    if not backend_client:
+        return fallback
+
+    preferences = await backend_client.get_user_preferences(message.from_user.id)
+    if not preferences:
+        return fallback
+
+    return normalize_language(str(preferences.get("language") or fallback))
 
 
 def _format_datetime(value: str | None) -> str:
@@ -77,38 +55,47 @@ def _tariff_label(value: str) -> str:
     return "Free"
 
 
-def _subscription_status_label(value: str) -> str:
+def _subscription_status_label(value: str, language: str) -> str:
     if value == "active":
-        return "Активна"
+        return t(language, "status_active")
     if value == "expired":
-        return "Истекла"
+        return t(language, "status_expired")
     if value == "canceled":
-        return "Отменена"
+        return t(language, "status_canceled")
     if value == "inactive":
-        return "Не активна"
+        return t(language, "status_inactive")
     return value
 
 
-@router.message(F.text.regexp(r"^(?:⚽️?\s*)?Бесплатные прогнозы$"))
+async def _reply(message: Message, language: str, text: str, reply_markup: InlineKeyboardMarkup | None = None) -> None:
+    await message.answer(
+        text,
+        reply_markup=reply_markup
+        or main_menu_keyboard(
+            language=language,
+            is_admin=bool(message.from_user and message.from_user.id in settings.admin_ids()),
+        ),
+    )
+
+
+@router.message(F.text.regexp(r"^(?:⚽️?\s*)?(?:Бесплатные прогнозы|Free Signals)$"))
 async def free_predictions(message: Message) -> None:
+    language = await _message_language(message)
     backend_client = get_backend_client()
     if not backend_client:
-        await message.answer(FREE_PREDICTIONS_TEXT)
+        await _reply(message, language, t(language, "free_empty"))
         return
 
     items = await backend_client.get_latest_free_predictions(limit=3)
     if not items:
-        await message.answer(FREE_PREDICTIONS_TEXT)
+        await _reply(message, language, t(language, "free_empty"))
         return
 
-    await message.answer(
-        "<b>⚽ Бесплатные прогнозы PIT BET</b>\n"
-        "Краткий дайджест открытой ленты PIT BET."
-    )
+    await _reply(message, language, t(language, "free_header"))
 
     for idx, item in enumerate(items, start=1):
-        match_name = escape(str(item.get("match_name") or "Матч уточняется"))
-        league = escape(str(item.get("league") or "Без лиги"))
+        match_name = escape(str(item.get("match_name") or t(language, "unknown_match")))
+        league = escape(str(item.get("league") or t(language, "no_league")))
         signal = escape(str(item.get("signal_type") or "-"))
         odds = escape(str(item.get("odds") or "-"))
         event_start = _format_datetime(item.get("event_start_at"))
@@ -116,27 +103,28 @@ async def free_predictions(message: Message) -> None:
 
         lines = [
             f"<b>{idx}. {match_name}</b>",
-            f"Лига: {league}",
-            f"Сигнал: {signal}",
-            f"Коэффициент: <b>{odds}</b>",
-            f"Старт: {escape(event_start)}",
+            f"{t(language, 'label_league')}: {league}",
+            f"{t(language, 'label_signal')}: {signal}",
+            f"{t(language, 'label_odds')}: <b>{odds}</b>",
+            f"{t(language, 'label_start')}: {escape(event_start)}",
         ]
         if short_description:
             lines.extend(["", f"<i>{short_description}</i>"])
 
-        await message.answer("\n".join(lines))
+        await _reply(message, language, "\n".join(lines))
 
 
-@router.message(F.text.regexp(r"^(?:📊\s*)?Статистика(?:\s+PIT BET)?$"))
+@router.message(F.text.regexp(r"^(?:📊\s*)?(?:Статистика(?:\s+PIT BET)?|PIT BET Stats|Stats)$"))
 async def stats(message: Message) -> None:
+    language = await _message_language(message)
     backend_client = get_backend_client()
     if not backend_client:
-        await message.answer(STATS_PLACEHOLDER_TEXT)
+        await _reply(message, language, t(language, "stats_placeholder"))
         return
 
     payload = await backend_client.get_public_stats()
     if not payload:
-        await message.answer(STATS_PLACEHOLDER_TEXT)
+        await _reply(message, language, t(language, "stats_placeholder"))
         return
 
     total = payload.get("total", 0)
@@ -147,20 +135,23 @@ async def stats(message: Message) -> None:
     refunds = payload.get("refunds", 0)
     pending = payload.get("pending", 0)
 
-    await message.answer(
-        "<b>📊 Статистика PIT BET</b>\n"
-        f"Прогнозов: <b>{escape(str(total))}</b>\n"
-        f"Точность: <b>{escape(str(hit_rate))}%</b>\n"
-        f"ROI: <b>{escape(str(roi))}%</b>\n"
-        f"Выигрыши: {escape(str(wins))} • Поражения: {escape(str(loses))} • Возвраты: {escape(str(refunds))}\n"
-        f"В ожидании: {escape(str(pending))}"
+    await _reply(
+        message,
+        language,
+        f"{t(language, 'stats_title')}\n"
+        f"{t(language, 'stats_total')}: <b>{escape(str(total))}</b>\n"
+        f"{t(language, 'stats_hit')}: <b>{escape(str(hit_rate))}%</b>\n"
+        f"{t(language, 'stats_roi')}: <b>{escape(str(roi))}%</b>\n"
+        f"{t(language, 'stats_wins')}: {escape(str(wins))} • {t(language, 'stats_loses')}: {escape(str(loses))} • {t(language, 'stats_refunds')}: {escape(str(refunds))}\n"
+        f"{t(language, 'stats_pending')}: {escape(str(pending))}",
     )
 
 
-@router.message(F.text.regexp(r"^(?:👤\s*)?(?:Профиль PIT BET|Мой профиль)$"))
+@router.message(F.text.regexp(r"^(?:👤\s*)?(?:Профиль PIT BET|Мой профиль|PIT BET Profile|Profile)$"))
 async def my_profile(message: Message) -> None:
+    language = await _message_language(message)
     if not message.from_user:
-        await message.answer("Профиль временно недоступен.")
+        await _reply(message, language, t(language, "profile_unavailable"))
         return
 
     user = message.from_user
@@ -176,77 +167,86 @@ async def my_profile(message: Message) -> None:
         status = "inactive"
         ends_at = "-"
 
-    username = f"@{user.username}" if user.username else "не указан"
+    username = f"@{user.username}" if user.username else t(language, "unknown_username")
 
-    await message.answer(
-        "<b>👤 Профиль PIT BET</b>\n"
+    await _reply(
+        message,
+        language,
+        f"{t(language, 'profile_title')}\n"
         f"Telegram ID: <code>{user.id}</code>\n"
-        f"Ник: {escape(username)}\n\n"
-        f"Тариф: <b>{_tariff_label(tariff)}</b>\n"
-        f"Статус: <b>{_subscription_status_label(status)}</b>\n"
-        f"Доступ до: <b>{escape(ends_at)}</b>\n\n"
-        "Управление доступом и настройками PIT BET доступно в Mini App через кнопку меню Telegram."
+        f"{t(language, 'profile_label_username')}: {escape(username)}\n\n"
+        f"{t(language, 'profile_label_tariff')}: <b>{_tariff_label(tariff)}</b>\n"
+        f"{t(language, 'profile_label_status')}: <b>{_subscription_status_label(status, language)}</b>\n"
+        f"{t(language, 'profile_label_ends')}: <b>{escape(ends_at)}</b>\n\n"
+        f"{t(language, 'profile_hint')}",
     )
 
 
-@router.message(F.text.regexp(r"^(?:💎\s*)?Тарифы(?:\s+PIT BET)?$"))
+@router.message(F.text.regexp(r"^(?:💎\s*)?(?:Тарифы(?:\s+PIT BET)?|PIT BET Tariffs|Tariffs)$"))
 async def tariffs(message: Message) -> None:
+    language = await _message_language(message)
     backend_client = get_backend_client()
     items = await backend_client.get_tariffs() if backend_client else []
     if not items:
-        await message.answer(TARIFFS_TEXT)
+        await _reply(message, language, t(language, "tariffs_fallback"))
         return
 
-    lines = ["<b>💎 Тарифы PIT BET</b>", "Выберите уровень доступа под вашу нагрузку и стиль работы:"]
+    presentation = tariff_presentation(language)
+    lines = [t(language, "tariffs_title"), t(language, "tariffs_subtitle")]
 
     for item in items:
         code = str(item.get("code") or "free")
-        presentation = TARIFF_PRESENTATION.get(code, TARIFF_PRESENTATION["free"])
-        name = escape(str(presentation["label"]))
+        data = presentation.get(code, presentation["free"])
+        name = escape(str(data["label"]))
         price = escape(str(item.get("price_rub", 0)))
         duration = escape(str(item.get("duration_days", 0)))
-        tag = escape(str(presentation["tag"]))
-        points = presentation["points"]
-        upgrade = escape(str(presentation["upgrade"]))
+        tag = escape(str(data["tag"]))
+        raw_points = data.get("points", [])
+        points = cast(list[object], raw_points) if isinstance(raw_points, list) else []
+        upgrade = escape(str(data["upgrade"]))
         features = "\n".join(f"• {escape(str(point))}" for point in points)
 
         lines.append(
             f"\n<b>{name}</b> — <i>{tag}</i>\n"
-            f"{price} RUB • {duration} дней\n"
+            f"{price} RUB • {duration} {t(language, 'tariffs_days')}\n"
             f"{features}\n"
             f"{upgrade}"
         )
 
-    lines.append("\nПодключение и управление тарифом доступны в PIT BET Mini App.")
-    await message.answer("\n".join(lines))
+    lines.append(f"\n{t(language, 'tariffs_footer')}")
+    await _reply(message, language, "\n".join(lines))
 
 
-@router.message(F.text.regexp(r"^(?:🔔\s*)?Уведомления$"))
+@router.message(F.text.regexp(r"^(?:🔔\s*)?(?:Уведомления|Notifications)$"))
 async def notification_settings(message: Message) -> None:
-    await message.answer(NOTIFICATIONS_TEXT)
+    language = await _message_language(message)
+    await _reply(message, language, t(language, "notifications_text"))
 
 
-@router.message(F.text.regexp(r"^(?:🛠\s*)?Админка$"))
+@router.message(F.text.regexp(r"^(?:🛠\s*)?(?:Админка|Admin)$"))
 async def admin_panel(message: Message) -> None:
+    language = await _message_language(message)
     if not message.from_user or message.from_user.id not in settings.admin_ids():
-        await message.answer("Эта секция доступна только администраторам.")
+        await _reply(message, language, t(language, "admin_only"))
         return
-    await message.answer(ADMIN_TEXT)
+    await _reply(message, language, t(language, "admin_text"))
 
 
-@router.message(F.text.regexp(r"^(?:🛟\s*)?Поддержка$"))
+@router.message(F.text.regexp(r"^(?:🛟\s*)?(?:Поддержка|Support)$"))
 async def support(message: Message) -> None:
+    language = await _message_language(message)
     support_url = settings.bot_support_url.strip()
     if not support_url or "your_support" in support_url:
-        await message.answer(SUPPORT_PLACEHOLDER_TEXT)
+        await _reply(message, language, t(language, "support_placeholder"))
         return
 
     keyboard = InlineKeyboardMarkup(
-        inline_keyboard=[[InlineKeyboardButton(text="Написать в поддержку", url=support_url)]]
+        inline_keyboard=[[InlineKeyboardButton(text=t(language, "support_button"), url=support_url)]]
     )
-    await message.answer(
-        "<b>🛟 Поддержка PIT BET</b>\n"
-        "Если нужна помощь по доступу, оплате или уведомлениям — напишите нам.\n\n"
-        "Мы отвечаем максимально быстро в рабочее время.",
+    await _reply(
+        message,
+        language,
+        f"{t(language, 'support_title')}\n"
+        f"{t(language, 'support_body')}",
         reply_markup=keyboard,
     )

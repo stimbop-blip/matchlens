@@ -57,6 +57,10 @@ def on_startup() -> None:
                 conn.execute(text("ALTER TABLE user_settings ADD COLUMN notify_news BOOLEAN DEFAULT TRUE"))
             if "notify_subscription" not in columns:
                 conn.execute(text("ALTER TABLE user_settings ADD COLUMN notify_subscription BOOLEAN DEFAULT TRUE"))
+            if "preferred_language" not in columns:
+                conn.execute(text("ALTER TABLE user_settings ADD COLUMN preferred_language VARCHAR(8) DEFAULT 'ru'"))
+            if "preferred_theme" not in columns:
+                conn.execute(text("ALTER TABLE user_settings ADD COLUMN preferred_theme VARCHAR(16) DEFAULT 'dark'"))
 
         notifications_table_exists = conn.execute(text("SELECT to_regclass('public.notifications')")).scalar()
         if notifications_table_exists:

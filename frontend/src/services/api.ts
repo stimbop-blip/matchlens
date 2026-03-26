@@ -47,6 +47,13 @@ export type Me = {
   username: string | null;
   first_name: string | null;
   last_name: string | null;
+  language: "ru" | "en";
+  theme: "dark" | "light";
+};
+
+export type UserPreferences = {
+  language: "ru" | "en";
+  theme: "dark" | "light";
 };
 
 export type Tariff = {
@@ -176,6 +183,12 @@ export type PublicStats = {
 
 export const api = {
   me: () => request<Me>("/users/me"),
+  myPreferences: () => request<UserPreferences>("/users/me/preferences"),
+  updateMyPreferences: (payload: Partial<UserPreferences>) =>
+    request<UserPreferences>("/users/me/preferences", {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
   myNotificationSettings: () => request<NotificationSettings>("/users/me/notification-settings"),
   updateMyNotificationSettings: (payload: Partial<NotificationSettings>) =>
     request<NotificationSettings>("/users/me/notification-settings", {

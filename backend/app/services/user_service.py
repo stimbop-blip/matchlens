@@ -37,13 +37,17 @@ def upsert_user_by_telegram(db: Session, payload: dict) -> User:
     admin_ids = {item.strip() for item in settings.admin_telegram_ids.split(",") if item.strip()}
     role = UserRole.admin if str(telegram_id) in admin_ids else UserRole.user
     referral_code = _normalize_referral_code(payload.get("referral_code"))
+    language_code = (payload.get("language_code") or "ru").strip().lower()
+    if language_code not in {"ru", "en"}:
+        language_code = "ru"
 
     user = db.scalar(select(User).where(User.telegram_id == telegram_id))
     if user:
         user.username = payload.get("username")
         user.first_name = payload.get("first_name")
         user.last_name = payload.get("last_name")
-        user.language_code = payload.get("language_code") or "ru"
+        if not user.language_code:
+            user.language_code = language_code
         user.role = role
 
         if not user.referral_code:
@@ -70,7 +74,7 @@ def upsert_user_by_telegram(db: Session, payload: dict) -> User:
         username=payload.get("username"),
         first_name=payload.get("first_name"),
         last_name=payload.get("last_name"),
-        language_code=payload.get("language_code") or "ru",
+        language_code=language_code,
         role=role,
         referral_code=_generate_referral_code(db),
         referred_by_user_id=referred_by_user_id,

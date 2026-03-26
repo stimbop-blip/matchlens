@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
-import { useLanguage } from "../app/language";
+import { useLanguage, useTheme } from "../app/language";
 import { api, type Me, type NotificationSettings, type ReferralStats } from "../services/api";
 
 const SUPPORT_URL = import.meta.env.VITE_SUPPORT_URL || "https://t.me/your_support";
@@ -65,6 +65,7 @@ function statusLabel(status: string | null | undefined, language: "ru" | "en") {
 
 export function MenuPage() {
   const { language } = useLanguage();
+  const { theme } = useTheme();
   const [me, setMe] = useState<Me | null>(null);
   const [notify, setNotify] = useState<NotificationSettings | null>(null);
   const [sub, setSub] = useState<{ tariff: string; status: string; ends_at: string | null } | null>(null);
@@ -88,6 +89,7 @@ export function MenuPage() {
 
   const isRu = language === "ru";
   const supportConfigured = !SUPPORT_URL.includes("your_support");
+  const themeValue = theme === "light" ? (isRu ? "Светлая" : "Light") : isRu ? "Темная" : "Dark";
   const subscriptionValue = sub
     ? `${tariffLabel(sub.tariff, language)} • ${statusLabel(sub.status, language)}`
     : isRu
@@ -106,7 +108,7 @@ export function MenuPage() {
           <h3>{isRu ? "Настройки" : "Settings"}</h3>
           <div className="menu-list">
             <MenuRow icon="🌐" label={isRu ? "Язык" : "Language"} value={isRu ? (language === "ru" ? "Русский" : "English") : language === "ru" ? "Russian" : "English"} to="/menu/language" />
-            <MenuRow icon="🌓" label={isRu ? "Тема" : "Theme"} value={isRu ? "Auto (Telegram)" : "Auto (Telegram)"} disabled />
+            <MenuRow icon="🌓" label={isRu ? "Тема" : "Theme"} value={themeValue} to="/menu/theme" />
             <MenuRow icon="🔔" label={isRu ? "Уведомления" : "Notifications"} value={notify?.notifications_enabled ? (isRu ? "Включены" : "Enabled") : isRu ? "Отключены" : "Off"} to="/profile#notifications" />
           </div>
         </section>
@@ -133,7 +135,7 @@ export function MenuPage() {
 
         {me?.is_admin || me?.role === "admin" ? (
           <section className="menu-block">
-            <h3>{isRu ? "Для admin" : "For admin"}</h3>
+            <h3>{isRu ? "Для admin" : "Admin"}</h3>
             <div className="menu-list">
               <MenuRow icon="🛠" label={isRu ? "Админка" : "Admin panel"} to="/admin" />
             </div>

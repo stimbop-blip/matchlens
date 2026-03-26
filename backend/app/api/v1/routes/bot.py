@@ -5,11 +5,13 @@ from sqlalchemy.orm import Session
 from app.core.db import get_db
 from app.models.enums import AccessLevel
 from app.models.tariff import Tariff
+from app.models.user import User
 from app.schemas.bot import BotPredictionShortOut
 from app.schemas.notification import BotNotificationOut
-from app.schemas.bot import BotSubscriptionOut, BotTariffOut, BotUserSyncIn, PublicStatsOut
+from app.schemas.bot import BotSubscriptionOut, BotTariffOut, BotUserPreferencesOut, BotUserSyncIn, PublicStatsOut
 from app.services.prediction_service import list_public_predictions
 from app.services.notification_service import (
+    get_user_preferences,
     mark_notification_failed,
     mark_notification_sent,
     pull_queued_notifications,
@@ -32,6 +34,15 @@ TARIFF_DESCRIPTION = {
 def bot_user_sync(payload: BotUserSyncIn, db: Session = Depends(get_db)) -> dict:
     user = upsert_user_by_telegram(db, payload.model_dump())
     return {"ok": True, "user_id": str(user.id)}
+
+
+@router.get("/users/{telegram_id}/preferences", response_model=BotUserPreferencesOut)
+def bot_user_preferences(telegram_id: int, db: Session = Depends(get_db)) -> BotUserPreferencesOut:
+    user = db.scalar(select(User).where(User.telegram_id == telegram_id))
+    if not user:
+        return BotUserPreferencesOut(language="ru", theme="dark")
+    payload = get_user_preferences(db, user)
+    return BotUserPreferencesOut(**payload)
 
 
 @router.get("/subscriptions/{telegram_id}", response_model=BotSubscriptionOut)

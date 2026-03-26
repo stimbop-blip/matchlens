@@ -5,7 +5,7 @@ from aiogram.types import Message
 from app.config import settings
 from app.keyboards.main_menu import main_menu_keyboard
 from app.services.container import get_backend_client
-from app.utils.texts import ONBOARDING_TEXT, WELCOME_TEXT
+from app.utils.texts import normalize_language, t
 
 router = Router()
 
@@ -28,6 +28,7 @@ async def cmd_start(message: Message) -> None:
     user = message.from_user
     backend_client = get_backend_client()
     referral_code = _extract_referral_code(message.text)
+    language = normalize_language(user.language_code if user else None)
     if backend_client and user:
         await backend_client.sync_user(
             {
@@ -39,9 +40,12 @@ async def cmd_start(message: Message) -> None:
                 "referral_code": referral_code,
             }
         )
+        preferences = await backend_client.get_user_preferences(user.id)
+        if preferences:
+            language = normalize_language(str(preferences.get("language") or language))
 
     await message.answer(
-        WELCOME_TEXT,
-        reply_markup=main_menu_keyboard(is_admin=bool(user and user.id in settings.admin_ids())),
+        t(language, "welcome"),
+        reply_markup=main_menu_keyboard(language=language, is_admin=bool(user and user.id in settings.admin_ids())),
     )
-    await message.answer(ONBOARDING_TEXT)
+    await message.answer(t(language, "onboarding"))

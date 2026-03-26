@@ -21,6 +21,8 @@ class UserSettings(Base):
     notify_results: Mapped[bool] = mapped_column(Boolean, default=True)
     notify_news: Mapped[bool] = mapped_column(Boolean, default=True)
     notify_subscription: Mapped[bool] = mapped_column(Boolean, default=True)
+    preferred_language: Mapped[str] = mapped_column(String(8), default="ru")
+    preferred_theme: Mapped[str] = mapped_column(String(16), default="dark")
     timezone: Mapped[str] = mapped_column(String(64), default="Europe/Moscow")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
