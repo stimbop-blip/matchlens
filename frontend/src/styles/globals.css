@@ -12,6 +12,11 @@
   --danger: #ff6d7a;
   --warning: #f7bf4f;
   --success: #3fe79e;
+  --tg-bg: var(--bg);
+  --tg-surface: var(--surface);
+  --tg-text: var(--text);
+  --tg-muted: var(--muted);
+  --tg-accent: var(--accent);
 }
 
 * {
@@ -21,7 +26,7 @@
 body {
   margin: 0;
   min-height: 100vh;
-  color: var(--text);
+  color: var(--tg-text);
   background: radial-gradient(circle at 20% 0%, var(--bg-grad-1) 0%, var(--bg-grad-2) 40%, var(--bg) 100%);
   font-family: "SF Pro Display", "Manrope", "Segoe UI", sans-serif;
 }
@@ -80,7 +85,7 @@ a {
 }
 
 .card {
-  background: linear-gradient(170deg, #152338, var(--surface));
+  background: linear-gradient(170deg, #152338, var(--tg-surface));
   border: 1px solid var(--line);
   border-radius: 16px;
   padding: 14px;
@@ -170,7 +175,7 @@ a {
 
 .btn {
   border: 1px solid var(--accent-soft);
-  background: linear-gradient(180deg, #2a7368, #24594f);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--tg-accent) 65%, #24453f), #24594f);
   color: #f2fffc;
   border-radius: 12px;
   padding: 10px 12px;
