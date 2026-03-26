@@ -1,6 +1,11 @@
-const DISCLAIMER_TEXT =
-  "Информация в PIT BET носит аналитический и ознакомительный характер. Ставки связаны с финансовым риском, а результат не может быть гарантирован. Используйте сервис ответственно.";
+import { useLanguage } from "../app/language";
 
 export function AppDisclaimer() {
-  return <p className="app-disclaimer">{DISCLAIMER_TEXT}</p>;
+  const { language } = useLanguage();
+  const text =
+    language === "ru"
+      ? "Информация в PIT BET носит аналитический и ознакомительный характер. Ставки связаны с финансовым риском, а результат не может быть гарантирован. Используйте сервис ответственно."
+      : "PIT BET content is analytical and informational. Betting involves financial risk, and results cannot be guaranteed. Use the service responsibly.";
+
+  return <p className="app-disclaimer">{text}</p>;
 }

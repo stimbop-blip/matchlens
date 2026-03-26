@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
+import { useLanguage } from "../app/language";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
 import { api, type Me, type NewsPost, type Prediction, type PublicStats, type ReferralStats } from "../services/api";
@@ -11,25 +12,11 @@ function tariffLabel(value: string | null | undefined): string {
   return "Free";
 }
 
-function subscriptionStatusLabel(value: string | null | undefined): string {
-  if (value === "active") return "Активна";
-  if (value === "expired") return "Истекла";
-  if (value === "canceled") return "Отменена";
-  return "Не активирована";
-}
-
-function subscriptionTone(value: string | null | undefined): "success" | "warning" | "lost" | "pending" {
-  if (value === "active") return "success";
-  if (value === "expired") return "lost";
-  if (value === "canceled") return "warning";
-  return "pending";
-}
-
-function shortDateTime(value: string | null | undefined): string {
-  if (!value) return "-";
+function shortDateTime(value: string | null | undefined, language: "ru" | "en"): string {
+  if (!value) return language === "ru" ? "Без даты" : "No date";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "-";
-  return date.toLocaleString("ru-RU", {
+  if (Number.isNaN(date.getTime())) return language === "ru" ? "Без даты" : "No date";
+  return date.toLocaleString(language === "ru" ? "ru-RU" : "en-US", {
     day: "2-digit",
     month: "2-digit",
     hour: "2-digit",
@@ -37,19 +24,30 @@ function shortDateTime(value: string | null | undefined): string {
   });
 }
 
+function statusLabel(value: string | null | undefined, language: "ru" | "en") {
+  if (value === "active") return language === "ru" ? "Активна" : "Active";
+  if (value === "expired") return language === "ru" ? "Истекла" : "Expired";
+  if (value === "canceled") return language === "ru" ? "Отменена" : "Canceled";
+  return language === "ru" ? "Не активна" : "Inactive";
+}
+
+function statusTone(value: string | null | undefined): "success" | "warning" | "lost" | "pending" {
+  if (value === "active") return "success";
+  if (value === "expired") return "lost";
+  if (value === "canceled") return "warning";
+  return "pending";
+}
+
 export function HomePage() {
+  const { language } = useLanguage();
   const [me, setMe] = useState<Me | null>(null);
   const [stats, setStats] = useState<PublicStats | null>(null);
   const [sub, setSub] = useState<{ tariff: string; status: string; ends_at: string | null } | null>(null);
   const [news, setNews] = useState<NewsPost[]>([]);
   const [pendingSignals, setPendingSignals] = useState<Prediction[]>([]);
   const [referral, setReferral] = useState<ReferralStats | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
   useEffect(() => {
-    setLoading(true);
-    setError("");
     Promise.all([
       api.me(),
       api.stats(),
@@ -73,19 +71,15 @@ export function HomePage() {
         setNews([]);
         setReferral(null);
         setPendingSignals([]);
-        setError("Не удалось загрузить часть данных. Попробуйте обновить экран.");
-      })
-      .finally(() => {
-        setLoading(false);
       });
   }, []);
 
+  const isRu = language === "ru";
   const pendingFree = pendingSignals.filter((item) => item.access_level === "free").length;
   const pendingPremium = pendingSignals.filter((item) => item.access_level === "premium").length;
   const pendingVip = pendingSignals.filter((item) => item.access_level === "vip").length;
-  const newsPreview = news.slice(0, 3);
-  const mainCtaSecondary = sub?.status === "active" ? { to: "/profile", label: "Открыть профиль" } : { to: "/tariffs", label: "Выбрать тариф" };
-  const displayName = me?.first_name || (me?.username ? `@${me.username}` : "Пользователь PIT BET");
+  const newsPreview = news.slice(0, 2);
+  const displayName = me?.first_name || (me?.username ? `@${me.username}` : isRu ? "Пользователь PIT BET" : "PIT BET user");
 
   return (
     <Layout>
@@ -93,160 +87,129 @@ export function HomePage() {
         <div className="home-hero-top">
           <div>
             <span className="home-eyebrow">PIT BET</span>
-            <h2>Сигналы и аналитика в одном экране</h2>
+            <h2>{isRu ? "Сигналы и аналитика каждый день" : "Signals and analytics every day"}</h2>
           </div>
           <span className={`access-pill ${sub?.tariff || "free"}`}>{tariffLabel(sub?.tariff)}</span>
         </div>
         <p className="home-hero-copy">
-          PIT BET отслеживает движение линии, коэффициенты, рыночные сигналы и игровые паттерны, чтобы выделять сильные игровые ситуации без лишнего шума.
+          {isRu
+            ? "Платформа отслеживает движение линии, коэффициенты, рыночные сигналы и игровые паттерны, чтобы выделять сильные игровые ситуации."
+            : "The platform tracks line movement, odds, market signals, and game patterns to highlight strong market opportunities."}
         </p>
         <div className="home-hero-meta">
           <article>
-            <span>Профиль</span>
+            <span>{isRu ? "Профиль" : "Profile"}</span>
             <strong>{displayName}</strong>
           </article>
           <article>
-            <span>Статус доступа</span>
+            <span>{isRu ? "Статус доступа" : "Access status"}</span>
             <strong>
-              <span className={`badge ${subscriptionTone(sub?.status)}`}>{subscriptionStatusLabel(sub?.status)}</span>
+              <span className={`badge ${statusTone(sub?.status)}`}>{statusLabel(sub?.status, language)}</span>
             </strong>
           </article>
         </div>
-        <p className="home-note">Без обещаний гарантированной прибыли: только дисциплина, риск-контроль и статистика.</p>
         <div className="cta-row">
           <Link className="btn" to="/feed">
-            Смотреть сигналы
+            {isRu ? "Открыть ленту" : "Open feed"}
           </Link>
-          <Link className="btn ghost" to={mainCtaSecondary.to}>
-            {mainCtaSecondary.label}
+          <Link className="btn ghost" to="/tariffs">
+            {isRu ? "Тарифы" : "Tariffs"}
           </Link>
         </div>
       </section>
 
       <section className="card home-section">
         <div className="section-head">
-          <h3>Главное сегодня</h3>
-          <span className="muted">{loading ? "Обновляем" : "В фокусе"}</span>
+          <h3>{isRu ? "Главное сегодня" : "Today at a glance"}</h3>
+          <span className="muted">{isRu ? "PIT BET" : "PIT BET"}</span>
         </div>
         <div className="home-today-grid">
           <article className="home-kpi primary">
-            <span>Активных сигналов</span>
+            <span>{isRu ? "Активных сигналов" : "Active signals"}</span>
             <strong>{pendingSignals.length}</strong>
           </article>
           <article className="home-kpi free">
-            <span>Free сейчас</span>
+            <span>Free</span>
             <strong>{pendingFree}</strong>
           </article>
           <article className="home-kpi premium">
-            <span>Premium сейчас</span>
+            <span>Premium</span>
             <strong>{pendingPremium}</strong>
           </article>
           <article className="home-kpi vip">
-            <span>VIP сейчас</span>
+            <span>VIP</span>
             <strong>{pendingVip}</strong>
           </article>
         </div>
-        <p className="home-inline-muted">
-          В базе PIT BET: Free {stats?.by_access?.free ?? 0} • Premium {stats?.by_access?.premium ?? 0} • VIP {stats?.by_access?.vip ?? 0}
-        </p>
-        <div className="cta-row">
-          <Link className="btn" to="/feed">
-            Перейти в ленту
+        <div className="home-quick-grid">
+          <Link to="/feed" className="menu-shortcut">
+            <span>⚡</span>
+            <b>{isRu ? "Лента" : "Feed"}</b>
           </Link>
-        </div>
-      </section>
-
-      <section className="card home-section">
-        <div className="section-head">
-          <h3>Преимущества PIT BET</h3>
-          <span className="muted">Как устроен продукт</span>
-        </div>
-        <div className="home-benefits-grid">
-          <article className="home-feature-card">
-            <div className="home-feature-top">
-              <span>⚡</span>
-              <strong>Сигналы и фильтрация</strong>
-            </div>
-            <p>Прематч и лайв с фильтрами по риску, статусу и уровню доступа.</p>
-          </article>
-          <article className="home-feature-card">
-            <div className="home-feature-top">
-              <span>📊</span>
-              <strong>Статистика и прозрачность</strong>
-            </div>
-            <p>Точность, ROI и история результатов считаются по фактическим исходам.</p>
-          </article>
-          <article className="home-feature-card">
-            <div className="home-feature-top">
-              <span>🔔</span>
-              <strong>Уведомления</strong>
-            </div>
-            <p>Гибкие настройки сигналов и результатов под ваш ритм торговли линией.</p>
-          </article>
-          <article className="home-feature-card">
-            <div className="home-feature-top">
-              <span>🔐</span>
-              <strong>Premium / VIP доступ</strong>
-            </div>
-            <p>Расширенный поток сигналов, ранние входы и приоритет по аналитике.</p>
-          </article>
+          <Link to="/stats" className="menu-shortcut">
+            <span>📊</span>
+            <b>{isRu ? "Статистика" : "Stats"}</b>
+          </Link>
+          <Link to="/tariffs" className="menu-shortcut">
+            <span>💎</span>
+            <b>{isRu ? "Тарифы" : "Tariffs"}</b>
+          </Link>
         </div>
       </section>
 
       <div className="home-split">
         <section className="card home-section">
           <div className="section-head">
-            <h3>Твой доступ</h3>
+            <h3>{isRu ? "Твой доступ" : "Your access"}</h3>
             <span className={`access-pill ${sub?.tariff || "free"}`}>{tariffLabel(sub?.tariff)}</span>
           </div>
           <div className="home-access-grid">
             <article className="home-access-item">
-              <span>Тариф</span>
+              <span>{isRu ? "Тариф" : "Tariff"}</span>
               <strong>{tariffLabel(sub?.tariff)}</strong>
             </article>
             <article className="home-access-item">
-              <span>Статус</span>
-              <strong>{subscriptionStatusLabel(sub?.status)}</strong>
+              <span>{isRu ? "Статус" : "Status"}</span>
+              <strong>{statusLabel(sub?.status, language)}</strong>
             </article>
             <article className="home-access-item">
-              <span>Доступ до</span>
-              <strong>{shortDateTime(sub?.ends_at)}</strong>
+              <span>{isRu ? "Доступ до" : "Valid until"}</span>
+              <strong>{shortDateTime(sub?.ends_at, language)}</strong>
             </article>
             <article className="home-access-item">
-              <span>Уровень контента</span>
-              <strong>{sub?.tariff === "vip" ? "Максимальный" : sub?.tariff === "premium" ? "Расширенный" : "Базовый"}</strong>
+              <span>{isRu ? "Контент" : "Content"}</span>
+              <strong>{sub?.tariff === "vip" ? "VIP" : sub?.tariff === "premium" ? "Premium" : "Free"}</strong>
             </article>
           </div>
           <div className="cta-row">
-            <Link className="btn" to={sub?.status === "active" ? "/profile" : "/tariffs"}>
-              {sub?.status === "active" ? "Управлять доступом" : "Подключить доступ"}
+            <Link className="btn ghost" to="/profile">
+              {isRu ? "Личный кабинет" : "Personal cabinet"}
             </Link>
           </div>
         </section>
 
         <section className="card home-section">
           <div className="section-head">
-            <h3>Рефералы и промокоды</h3>
-            <span className="muted">Рост доступа</span>
+            <h3>{isRu ? "Рефералы и бонусы" : "Referrals and bonuses"}</h3>
+            <span className="muted">PIT BET</span>
           </div>
-          <p className="stacked">Приглашайте друзей, получайте бонусные дни и активируйте промокоды в профиле.</p>
           <div className="home-ref-grid">
             <article>
-              <span>Приглашено</span>
+              <span>{isRu ? "Приглашено" : "Invited"}</span>
               <strong>{referral?.invited ?? 0}</strong>
             </article>
             <article>
-              <span>Активировано</span>
+              <span>{isRu ? "Активировано" : "Activated"}</span>
               <strong>{referral?.activated ?? 0}</strong>
             </article>
             <article>
-              <span>Бонусных дней</span>
+              <span>{isRu ? "Бонусные дни" : "Bonus days"}</span>
               <strong>{referral?.bonus_days ?? 0}</strong>
             </article>
           </div>
           <div className="cta-row">
-            <Link className="btn ghost" to="/profile">
-              Перейти в профиль
+            <Link className="btn ghost" to="/menu">
+              {isRu ? "Открыть меню" : "Open menu"}
             </Link>
           </div>
         </section>
@@ -254,16 +217,16 @@ export function HomePage() {
 
       <section className="card home-section">
         <div className="section-head">
-          <h3>Статистика</h3>
-          <span className="muted">Краткий срез</span>
+          <h3>{isRu ? "Статистика" : "Stats"}</h3>
+          <span className="muted">{isRu ? "Краткий срез" : "Quick summary"}</span>
         </div>
         <div className="home-stats-grid">
           <article>
-            <span>Прогнозов</span>
+            <span>{isRu ? "Прогнозов" : "Predictions"}</span>
             <strong>{stats?.total ?? 0}</strong>
           </article>
           <article>
-            <span>Точность</span>
+            <span>{isRu ? "Точность" : "Hit rate"}</span>
             <strong>{stats ? `${stats.hit_rate}%` : "0%"}</strong>
           </article>
           <article>
@@ -271,31 +234,20 @@ export function HomePage() {
             <strong>{stats ? `${stats.roi}%` : "0%"}</strong>
           </article>
           <article>
-            <span>Выигрышей</span>
+            <span>{isRu ? "Выигрыши" : "Wins"}</span>
             <strong>{stats?.wins ?? 0}</strong>
           </article>
-          <article>
-            <span>Поражений</span>
-            <strong>{stats?.loses ?? 0}</strong>
-          </article>
-          <article>
-            <span>Возвратов</span>
-            <strong>{stats?.refunds ?? 0}</strong>
-          </article>
-        </div>
-        <div className="cta-row">
-          <Link className="btn ghost" to="/stats">
-            Открыть статистику
-          </Link>
         </div>
       </section>
 
       <section className="card home-section">
         <div className="section-head">
-          <h3>Новости PIT BET</h3>
-          <span className="muted">Что нового в проекте</span>
+          <h3>{isRu ? "Новости PIT BET" : "PIT BET News"}</h3>
+          <Link to="/news" className="muted menu-inline-link">
+            {isRu ? "Все" : "All"}
+          </Link>
         </div>
-        {newsPreview.length === 0 ? <p className="empty-state">Пока без публикаций. Следите за обновлениями в этой вкладке.</p> : null}
+        {newsPreview.length === 0 ? <p className="empty-state">{isRu ? "Пока без публикаций." : "No posts yet."}</p> : null}
         <div className="home-news-list">
           {newsPreview.map((item) => (
             <article key={item.id} className="home-news-item">
@@ -304,13 +256,12 @@ export function HomePage() {
                 <span className="badge info">{item.category}</span>
               </div>
               <p>{item.body}</p>
-              <div className="home-news-meta">{shortDateTime(item.published_at)}</div>
+              <div className="home-news-meta">{shortDateTime(item.published_at, language)}</div>
             </article>
           ))}
         </div>
       </section>
 
-      {error ? <p className="notice error">{error}</p> : null}
       <AppDisclaimer />
     </Layout>
   );

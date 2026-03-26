@@ -1,22 +1,23 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
+import { useLanguage } from "../app/language";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
 import { api, type Me, type NotificationSettings, type PromoApplyResult, type ReferralStats } from "../services/api";
 import { waitForTelegramInitData } from "../services/telegram";
 
-function tariffLabel(value: string): string {
-  if (value === "premium") return "Премиум";
+function tariffLabel(value: string, language: "ru" | "en"): string {
+  if (value === "premium") return "Premium";
   if (value === "vip") return "VIP";
-  return "Бесплатный";
+  return "Free";
 }
 
-function subscriptionStatusLabel(value: string): string {
-  if (value === "active") return "Активна";
-  if (value === "expired") return "Истекла";
-  if (value === "canceled") return "Отменена";
-  return value;
+function subscriptionStatusLabel(value: string, language: "ru" | "en"): string {
+  if (value === "active") return language === "ru" ? "Активна" : "Active";
+  if (value === "expired") return language === "ru" ? "Истекла" : "Expired";
+  if (value === "canceled") return language === "ru" ? "Отменена" : "Canceled";
+  return language === "ru" ? "Не активна" : "Inactive";
 }
 
 function subscriptionStatusClass(value: string): string {
@@ -26,6 +27,7 @@ function subscriptionStatusClass(value: string): string {
 }
 
 export function ProfilePage() {
+  const { language } = useLanguage();
   const [me, setMe] = useState<Me | null>(null);
   const [sub, setSub] = useState<{ tariff: string; status: string; ends_at: string | null } | null>(null);
   const [notify, setNotify] = useState<NotificationSettings | null>(null);
@@ -74,9 +76,9 @@ export function ProfilePage() {
     try {
       const updated = await api.updateMyNotificationSettings(payload);
       setNotify(updated);
-      setNotifyMessage({ tone: "success", text: "Настройки сохранены" });
+      setNotifyMessage({ tone: "success", text: language === "ru" ? "Настройки сохранены" : "Settings saved" });
     } catch {
-      setNotifyMessage({ tone: "error", text: "Не удалось сохранить настройки" });
+      setNotifyMessage({ tone: "error", text: language === "ru" ? "Не удалось сохранить настройки" : "Failed to save settings" });
     }
   };
 
@@ -93,7 +95,7 @@ export function ProfilePage() {
         setReferral(referralData);
       }
     } catch (e) {
-      const text = e instanceof Error ? e.message : "Не удалось применить промокод";
+      const text = e instanceof Error ? e.message : language === "ru" ? "Не удалось применить промокод" : "Promo apply failed";
       setPromoResult({
         ok: false,
         mode: "error",
@@ -107,156 +109,128 @@ export function ProfilePage() {
   const copyReferral = async () => {
     if (!referral?.referral_link) return;
     await navigator.clipboard.writeText(referral.referral_link);
-    setNotifyMessage({ tone: "success", text: "Реферальная ссылка скопирована" });
+    setNotifyMessage({ tone: "success", text: language === "ru" ? "Ссылка скопирована" : "Link copied" });
   };
+
+  const isRu = language === "ru";
 
   return (
     <Layout>
       <section className="card">
         <div className="section-head">
-          <h2>Профиль</h2>
-          <span className="muted">Доступ PIT BET и ваши настройки</span>
+          <h2>{isRu ? "Профиль" : "Profile"}</h2>
+          <span className="muted">PIT BET</span>
         </div>
 
-        {loading ? <p className="muted">Загружаем профиль PIT BET...</p> : null}
-        {!loading && !me ? <p className="empty-state">Профиль временно недоступен. Откройте Mini App из Telegram и попробуйте еще раз.</p> : null}
+        {loading ? <p className="muted">{isRu ? "Загружаем профиль..." : "Loading profile..."}</p> : null}
+        {!loading && !me ? <p className="empty-state">{isRu ? "Профиль временно недоступен." : "Profile is temporarily unavailable."}</p> : null}
 
         {me ? (
           <div className="profile-grid">
             <div className="profile-row">
-              <span>Пользователь</span>
+              <span>{isRu ? "Пользователь" : "User"}</span>
               <strong>{me.first_name || "-"}</strong>
             </div>
             <div className="profile-row">
-              <span>Ник в Telegram</span>
+              <span>{isRu ? "Ник в Telegram" : "Telegram username"}</span>
               <strong>@{me.username || "-"}</strong>
             </div>
             <div className="profile-row">
-              <span>ID в Telegram</span>
+              <span>{isRu ? "ID в Telegram" : "Telegram ID"}</span>
               <strong>{me.telegram_id}</strong>
             </div>
             <div className="profile-row">
-              <span>Роль</span>
-              <strong>{me.is_admin ? "Администратор" : "Пользователь"}</strong>
+              <span>{isRu ? "Роль" : "Role"}</span>
+              <strong>{me.is_admin ? (isRu ? "Администратор" : "Admin") : isRu ? "Пользователь" : "User"}</strong>
             </div>
           </div>
         ) : null}
 
         {sub ? (
-          <div className="subscription-box">
-            <span className={`access-pill ${sub.tariff}`}>{tariffLabel(sub.tariff)}</span>
+          <div className="subscription-box" id="subscription">
+            <span className={`access-pill ${sub.tariff}`}>{tariffLabel(sub.tariff, language)}</span>
             <p>
-              Статус: <span className={`badge ${subscriptionStatusClass(sub.status)}`}>{subscriptionStatusLabel(sub.status)}</span>
+              {isRu ? "Статус" : "Status"}: <span className={`badge ${subscriptionStatusClass(sub.status)}`}>{subscriptionStatusLabel(sub.status, language)}</span>
             </p>
-            <p>Доступ до: {sub.ends_at ? new Date(sub.ends_at).toLocaleString("ru-RU") : "—"}</p>
+            <p>
+              {isRu ? "Доступ до" : "Valid until"}: {sub.ends_at ? new Date(sub.ends_at).toLocaleString(isRu ? "ru-RU" : "en-US") : "—"}
+            </p>
           </div>
         ) : null}
 
-        <div className="card-lite" style={{ marginTop: 10 }}>
-          <h3 style={{ margin: 0 }}>Реферальная программа PIT BET</h3>
-          {!referral ? <p className="muted">Реферальные данные недоступны.</p> : null}
+        <div className="card-lite" style={{ marginTop: 10 }} id="referral">
+          <h3 style={{ margin: 0 }}>{isRu ? "Реферальная программа" : "Referral program"}</h3>
+          {!referral ? <p className="muted">{isRu ? "Данные недоступны." : "Data unavailable."}</p> : null}
           {referral ? (
             <div className="admin-form" style={{ marginTop: 8 }}>
               <p className="stacked">
-                Код: <b>{referral.referral_code}</b>
+                {isRu ? "Код" : "Code"}: <b>{referral.referral_code}</b>
               </p>
-              <p className="stacked">Приглашено: {referral.invited} • Активировано: {referral.activated} • Бонусные дни: {referral.bonus_days}</p>
+              <p className="stacked">
+                {isRu ? "Приглашено" : "Invited"}: {referral.invited} • {isRu ? "Активировано" : "Activated"}: {referral.activated} • {isRu ? "Бонусные дни" : "Bonus days"}: {referral.bonus_days}
+              </p>
               <input value={referral.referral_link} readOnly />
               <button className="btn ghost" onClick={copyReferral}>
-                Скопировать ссылку
+                {isRu ? "Скопировать ссылку" : "Copy link"}
               </button>
             </div>
           ) : null}
         </div>
 
-        <div className="card-lite" style={{ marginTop: 10 }}>
-          <h3 style={{ margin: 0 }}>Промокод PIT BET</h3>
-          <p className="stacked">Введите промокод, чтобы получить скидку на тариф или бонусные дни доступа.</p>
+        <div className="card-lite" style={{ marginTop: 10 }} id="promo">
+          <h3 style={{ margin: 0 }}>{isRu ? "Промокод PIT BET" : "PIT BET promo code"}</h3>
+          <p className="stacked">
+            {isRu
+              ? "Введите промокод, чтобы получить скидку на тариф или бонусные дни доступа."
+              : "Enter a promo code to get a tariff discount or bonus access days."}
+          </p>
           <div className="admin-form" style={{ marginTop: 8 }}>
-            <input value={promoCode} onChange={(e) => setPromoCode(e.target.value.toUpperCase())} placeholder="Введите промокод" />
+            <input value={promoCode} onChange={(e) => setPromoCode(e.target.value.toUpperCase())} placeholder={isRu ? "Введите промокод" : "Enter promo code"} />
             <select value={promoTariff} onChange={(e) => setPromoTariff(e.target.value as "free" | "premium" | "vip")}>
-              <option value="free">Тариф Free</option>
-              <option value="premium">Тариф Premium</option>
-              <option value="vip">Тариф VIP</option>
+              <option value="free">Free</option>
+              <option value="premium">Premium</option>
+              <option value="vip">VIP</option>
             </select>
             <button className="btn" onClick={applyPromo}>
-              Применить промокод
+              {isRu ? "Применить промокод" : "Apply promo"}
             </button>
             {promoResult ? (
               <p className={`notice ${promoResult.ok ? "success" : "error"}`}>
                 {promoResult.message}
-                {promoResult.final_price_rub !== undefined && promoResult.final_price_rub !== null
-                  ? ` Итог: ${promoResult.final_price_rub} RUB.`
-                  : ""}
+                {promoResult.final_price_rub !== undefined && promoResult.final_price_rub !== null ? ` ${isRu ? "Итог" : "Final"}: ${promoResult.final_price_rub} RUB.` : ""}
               </p>
             ) : null}
           </div>
         </div>
 
-        <div className="card-lite" style={{ marginTop: 10 }}>
-          <h3 style={{ margin: 0 }}>Уведомления PIT BET</h3>
-          {!notify ? <p className="muted">Настройки уведомлений PIT BET временно недоступны.</p> : null}
+        <div className="card-lite" style={{ marginTop: 10 }} id="notifications">
+          <h3 style={{ margin: 0 }}>{isRu ? "Уведомления" : "Notifications"}</h3>
+          {!notify ? <p className="muted">{isRu ? "Настройки временно недоступны." : "Settings unavailable."}</p> : null}
           {notify ? (
             <div className="admin-form" style={{ marginTop: 8 }}>
               <label className="switch-row">
-                <span>Получать уведомления</span>
-                <input
-                  type="checkbox"
-                  checked={notify.notifications_enabled}
-                  onChange={async (e) => {
-                    void updateNotify({ notifications_enabled: e.target.checked });
-                  }}
-                />
+                <span>{isRu ? "Получать уведомления" : "Enable notifications"}</span>
+                <input type="checkbox" checked={notify.notifications_enabled} onChange={(e) => void updateNotify({ notifications_enabled: e.target.checked })} />
               </label>
               <label className="switch-row">
-                <span>Новые сигналы Free</span>
-                <input
-                  type="checkbox"
-                  checked={notify.notify_free}
-                  onChange={async (e) => {
-                    void updateNotify({ notify_free: e.target.checked });
-                  }}
-                />
+                <span>{isRu ? "Новые сигналы Free" : "New Free signals"}</span>
+                <input type="checkbox" checked={notify.notify_free} onChange={(e) => void updateNotify({ notify_free: e.target.checked })} />
               </label>
               <label className="switch-row">
-                <span>Новые сигналы Premium</span>
-                <input
-                  type="checkbox"
-                  checked={notify.notify_premium}
-                  onChange={async (e) => {
-                    void updateNotify({ notify_premium: e.target.checked });
-                  }}
-                />
+                <span>{isRu ? "Новые сигналы Premium" : "New Premium signals"}</span>
+                <input type="checkbox" checked={notify.notify_premium} onChange={(e) => void updateNotify({ notify_premium: e.target.checked })} />
               </label>
               <label className="switch-row">
-                <span>Новые сигналы VIP</span>
-                <input
-                  type="checkbox"
-                  checked={notify.notify_vip}
-                  onChange={async (e) => {
-                    void updateNotify({ notify_vip: e.target.checked });
-                  }}
-                />
+                <span>{isRu ? "Новые сигналы VIP" : "New VIP signals"}</span>
+                <input type="checkbox" checked={notify.notify_vip} onChange={(e) => void updateNotify({ notify_vip: e.target.checked })} />
               </label>
               <label className="switch-row">
-                <span>Результаты (выигрыш/проигрыш/возврат)</span>
-                <input
-                  type="checkbox"
-                  checked={notify.notify_results}
-                  onChange={async (e) => {
-                    void updateNotify({ notify_results: e.target.checked });
-                  }}
-                />
+                <span>{isRu ? "Результаты" : "Results"}</span>
+                <input type="checkbox" checked={notify.notify_results} onChange={(e) => void updateNotify({ notify_results: e.target.checked })} />
               </label>
               <label className="switch-row">
-                <span>Новости PIT BET</span>
-                <input
-                  type="checkbox"
-                  checked={notify.notify_news}
-                  onChange={async (e) => {
-                    void updateNotify({ notify_news: e.target.checked });
-                  }}
-                />
+                <span>{isRu ? "Новости PIT BET" : "PIT BET news"}</span>
+                <input type="checkbox" checked={notify.notify_news} onChange={(e) => void updateNotify({ notify_news: e.target.checked })} />
               </label>
               {notifyMessage ? <p className={`notice ${notifyMessage.tone}`}>{notifyMessage.text}</p> : null}
             </div>
@@ -265,7 +239,7 @@ export function ProfilePage() {
 
         {me?.is_admin || me?.role === "admin" ? (
           <Link className="btn" to="/admin">
-            Перейти в админку
+            {isRu ? "Перейти в админку" : "Open admin"}
           </Link>
         ) : null}
       </section>
