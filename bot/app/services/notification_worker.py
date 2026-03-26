@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 def _render_message(title: str, message: str) -> str:
-    title_text = escape(title.strip() or "Обновление MatchLens")
+    title_text = escape(title.strip() or "Обновление PIT BET")
     body_text = escape(message.strip())
     if body_text:
         return f"<b>{title_text}</b>\n\n{body_text}"
@@ -40,7 +40,7 @@ async def run_notification_worker(bot: Bot, backend_client: BackendClient) -> No
             for item in items:
                 notification_id = item.get("id")
                 telegram_id = item.get("telegram_id")
-                title = str(item.get("title") or "Обновление MatchLens")
+                title = str(item.get("title") or "Обновление PIT BET")
                 message = str(item.get("message") or "")
 
                 logger.info(

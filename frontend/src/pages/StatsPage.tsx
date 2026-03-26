@@ -21,11 +21,11 @@ export function StatsPage() {
       <section className="card">
         <div className="section-head">
           <h2>Статистика эффективности</h2>
-          <span className="muted">Реальные расчеты по статусам прогнозов</span>
+          <span className="muted">PIT BET: прозрачные расчеты по закрытым исходам</span>
         </div>
 
         {loading ? <p className="muted">Обновляем показатели...</p> : null}
-        {!loading && !stats ? <p className="empty-state">Не удалось загрузить статистику.</p> : null}
+        {!loading && !stats ? <p className="empty-state">Не удалось загрузить статистику PIT BET.</p> : null}
 
         {stats ? (
           <>

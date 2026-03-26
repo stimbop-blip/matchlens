@@ -78,11 +78,11 @@ export function ProfilePage() {
       <section className="card">
         <div className="section-head">
           <h2>Профиль</h2>
-          <span className="muted">Личный доступ и статус</span>
+          <span className="muted">Доступ PIT BET и ваши настройки</span>
         </div>
 
-        {loading ? <p className="muted">Загружаем профиль...</p> : null}
-        {!loading && !me ? <p className="empty-state">Профиль временно недоступен.</p> : null}
+        {loading ? <p className="muted">Загружаем профиль PIT BET...</p> : null}
+        {!loading && !me ? <p className="empty-state">Профиль временно недоступен. Откройте Mini App из Telegram и попробуйте еще раз.</p> : null}
 
         {me ? (
           <div className="profile-grid">
@@ -116,8 +116,8 @@ export function ProfilePage() {
         ) : null}
 
         <div className="card-lite" style={{ marginTop: 10 }}>
-          <h3 style={{ margin: 0 }}>Уведомления</h3>
-          {!notify ? <p className="muted">Настройки уведомлений недоступны.</p> : null}
+          <h3 style={{ margin: 0 }}>Уведомления PIT BET</h3>
+          {!notify ? <p className="muted">Настройки уведомлений PIT BET временно недоступны.</p> : null}
           {notify ? (
             <div className="admin-form" style={{ marginTop: 8 }}>
               <label className="switch-row">
@@ -131,7 +131,7 @@ export function ProfilePage() {
                 />
               </label>
               <label className="switch-row">
-                <span>Новые бесплатные прогнозы</span>
+                <span>Новые сигналы Free</span>
                 <input
                   type="checkbox"
                   checked={notify.notify_free}
@@ -141,7 +141,7 @@ export function ProfilePage() {
                 />
               </label>
               <label className="switch-row">
-                <span>Новые прогнозы Премиум</span>
+                <span>Новые сигналы Premium</span>
                 <input
                   type="checkbox"
                   checked={notify.notify_premium}
@@ -151,7 +151,7 @@ export function ProfilePage() {
                 />
               </label>
               <label className="switch-row">
-                <span>Новые прогнозы VIP</span>
+                <span>Новые сигналы VIP</span>
                 <input
                   type="checkbox"
                   checked={notify.notify_vip}

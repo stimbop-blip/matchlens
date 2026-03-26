@@ -84,7 +84,7 @@ export function FeedPage() {
       <section className="card">
         <div className="section-head">
           <h2>Лента прогнозов</h2>
-          <span className="muted">{items.length} позиций</span>
+          <span className="muted">{items.length} позиций PIT BET</span>
         </div>
 
         <div className="filter-row">
@@ -110,7 +110,7 @@ export function FeedPage() {
 
         {loading ? <p className="muted">Загружаем ленту...</p> : null}
         {error ? <p className="error-msg">{error}</p> : null}
-        {!loading && !error && items.length === 0 ? <p className="empty-state">По этим фильтрам прогнозов пока нет.</p> : null}
+        {!loading && !error && items.length === 0 ? <p className="empty-state">По этим фильтрам в PIT BET пока нет сигналов.</p> : null}
 
         {groups.map(([title, predictions]) => (
           <div key={title} className="feed-group">

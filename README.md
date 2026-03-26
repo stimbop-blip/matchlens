@@ -1,4 +1,4 @@
-# MatchLens MVP
+# PIT BET MVP
 
 Telegram-бот + Mini App + backend для сервиса спортивной аналитики.
 

@@ -17,7 +17,7 @@
 - Service: Docker web service from `backend/Dockerfile`
 - Health check: `/api/v1/health`
 - Required env:
-  - `APP_NAME=MatchLens API`
+  - `APP_NAME=PIT BET API`
   - `API_PREFIX=/api/v1`
   - `DEBUG=false`
   - `DATABASE_URL=<managed-postgres-url>`

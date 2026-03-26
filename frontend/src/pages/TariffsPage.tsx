@@ -5,11 +5,36 @@ import { api, type Tariff } from "../services/api";
 
 const PAYMENTS_ENABLED = (import.meta.env.VITE_PAYMENTS_ENABLED || "false") === "true";
 
-const FEATURES: Record<string, string[]> = {
-  free: ["Базовая лента", "Ограниченный объем сигналов", "Ознакомительный доступ"],
-  premium: ["Расширенная аналитика", "Больше прогнозов", "Более частые обновления"],
-  vip: ["Максимальный доступ", "Приоритетные уведомления", "Полный набор сигналов"],
+type TariffCode = "free" | "premium" | "vip";
+
+const TARIFF_TEXT: Record<TariffCode, { label: string; tag: string; points: string[]; reason: string }> = {
+  free: {
+    label: "Free",
+    tag: "Старт",
+    points: ["часть бесплатных прогнозов", "базовый доступ к статистике", "знакомство с подходом PIT BET"],
+    reason: "Подходит, чтобы понять продукт и начать без лишней нагрузки.",
+  },
+  premium: {
+    label: "Premium",
+    tag: "Лучший выбор",
+    points: ["полная Premium-лента", "оперативные уведомления", "разборы по ключевым матчам"],
+    reason: "Оптимальный баланс цены и глубины для регулярной работы.",
+  },
+  vip: {
+    label: "VIP",
+    tag: "Максимум",
+    points: ["VIP-сигналы сильного отбора", "ранний доступ к сигналам", "live/hot picks и расширенные разборы"],
+    reason: "Максимальный пакет для тех, кому нужен полный доступ и скорость.",
+  },
 };
+
+const COMPARISON_ROWS = [
+  { label: "Открытая Free-лента", free: "Да", premium: "Да", vip: "Да" },
+  { label: "Полная Premium-лента", free: "Частично", premium: "Да", vip: "Да" },
+  { label: "VIP-сигналы", free: "-", premium: "-", vip: "Да" },
+  { label: "Уведомления и разборы", free: "База", premium: "Да", vip: "Расширенно" },
+  { label: "Скорость доступа", free: "Стандарт", premium: "Быстро", vip: "Ранний доступ" },
+];
 
 export function TariffsPage() {
   const [tariffs, setTariffs] = useState<Tariff[]>([]);
@@ -36,34 +61,49 @@ export function TariffsPage() {
     <Layout>
       <section className="card">
         <div className="section-head">
-          <h2>Тарифы доступа</h2>
-          <span className="muted">Выберите уровень под свой стиль работы</span>
+          <h2>Тарифы PIT BET</h2>
+          <span className="muted">Free / Premium / VIP без лишнего шума</span>
         </div>
 
+        <p className="stacked">PIT BET — сигналы, статистика и доступ к сильным прогнозам.</p>
+
         <div className="tariff-grid">
-          {tariffs.map((item) => (
-            <article key={item.code} className={`tariff-card ${item.code}`}>
-              <div className="prediction-top">
-                <strong>{item.name}</strong>
-                <span className={`access-pill ${item.access_level}`}>{item.access_level === "premium" ? "Премиум" : item.access_level === "vip" ? "VIP" : "Бесплатный"}</span>
-              </div>
-              <p className="price">{item.price_rub} RUB</p>
-              <p className="muted">{item.duration_days} дней доступа</p>
-              <ul>
-                {(FEATURES[item.code] || []).map((feature) => (
-                  <li key={feature}>{feature}</li>
-                ))}
-              </ul>
-              {item.code === "premium" || item.code === "vip" ? (
-                <button className="btn" onClick={() => onPay(item.code)}>
-                  {PAYMENTS_ENABLED ? `Оформить ${item.name}` : "Скоро доступно"}
-                </button>
-              ) : (
-                <button className="btn ghost" disabled>
-                  Уже доступно
-                </button>
-              )}
-            </article>
+          {tariffs.map((item) => {
+            const text = TARIFF_TEXT[item.code as TariffCode] || TARIFF_TEXT.free;
+            return (
+              <article key={item.code} className={`tariff-card ${item.code}`}>
+                <div className="prediction-top">
+                  <strong>{text.label}</strong>
+                  <span className={`badge ${item.code === "premium" ? "success" : item.code === "vip" ? "warning" : "info"}`}>{text.tag}</span>
+                </div>
+                <p className="price">{item.price_rub} RUB</p>
+                <p className="muted">{item.duration_days} дней доступа</p>
+                <ul>
+                  {text.points.map((feature) => (
+                    <li key={feature}>{feature}</li>
+                  ))}
+                </ul>
+                <p className="muted">{text.reason || item.description || "Описание обновляется"}</p>
+                {item.code === "premium" || item.code === "vip" ? (
+                  <button className="btn" onClick={() => onPay(item.code)}>
+                    {PAYMENTS_ENABLED ? `Оформить ${text.label}` : "Скоро доступно"}
+                  </button>
+                ) : (
+                  <button className="btn ghost" disabled>
+                    Уже доступно
+                  </button>
+                )}
+              </article>
+            );
+          })}
+        </div>
+
+        <div className="card-lite" style={{ marginTop: 10 }}>
+          <h3 style={{ margin: 0 }}>Что входит и почему переходить выше</h3>
+          {COMPARISON_ROWS.map((row) => (
+            <p key={row.label} className="stacked">
+              <b>{row.label}:</b> Free — {row.free} | Premium — {row.premium} | VIP — {row.vip}
+            </p>
           ))}
         </div>
 

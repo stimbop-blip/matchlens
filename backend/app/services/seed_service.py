@@ -17,7 +17,7 @@ def seed_tariffs(db: Session) -> None:
             price_rub=0,
             duration_days=0,
             access_level=AccessLevel.free,
-            description="Ограниченный доступ к прогнозам",
+            description="Знакомство с PIT BET: часть бесплатных сигналов и базовый доступ",
         ),
         Tariff(
             code="premium",
@@ -25,7 +25,7 @@ def seed_tariffs(db: Session) -> None:
             price_rub=1490,
             duration_days=30,
             access_level=AccessLevel.premium,
-            description="Доступ к premium прогнозам и расширенной статистике",
+            description="Основной тариф: полная Premium-лента, уведомления и разборы",
         ),
         Tariff(
             code="vip",
@@ -33,7 +33,7 @@ def seed_tariffs(db: Session) -> None:
             price_rub=3990,
             duration_days=30,
             access_level=AccessLevel.vip,
-            description="Полный доступ ко всем прогнозам и приоритетные уведомления",
+            description="Максимальный пакет: VIP-сигналы, ранний доступ и live/hot picks",
         ),
     ]
     db.add_all(records)

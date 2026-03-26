@@ -16,8 +16,8 @@ export function HomePage() {
   return (
     <Layout>
       <section className="hero card">
-        <h2>Премиальная аналитика матчей</h2>
-        <p>Следите за сигналами, риском и итогами в одном экране. Все метрики считаются по фактическим результатам.</p>
+        <h2>PIT BET: сигналы и контроль результата</h2>
+        <p>PIT BET — сигналы, статистика и доступ к сильным прогнозам. Все метрики считаются по фактическим результатам.</p>
         <div className="cta-row">
           <Link className="btn" to="/feed">
             Открыть ленту
@@ -52,10 +52,10 @@ export function HomePage() {
       </section>
 
       <section className="card">
-        <h3>Как использовать MatchLens</h3>
-        <p className="stacked">1) Откройте ленту и выберите формат: прематч или лайв.</p>
-        <p className="stacked">2) Сверьте коэффициент, уровень риска и статус расчета.</p>
-        <p className="stacked">3) Для расширенного покрытия активируйте Premium или VIP.</p>
+        <h3>Как работать с PIT BET</h3>
+        <p className="stacked">1) Начните с Free, чтобы оценить стиль отбора и качество сигналов.</p>
+        <p className="stacked">2) Перейдите на Premium для полной ленты, уведомлений и разборов.</p>
+        <p className="stacked">3) Если нужен максимум скорости и отбора — используйте VIP.</p>
       </section>
     </Layout>
   );

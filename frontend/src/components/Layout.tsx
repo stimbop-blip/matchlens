@@ -42,8 +42,9 @@ export function Layout({ children }: PropsWithChildren) {
   return (
     <div className="app-shell">
       <header className="topbar">
-        <div className="brand-chip">MatchLens Elite</div>
-        <h1>Спортивная аналитика без шума</h1>
+        <div className="brand-chip">PIT BET</div>
+        <h1>PIT BET</h1>
+        <p>PIT BET — сигналы, статистика и доступ к сильным прогнозам</p>
       </header>
 
       <main className="content">{children}</main>

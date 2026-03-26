@@ -261,7 +261,7 @@ export function AdminPage() {
     if (!text || !text.trim()) return;
     try {
       const result = await api.adminDirectSend({
-        title: "Сообщение от MatchLens",
+        title: "Сообщение от PIT BET",
         message: text.trim(),
         user_id: user.id,
       });

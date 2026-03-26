@@ -19,6 +19,39 @@ from app.utils.texts import (
 
 router = Router()
 
+TARIFF_PRESENTATION = {
+    "free": {
+        "label": "Free",
+        "tag": "🟢 Входной уровень",
+        "points": [
+            "знакомство с продуктом",
+            "часть бесплатных сигналов",
+            "базовый доступ к статистике",
+        ],
+        "upgrade": "Подходит, чтобы понять подход PIT BET и стиль сигналов.",
+    },
+    "premium": {
+        "label": "Premium",
+        "tag": "🔥 Основной выбор",
+        "points": [
+            "полная Premium-лента",
+            "оперативные уведомления",
+            "разборы и рабочие комментарии",
+        ],
+        "upgrade": "Лучший баланс цены и глубины для регулярной работы.",
+    },
+    "vip": {
+        "label": "VIP",
+        "tag": "👑 Максимальный пакет",
+        "points": [
+            "VIP-сигналы сильнейшего отбора",
+            "ранний доступ и live/hot picks",
+            "расширенные разборы и приоритет",
+        ],
+        "upgrade": "Для тех, кому нужен максимум доступа и скорости.",
+    },
+}
+
 
 def _format_datetime(value: str | None) -> str:
     if not value:
@@ -70,7 +103,7 @@ async def free_predictions(message: Message) -> None:
 
     await message.answer(
         "<b>⚽ Последние бесплатные прогнозы</b>\n"
-        "Краткий дайджест по открытым сигналам."
+        "Краткий дайджест открытой ленты PIT BET."
     )
 
     for idx, item in enumerate(items, start=1):
@@ -115,7 +148,7 @@ async def stats(message: Message) -> None:
     pending = payload.get("pending", 0)
 
     await message.answer(
-        "<b>📊 Статистика MatchLens</b>\n"
+        "<b>📊 Статистика PIT BET</b>\n"
         f"Прогнозов: <b>{escape(str(total))}</b>\n"
         f"Точность: <b>{escape(str(hit_rate))}%</b>\n"
         f"ROI: <b>{escape(str(roi))}%</b>\n"
@@ -152,7 +185,7 @@ async def my_profile(message: Message) -> None:
         f"Тариф: <b>{_tariff_label(tariff)}</b>\n"
         f"Статус: <b>{_subscription_status_label(status)}</b>\n"
         f"Доступ до: <b>{escape(ends_at)}</b>\n\n"
-        "Управление доступом и настройками доступно в Mini App через кнопку меню Telegram."
+        "Управление доступом и настройками PIT BET доступно в Mini App через кнопку меню Telegram."
     )
 
 
@@ -164,23 +197,27 @@ async def tariffs(message: Message) -> None:
         await message.answer(TARIFFS_TEXT)
         return
 
-    icon_map = {"free": "🟢", "premium": "🔷", "vip": "👑"}
-    lines = ["<b>💎 Тарифы MatchLens</b>", "Выберите формат доступа под ваш риск-профиль:"]
+    lines = ["<b>💎 Тарифы PIT BET</b>", "Выберите уровень доступа под вашу нагрузку и стиль работы:"]
 
     for item in items:
         code = str(item.get("code") or "free")
-        icon = icon_map.get(code, "•")
-        name = escape(str(item.get("name") or "Тариф"))
+        presentation = TARIFF_PRESENTATION.get(code, TARIFF_PRESENTATION["free"])
+        name = escape(str(presentation["label"]))
         price = escape(str(item.get("price_rub", 0)))
         duration = escape(str(item.get("duration_days", 0)))
-        description = escape(str(item.get("description") or "Описание обновляется"))
+        tag = escape(str(presentation["tag"]))
+        points = presentation["points"]
+        upgrade = escape(str(presentation["upgrade"]))
+        features = "\n".join(f"• {escape(str(point))}" for point in points)
+
         lines.append(
-            f"\n<b>{icon} {name}</b>\n"
+            f"\n<b>{name}</b> — <i>{tag}</i>\n"
             f"{price} RUB • {duration} дней\n"
-            f"{description}"
+            f"{features}\n"
+            f"{upgrade}"
         )
 
-    lines.append("\nПодключение и управление тарифом доступны в Mini App.")
+    lines.append("\nПодключение и управление тарифом доступны в PIT BET Mini App.")
     await message.answer("\n".join(lines))
 
 

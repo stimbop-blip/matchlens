@@ -120,7 +120,7 @@ def _user_settings_map(db: Session) -> dict[str, UserSettings]:
 
 def _build_prediction_created_payload(prediction: Prediction) -> tuple[str, str]:
     access_level = prediction.access_level.value
-    title = f"Новый прогноз • {_access_label(access_level)}"
+    title = f"PIT BET • Новый прогноз • {_access_label(access_level)}"
     lines = [
         f"Матч: {prediction.match_name}",
         f"Лига: {prediction.league or '-'}",
@@ -134,7 +134,7 @@ def _build_prediction_created_payload(prediction: Prediction) -> tuple[str, str]
     if prediction.short_description:
         lines.extend(["", f"Кратко: {prediction.short_description}"])
 
-    lines.extend(["", "Откройте Mini App через кнопку меню Telegram."])
+    lines.extend(["", "Откройте PIT BET Mini App через кнопку меню Telegram."])
     return title, "\n".join(lines)
 
 
@@ -144,7 +144,7 @@ def _build_prediction_result_payload(prediction: Prediction) -> tuple[str, str] 
         return None
 
     status_label = _status_label(status)
-    title = f"Результат прогноза • {status_label}"
+    title = f"PIT BET • Результат прогноза • {status_label}"
     lines = [
         f"Матч: {prediction.match_name}",
         f"Лига: {prediction.league or '-'}",
@@ -154,7 +154,7 @@ def _build_prediction_result_payload(prediction: Prediction) -> tuple[str, str] 
         "",
         _status_summary(status),
         "",
-        "Детали доступны в Mini App через кнопку меню Telegram.",
+        "Детали доступны в PIT BET Mini App через кнопку меню Telegram.",
     ]
     return title, "\n".join(lines)
 
@@ -585,7 +585,7 @@ def queue_expiring_subscription_notifications(db: Session, hours_before: int = 2
             Notification(
                 user_id=user.id,
                 type="subscription_expiring",
-                title="Подписка скоро закончится",
+                title="PIT BET • Подписка скоро закончится",
                 message=(
                     f"Ваш тариф {tariff.name} действует до "
                     f"{subscription.ends_at.strftime('%d.%m.%Y %H:%M')}"
