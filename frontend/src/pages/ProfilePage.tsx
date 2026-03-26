@@ -172,7 +172,7 @@ export function ProfilePage() {
               <strong>{me.first_name || "—"}</strong>
             </div>
             <div className="info-row">
-              <span>{isRu ? "Telegram username" : "Telegram username"}</span>
+              <span>{isRu ? "Ник в Telegram" : "Telegram username"}</span>
               <strong>{me.username ? `@${me.username}` : "—"}</strong>
             </div>
             <div className="info-row">

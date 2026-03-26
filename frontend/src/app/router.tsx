@@ -6,6 +6,7 @@ import { HomePage } from "../pages/HomePage";
 import { LanguagePage } from "../pages/LanguagePage";
 import { MenuPage } from "../pages/MenuPage";
 import { NewsPage } from "../pages/NewsPage";
+import { PredictionDetailsPage } from "../pages/PredictionDetailsPage";
 import { ProfilePage } from "../pages/ProfilePage";
 import { ResponsiblePage } from "../pages/ResponsiblePage";
 import { RulesPage } from "../pages/RulesPage";
@@ -18,6 +19,7 @@ export function AppRouter() {
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/feed" element={<FeedPage />} />
+      <Route path="/feed/:predictionId" element={<PredictionDetailsPage />} />
       <Route path="/stats" element={<StatsPage />} />
       <Route path="/tariffs" element={<TariffsPage />} />
       <Route path="/profile" element={<ProfilePage />} />

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 
 import { useLanguage } from "../app/language";
 import { AppDisclaimer } from "../components/AppDisclaimer";
@@ -45,6 +46,17 @@ function dayHeading(date: Date, language: "ru" | "en"): string {
     month: "long",
     weekday: "long",
   });
+}
+
+function teaser(value: string | null | undefined, language: "ru" | "en"): string {
+  const source = (value || "").trim();
+  if (!source) {
+    return language === "ru"
+      ? "Комментарий аналитика появится после обновления сигнала."
+      : "Analyst comment appears once the signal is updated.";
+  }
+  if (source.length <= 160) return source;
+  return `${source.slice(0, 157).trim()}...`;
 }
 
 export function FeedPage() {
@@ -153,14 +165,14 @@ export function FeedPage() {
                     </div>
 
                     <p className="feed-note">
-                      {item.short_description ||
-                        (isRu
-                          ? "Комментарий аналитика появится после обновления сигнала."
-                          : "Analyst comment appears once the signal is updated.")}
+                      {teaser(item.short_description, language)}
                     </p>
 
                     <div className="feed-footer">
                       <span className={`badge ${item.status}`}>{statusLabel(item.status, language)}</span>
+                      <Link className="feed-open-link" to={`/feed/${item.id}`}>
+                        {isRu ? "Подробнее" : "Details"}
+                      </Link>
                     </div>
                   </article>
                 ))}

@@ -57,6 +57,10 @@ class BackendClient:
         payload = await self._get_json(f"/api/v1/bot/users/{telegram_id}/preferences")
         return payload if isinstance(payload, dict) else None
 
+    async def get_user_referral(self, telegram_id: int) -> dict[str, Any] | None:
+        payload = await self._get_json(f"/api/v1/bot/users/{telegram_id}/referral")
+        return payload if isinstance(payload, dict) else None
+
     async def get_public_stats(self) -> dict[str, Any] | None:
         payload = await self._get_json("/api/v1/bot/stats/public")
         return payload if isinstance(payload, dict) else None

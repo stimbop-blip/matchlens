@@ -47,3 +47,11 @@ class BotTariffOut(BaseModel):
 class BotUserPreferencesOut(BaseModel):
     language: str = "ru"
     theme: str = "dark"
+
+
+class BotReferralOut(BaseModel):
+    referral_code: str
+    referral_link: str
+    invited: int = 0
+    activated: int = 0
+    bonus_days: int = 0

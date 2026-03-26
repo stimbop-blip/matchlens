@@ -8,7 +8,14 @@ from app.models.tariff import Tariff
 from app.models.user import User
 from app.schemas.bot import BotPredictionShortOut
 from app.schemas.notification import BotNotificationOut
-from app.schemas.bot import BotSubscriptionOut, BotTariffOut, BotUserPreferencesOut, BotUserSyncIn, PublicStatsOut
+from app.schemas.bot import (
+    BotReferralOut,
+    BotSubscriptionOut,
+    BotTariffOut,
+    BotUserPreferencesOut,
+    BotUserSyncIn,
+    PublicStatsOut,
+)
 from app.services.prediction_service import list_public_predictions
 from app.services.notification_service import (
     get_user_preferences,
@@ -17,6 +24,7 @@ from app.services.notification_service import (
     pull_queued_notifications,
     queue_expiring_subscription_notifications,
 )
+from app.services.referral_service import referral_overview
 from app.services.stats_service import get_public_stats
 from app.services.subscription_service import get_current_subscription_by_telegram_id
 from app.services.user_service import upsert_user_by_telegram
@@ -43,6 +51,21 @@ def bot_user_preferences(telegram_id: int, db: Session = Depends(get_db)) -> Bot
         return BotUserPreferencesOut(language="ru", theme="dark")
     payload = get_user_preferences(db, user)
     return BotUserPreferencesOut(**payload)
+
+
+@router.get("/users/{telegram_id}/referral", response_model=BotReferralOut)
+def bot_user_referral(telegram_id: int, db: Session = Depends(get_db)) -> BotReferralOut:
+    user = db.scalar(select(User).where(User.telegram_id == telegram_id))
+    if not user:
+        return BotReferralOut(
+            referral_code="-",
+            referral_link="",
+            invited=0,
+            activated=0,
+            bonus_days=0,
+        )
+    payload = referral_overview(db, user)
+    return BotReferralOut(**payload)
 
 
 @router.get("/subscriptions/{telegram_id}", response_model=BotSubscriptionOut)

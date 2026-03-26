@@ -14,72 +14,47 @@ def normalize_language(value: str | None) -> Language:
 
 TEXTS: dict[Language, dict[str, str]] = {
     "ru": {
-        "welcome": (
+        "start_message": (
             "🔥 <b>Добро пожаловать в PIT BET</b>\n\n"
-            "PIT BET — это платформа сигналов, статистики и доступа к сильным игровым ситуациям.\n\n"
-            "Внутри тебя ждут:\n"
-            "• бесплатные прогнозы для знакомства\n"
-            "• Premium и VIP-доступ к сильным сигналам\n"
-            "• прозрачная статистика по результатам\n"
-            "• уведомления о новых прогнозах и итогах\n"
-            "• удобное приложение прямо внутри Telegram\n\n"
-            "PIT BET отслеживает движение линии, коэффициенты, рыночные сигналы и игровые паттерны, "
-            "чтобы быстро находить самые интересные точки входа."
+            "PIT BET — аналитическая платформа сигналов и статистики для сильных игровых ситуаций.\n"
+            "Мы отслеживаем движение линии, коэффициенты, рыночные сигналы и игровые паттерны, "
+            "чтобы выделять лучшие точки входа.\n\n"
+            "Внутри доступны <b>Free / Premium / VIP</b>, прозрачная статистика, уведомления и Mini App.\n"
+            "Открыть приложение можно через кнопку меню Telegram или из кнопки ниже.\n\n"
+            "Важно: PIT BET не гарантирует прибыль. Используйте сигналы ответственно и с управлением риском."
         ),
-        "onboarding": (
-            "<b>Быстрый старт PIT BET</b>\n"
-            "Откройте Mini App через кнопку меню Telegram: там доступны лента, тарифы, профиль, новости и настройки уведомлений."
+        "menu_intro": (
+            "<b>PIT BET — меню</b>\n"
+            "Выберите раздел: прогнозы, статистика, профиль, тарифы, уведомления или поддержка."
         ),
+        "nav_back": "◀ Назад",
+        "nav_menu": "☰ В меню",
+        "open_mini_app": "📱 Открыть Mini App",
+        "free_title": "<b>⚽ Бесплатные прогнозы PIT BET</b>",
         "free_empty": (
-            "<b>⚽ Бесплатные прогнозы</b>\n"
-            "Сейчас в открытой ленте нет новых сигналов.\n\n"
-            "Проверьте позже или откройте PIT BET Mini App через кнопку меню Telegram."
+            "<b>⚽ Бесплатные прогнозы PIT BET</b>\n"
+            "Сейчас в открытой ленте нет новых сигналов."
         ),
-        "tariffs_fallback": (
-            "<b>💎 Тарифы PIT BET</b>\n\n"
-            "<b>Free</b> — знакомство с продуктом, часть бесплатных сигналов и базовая витрина\n"
-            "<b>Premium</b> — основной тариф: полная Premium-лента, уведомления, разборы и сильные сигналы\n"
-            "<b>VIP</b> — максимум: VIP-сигналы, ранний доступ, лайв-отбор и расширенные разборы\n\n"
-            "Управление тарифом доступно в PIT BET Mini App."
-        ),
-        "stats_placeholder": (
-            "<b>📊 Статистика PIT BET</b>\n"
-            "Не удалось загрузить показатели прямо сейчас.\n\n"
-            "Повторите запрос позже или проверьте раздел статистики в Mini App."
-        ),
-        "support_placeholder": (
-            "<b>🛟 Поддержка PIT BET</b>\n"
-            "Контакт поддержки пока не настроен.\n\n"
-            "Ответьте на это сообщение с вопросом — команда PIT BET подхватит обращение вручную."
-        ),
-        "notifications_text": (
-            "<b>🔔 Уведомления PIT BET</b>\n"
-            "Настройки находятся в Mini App: <b>Профиль → Уведомления</b>.\n\n"
-            "Там можно включить и отключить:\n"
-            "• новые сигналы\n"
-            "• Free / Premium / VIP категории\n"
-            "• результаты (выигрыш, проигрыш, возврат)\n"
-            "• новости PIT BET"
-        ),
-        "admin_text": (
-            "<b>🛠 Админка PIT BET</b>\n"
-            "Управление прогнозами, платежами, подписками и рассылками PIT BET доступно в Mini App.\n\n"
-            "Откройте вкладку <b>Админка</b> через кнопку меню Telegram."
-        ),
-        "profile_unavailable": "Профиль временно недоступен.",
-        "admin_only": "Эта секция доступна только администраторам.",
-        "support_title": "<b>🛟 Поддержка PIT BET</b>",
-        "support_body": "Если нужна помощь по доступу, оплате или уведомлениям — напишите нам.\n\nМы отвечаем максимально быстро в рабочее время.",
-        "support_button": "Написать в поддержку",
-        "free_header": "<b>⚽ Бесплатные прогнозы PIT BET</b>\nКраткий дайджест открытой ленты PIT BET.",
-        "unknown_match": "Матч уточняется",
-        "no_league": "Без лиги",
-        "unknown_username": "не указан",
+        "free_hint": "Нажмите на матч, чтобы открыть детали прогноза.",
+        "free_row": "{idx}. {match}",
+        "free_details_title": "<b>📌 Детали прогноза</b>",
+        "free_details_missing": "Не удалось открыть детали. Обновите список бесплатных прогнозов.",
         "label_league": "Лига",
         "label_signal": "Сигнал",
         "label_odds": "Коэффициент",
         "label_start": "Старт",
+        "label_risk": "Риск",
+        "label_status": "Статус",
+        "label_access": "Доступ",
+        "unknown_match": "Матч уточняется",
+        "no_league": "Без лиги",
+        "risk_unknown": "не указан",
+        "stats_placeholder": (
+            "<b>📊 Статистика PIT BET</b>\n"
+            "Сервис статистики временно недоступен."
+        ),
         "stats_title": "<b>📊 Статистика PIT BET</b>",
+        "stats_subtitle": "Краткий срез по результатам PIT BET:",
         "stats_total": "Прогнозов",
         "stats_hit": "Точность",
         "stats_roi": "ROI",
@@ -87,87 +62,88 @@ TEXTS: dict[Language, dict[str, str]] = {
         "stats_loses": "Поражения",
         "stats_refunds": "Возвраты",
         "stats_pending": "В ожидании",
+        "profile_unavailable": "Профиль временно недоступен.",
         "profile_title": "<b>👤 Профиль PIT BET</b>",
         "profile_label_username": "Ник",
         "profile_label_tariff": "Тариф",
         "profile_label_status": "Статус",
         "profile_label_ends": "Доступ до",
-        "profile_hint": "Управление доступом и настройками PIT BET доступно в Mini App через кнопку меню Telegram.",
+        "profile_label_referral": "Реферальный код",
+        "profile_label_referral_link": "Реферальная ссылка",
+        "profile_referral_missing": "не активирован",
+        "profile_hint": "Настройки подписки, реферальной программы и уведомлений доступны в Mini App.",
+        "unknown_username": "не указан",
         "status_active": "Активна",
         "status_expired": "Истекла",
         "status_canceled": "Отменена",
         "status_inactive": "Не активна",
         "tariffs_title": "<b>💎 Тарифы PIT BET</b>",
-        "tariffs_subtitle": "Выберите уровень доступа под вашу нагрузку и стиль работы:",
+        "tariffs_subtitle": "Выберите уровень доступа под вашу нагрузку:",
         "tariffs_days": "дней",
-        "tariffs_footer": "Подключение и управление тарифом доступны в PIT BET Mini App.",
-    },
-    "en": {
-        "welcome": (
-            "🔥 <b>Welcome to PIT BET</b>\n\n"
-            "PIT BET is a platform of signals, statistics, and access to strong market situations.\n\n"
-            "Inside you get:\n"
-            "• free signals to get started\n"
-            "• Premium and VIP access to stronger picks\n"
-            "• transparent performance statistics\n"
-            "• notifications on new signals and outcomes\n"
-            "• a convenient app directly inside Telegram\n\n"
-            "PIT BET tracks line movement, odds, market signals, and game patterns to quickly find the most interesting entry points."
-        ),
-        "onboarding": (
-            "<b>PIT BET quick start</b>\n"
-            "Open the Mini App from the Telegram menu button: feed, tariffs, profile, news, and notification settings are there."
-        ),
-        "free_empty": (
-            "<b>⚽ Free Signals</b>\n"
-            "No new open-feed signals right now.\n\n"
-            "Check back later or open PIT BET Mini App from the Telegram menu button."
-        ),
+        "tariffs_footer": "Подключение и управление тарифами доступны в PIT BET Mini App.",
         "tariffs_fallback": (
-            "<b>💎 PIT BET Tariffs</b>\n\n"
-            "<b>Free</b> — product onboarding, part of free signals, and basic showcase\n"
-            "<b>Premium</b> — core tier: full Premium feed, notifications, analysis, and strong signals\n"
-            "<b>VIP</b> — maximum: VIP signals, early access, live selection, and deeper analysis\n\n"
-            "Tariff management is available in PIT BET Mini App."
-        ),
-        "stats_placeholder": (
-            "<b>📊 PIT BET Stats</b>\n"
-            "Unable to load metrics right now.\n\n"
-            "Try again later or open the statistics section in Mini App."
-        ),
-        "support_placeholder": (
-            "<b>🛟 PIT BET Support</b>\n"
-            "Support contact is not configured yet.\n\n"
-            "Reply to this message and PIT BET team will handle it manually."
+            "<b>💎 Тарифы PIT BET</b>\n"
+            "Не удалось загрузить тарифы прямо сейчас."
         ),
         "notifications_text": (
-            "<b>🔔 PIT BET Notifications</b>\n"
-            "Settings are available in Mini App: <b>Profile → Notifications</b>.\n\n"
-            "You can enable or disable:\n"
-            "• new signals\n"
-            "• Free / Premium / VIP categories\n"
-            "• results (won, lost, refund)\n"
-            "• PIT BET news"
+            "<b>🔔 Уведомления PIT BET</b>\n"
+            "Управление уведомлениями находится в Mini App: <b>Профиль → Уведомления</b>.\n\n"
+            "Можно включать категории Free / Premium / VIP, результаты и новости."
+        ),
+        "support_title": "<b>🛟 Поддержка PIT BET</b>",
+        "support_body": "Если нужна помощь по доступу, оплате или уведомлениям — напишите нам.",
+        "support_button": "Написать в поддержку",
+        "support_placeholder": (
+            "<b>🛟 Поддержка PIT BET</b>\n"
+            "Контакт поддержки пока не настроен."
         ),
         "admin_text": (
-            "<b>🛠 PIT BET Admin</b>\n"
-            "Prediction, payment, subscription, and campaign management is available in Mini App.\n\n"
-            "Open the <b>Admin</b> tab from Telegram menu."
+            "<b>🛠 Админка PIT BET</b>\n"
+            "Управление прогнозами, подписками, платежами и рассылками доступно в Mini App."
         ),
-        "profile_unavailable": "Profile is temporarily unavailable.",
-        "admin_only": "This section is available to admins only.",
-        "support_title": "<b>🛟 PIT BET Support</b>",
-        "support_body": "If you need help with access, payments, or notifications, contact us.\n\nWe respond as quickly as possible during business hours.",
-        "support_button": "Contact support",
-        "free_header": "<b>⚽ PIT BET Free Signals</b>\nQuick digest of the open PIT BET feed.",
-        "unknown_match": "Match to be updated",
-        "no_league": "No league",
-        "unknown_username": "not set",
+        "admin_only": "Эта секция доступна только администраторам.",
+    },
+    "en": {
+        "start_message": (
+            "🔥 <b>Welcome to PIT BET</b>\n\n"
+            "PIT BET is an analytics platform for signals and statistics focused on strong market situations.\n"
+            "We track line movement, odds, market signals, and game patterns to highlight quality entry points.\n\n"
+            "Inside you get <b>Free / Premium / VIP</b>, transparent stats, notifications, and the Mini App.\n"
+            "Open the app from Telegram menu button or from the button below.\n\n"
+            "Important: PIT BET does not guarantee profit. Use signals responsibly with proper risk management."
+        ),
+        "menu_intro": (
+            "<b>PIT BET — Menu</b>\n"
+            "Choose a section: signals, stats, profile, tariffs, notifications, or support."
+        ),
+        "nav_back": "◀ Back",
+        "nav_menu": "☰ Menu",
+        "open_mini_app": "📱 Open Mini App",
+        "free_title": "<b>⚽ PIT BET Free Signals</b>",
+        "free_empty": (
+            "<b>⚽ PIT BET Free Signals</b>\n"
+            "No new open-feed signals right now."
+        ),
+        "free_hint": "Tap a match to open signal details.",
+        "free_row": "{idx}. {match}",
+        "free_details_title": "<b>📌 Signal details</b>",
+        "free_details_missing": "Unable to open details. Refresh free signals list first.",
         "label_league": "League",
         "label_signal": "Signal",
         "label_odds": "Odds",
-        "label_start": "Start",
+        "label_start": "Kickoff",
+        "label_risk": "Risk",
+        "label_status": "Status",
+        "label_access": "Access",
+        "unknown_match": "Match to be updated",
+        "no_league": "No league",
+        "risk_unknown": "not set",
+        "stats_placeholder": (
+            "<b>📊 PIT BET Stats</b>\n"
+            "Stats service is temporarily unavailable."
+        ),
         "stats_title": "<b>📊 PIT BET Stats</b>",
+        "stats_subtitle": "Quick summary of PIT BET results:",
         "stats_total": "Predictions",
         "stats_hit": "Hit rate",
         "stats_roi": "ROI",
@@ -175,20 +151,46 @@ TEXTS: dict[Language, dict[str, str]] = {
         "stats_loses": "Losses",
         "stats_refunds": "Refunds",
         "stats_pending": "Pending",
+        "profile_unavailable": "Profile is temporarily unavailable.",
         "profile_title": "<b>👤 PIT BET Profile</b>",
         "profile_label_username": "Username",
         "profile_label_tariff": "Tariff",
         "profile_label_status": "Status",
         "profile_label_ends": "Valid until",
-        "profile_hint": "Access and settings are managed in PIT BET Mini App from Telegram menu button.",
+        "profile_label_referral": "Referral code",
+        "profile_label_referral_link": "Referral link",
+        "profile_referral_missing": "not activated",
+        "profile_hint": "Subscription, referral, and notification settings are managed in the Mini App.",
+        "unknown_username": "not set",
         "status_active": "Active",
         "status_expired": "Expired",
         "status_canceled": "Canceled",
         "status_inactive": "Inactive",
         "tariffs_title": "<b>💎 PIT BET Tariffs</b>",
-        "tariffs_subtitle": "Choose an access tier for your workload and style:",
+        "tariffs_subtitle": "Choose access level for your workload:",
         "tariffs_days": "days",
         "tariffs_footer": "Activation and tariff management are available in PIT BET Mini App.",
+        "tariffs_fallback": (
+            "<b>💎 PIT BET Tariffs</b>\n"
+            "Unable to load tariffs right now."
+        ),
+        "notifications_text": (
+            "<b>🔔 PIT BET Notifications</b>\n"
+            "Notification settings are available in Mini App: <b>Profile → Notifications</b>.\n\n"
+            "You can control Free / Premium / VIP categories, outcomes, and news."
+        ),
+        "support_title": "<b>🛟 PIT BET Support</b>",
+        "support_body": "Need help with access, payments, or notifications? Contact support.",
+        "support_button": "Contact support",
+        "support_placeholder": (
+            "<b>🛟 PIT BET Support</b>\n"
+            "Support contact is not configured yet."
+        ),
+        "admin_text": (
+            "<b>🛠 PIT BET Admin</b>\n"
+            "Predictions, subscriptions, payments, and campaigns are managed in Mini App."
+        ),
+        "admin_only": "This section is available to admins only.",
     },
 }
 
@@ -231,65 +233,65 @@ def tariff_presentation(language: str | None) -> dict[str, dict[str, object]]:
         return {
             "free": {
                 "label": "Free",
-                "tag": "🟢 Entry level",
+                "tag": "Entry",
                 "points": [
-                    "product onboarding",
                     "part of free signals",
-                    "basic stats visibility",
+                    "basic statistics",
+                    "quick PIT BET onboarding",
                 ],
-                "upgrade": "A good way to understand PIT BET approach and signal style.",
+                "upgrade": "A clean start to understand PIT BET approach.",
             },
             "premium": {
                 "label": "Premium",
-                "tag": "🔥 Main choice",
+                "tag": "Best choice",
                 "points": [
                     "full Premium feed",
                     "fast notifications",
-                    "analysis and market commentary",
+                    "extended market notes",
                 ],
-                "upgrade": "Best balance of depth and speed for daily work.",
+                "upgrade": "Core tier for consistent daily work.",
             },
             "vip": {
                 "label": "VIP",
-                "tag": "👑 Maximum package",
+                "tag": "Maximum",
                 "points": [
                     "VIP high-select signals",
-                    "early and live access",
-                    "extended analytics and priority",
+                    "priority and early access",
+                    "deeper analytical context",
                 ],
-                "upgrade": "For users who want maximum access and speed.",
+                "upgrade": "For users who need maximum speed and depth.",
             },
         }
 
     return {
         "free": {
             "label": "Free",
-            "tag": "🟢 Входной уровень",
+            "tag": "Старт",
             "points": [
-                "знакомство с продуктом",
-                "часть бесплатных сигналов",
-                "базовый доступ к статистике",
+                "часть открытых сигналов",
+                "базовая статистика",
+                "быстрое знакомство с PIT BET",
             ],
-            "upgrade": "Подходит, чтобы понять подход PIT BET и стиль сигналов.",
+            "upgrade": "Подходит, чтобы понять стиль и подход PIT BET.",
         },
         "premium": {
             "label": "Premium",
-            "tag": "🔥 Основной выбор",
+            "tag": "Лучший выбор",
             "points": [
                 "полная Premium-лента",
                 "оперативные уведомления",
-                "разборы и рабочие комментарии",
+                "расширенные рыночные комментарии",
             ],
-            "upgrade": "Лучший баланс цены и глубины для регулярной работы.",
+            "upgrade": "Основной тариф для ежедневной работы.",
         },
         "vip": {
             "label": "VIP",
-            "tag": "👑 Максимальный пакет",
+            "tag": "Максимум",
             "points": [
-                "VIP-сигналы сильнейшего отбора",
-                "ранний доступ и лайв-сигналы",
-                "расширенные разборы и приоритет",
+                "VIP-сигналы сильного отбора",
+                "приоритетный ранний доступ",
+                "более глубокий аналитический контекст",
             ],
-            "upgrade": "Для тех, кому нужен максимум доступа и скорости.",
+            "upgrade": "Для тех, кому нужен максимум скорости и глубины.",
         },
     }

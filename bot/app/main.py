@@ -4,6 +4,7 @@ import logging
 
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
+from aiogram.types import MenuButtonWebApp, WebAppInfo
 
 from app.config import settings
 from app.handlers.menu import router as menu_router
@@ -23,6 +24,13 @@ async def main() -> None:
     dp = Dispatcher()
     dp.include_router(start_router)
     dp.include_router(menu_router)
+
+    try:
+        await bot.set_chat_menu_button(
+            menu_button=MenuButtonWebApp(text="PIT BET", web_app=WebAppInfo(url=settings.mini_app_url))
+        )
+    except Exception:
+        logging.getLogger(__name__).warning("failed to set chat menu button", exc_info=True)
 
     worker_task = asyncio.create_task(run_notification_worker(bot, backend_client))
 

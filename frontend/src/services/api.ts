@@ -208,6 +208,7 @@ export const api = {
     const suffix = search.toString() ? `?${search.toString()}` : "";
     return request<Prediction[]>(`/predictions${suffix}`);
   },
+  prediction: (id: string) => request<Prediction>(`/predictions/${id}`),
   stats: () => request<PublicStats>("/stats/overview"),
   news: () => request<NewsPost[]>("/news"),
   myReferral: () => request<ReferralStats>("/users/me/referral"),

@@ -196,7 +196,7 @@ export function HomePage() {
             <StatCard label={isRu ? "Прогнозов" : "Predictions"} value={stats?.total ?? 0} />
             <StatCard label={isRu ? "Точность" : "Hit rate"} value={`${stats?.hit_rate ?? 0}%`} tone="success" />
             <StatCard label="ROI" value={`${stats?.roi ?? 0}%`} tone="accent" />
-            <StatCard label={isRu ? "Wins / Loses / Refunds" : "Wins / Loses / Refunds"} value={`${stats?.wins ?? 0} / ${stats?.loses ?? 0} / ${stats?.refunds ?? 0}`} />
+            <StatCard label={isRu ? "Выигрыши / Поражения / Возвраты" : "Wins / Loses / Refunds"} value={`${stats?.wins ?? 0} / ${stats?.loses ?? 0} / ${stats?.refunds ?? 0}`} />
           </div>
           <Link className="btn ghost" to="/stats">
             {isRu ? "Открыть статистику" : "Open stats"}
