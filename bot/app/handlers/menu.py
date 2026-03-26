@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 from datetime import UTC, datetime
 from html import escape
 from typing import Any, cast
@@ -8,7 +9,7 @@ from urllib.parse import urlsplit, urlunsplit
 from aiogram import F, Router
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command
-from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
+from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message, ReplyKeyboardRemove
 
 from app.config import settings
 from app.keyboards.main_menu import main_menu_keyboard, section_nav_keyboard
@@ -140,6 +141,23 @@ def _legacy_action_map() -> dict[str, str]:
 
 async def _send_screen(message: Message, text: str, reply_markup: InlineKeyboardMarkup) -> None:
     await message.answer(text, reply_markup=reply_markup, disable_web_page_preview=True)
+
+
+async def _send_clean_menu(message: Message, language: str, user_id: int | None) -> None:
+    text, markup = await _build_menu_screen(language, user_id)
+    sent = await message.answer(
+        text,
+        reply_markup=ReplyKeyboardRemove(),
+        disable_web_page_preview=True,
+    )
+    try:
+        await sent.edit_reply_markup(reply_markup=markup)
+    except Exception:
+        await message.answer(
+            text,
+            reply_markup=markup,
+            disable_web_page_preview=True,
+        )
 
 
 async def _edit_screen(query: CallbackQuery, text: str, reply_markup: InlineKeyboardMarkup) -> None:
@@ -517,8 +535,16 @@ async def on_menu_callback(query: CallbackQuery) -> None:
 async def open_menu_command(message: Message) -> None:
     user = message.from_user
     language = await _resolve_language(user.id if user else None, user.language_code if user else None)
-    text, markup = await _build_menu_screen(language, user.id if user else None)
-    await _send_screen(message, text, markup)
+    await _send_clean_menu(message, language, user.id if user else None)
+
+
+@router.message(Command("debug_menu"))
+async def open_debug_menu_command(message: Message) -> None:
+    user = message.from_user
+    language = await _resolve_language(user.id if user else None, user.language_code if user else None)
+    with contextlib.suppress(Exception):
+        await message.delete()
+    await _send_clean_menu(message, language, user.id if user else None)
 
 
 @router.message(F.text)
