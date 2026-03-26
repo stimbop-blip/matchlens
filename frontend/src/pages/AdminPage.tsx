@@ -63,6 +63,7 @@ export function AdminPage() {
   const [campaignTitle, setCampaignTitle] = useState("");
   const [campaignMessage, setCampaignMessage] = useState("");
   const [campaignPreviewCount, setCampaignPreviewCount] = useState<number | null>(null);
+  const [deliveryStats, setDeliveryStats] = useState<{ total: number; sent: number; failed: number; queued: number } | null>(null);
 
   const loadAll = async () => {
     const role = usersRoleFilter === "all" ? undefined : usersRoleFilter;
@@ -80,6 +81,7 @@ export function AdminPage() {
     setSubscriptions(s);
     setPayments(pay);
     setStats(st);
+    api.adminNotificationStats().then((v) => setDeliveryStats(v)).catch(() => setDeliveryStats(null));
   };
 
   useEffect(() => {
@@ -604,6 +606,11 @@ export function AdminPage() {
                 <button className="btn" onClick={onCampaignSend}>Отправить рассылку</button>
               </div>
               {campaignPreviewCount !== null ? <p className="muted">Оценка получателей: {campaignPreviewCount}</p> : null}
+              {deliveryStats ? (
+                <p className="muted">
+                  Доставка (последние 500): всего {deliveryStats.total} • отправлено {deliveryStats.sent} • ошибок {deliveryStats.failed} • в очереди {deliveryStats.queued}
+                </p>
+              ) : null}
             </div>
           </div>
         ) : null}

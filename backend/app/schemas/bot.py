@@ -17,5 +17,27 @@ class BotSubscriptionOut(BaseModel):
 
 class PublicStatsOut(BaseModel):
     total: int
+    wins: int = 0
+    loses: int = 0
+    refunds: int = 0
+    pending: int = 0
+    hit_rate: float = 0
     winrate: float
     roi: float
+
+
+class BotPredictionShortOut(BaseModel):
+    match_name: str
+    league: str | None = None
+    signal_type: str
+    odds: float
+    event_start_at: str
+    short_description: str | None = None
+
+
+class BotTariffOut(BaseModel):
+    code: str
+    name: str
+    price_rub: int
+    duration_days: int
+    description: str | None = None

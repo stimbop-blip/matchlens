@@ -1,9 +1,14 @@
 from fastapi import APIRouter, Depends
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
+from app.models.enums import AccessLevel
+from app.models.tariff import Tariff
+from app.schemas.bot import BotPredictionShortOut
 from app.schemas.notification import BotNotificationOut
-from app.schemas.bot import BotSubscriptionOut, BotUserSyncIn, PublicStatsOut
+from app.schemas.bot import BotSubscriptionOut, BotTariffOut, BotUserSyncIn, PublicStatsOut
+from app.services.prediction_service import list_public_predictions
 from app.services.notification_service import (
     mark_notification_failed,
     mark_notification_sent,
@@ -33,6 +38,46 @@ def bot_subscription(telegram_id: int, db: Session = Depends(get_db)) -> BotSubs
 def bot_public_stats(db: Session = Depends(get_db)) -> PublicStatsOut:
     payload = get_public_stats(db)
     return PublicStatsOut(**payload)
+
+
+@router.get("/predictions/free", response_model=list[BotPredictionShortOut])
+def bot_latest_free_predictions(limit: int = 3, db: Session = Depends(get_db)) -> list[BotPredictionShortOut]:
+    rows = list_public_predictions(
+        db,
+        limit=limit,
+        offset=0,
+        sport_type=None,
+        access_level=AccessLevel.free.value,
+        status=None,
+        risk_level=None,
+        mode=None,
+    )
+    return [
+        BotPredictionShortOut(
+            match_name=item.match_name,
+            league=item.league,
+            signal_type=item.signal_type,
+            odds=float(item.odds),
+            event_start_at=item.event_start_at.isoformat(),
+            short_description=item.short_description,
+        )
+        for item in rows
+    ]
+
+
+@router.get("/tariffs", response_model=list[BotTariffOut])
+def bot_tariffs(db: Session = Depends(get_db)) -> list[BotTariffOut]:
+    records = db.scalars(select(Tariff).where(Tariff.is_active.is_(True)).order_by(Tariff.price_rub.asc())).all()
+    return [
+        BotTariffOut(
+            code=item.code,
+            name=item.name,
+            price_rub=item.price_rub,
+            duration_days=item.duration_days,
+            description=item.description,
+        )
+        for item in records
+    ]
 
 
 @router.get("/notifications/pull", response_model=list[BotNotificationOut])

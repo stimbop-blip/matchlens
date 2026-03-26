@@ -307,6 +307,19 @@ def queue_direct_notification(
     return {"queued": 1, "user_id": str(user.id), "telegram_id": user.telegram_id}
 
 
+def notification_delivery_stats(db: Session) -> dict:
+    rows = db.execute(
+        select(Notification.type, Notification.status)
+        .order_by(Notification.created_at.desc())
+        .limit(500)
+    ).all()
+    total = len(rows)
+    sent = sum(1 for _, status in rows if status == "sent")
+    failed = sum(1 for _, status in rows if status == "failed")
+    queued = sum(1 for _, status in rows if status == "queued")
+    return {"total": total, "sent": sent, "failed": failed, "queued": queued}
+
+
 def pull_queued_notifications(db: Session, limit: int = 20) -> list[tuple[Notification, User]]:
     rows = db.execute(
         select(Notification, User)

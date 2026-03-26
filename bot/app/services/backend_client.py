@@ -39,6 +39,24 @@ class BackendClient:
             return None
         return None
 
+    async def get_latest_free_predictions(self, limit: int = 3) -> list[dict[str, Any]]:
+        try:
+            response = await self._client.get("/api/v1/bot/predictions/free", params={"limit": limit})
+            if response.status_code == 200:
+                return response.json()
+        except Exception:
+            return []
+        return []
+
+    async def get_tariffs(self) -> list[dict[str, Any]]:
+        try:
+            response = await self._client.get("/api/v1/bot/tariffs")
+            if response.status_code == 200:
+                return response.json()
+        except Exception:
+            return []
+        return []
+
     async def pull_notifications(self, limit: int = 20) -> list[dict[str, Any]]:
         try:
             response = await self._client.get("/api/v1/bot/notifications/pull", params={"limit": limit})

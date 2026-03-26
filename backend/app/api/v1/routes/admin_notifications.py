@@ -5,7 +5,7 @@ from app.api.deps import require_admin
 from app.core.db import get_db
 from app.models.user import User
 from app.schemas.notification import AdminBroadcastIn, AdminCampaignPreviewIn, AdminCampaignSendIn, AdminDirectSendIn
-from app.services.notification_service import preview_campaign_recipients, queue_broadcast, queue_campaign, queue_direct_notification
+from app.services.notification_service import notification_delivery_stats, preview_campaign_recipients, queue_broadcast, queue_campaign, queue_direct_notification
 
 router = APIRouter(prefix="/admin/notifications", tags=["admin"])
 
@@ -66,3 +66,12 @@ def admin_direct_send(
         user_id=payload.user_id,
     )
     return {"ok": True, **result}
+
+
+@router.get("/stats")
+def admin_notifications_stats(
+    db: Session = Depends(get_db),
+    _: User = Depends(require_admin),
+) -> dict:
+    stats = notification_delivery_stats(db)
+    return {"ok": True, **stats}

@@ -248,4 +248,5 @@ export const api = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
+  adminNotificationStats: () => request<{ ok: boolean; total: number; sent: number; failed: number; queued: number }>("/admin/notifications/stats"),
 };
