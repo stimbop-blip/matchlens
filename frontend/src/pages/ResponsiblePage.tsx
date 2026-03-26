@@ -1,6 +1,7 @@
 import { useLanguage } from "../app/language";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
+import { AppShellSection, SectionHeader } from "../components/ui";
 
 export function ResponsiblePage() {
   const { language } = useLanguage();
@@ -8,33 +9,31 @@ export function ResponsiblePage() {
 
   return (
     <Layout>
-      <section className="card home-section">
-        <div className="section-head">
-          <h2>{isRu ? "Ответственная игра" : "Responsible Play"}</h2>
-          <span className="muted">PIT BET</span>
-        </div>
-        <div className="card-lite rules-note">
+      <AppShellSection>
+        <SectionHeader
+          title={isRu ? "Ответственная игра" : "Responsible play"}
+          subtitle={isRu ? "Безопасный подход к ставкам" : "Safe betting behavior"}
+        />
+
+        <div className="stack-list">
           <p>
             {isRu
-              ? "Используйте только те суммы, потеря которых не повлияет на ваш ежедневный бюджет."
-              : "Use only amounts that will not affect your everyday budget if lost."}
+              ? "Используйте только те суммы, потеря которых не влияет на повседневный бюджет."
+              : "Use only amounts that do not affect your day-to-day budget if lost."}
           </p>
-        </div>
-        <div className="card-lite rules-note">
           <p>
             {isRu
-              ? "Делайте паузы, контролируйте эмоции и избегайте импульсивных решений."
-              : "Take breaks, control emotions, and avoid impulsive decisions."}
+              ? "Делайте паузы, сохраняйте контроль над эмоциями и не принимайте импульсивных решений."
+              : "Take breaks, stay in control of emotions, and avoid impulsive decisions."}
           </p>
-        </div>
-        <div className="card-lite rules-note">
           <p>
             {isRu
               ? "PIT BET не гарантирует прибыль и не является финансовой рекомендацией."
               : "PIT BET does not guarantee profit and is not financial advice."}
           </p>
         </div>
-      </section>
+      </AppShellSection>
+
       <AppDisclaimer />
     </Layout>
   );

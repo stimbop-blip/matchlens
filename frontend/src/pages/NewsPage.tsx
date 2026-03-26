@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useLanguage } from "../app/language";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
+import { AppShellSection, NewsPreviewCard, SectionHeader } from "../components/ui";
 import { api, type NewsPost } from "../services/api";
 
 function formatDate(value: string | null, language: "ru" | "en") {
@@ -19,6 +20,8 @@ function formatDate(value: string | null, language: "ru" | "en") {
 
 export function NewsPage() {
   const { language } = useLanguage();
+  const isRu = language === "ru";
+
   const [items, setItems] = useState<NewsPost[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -31,34 +34,30 @@ export function NewsPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const isRu = language === "ru";
-
   return (
     <Layout>
-      <section className="card home-section">
-        <div className="section-head">
-          <h2>{isRu ? "Новости PIT BET" : "PIT BET News"}</h2>
-          <span className="muted">{isRu ? "Проект и обновления" : "Project updates"}</span>
-        </div>
+      <AppShellSection>
+        <SectionHeader
+          title={isRu ? "Новости PIT BET" : "PIT BET News"}
+          subtitle={isRu ? "Обновления продукта и сервиса" : "Product and service updates"}
+        />
 
-        {loading ? <p className="muted">{isRu ? "Загружаем новости..." : "Loading news..."}</p> : null}
-        {!loading && items.length === 0 ? (
-          <p className="empty-state">{isRu ? "Пока нет новостей." : "No news yet."}</p>
-        ) : null}
+        {loading ? <p className="muted-line">{isRu ? "Загружаем новости..." : "Loading news..."}</p> : null}
+        {!loading && items.length === 0 ? <p className="empty-state">{isRu ? "Пока нет публикаций." : "No posts yet."}</p> : null}
 
-        <div className="home-news-list">
+        <div className="news-list">
           {items.map((item) => (
-            <article key={item.id} className="home-news-item">
-              <div className="home-news-head">
-                <strong>{item.title}</strong>
-                <span className="badge info">{item.category}</span>
-              </div>
-              <p className="news-page-body">{item.body}</p>
-              <div className="home-news-meta">{formatDate(item.published_at, language)}</div>
-            </article>
+            <NewsPreviewCard
+              key={item.id}
+              title={item.title}
+              body={item.body}
+              category={item.category}
+              meta={formatDate(item.published_at, language)}
+            />
           ))}
         </div>
-      </section>
+      </AppShellSection>
+
       <AppDisclaimer />
     </Layout>
   );

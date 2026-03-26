@@ -3,10 +3,13 @@ import { useEffect, useState } from "react";
 import { useLanguage } from "../app/language";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
+import { AppShellSection, HeroCard, SectionHeader, StatCard } from "../components/ui";
 import { api, type PublicStats } from "../services/api";
 
 export function StatsPage() {
   const { language } = useLanguage();
+  const isRu = language === "ru";
+
   const [stats, setStats] = useState<PublicStats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -19,65 +22,55 @@ export function StatsPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const isRu = language === "ru";
-
   return (
     <Layout>
-      <section className="card">
-        <div className="section-head">
-          <h2>{isRu ? "Статистика PIT BET" : "PIT BET Statistics"}</h2>
-          <span className="muted">{isRu ? "Прозрачные метрики" : "Transparent metrics"}</span>
+      <HeroCard
+        eyebrow="PIT BET"
+        title={isRu ? "Статистика и прозрачность" : "Statistics and transparency"}
+        description={
+          isRu
+            ? "Метрики считаются по фактическим результатам и показывают реальную динамику продукта."
+            : "Metrics are calculated by actual outcomes and show real product performance."
+        }
+      >
+        <div className="stat-grid compact">
+          <StatCard label={isRu ? "Прогнозов" : "Predictions"} value={stats?.total ?? 0} tone="accent" />
+          <StatCard label={isRu ? "Точность" : "Hit rate"} value={`${stats?.hit_rate ?? 0}%`} tone="success" />
+          <StatCard label="ROI" value={`${stats?.roi ?? 0}%`} tone="warning" />
         </div>
+      </HeroCard>
 
-        <p className="stacked">
-          {isRu
-            ? "Метрики считаются по фактическим результатам без ручной корректировки."
-            : "Metrics are calculated from actual outcomes without manual adjustments."}
-        </p>
+      <AppShellSection>
+        <SectionHeader
+          title={isRu ? "Ключевые показатели" : "Core metrics"}
+          subtitle={isRu ? "Общий срез по результатам" : "Overall outcome summary"}
+        />
 
-        {loading ? <p className="muted">{isRu ? "Обновляем показатели..." : "Loading metrics..."}</p> : null}
+        {loading ? <p className="muted-line">{isRu ? "Обновляем показатели..." : "Refreshing metrics..."}</p> : null}
         {!loading && !stats ? <p className="empty-state">{isRu ? "Не удалось загрузить статистику." : "Failed to load statistics."}</p> : null}
 
         {stats ? (
           <>
-            <div className="metrics-grid stats-screen-grid">
-              <article>
-                <span>{isRu ? "Всего прогнозов" : "Total predictions"}</span>
-                <strong>{stats.total}</strong>
-                <small>{isRu ? "в системе" : "in system"}</small>
-              </article>
-              <article>
-                <span>{isRu ? "Точность" : "Hit rate"}</span>
-                <strong>{stats.hit_rate}%</strong>
-                <small>{isRu ? "победы / (победы + поражения)" : "wins / (wins + losses)"}</small>
-              </article>
-              <article>
-                <span>ROI</span>
-                <strong>{stats.roi}%</strong>
-                <small>{isRu ? "по закрытым прогнозам" : "on settled predictions"}</small>
-              </article>
-              <article>
-                <span>{isRu ? "В ожидании" : "Pending"}</span>
-                <strong>{stats.pending}</strong>
-                <small>{isRu ? "еще не рассчитаны" : "not settled yet"}</small>
-              </article>
+            <div className="stat-grid">
+              <StatCard label={isRu ? "Выигрыши" : "Wins"} value={stats.wins} tone="success" />
+              <StatCard label={isRu ? "Поражения" : "Loses"} value={stats.loses} tone="warning" />
+              <StatCard label={isRu ? "Возвраты" : "Refunds"} value={stats.refunds} />
+              <StatCard label={isRu ? "В ожидании" : "Pending"} value={stats.pending} />
             </div>
 
-            <div className="admin-grid-3" style={{ marginTop: 10 }}>
-              <div className="card-lite">{isRu ? "Выигрышей" : "Wins"}: {stats.wins}</div>
-              <div className="card-lite">{isRu ? "Поражений" : "Losses"}: {stats.loses}</div>
-              <div className="card-lite">{isRu ? "Возвратов" : "Refunds"}: {stats.refunds}</div>
-            </div>
-
-            <h3>{isRu ? "Распределение по доступу" : "By access level"}</h3>
-            <div className="admin-grid-3">
-              <div className="card-lite">Free: {stats.by_access.free ?? 0}</div>
-              <div className="card-lite">Premium: {stats.by_access.premium ?? 0}</div>
-              <div className="card-lite">VIP: {stats.by_access.vip ?? 0}</div>
+            <SectionHeader
+              title={isRu ? "Распределение по доступу" : "Distribution by access"}
+              subtitle={isRu ? "Free / Premium / VIP" : "Free / Premium / VIP"}
+            />
+            <div className="stat-grid compact">
+              <StatCard label="Free" value={stats.by_access.free ?? 0} />
+              <StatCard label="Premium" value={stats.by_access.premium ?? 0} tone="accent" />
+              <StatCard label="VIP" value={stats.by_access.vip ?? 0} tone="warning" />
             </div>
           </>
         ) : null}
-      </section>
+      </AppShellSection>
+
       <AppDisclaimer />
     </Layout>
   );

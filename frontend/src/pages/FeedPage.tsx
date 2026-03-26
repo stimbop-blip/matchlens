@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useLanguage } from "../app/language";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
+import { AccessBadge, AppShellSection, SectionHeader, SegmentedTabs } from "../components/ui";
 import { api, type Prediction } from "../services/api";
 
 type ModeFilter = "all" | "prematch" | "live";
@@ -15,25 +16,12 @@ function statusLabel(status: Prediction["status"], language: "ru" | "en"): strin
   return language === "ru" ? "В ожидании" : "Pending";
 }
 
-function statusClass(status: Prediction["status"]): string {
-  if (status === "won") return "won";
-  if (status === "lost") return "lost";
-  if (status === "refund") return "refund";
-  return "pending";
-}
-
 function modeLabel(mode: Prediction["mode"], language: "ru" | "en"): string {
   if (mode === "live") return "Live";
   return language === "ru" ? "Прематч" : "Prematch";
 }
 
-function accessLabel(access: Prediction["access_level"], language: "ru" | "en"): string {
-  if (access === "premium") return "Premium";
-  if (access === "vip") return "VIP";
-  return language === "ru" ? "Бесплатный" : "Free";
-}
-
-function formatKickoff(value: string, language: "ru" | "en"): string {
+function dateLabel(value: string, language: "ru" | "en") {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleString(language === "ru" ? "ru-RU" : "en-US", {
@@ -61,6 +49,8 @@ function dayHeading(date: Date, language: "ru" | "en"): string {
 
 export function FeedPage() {
   const { language } = useLanguage();
+  const isRu = language === "ru";
+
   const [items, setItems] = useState<Prediction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -73,9 +63,9 @@ export function FeedPage() {
     api
       .predictions({ mode: mode === "all" ? undefined : mode, status: status === "all" ? undefined : status })
       .then(setItems)
-      .catch((e: Error) => setError(e.message || (language === "ru" ? "Не удалось загрузить прогнозы" : "Failed to load signals")))
+      .catch((e: Error) => setError(e.message || (isRu ? "Не удалось загрузить прогнозы" : "Failed to load signals")))
       .finally(() => setLoading(false));
-  }, [mode, status, language]);
+  }, [isRu, mode, status]);
 
   const groups = useMemo(() => {
     const map = new Map<string, Prediction[]>();
@@ -88,91 +78,98 @@ export function FeedPage() {
     return Array.from(map.entries());
   }, [items, language]);
 
-  const isRu = language === "ru";
+  const modeOptions = [
+    { value: "all", label: isRu ? "Все" : "All" },
+    { value: "prematch", label: isRu ? "Прематч" : "Prematch" },
+    { value: "live", label: "Live" },
+  ];
+
+  const statusOptions = [
+    { value: "all", label: isRu ? "Все" : "All" },
+    { value: "pending", label: isRu ? "В ожидании" : "Pending" },
+    { value: "won", label: isRu ? "Выигрыш" : "Won" },
+    { value: "lost", label: isRu ? "Проигрыш" : "Lost" },
+    { value: "refund", label: isRu ? "Возврат" : "Refund" },
+  ];
 
   return (
     <Layout>
-      <section className="card">
-        <div className="section-head">
-          <h2>{isRu ? "Лента сигналов" : "Signals feed"}</h2>
-          <span className="muted">{items.length} PIT BET</span>
-        </div>
-        <p className="stacked">
-          {isRu
-            ? "Прематч и live-сигналы с фильтрами, риском и краткой аналитикой по каждой позиции."
-            : "Prematch and live signals with filters, risk tags, and short analytics for each position."}
-        </p>
+      <AppShellSection>
+        <SectionHeader
+          title={isRu ? "Лента сигналов" : "Signals feed"}
+          subtitle={
+            isRu
+              ? "Прематч и live-сигналы с фильтрацией по статусу"
+              : "Prematch and live signals with clean status filtering"
+          }
+          action={<span className="hint-chip">{items.length}</span>}
+        />
 
-        <div className="filter-row">
-          <label>
-            {isRu ? "Формат" : "Mode"}
-            <select value={mode} onChange={(e) => setMode(e.target.value as ModeFilter)}>
-              <option value="all">{isRu ? "Все" : "All"}</option>
-              <option value="prematch">{isRu ? "Прематч" : "Prematch"}</option>
-              <option value="live">Live</option>
-            </select>
-          </label>
-          <label>
-            {isRu ? "Статус" : "Status"}
-            <select value={status} onChange={(e) => setStatus(e.target.value as StatusFilter)}>
-              <option value="all">{isRu ? "Все" : "All"}</option>
-              <option value="pending">{isRu ? "В ожидании" : "Pending"}</option>
-              <option value="won">{isRu ? "Выигрыш" : "Won"}</option>
-              <option value="lost">{isRu ? "Проигрыш" : "Lost"}</option>
-              <option value="refund">{isRu ? "Возврат" : "Refund"}</option>
-            </select>
-          </label>
+        <div className="filter-stack">
+          <SegmentedTabs value={mode} options={modeOptions} onChange={(next) => setMode(next as ModeFilter)} />
+          <SegmentedTabs value={status} options={statusOptions} onChange={(next) => setStatus(next as StatusFilter)} />
         </div>
 
-        {loading ? <p className="muted">{isRu ? "Загружаем ленту..." : "Loading feed..."}</p> : null}
+        {loading ? <p className="muted-line">{isRu ? "Загружаем ленту..." : "Loading feed..."}</p> : null}
         {error ? <p className="error-msg">{error}</p> : null}
         {!loading && !error && items.length === 0 ? (
-          <p className="empty-state">{isRu ? "По этим фильтрам пока нет сигналов." : "No signals for current filters."}</p>
+          <p className="empty-state">{isRu ? "По этим фильтрам сигналов нет." : "No signals for current filters."}</p>
         ) : null}
 
-        {groups.map(([title, predictions]) => (
-          <div key={title} className="feed-group">
-            <h3>{title}</h3>
-            {predictions.map((item) => (
-              <article key={item.id} className="prediction-card feed-card-clean">
-                <div className="prediction-top">
-                  <strong>{item.match_name}</strong>
-                  <span className={`access-pill ${item.access_level}`}>{accessLabel(item.access_level, language)}</span>
-                </div>
-                <div className="meta-row">
-                  <span>{item.sport_type}</span>
-                  <span>{item.league || (isRu ? "Без лиги" : "No league")}</span>
-                  <span>{formatKickoff(item.event_start_at, language)}</span>
-                </div>
-                <div className="signal-row">
-                  <div>
-                    <small>{isRu ? "Сигнал" : "Signal"}</small>
-                    <p>{item.signal_type}</p>
-                  </div>
-                  <div>
-                    <small>{isRu ? "Коэффициент" : "Odds"}</small>
-                    <p>{item.odds}</p>
-                  </div>
-                  <div>
-                    <small>{isRu ? "Риск" : "Risk"}</small>
-                    <p>{item.risk_level}</p>
-                  </div>
-                </div>
-                <p className="desc">
-                  {item.short_description ||
-                    (isRu
-                      ? "Комментарий аналитика будет добавлен при обновлении сигнала."
-                      : "Analyst note will appear when the signal is updated.")}
-                </p>
-                <div className="prediction-bottom">
-                  <span className={`badge ${statusClass(item.status)}`}>{statusLabel(item.status, language)}</span>
-                  <span className="badge mode">{modeLabel(item.mode, language)}</span>
-                </div>
-              </article>
-            ))}
-          </div>
-        ))}
-      </section>
+        <div className="feed-list">
+          {groups.map(([title, predictions]) => (
+            <section key={title} className="feed-day-block">
+              <h3 className="feed-day-title">{title}</h3>
+              <div className="feed-cards">
+                {predictions.map((item) => (
+                  <article key={item.id} className="feed-card">
+                    <div className="feed-card-head">
+                      <div>
+                        <strong>{item.match_name}</strong>
+                        <p>{item.league || (isRu ? "Без лиги" : "No league")}</p>
+                      </div>
+                      <AccessBadge level={item.access_level} />
+                    </div>
+
+                    <div className="feed-meta-row">
+                      <span>{item.sport_type}</span>
+                      <span>{modeLabel(item.mode, language)}</span>
+                      <span>{dateLabel(item.event_start_at, language)}</span>
+                    </div>
+
+                    <div className="feed-signal-grid">
+                      <div>
+                        <small>{isRu ? "Сигнал" : "Signal"}</small>
+                        <p>{item.signal_type}</p>
+                      </div>
+                      <div>
+                        <small>{isRu ? "Коэффициент" : "Odds"}</small>
+                        <p>{item.odds}</p>
+                      </div>
+                      <div>
+                        <small>{isRu ? "Риск" : "Risk"}</small>
+                        <p>{item.risk_level}</p>
+                      </div>
+                    </div>
+
+                    <p className="feed-note">
+                      {item.short_description ||
+                        (isRu
+                          ? "Комментарий аналитика появится после обновления сигнала."
+                          : "Analyst comment appears once the signal is updated.")}
+                    </p>
+
+                    <div className="feed-footer">
+                      <span className={`badge ${item.status}`}>{statusLabel(item.status, language)}</span>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
+      </AppShellSection>
+
       <AppDisclaimer />
     </Layout>
   );
