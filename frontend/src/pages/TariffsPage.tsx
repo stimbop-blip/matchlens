@@ -76,8 +76,10 @@ export function TariffsPage() {
       <AppShellSection>
         <SectionHeader
           title={isRu ? "Планы доступа" : "Access plans"}
-          subtitle={isRu ? "Сравнение уровней PIT BET" : "PIT BET tier comparison"}
+          subtitle={isRu ? "Free, Premium, VIP — под разную нагрузку" : "Free, Premium, VIP for different workload"}
         />
+
+        {tariffs.length === 0 ? <p className="empty-state">{isRu ? "Тарифы временно недоступны." : "Tariffs are temporarily unavailable."}</p> : null}
 
         <div className="tariff-grid">
           {tariffs.map((item) => {
@@ -91,7 +93,7 @@ export function TariffsPage() {
                 <div className="tariff-head">
                   <div>
                     <h3>{code === "free" ? "Free" : code === "premium" ? "Premium" : "VIP"}</h3>
-                    <p>{text.tag}</p>
+                    <p className="tariff-chip">{text.tag}</p>
                   </div>
                   <AccessBadge level={code === "free" ? "free" : code === "premium" ? "premium" : "vip"} />
                 </div>
@@ -114,7 +116,7 @@ export function TariffsPage() {
                         ? `Выбрать ${code === "vip" ? "VIP" : "Premium"}`
                         : `Choose ${code === "vip" ? "VIP" : "Premium"}`
                       : isRu
-                        ? "Скоро"
+                        ? "Скоро откроем"
                         : "Soon"}
                   </button>
                 ) : (

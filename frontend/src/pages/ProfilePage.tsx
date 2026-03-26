@@ -140,7 +140,7 @@ export function ProfilePage() {
     <Layout>
       <HeroCard
         eyebrow="PIT BET"
-        title={isRu ? "Личный кабинет" : "Personal cabinet"}
+        title={isRu ? "Личный кабинет" : "Account center"}
         description={
           isRu
             ? "Управляйте доступом, уведомлениями, промокодами и реферальной программой."
@@ -161,7 +161,10 @@ export function ProfilePage() {
       </HeroCard>
 
       <AppShellSection>
-        <SectionHeader title={isRu ? "Аккаунт" : "Account"} subtitle={loading ? (isRu ? "Загружаем данные..." : "Loading data...") : undefined} />
+        <SectionHeader
+          title={isRu ? "Пользователь" : "User profile"}
+          subtitle={loading ? (isRu ? "Загружаем данные..." : "Loading data...") : undefined}
+        />
 
         {!loading && !me ? <p className="empty-state">{isRu ? "Профиль временно недоступен." : "Profile is temporarily unavailable."}</p> : null}
 
@@ -194,7 +197,10 @@ export function ProfilePage() {
       </AppShellSection>
 
       <AppShellSection id="subscription">
-        <SectionHeader title={isRu ? "Подписка" : "Subscription"} />
+        <SectionHeader
+          title={isRu ? "Текущий доступ" : "Current access"}
+          subtitle={isRu ? "Тариф, статус и срок действия" : "Tariff, status, and validity"}
+        />
         <div className="stat-grid compact">
           <StatCard label={isRu ? "Тариф" : "Tariff"} value={sub ? tariffLabel(sub.tariff) : "—"} tone="accent" />
           <StatCard label={isRu ? "Статус" : "Status"} value={sub ? subscriptionStatusLabel(sub.status, language) : "—"} />
@@ -203,10 +209,19 @@ export function ProfilePage() {
       </AppShellSection>
 
       <AppShellSection id="referral">
-        <SectionHeader title={isRu ? "Рефералка и бонусы" : "Referrals and bonuses"} />
+        <SectionHeader
+          title={isRu ? "Рефералы и бонусы" : "Referrals and bonuses"}
+          subtitle={isRu ? "Код, ссылка и прогресс приглашений" : "Code, link, and referral progress"}
+        />
         {!referral ? <p className="empty-state">{isRu ? "Данные недоступны." : "Data unavailable."}</p> : null}
         {referral ? (
           <>
+            <div className="stack-list compact">
+              <div className="info-row">
+                <span>{isRu ? "Реферальный код" : "Referral code"}</span>
+                <strong>{referral.referral_code}</strong>
+              </div>
+            </div>
             <div className="stat-grid compact">
               <StatCard label={isRu ? "Приглашено" : "Invited"} value={referral.invited} />
               <StatCard label={isRu ? "Активировано" : "Activated"} value={referral.activated} />
@@ -230,6 +245,7 @@ export function ProfilePage() {
             : "Enter a promo code to get a discount or bonus access days."
         }
       >
+        <p className="muted-line">{isRu ? "Используйте промокод для скидки на тариф или бонусных дней." : "Use a promo code for tariff discount or bonus days."}</p>
         <div className="input-stack" id="promo">
           <input
             value={promoCode}
@@ -252,6 +268,7 @@ export function ProfilePage() {
                 : ""}
             </p>
           ) : null}
+          <p className="muted-line">{isRu ? "История активаций доступна в уведомлениях и событиях аккаунта." : "Activation history is available in your account events and notifications."}</p>
         </div>
       </PromoCard>
 

@@ -19,10 +19,10 @@ export function LanguagePage() {
       <AppShellSection>
         <SectionHeader
           title={isRu ? "Язык" : "Language"}
-          subtitle={isRu ? "Выберите язык интерфейса" : "Select interface language"}
+          subtitle={isRu ? "Выберите язык интерфейса PIT BET" : "Choose your PIT BET interface language"}
         />
 
-        <SettingsSection title={isRu ? "Варианты" : "Options"}>
+        <SettingsSection title={isRu ? "Выбор языка" : "Language selection"}>
           <SettingsRow
             icon="🇷🇺"
             title="Русский"

@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useLanguage } from "../app/language";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
-import { AppShellSection, NewsPreviewCard, SectionHeader } from "../components/ui";
+import { AppShellSection, HeroCard, NewsPreviewCard, SectionHeader } from "../components/ui";
 import { api, type NewsPost } from "../services/api";
 
 function formatDate(value: string | null, language: "ru" | "en") {
@@ -36,6 +36,16 @@ export function NewsPage() {
 
   return (
     <Layout>
+      <HeroCard
+        eyebrow="PIT BET"
+        title={isRu ? "Новости и обновления" : "News and updates"}
+        description={
+          isRu
+            ? "Ключевые обновления продукта, тарифов и сервиса PIT BET."
+            : "Key updates about PIT BET product, tariffs, and service."
+        }
+      />
+
       <AppShellSection>
         <SectionHeader
           title={isRu ? "Новости PIT BET" : "PIT BET News"}
@@ -53,6 +63,8 @@ export function NewsPage() {
               body={item.body}
               category={item.category}
               meta={formatDate(item.published_at, language)}
+              to={`/news/${item.id}`}
+              cta={isRu ? "Читать" : "Read"}
             />
           ))}
         </div>

@@ -5,6 +5,7 @@ import { FeedPage } from "../pages/FeedPage";
 import { HomePage } from "../pages/HomePage";
 import { LanguagePage } from "../pages/LanguagePage";
 import { MenuPage } from "../pages/MenuPage";
+import { NewsDetailsPage } from "../pages/NewsDetailsPage";
 import { NewsPage } from "../pages/NewsPage";
 import { PredictionDetailsPage } from "../pages/PredictionDetailsPage";
 import { ProfilePage } from "../pages/ProfilePage";
@@ -27,6 +28,7 @@ export function AppRouter() {
       <Route path="/menu/language" element={<LanguagePage />} />
       <Route path="/menu/theme" element={<ThemePage />} />
       <Route path="/news" element={<NewsPage />} />
+      <Route path="/news/:newsId" element={<NewsDetailsPage />} />
       <Route path="/menu/rules" element={<RulesPage />} />
       <Route path="/menu/responsible" element={<ResponsiblePage />} />
       <Route path="/admin" element={<AdminPage />} />

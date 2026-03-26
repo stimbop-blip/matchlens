@@ -80,8 +80,9 @@ export function FeedPage() {
   }, [isRu, mode, status]);
 
   const groups = useMemo(() => {
+    const sorted = [...items].sort((a, b) => new Date(a.event_start_at).getTime() - new Date(b.event_start_at).getTime());
     const map = new Map<string, Prediction[]>();
-    items.forEach((item) => {
+    sorted.forEach((item) => {
       const date = new Date(item.event_start_at);
       const key = dayHeading(date, language);
       if (!map.has(key)) map.set(key, []);
@@ -137,7 +138,9 @@ export function FeedPage() {
                   <article key={item.id} className="feed-card">
                     <div className="feed-card-head">
                       <div>
-                        <strong>{item.match_name}</strong>
+                        <Link className="feed-card-main-link" to={`/feed/${item.id}`}>
+                          <strong>{item.match_name}</strong>
+                        </Link>
                         <p>{item.league || (isRu ? "Без лиги" : "No league")}</p>
                       </div>
                       <AccessBadge level={item.access_level} />

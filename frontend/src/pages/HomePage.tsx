@@ -93,9 +93,10 @@ export function HomePage() {
   const pendingFree = pendingSignals.filter((item) => item.access_level === "free").length;
   const pendingPremium = pendingSignals.filter((item) => item.access_level === "premium").length;
   const pendingVip = pendingSignals.filter((item) => item.access_level === "vip").length;
-  const previewNews = news.slice(0, 2);
+  const previewNews = news.slice(0, 3);
 
   const displayName = me?.first_name || (me?.username ? `@${me.username}` : isRu ? "Пользователь PIT BET" : "PIT BET user");
+  const accessStatus = statusLabel(sub?.status, language);
 
   return (
     <Layout>
@@ -104,11 +105,15 @@ export function HomePage() {
         title={isRu ? "Сигналы и аналитика каждый день" : "Signals and analytics every day"}
         description={
           isRu
-            ? "Платформа объединяет сигналы, статистику и проверенные игровые ситуации в одном удобном Mini App."
-            : "The platform combines signals, statistics, and proven market situations in one clean Mini App."
+            ? "PIT BET отслеживает движение линии, коэффициенты, рыночные сигналы и игровые паттерны, чтобы выделять сильные игровые ситуации."
+            : "PIT BET tracks line movement, odds, market signals, and game patterns to highlight strong market opportunities."
         }
         right={<AccessBadge level={tariffCode(sub?.tariff)} label={tariffLabel(sub?.tariff)} />}
       >
+        <div className="hero-mini-info">
+          <span>{isRu ? "Профиль" : "Profile"}: <b>{displayName}</b></span>
+          <span>{isRu ? "Статус" : "Status"}: <b>{accessStatus}</b></span>
+        </div>
         <div className="cta-row">
           <Link className="btn" to="/feed">
             {isRu ? "Открыть ленту" : "Open feed"}
@@ -123,6 +128,7 @@ export function HomePage() {
         <SectionHeader
           title={isRu ? "Главное сегодня" : "Today at a glance"}
           subtitle={isRu ? "Активность по сигналам и доступу" : "Signal activity and access overview"}
+          action={<span className="hint-chip">PIT BET</span>}
         />
         <div className="stat-grid">
           <StatCard label={isRu ? "Активных сигналов" : "Active signals"} value={pendingSignals.length} tone="accent" />
@@ -133,28 +139,28 @@ export function HomePage() {
         <div className="quick-links">
           <Link to="/feed" className="quick-link">{isRu ? "Лента" : "Feed"}</Link>
           <Link to="/stats" className="quick-link">{isRu ? "Статистика" : "Stats"}</Link>
-          <Link to="/profile" className="quick-link">{isRu ? "Профиль" : "Profile"}</Link>
+          <Link to="/tariffs" className="quick-link">{isRu ? "Тарифы" : "Tariffs"}</Link>
         </div>
       </AppShellSection>
 
       <AppShellSection>
         <SectionHeader title={isRu ? "Преимущества" : "Why PIT BET"} />
         <div className="feature-grid">
-          <article className="feature-card">
-            <h3>{isRu ? "Сигналы и фильтры" : "Signals and filters"}</h3>
-            <p>{isRu ? "Free, Premium и VIP в одной ленте с понятными статусами." : "Free, Premium, and VIP in one feed with clear status labels."}</p>
+          <article className="feature-card strong">
+            <h3>{isRu ? "Рыночные сигналы" : "Market signals"}</h3>
+            <p>{isRu ? "Отбор по движению линии, коэффициентам и игровому контексту." : "Selection by line movement, odds, and game context."}</p>
           </article>
           <article className="feature-card">
-            <h3>{isRu ? "Статистика" : "Statistics"}</h3>
+            <h3>{isRu ? "Прозрачная статистика" : "Transparent statistics"}</h3>
             <p>{isRu ? "Прозрачные показатели hit rate, ROI и результатов." : "Transparent hit rate, ROI, and outcome metrics."}</p>
           </article>
           <article className="feature-card">
             <h3>{isRu ? "Уведомления" : "Notifications"}</h3>
             <p>{isRu ? "Гибкие настройки push-уведомлений по категориям." : "Flexible push notification settings by category."}</p>
           </article>
-          <article className="feature-card">
-            <h3>{isRu ? "Уровни доступа" : "Access levels"}</h3>
-            <p>{isRu ? "Подписки под разную нагрузку: Free, Premium, VIP." : "Subscriptions for different workload: Free, Premium, VIP."}</p>
+          <article className="feature-card accent">
+            <h3>{isRu ? "Premium / VIP доступ" : "Premium / VIP access"}</h3>
+            <p>{isRu ? "Режимы доступа под разную интенсивность и скорость принятия решений." : "Access levels for different intensity and speed of execution."}</p>
           </article>
         </div>
       </AppShellSection>
@@ -218,6 +224,8 @@ export function HomePage() {
               body={item.body}
               category={item.category}
               meta={dateLabel(item.published_at, language)}
+              to={`/news/${item.id}`}
+              cta={isRu ? "Открыть" : "Open"}
             />
           ))}
         </div>

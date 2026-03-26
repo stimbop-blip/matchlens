@@ -95,6 +95,21 @@ export function PredictionDetailsPage() {
                 <span>{isRu ? "Риск" : "Risk"}</span>
                 <strong>{item.risk_level}</strong>
               </div>
+              <div className="info-row">
+                <span>{isRu ? "Статус" : "Status"}</span>
+                <strong>{statusLabel(item.status, language)}</strong>
+              </div>
+              <div className="info-row">
+                <span>{isRu ? "Доступ" : "Access"}</span>
+                <strong>{item.access_level.toUpperCase()}</strong>
+              </div>
+            </div>
+
+            <SectionHeader title={isRu ? "Контекст сигнала" : "Signal context"} />
+            <div className="details-body">
+              {isRu
+                ? `Формат: ${item.mode === "live" ? "Live" : "Прематч"}. Лига: ${item.league || "уточняется"}.`
+                : `Mode: ${item.mode === "live" ? "Live" : "Prematch"}. League: ${item.league || "to be updated"}.`}
             </div>
 
             <SectionHeader title={isRu ? "Разбор" : "Analysis"} />

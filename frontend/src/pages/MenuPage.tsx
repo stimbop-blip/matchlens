@@ -14,13 +14,6 @@ function tariffLabel(code: string | null | undefined) {
   return "Free";
 }
 
-function statusLabel(status: string | null | undefined, language: "ru" | "en") {
-  if (status === "active") return language === "ru" ? "Активна" : "Active";
-  if (status === "expired") return language === "ru" ? "Истекла" : "Expired";
-  if (status === "canceled") return language === "ru" ? "Отменена" : "Canceled";
-  return language === "ru" ? "Не активна" : "Inactive";
-}
-
 export function MenuPage() {
   const { language } = useLanguage();
   const { theme } = useTheme();
@@ -56,7 +49,7 @@ export function MenuPage() {
 
   const supportConfigured = !SUPPORT_URL.includes("your_support");
   const languageValue = language === "ru" ? (isRu ? "Русский" : "Russian") : "English";
-  const themeValue = theme === "light" ? (isRu ? "Светлая" : "Light") : isRu ? "Темная" : "Dark";
+  const themeValue = theme === "light" ? (isRu ? "Светлая" : "Light") : isRu ? "Тёмная" : "Dark";
   const notificationsValue = notify?.notifications_enabled
     ? isRu
       ? "Включены"
@@ -65,17 +58,22 @@ export function MenuPage() {
       ? "Выключены"
       : "Disabled";
   const subscriptionValue = sub
-    ? `${tariffLabel(sub.tariff)} · ${statusLabel(sub.status, language)}`
+    ? `${tariffLabel(sub.tariff)}`
     : isRu
       ? "Загрузка"
       : "Loading";
+  const bonusValue = isRu ? `${referral?.bonus_days ?? 0} дн.` : `${referral?.bonus_days ?? 0} days`;
 
   return (
     <Layout>
       <AppShellSection>
         <SectionHeader
           title={isRu ? "Меню" : "Menu"}
-          subtitle={isRu ? "Настройки, аккаунт и сервис PIT BET" : "Settings, account, and PIT BET service"}
+          subtitle={
+            isRu
+              ? "Настройки, доступ и сервисные разделы PIT BET"
+              : "Settings, access, and service sections of PIT BET"
+          }
         />
 
         <SettingsSection title={isRu ? "Настройки" : "Settings"}>
@@ -106,7 +104,7 @@ export function MenuPage() {
           <SettingsRow
             icon="🎁"
             title={isRu ? "Мои бонусы" : "My bonuses"}
-            value={`${referral?.bonus_days ?? 0}`}
+            value={bonusValue}
             to="/profile#referral"
           />
         </SettingsSection>

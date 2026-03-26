@@ -21,23 +21,33 @@ export function ThemePage() {
       <AppShellSection>
         <SectionHeader
           title={isRu ? "Тема" : "Theme"}
-          subtitle={isRu ? "Выберите визуальный режим" : "Choose visual mode"}
+          subtitle={isRu ? "Выберите визуальный режим PIT BET" : "Choose your PIT BET visual mode"}
         />
 
-        <SettingsSection title={isRu ? "Варианты" : "Options"}>
+        <SettingsSection title={isRu ? "Выбор темы" : "Theme selection"}>
           <SettingsRow
             icon="🌙"
             title={isRu ? "Темная" : "Dark"}
             subtitle={isRu ? "Глубокий контраст и мягкий фон" : "Deep contrast and calm surfaces"}
             onClick={() => applyTheme("dark")}
-            right={theme === "dark" ? <span className="language-check">✓</span> : undefined}
+            right={
+              <span className="theme-row-right">
+                <span className="theme-swatch dark" />
+                {theme === "dark" ? <span className="language-check">✓</span> : null}
+              </span>
+            }
           />
           <SettingsRow
             icon="☀️"
             title={isRu ? "Светлая" : "Light"}
             subtitle={isRu ? "Чистый светлый интерфейс" : "Clean bright interface"}
             onClick={() => applyTheme("light")}
-            right={theme === "light" ? <span className="language-check">✓</span> : undefined}
+            right={
+              <span className="theme-row-right">
+                <span className="theme-swatch light" />
+                {theme === "light" ? <span className="language-check">✓</span> : null}
+              </span>
+            }
           />
         </SettingsSection>
       </AppShellSection>

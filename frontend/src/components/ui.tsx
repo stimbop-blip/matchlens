@@ -203,11 +203,15 @@ export function NewsPreviewCard({
   body,
   category,
   meta,
+  to,
+  cta,
 }: {
   title: string;
   body: string;
   category: string;
   meta: string;
+  to?: string;
+  cta?: string;
 }) {
   return (
     <article className="news-card">
@@ -215,8 +219,15 @@ export function NewsPreviewCard({
         <strong>{title}</strong>
         <span className="badge info">{category}</span>
       </div>
-      <p>{body}</p>
-      <small>{meta}</small>
+      <p className="news-preview-body">{body}</p>
+      <div className="news-meta-row">
+        <small>{meta}</small>
+        {to ? (
+          <Link className="news-open-link" to={to}>
+            {cta || "Подробнее"}
+          </Link>
+        ) : null}
+      </div>
     </article>
   );
 }

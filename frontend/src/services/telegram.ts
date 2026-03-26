@@ -48,8 +48,8 @@ export function applyAppTheme(theme: AppTheme): void {
   const webApp = window.Telegram?.WebApp;
   if (!webApp) return;
 
-  const bg = nextTheme === "light" ? "#eff3f8" : "#071021";
-  const header = nextTheme === "light" ? "#f7f9fc" : "#0c1629";
+  const bg = nextTheme === "light" ? "#F3F6FB" : "#07111F";
+  const header = nextTheme === "light" ? "#ECF1F8" : "#0A1628";
   if (webApp.setBackgroundColor) webApp.setBackgroundColor(bg);
   if (webApp.setHeaderColor) webApp.setHeaderColor(header);
 }

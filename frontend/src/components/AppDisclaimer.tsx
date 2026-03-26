@@ -4,8 +4,8 @@ export function AppDisclaimer() {
   const { language } = useLanguage();
   const text =
     language === "ru"
-      ? "PIT BET дает аналитическую информацию. Ставки связаны с риском, результат не гарантируется. Играйте ответственно."
-      : "PIT BET provides analytical information. Betting involves risk, and results are not guaranteed. Please play responsibly.";
+      ? "Информация в PIT BET носит аналитический и ознакомительный характер. Ставки связаны с финансовым риском, а результат не может быть гарантирован. Используйте сервис ответственно."
+      : "PIT BET provides analytical information for educational use. Betting involves financial risk, and results cannot be guaranteed. Please use the service responsibly.";
 
   return (
     <footer className="app-disclaimer" role="note" aria-live="polite">
