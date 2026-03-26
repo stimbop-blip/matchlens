@@ -32,6 +32,7 @@ async def run_notification_worker(bot: Bot, backend_client: BackendClient) -> No
 
             items = await backend_client.pull_notifications(limit=20)
             pulled = len(items)
+            logger.info("notification_worker pulled_count=%s", pulled)
             sent_ok = 0
             sent_failed = 0
             skipped = 0
@@ -41,6 +42,12 @@ async def run_notification_worker(bot: Bot, backend_client: BackendClient) -> No
                 telegram_id = item.get("telegram_id")
                 title = str(item.get("title") or "Обновление MatchLens")
                 message = str(item.get("message") or "")
+
+                logger.info(
+                    "notification_worker processing_notification_id=%s telegram_id=%s",
+                    notification_id,
+                    telegram_id,
+                )
 
                 if not notification_id:
                     skipped += 1
@@ -53,6 +60,7 @@ async def run_notification_worker(bot: Bot, backend_client: BackendClient) -> No
                     ack_failed = await backend_client.mark_notification_failed(notification_id)
                     if not ack_failed:
                         logger.warning("notification_worker failed_to_ack_failed id=%s", notification_id)
+                    logger.info("notification_worker skipped id=%s reason=missing_telegram_id", notification_id)
                     continue
 
                 try:
@@ -65,6 +73,7 @@ async def run_notification_worker(bot: Bot, backend_client: BackendClient) -> No
                     if not ack_sent:
                         logger.warning("notification_worker failed_to_ack_sent id=%s", notification_id)
                     sent_ok += 1
+                    logger.info("notification_worker sent id=%s telegram_id=%s", notification_id, telegram_id)
                 except Exception as exc:
                     sent_failed += 1
                     logger.warning(
@@ -76,15 +85,14 @@ async def run_notification_worker(bot: Bot, backend_client: BackendClient) -> No
                     ack_failed = await backend_client.mark_notification_failed(notification_id)
                     if not ack_failed:
                         logger.warning("notification_worker failed_to_ack_failed id=%s", notification_id)
-
-            if pulled:
-                logger.info(
-                    "notification_worker cycle pulled=%s sent=%s failed=%s skipped=%s",
-                    pulled,
-                    sent_ok,
-                    sent_failed,
-                    skipped,
-                )
+                    logger.info("notification_worker failed id=%s telegram_id=%s", notification_id, telegram_id)
+            logger.info(
+                "notification_worker cycle pulled=%s sent=%s failed=%s skipped=%s",
+                pulled,
+                sent_ok,
+                sent_failed,
+                skipped,
+            )
         except Exception as exc:
             logger.warning("notification_worker loop_error reason=%s", exc)
 
