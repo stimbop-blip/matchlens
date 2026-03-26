@@ -41,6 +41,7 @@ export function AdminPage() {
   const [tab, setTab] = useState<TabKey>("predictions");
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [message, setMessage] = useState("");
+  const [messageTone, setMessageTone] = useState<"success" | "error" | "info">("info");
   const [loading, setLoading] = useState(false);
 
   const [predictions, setPredictions] = useState<Prediction[]>([]);
@@ -64,6 +65,21 @@ export function AdminPage() {
   const [campaignMessage, setCampaignMessage] = useState("");
   const [campaignPreviewCount, setCampaignPreviewCount] = useState<number | null>(null);
   const [deliveryStats, setDeliveryStats] = useState<{ total: number; sent: number; failed: number; queued: number } | null>(null);
+
+  const notifyInfo = (text: string) => {
+    setMessageTone("info");
+    setMessage(text);
+  };
+
+  const notifySuccess = (text: string) => {
+    setMessageTone("success");
+    setMessage(text);
+  };
+
+  const notifyError = (text: string) => {
+    setMessageTone("error");
+    setMessage(text);
+  };
 
   const loadAll = async () => {
     const role = usersRoleFilter === "all" ? undefined : usersRoleFilter;
@@ -126,7 +142,7 @@ export function AdminPage() {
   const onCreatePrediction = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
-    setMessage("");
+    notifyInfo("");
     const formData = new FormData(e.currentTarget);
     const matchName = String(formData.get("match_name") || "").trim();
     const signalType = String(formData.get("signal_type") || "").trim();
@@ -146,11 +162,11 @@ export function AdminPage() {
         status: String(formData.get("status") || "pending").replace("win", "won").replace("lose", "lost"),
         publish_now: true,
       });
-      setMessage("Прогноз создан");
+      notifySuccess("Прогноз создан");
       e.currentTarget.reset();
       await loadAll();
     } catch (e) {
-      setMessage(textError(e, "Не удалось создать прогноз"));
+      notifyError(textError(e, "Не удалось создать прогноз"));
     } finally {
       setLoading(false);
     }
@@ -159,10 +175,10 @@ export function AdminPage() {
   const onUpdatePrediction = async (id: string, payload: Record<string, unknown>) => {
     try {
       await api.adminUpdatePrediction(id, payload);
-      setMessage("Прогноз обновлен");
+      notifySuccess("Прогноз обновлен");
       await loadAll();
     } catch (e) {
-      setMessage(textError(e, "Ошибка обновления прогноза"));
+      notifyError(textError(e, "Ошибка обновления прогноза"));
     }
   };
 
@@ -170,20 +186,20 @@ export function AdminPage() {
     if (!window.confirm("Удалить прогноз из ленты?")) return;
     try {
       await api.adminDeletePrediction(id);
-      setMessage("Прогноз удален");
+      notifySuccess("Прогноз удален");
       await loadAll();
     } catch (e) {
-      setMessage(textError(e, "Ошибка удаления прогноза"));
+      notifyError(textError(e, "Ошибка удаления прогноза"));
     }
   };
 
   const onUpdateRole = async (userId: string, role: "user" | "admin") => {
     try {
       await api.adminUpdateUserRole(userId, role);
-      setMessage(role === "admin" ? "Права администратора выданы" : "Права администратора сняты");
+      notifySuccess(role === "admin" ? "Права администратора выданы" : "Права администратора сняты");
       await loadAll();
     } catch (e) {
-      setMessage(textError(e, "Не удалось изменить роль"));
+      notifyError(textError(e, "Не удалось изменить роль"));
     }
   };
 
@@ -191,10 +207,10 @@ export function AdminPage() {
     if (!window.confirm("Удалить пользователя? Действие необратимо.")) return;
     try {
       await api.adminDeleteUser(userId);
-      setMessage("Пользователь удален");
+      notifySuccess("Пользователь удален");
       await loadAll();
     } catch (e) {
-      setMessage(textError(e, "Удаление пользователя недоступно"));
+      notifyError(textError(e, "Удаление пользователя недоступно"));
     }
   };
 
@@ -210,31 +226,31 @@ export function AdminPage() {
         tariff_code: String(formData.get("tariff_code") || "free") as "free" | "premium" | "vip",
         duration_days: Number(formData.get("duration_days") || 30),
       });
-      setMessage("Подписка выдана");
+      notifySuccess("Подписка выдана");
       e.currentTarget.reset();
       await loadAll();
     } catch (e) {
-      setMessage(textError(e, "Не удалось выдать подписку"));
+      notifyError(textError(e, "Не удалось выдать подписку"));
     }
   };
 
   const onSubAction = async (action: () => Promise<unknown>, success: string, fail: string) => {
     try {
       await action();
-      setMessage(success);
+      notifySuccess(success);
       await loadAll();
     } catch (e) {
-      setMessage(textError(e, fail));
+      notifyError(textError(e, fail));
     }
   };
 
   const onPaymentStatus = async (paymentId: string, status: "pending" | "succeeded" | "failed" | "canceled") => {
     try {
       await api.adminUpdatePaymentStatus(paymentId, status);
-      setMessage("Статус платежа обновлен");
+      notifySuccess("Статус платежа обновлен");
       await loadAll();
     } catch (e) {
-      setMessage(textError(e, "Не удалось обновить платеж"));
+      notifyError(textError(e, "Не удалось обновить платеж"));
     }
   };
 
@@ -248,12 +264,12 @@ export function AdminPage() {
         user_id: user.id,
       });
       if (result.queued > 0) {
-        setMessage("Личное сообщение поставлено в очередь");
+        notifySuccess("Личное сообщение поставлено в очередь");
       } else {
-        setMessage("Не удалось поставить сообщение в очередь");
+        notifyError("Не удалось поставить сообщение в очередь");
       }
     } catch (e) {
-      setMessage(textError(e, "Ошибка отправки личного сообщения"));
+      notifyError(textError(e, "Ошибка отправки личного сообщения"));
     }
   };
 
@@ -265,15 +281,15 @@ export function AdminPage() {
         notifications_enabled_only: campaignNotifOnly,
       });
       setCampaignPreviewCount(preview.count);
-      setMessage(`Найдено получателей: ${preview.count}`);
+      notifyInfo(`Найдено получателей: ${preview.count}`);
     } catch (e) {
-      setMessage(textError(e, "Не удалось сделать превью рассылки"));
+      notifyError(textError(e, "Не удалось сделать превью рассылки"));
     }
   };
 
   const onCampaignSend = async () => {
     if (!campaignTitle.trim() || !campaignMessage.trim()) {
-      setMessage("Заполните заголовок и текст рассылки");
+      notifyError("Заполните заголовок и текст рассылки");
       return;
     }
     if (!window.confirm("Подтвердить массовую рассылку?")) return;
@@ -285,12 +301,12 @@ export function AdminPage() {
         access_level: campaignAccess === "all" ? undefined : campaignAccess,
         notifications_enabled_only: campaignNotifOnly,
       });
-      setMessage(`Рассылка поставлена в очередь: ${result.queued}`);
+      notifySuccess(`Рассылка поставлена в очередь: ${result.queued}`);
       setCampaignTitle("");
       setCampaignMessage("");
       setCampaignPreviewCount(null);
     } catch (e) {
-      setMessage(textError(e, "Не удалось запустить рассылку"));
+      notifyError(textError(e, "Не удалось запустить рассылку"));
     }
   };
 
@@ -321,8 +337,8 @@ export function AdminPage() {
           ))}
         </div>
 
-        {message ? <p className="admin-toast">{message}</p> : null}
-        {loading ? <p>Обновляем данные...</p> : null}
+        {message ? <p className={`notice admin-toast ${messageTone}`}>{message}</p> : null}
+        {loading ? <p className="muted">Обновляем данные...</p> : null}
 
         {tab === "predictions" ? (
           <div className="admin-panel">
@@ -559,7 +575,7 @@ export function AdminPage() {
                 <article key={payment.id} className="prediction-card admin-item">
                   <div className="prediction-top">
                     <strong>{payment.amount_rub} RUB • {accessLabel(payment.tariff_code)}</strong>
-                    <span className="badge">{statusLabel(payment.status)}</span>
+                    <span className={`badge ${payment.status}`}>{statusLabel(payment.status)}</span>
                   </div>
                   <p className="muted">@{payment.username || "-"} • tg: {payment.telegram_id}</p>
                   <p className="muted">order: {payment.provider_order_id}</p>

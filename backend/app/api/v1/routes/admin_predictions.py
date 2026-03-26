@@ -7,7 +7,7 @@ from app.core.db import get_db
 from app.models.prediction import Prediction
 from app.models.user import User
 from app.schemas.prediction import PredictionCreateIn, PredictionOut, PredictionUpdateIn
-from app.services.notification_service import queue_prediction_notification, queue_prediction_result_notification
+from app.services.notification_service import queue_prediction_created_notification, queue_prediction_result_notification
 from app.services.prediction_service import create_prediction, delete_prediction, update_prediction
 
 router = APIRouter(prefix="/admin/predictions", tags=["admin"])
@@ -48,20 +48,7 @@ def admin_create_prediction(
 ) -> PredictionOut:
     item = create_prediction(db, payload.model_dump(), str(current_admin.id))
     if item.published_at is not None:
-        league_text = item.league or "Без лиги"
-        queue_prediction_notification(
-            db,
-            access_level=item.access_level.value,
-            title=f"Новый прогноз: {item.title}",
-            message=(
-                f"Матч: {item.match_name}\n"
-                f"Лига: {league_text}\n"
-                f"Сигнал: {item.signal_type}\n"
-                f"Коэффициент: {float(item.odds)}\n"
-                f"Доступ: {item.access_level.value.upper()}\n\n"
-                "Откройте Mini App через кнопку меню Telegram"
-            ),
-        )
+        queue_prediction_created_notification(db, item)
     return PredictionOut(
         id=str(item.id),
         title=item.title,
@@ -94,20 +81,7 @@ def admin_update_prediction(
     previous_status = item.status.value
     item = update_prediction(db, item, payload.model_dump())
     if previous_published_at is None and item.published_at is not None:
-        league_text = item.league or "Без лиги"
-        queue_prediction_notification(
-            db,
-            access_level=item.access_level.value,
-            title=f"Новый прогноз: {item.title}",
-            message=(
-                f"Матч: {item.match_name}\n"
-                f"Лига: {league_text}\n"
-                f"Сигнал: {item.signal_type}\n"
-                f"Коэффициент: {float(item.odds)}\n"
-                f"Доступ: {item.access_level.value.upper()}\n\n"
-                "Откройте Mini App через кнопку меню Telegram"
-            ),
-        )
+        queue_prediction_created_notification(db, item)
 
     result_statuses = {"won", "lost", "refund"}
     if item.status.value in result_statuses and previous_status != item.status.value:

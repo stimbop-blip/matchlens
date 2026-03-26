@@ -27,27 +27,26 @@ app.include_router(api_router, prefix=settings.api_prefix)
 def on_startup() -> None:
     if settings.auto_create_tables:
         Base.metadata.create_all(bind=engine)
-        with engine.begin() as conn:
-            columns = {
-                row[0]
-                for row in conn.execute(
-                    text(
-                        """
-                        SELECT column_name
-                        FROM information_schema.columns
-                        WHERE table_name = 'user_settings'
-                        """
-                    )
-                )
-            }
+    with engine.begin() as conn:
+        table_exists = conn.execute(text("SELECT to_regclass('public.user_settings')")).scalar()
+        if table_exists:
+            columns = {row[0] for row in conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name = 'user_settings'"))}
             if "notifications_enabled" not in columns:
                 conn.execute(text("ALTER TABLE user_settings ADD COLUMN notifications_enabled BOOLEAN DEFAULT TRUE"))
+            if "notify_new_predictions" not in columns:
+                conn.execute(text("ALTER TABLE user_settings ADD COLUMN notify_new_predictions BOOLEAN DEFAULT TRUE"))
             if "notify_free" not in columns:
                 conn.execute(text("ALTER TABLE user_settings ADD COLUMN notify_free BOOLEAN DEFAULT TRUE"))
             if "notify_premium" not in columns:
                 conn.execute(text("ALTER TABLE user_settings ADD COLUMN notify_premium BOOLEAN DEFAULT TRUE"))
+            if "notify_vip" not in columns:
+                conn.execute(text("ALTER TABLE user_settings ADD COLUMN notify_vip BOOLEAN DEFAULT TRUE"))
             if "notify_results" not in columns:
                 conn.execute(text("ALTER TABLE user_settings ADD COLUMN notify_results BOOLEAN DEFAULT TRUE"))
+            if "notify_subscription" not in columns:
+                conn.execute(text("ALTER TABLE user_settings ADD COLUMN notify_subscription BOOLEAN DEFAULT TRUE"))
+
+    if settings.auto_create_tables:
         db = SessionLocal()
         try:
             seed_tariffs(db)

@@ -11,11 +11,24 @@ function tariffLabel(value: string): string {
   return "Бесплатный";
 }
 
+function subscriptionStatusLabel(value: string): string {
+  if (value === "active") return "Активна";
+  if (value === "expired") return "Истекла";
+  if (value === "canceled") return "Отменена";
+  return value;
+}
+
+function subscriptionStatusClass(value: string): string {
+  if (value === "active") return "won";
+  if (value === "expired" || value === "canceled") return "lost";
+  return "pending";
+}
+
 export function ProfilePage() {
   const [me, setMe] = useState<Me | null>(null);
   const [sub, setSub] = useState<{ tariff: string; status: string; ends_at: string | null } | null>(null);
   const [notify, setNotify] = useState<NotificationSettings | null>(null);
-  const [notifyMessage, setNotifyMessage] = useState("");
+  const [notifyMessage, setNotifyMessage] = useState<{ tone: "success" | "error"; text: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -54,9 +67,9 @@ export function ProfilePage() {
     try {
       const updated = await api.updateMyNotificationSettings(payload);
       setNotify(updated);
-      setNotifyMessage("Настройки сохранены");
+      setNotifyMessage({ tone: "success", text: "Настройки сохранены" });
     } catch {
-      setNotifyMessage("Не удалось сохранить настройки");
+      setNotifyMessage({ tone: "error", text: "Не удалось сохранить настройки" });
     }
   };
 
@@ -68,7 +81,7 @@ export function ProfilePage() {
           <span className="muted">Личный доступ и статус</span>
         </div>
 
-        {loading ? <p>Загружаем профиль...</p> : null}
+        {loading ? <p className="muted">Загружаем профиль...</p> : null}
         {!loading && !me ? <p className="empty-state">Профиль временно недоступен.</p> : null}
 
         {me ? (
@@ -95,7 +108,9 @@ export function ProfilePage() {
         {sub ? (
           <div className="subscription-box">
             <span className={`access-pill ${sub.tariff}`}>{tariffLabel(sub.tariff)}</span>
-            <p>Статус: {sub.status === "active" ? "Активна" : sub.status === "expired" ? "Истекла" : sub.status}</p>
+            <p>
+              Статус: <span className={`badge ${subscriptionStatusClass(sub.status)}`}>{subscriptionStatusLabel(sub.status)}</span>
+            </p>
             <p>Доступ до: {sub.ends_at ? new Date(sub.ends_at).toLocaleString("ru-RU") : "—"}</p>
           </div>
         ) : null}
@@ -155,7 +170,7 @@ export function ProfilePage() {
                   }}
                 />
               </label>
-              {notifyMessage ? <p className="muted">{notifyMessage}</p> : null}
+              {notifyMessage ? <p className={`notice ${notifyMessage.tone}`}>{notifyMessage.text}</p> : null}
             </div>
           ) : null}
         </div>

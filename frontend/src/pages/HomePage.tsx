@@ -16,8 +16,8 @@ export function HomePage() {
   return (
     <Layout>
       <section className="hero card">
-        <h2>Премиум аналитика матчей</h2>
-        <p>Вся работа в одном экране: сигналы, риски, доступы и факт-статистика по результатам.</p>
+        <h2>Премиальная аналитика матчей</h2>
+        <p>Следите за сигналами, риском и итогами в одном экране. Все метрики считаются по фактическим результатам.</p>
         <div className="cta-row">
           <Link className="btn" to="/feed">
             Открыть ленту
@@ -53,9 +53,9 @@ export function HomePage() {
 
       <section className="card">
         <h3>Как использовать MatchLens</h3>
-        <p className="stacked">1) Откройте ленту и отфильтруйте формат сигнала.</p>
-        <p className="stacked">2) Проверьте коэффициент, риск и статус публикации.</p>
-        <p className="stacked">3) Для расширенного доступа используйте Premium или VIP.</p>
+        <p className="stacked">1) Откройте ленту и выберите формат: прематч или лайв.</p>
+        <p className="stacked">2) Сверьте коэффициент, уровень риска и статус расчета.</p>
+        <p className="stacked">3) Для расширенного покрытия активируйте Premium или VIP.</p>
       </section>
     </Layout>
   );

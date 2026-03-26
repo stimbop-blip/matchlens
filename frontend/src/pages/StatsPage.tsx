@@ -24,7 +24,7 @@ export function StatsPage() {
           <span className="muted">Реальные расчеты по статусам прогнозов</span>
         </div>
 
-        {loading ? <p>Обновляем показатели...</p> : null}
+        {loading ? <p className="muted">Обновляем показатели...</p> : null}
         {!loading && !stats ? <p className="empty-state">Не удалось загрузить статистику.</p> : null}
 
         {stats ? (

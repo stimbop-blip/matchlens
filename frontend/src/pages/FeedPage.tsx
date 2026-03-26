@@ -13,6 +13,13 @@ function statusLabel(status: Prediction["status"]): string {
   return "В ожидании";
 }
 
+function statusClass(status: Prediction["status"]): string {
+  if (status === "won") return "won";
+  if (status === "lost") return "lost";
+  if (status === "refund") return "refund";
+  return "pending";
+}
+
 function modeLabel(mode: Prediction["mode"]): string {
   return mode === "live" ? "Лайв" : "Прематч";
 }
@@ -21,6 +28,12 @@ function accessLabel(access: Prediction["access_level"]): string {
   if (access === "premium") return "Премиум";
   if (access === "vip") return "VIP";
   return "Бесплатный";
+}
+
+function formatKickoff(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
 }
 
 function dayHeading(date: Date): string {
@@ -95,7 +108,7 @@ export function FeedPage() {
           </label>
         </div>
 
-        {loading ? <p>Загружаем ленту...</p> : null}
+        {loading ? <p className="muted">Загружаем ленту...</p> : null}
         {error ? <p className="error-msg">{error}</p> : null}
         {!loading && !error && items.length === 0 ? <p className="empty-state">По этим фильтрам прогнозов пока нет.</p> : null}
 
@@ -111,7 +124,7 @@ export function FeedPage() {
                 <div className="meta-row">
                   <span>{item.sport_type}</span>
                   <span>{item.league || "Без лиги"}</span>
-                  <span>{new Date(item.event_start_at).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}</span>
+                  <span>{formatKickoff(item.event_start_at)}</span>
                 </div>
                 <div className="signal-row">
                   <div>
@@ -129,8 +142,8 @@ export function FeedPage() {
                 </div>
                 {item.short_description ? <p className="desc">{item.short_description}</p> : null}
                 <div className="prediction-bottom">
-                  <span className="badge">{statusLabel(item.status)}</span>
-                  <span className="badge">{modeLabel(item.mode)}</span>
+                  <span className={`badge ${statusClass(item.status)}`}>{statusLabel(item.status)}</span>
+                  <span className="badge mode">{modeLabel(item.mode)}</span>
                 </div>
               </article>
             ))}

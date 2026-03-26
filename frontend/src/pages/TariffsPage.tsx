@@ -13,7 +13,7 @@ const FEATURES: Record<string, string[]> = {
 
 export function TariffsPage() {
   const [tariffs, setTariffs] = useState<Tariff[]>([]);
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState<{ tone: "error" | "info"; text: string } | null>(null);
 
   useEffect(() => {
     api.tariffs().then(setTariffs).catch(() => setTariffs([]));
@@ -21,14 +21,14 @@ export function TariffsPage() {
 
   const onPay = async (code: "premium" | "vip") => {
     if (!PAYMENTS_ENABLED) {
-      setMessage("Оплата временно недоступна. Подключение платежей в процессе.");
+      setMessage({ tone: "info", text: "Оплата временно недоступна. Подключение платежей в процессе." });
       return;
     }
     try {
       const payment = await api.createPayment(code);
       window.location.href = payment.payment_url;
     } catch {
-      setMessage("Не удалось создать платеж. Повторите попытку позже.");
+      setMessage({ tone: "error", text: "Не удалось создать платеж. Повторите попытку позже." });
     }
   };
 
@@ -67,7 +67,7 @@ export function TariffsPage() {
           ))}
         </div>
 
-        {message ? <p className="error-msg">{message}</p> : null}
+        {message ? <p className={`notice ${message.tone}`}>{message.text}</p> : null}
       </section>
     </Layout>
   );
