@@ -4,7 +4,7 @@ import { Link, useParams } from "react-router-dom";
 import { useLanguage } from "../app/language";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
-import { AccessBadge, AppShellSection, HeroCard, SectionHeader } from "../components/ui";
+import { AccessBadge, AppShellSection, HeroCard, SectionActions, SectionHeader } from "../components/ui";
 import { api, type Prediction } from "../services/api";
 
 function dateLabel(value: string, language: "ru" | "en") {
@@ -122,14 +122,14 @@ export function PredictionDetailsPage() {
           </>
         ) : null}
 
-        <div className="cta-row">
+        <SectionActions compact>
           <Link className="btn secondary" to="/feed">
             {isRu ? "Назад к ленте" : "Back to feed"}
           </Link>
           <Link className="btn ghost" to="/tariffs">
             {isRu ? "Тарифы" : "Tariffs"}
           </Link>
-        </div>
+        </SectionActions>
       </AppShellSection>
 
       <AppDisclaimer />

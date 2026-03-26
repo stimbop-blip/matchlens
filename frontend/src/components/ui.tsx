@@ -88,6 +88,18 @@ export function StatCard({
   );
 }
 
+export function SectionActions({ children, compact = false }: { children: ReactNode; compact?: boolean }) {
+  return <div className={compact ? "section-actions compact" : "section-actions"}>{children}</div>;
+}
+
+export function CardFooterActions({ children }: { children: ReactNode }) {
+  return <div className="card-footer-actions">{children}</div>;
+}
+
+export function QuickActionRow({ children }: { children: ReactNode }) {
+  return <div className="quick-action-row">{children}</div>;
+}
+
 export function AccessBadge({
   level,
   label,

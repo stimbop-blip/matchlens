@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from html import escape
 from typing import Any, cast
+from urllib.parse import urlsplit, urlunsplit
 
 from aiogram import F, Router
 from aiogram.exceptions import TelegramBadRequest
@@ -67,6 +68,28 @@ def _subscription_status_label(value: str, language: str) -> str:
     return value
 
 
+def _prediction_status_label(value: str, language: str) -> str:
+    if value == "won":
+        return t(language, "status_won")
+    if value == "lost":
+        return t(language, "status_lost")
+    if value == "refund":
+        return t(language, "status_refund")
+    return t(language, "status_pending")
+
+
+def _mini_app_url(path: str | None = None) -> str:
+    base = settings.mini_app_url.strip()
+    if not base or not path:
+        return base
+
+    parsed = urlsplit(base)
+    suffix = path if path.startswith("/") else f"/{path}"
+    base_path = parsed.path.rstrip("/")
+    merged_path = f"{base_path}{suffix}" if base_path else suffix
+    return urlunsplit((parsed.scheme, parsed.netloc, merged_path, parsed.query, parsed.fragment))
+
+
 def _remember_free(user_id: int, items: list[dict[str, Any]]) -> None:
     _FREE_CACHE[user_id] = items
     if len(_FREE_CACHE) <= _FREE_CACHE_LIMIT:
@@ -118,15 +141,16 @@ async def _send_screen(message: Message, text: str, reply_markup: InlineKeyboard
 
 
 async def _edit_screen(query: CallbackQuery, text: str, reply_markup: InlineKeyboardMarkup) -> None:
-    if not query.message:
+    message = cast(Any, query.message)
+    if not message:
         await query.answer()
         return
 
     try:
-        await query.message.edit_text(text, reply_markup=reply_markup, disable_web_page_preview=True)
+        await message.edit_text(text, reply_markup=reply_markup, disable_web_page_preview=True)
     except TelegramBadRequest as exc:
         if "message is not modified" not in str(exc).lower():
-            await query.message.answer(text, reply_markup=reply_markup, disable_web_page_preview=True)
+            await message.answer(text, reply_markup=reply_markup, disable_web_page_preview=True)
 
     await query.answer()
 
@@ -148,7 +172,11 @@ async def _build_free_screen(language: str, user_id: int | None) -> tuple[str, I
     if not items:
         return (
             t(language, "free_empty"),
-            section_nav_keyboard(language=language, back_callback="menu:main", include_open_app=True),
+            section_nav_keyboard(
+                language=language,
+                back_callback="menu:main",
+                primary_button=(t(language, "open_feed"), _mini_app_url("/feed")),
+            ),
         )
 
     lines = [t(language, "free_title"), t(language, "free_hint"), ""]
@@ -158,9 +186,14 @@ async def _build_free_screen(language: str, user_id: int | None) -> tuple[str, I
         match_name = str(item.get("match_name") or t(language, "unknown_match"))
         league = str(item.get("league") or t(language, "no_league"))
         odds = str(item.get("odds") or "-")
+        status = _prediction_status_label(str(item.get("status") or "pending"), language)
         event_start = _format_datetime(cast(str | None, item.get("event_start_at")))
         lines.append(f"<b>{idx}. {escape(match_name)}</b> • {t(language, 'label_odds')}: <b>{escape(odds)}</b>")
-        lines.append(f"{t(language, 'label_league')}: {escape(league)} • {t(language, 'label_start')}: {escape(event_start)}")
+        lines.append(
+            f"{t(language, 'label_league')}: {escape(league)} • "
+            f"{t(language, 'label_start')}: {escape(event_start)} • "
+            f"{t(language, 'label_status')}: <b>{escape(status)}</b>"
+        )
         lines.append("")
         rows.append(
             [
@@ -171,8 +204,12 @@ async def _build_free_screen(language: str, user_id: int | None) -> tuple[str, I
             ]
         )
 
-    rows.append([InlineKeyboardButton(text=t(language, "open_mini_app"), url=settings.mini_app_url)])
-    rows.append([InlineKeyboardButton(text=t(language, "nav_menu"), callback_data="menu:main")])
+    nav_keyboard = section_nav_keyboard(
+        language=language,
+        back_callback="menu:main",
+        primary_button=(t(language, "open_feed"), _mini_app_url("/feed")),
+    )
+    rows.extend(nav_keyboard.inline_keyboard)
     return ("\n".join(lines).strip(), InlineKeyboardMarkup(inline_keyboard=rows))
 
 
@@ -181,7 +218,11 @@ async def _build_free_details_screen(language: str, user_id: int | None, detail_
     if detail_index < 0 or detail_index >= len(items):
         return (
             t(language, "free_details_missing"),
-            section_nav_keyboard(language=language, back_callback="menu:free", include_open_app=True),
+            section_nav_keyboard(
+                language=language,
+                back_callback="menu:free",
+                primary_button=(t(language, "open_feed"), _mini_app_url("/feed")),
+            ),
         )
 
     item = items[detail_index]
@@ -191,6 +232,10 @@ async def _build_free_details_screen(language: str, user_id: int | None, detail_
     odds = escape(str(item.get("odds") or "-"))
     event_start = escape(_format_datetime(cast(str | None, item.get("event_start_at"))))
     short_description = escape(str(item.get("short_description") or "").strip())
+    mode = "Live" if str(item.get("mode") or "") == "live" else "Prematch"
+    risk = escape(str(item.get("risk_level") or t(language, "risk_unknown")))
+    access = escape(_tariff_label(str(item.get("access_level") or "free")))
+    status = escape(_prediction_status_label(str(item.get("status") or "pending"), language))
 
     lines = [
         t(language, "free_details_title"),
@@ -199,14 +244,25 @@ async def _build_free_details_screen(language: str, user_id: int | None, detail_
         f"{t(language, 'label_signal')}: {signal}",
         f"{t(language, 'label_odds')}: <b>{odds}</b>",
         f"{t(language, 'label_start')}: {event_start}",
+        f"{t(language, 'label_risk')}: <b>{risk}</b>",
+        f"{t(language, 'label_status')}: <b>{status}</b>",
+        f"{t(language, 'label_access')}: <b>{access}</b>",
     ]
+    lines.extend(["", f"<b>{t(language, 'free_details_context')}</b>", f"{t(language, 'label_signal')}: {signal} • {mode}"])
+    lines.append("")
+    lines.append(f"<b>{t(language, 'free_details_reason')}</b>")
     if short_description:
-        lines.extend(["", short_description])
-    lines.extend(["", t(language, "profile_hint")])
+        lines.append(short_description)
+    else:
+        lines.append(t(language, "profile_hint"))
 
     return (
         "\n".join(lines),
-        section_nav_keyboard(language=language, back_callback="menu:free", include_open_app=True),
+        section_nav_keyboard(
+            language=language,
+            back_callback="menu:free",
+            primary_button=(t(language, "open_feed"), _mini_app_url("/feed")),
+        ),
     )
 
 
@@ -216,7 +272,11 @@ async def _build_stats_screen(language: str) -> tuple[str, InlineKeyboardMarkup]
     if not payload:
         return (
             t(language, "stats_placeholder"),
-            section_nav_keyboard(language=language, back_callback="menu:main", include_open_app=True),
+            section_nav_keyboard(
+                language=language,
+                back_callback="menu:main",
+                primary_button=(t(language, "open_stats"), _mini_app_url("/stats")),
+            ),
         )
 
     total = payload.get("total", 0)
@@ -239,7 +299,11 @@ async def _build_stats_screen(language: str) -> tuple[str, InlineKeyboardMarkup]
 
     return (
         text,
-        section_nav_keyboard(language=language, back_callback="menu:main", include_open_app=True),
+        section_nav_keyboard(
+            language=language,
+            back_callback="menu:main",
+            primary_button=(t(language, "open_stats"), _mini_app_url("/stats")),
+        ),
     )
 
 
@@ -247,7 +311,11 @@ async def _build_profile_screen(language: str, user_id: int | None, username: st
     if not user_id:
         return (
             t(language, "profile_unavailable"),
-            section_nav_keyboard(language=language, back_callback="menu:main", include_open_app=True),
+            section_nav_keyboard(
+                language=language,
+                back_callback="menu:main",
+                primary_button=(t(language, "open_profile"), _mini_app_url("/profile")),
+            ),
         )
 
     backend_client = get_backend_client()
@@ -260,6 +328,9 @@ async def _build_profile_screen(language: str, user_id: int | None, username: st
 
     referral_code = str(referral.get("referral_code") or t(language, "profile_referral_missing")) if referral else t(language, "profile_referral_missing")
     referral_link = str(referral.get("referral_link") or "") if referral else ""
+    invited = str(referral.get("invited") or 0) if referral else "0"
+    activated = str(referral.get("activated") or 0) if referral else "0"
+    bonus_days = str(referral.get("bonus_days") or 0) if referral else "0"
 
     name_text = f"@{username}" if username else t(language, "unknown_username")
     lines = [
@@ -271,6 +342,8 @@ async def _build_profile_screen(language: str, user_id: int | None, username: st
         f"{t(language, 'profile_label_status')}: <b>{_subscription_status_label(status, language)}</b>",
         f"{t(language, 'profile_label_ends')}: <b>{escape(ends_at)}</b>",
         f"{t(language, 'profile_label_referral')}: <code>{escape(referral_code)}</code>",
+        f"{t(language, 'profile_label_invited')}: <b>{escape(invited)}</b> • {t(language, 'profile_label_activated')}: <b>{escape(activated)}</b>",
+        f"{t(language, 'profile_label_bonus')}: <b>{escape(bonus_days)}</b>",
     ]
     if referral_link:
         lines.append(f"{t(language, 'profile_label_referral_link')}: {escape(referral_link)}")
@@ -278,7 +351,11 @@ async def _build_profile_screen(language: str, user_id: int | None, username: st
 
     return (
         "\n".join(lines),
-        section_nav_keyboard(language=language, back_callback="menu:main", include_open_app=True),
+        section_nav_keyboard(
+            language=language,
+            back_callback="menu:main",
+            primary_button=(t(language, "open_profile"), _mini_app_url("/profile")),
+        ),
     )
 
 
@@ -288,7 +365,11 @@ async def _build_tariffs_screen(language: str) -> tuple[str, InlineKeyboardMarku
     if not items:
         return (
             t(language, "tariffs_fallback"),
-            section_nav_keyboard(language=language, back_callback="menu:main", include_open_app=True),
+            section_nav_keyboard(
+                language=language,
+                back_callback="menu:main",
+                primary_button=(t(language, "open_tariffs"), _mini_app_url("/tariffs")),
+            ),
         )
 
     presentation = tariff_presentation(language)
@@ -313,20 +394,32 @@ async def _build_tariffs_screen(language: str) -> tuple[str, InlineKeyboardMarku
     lines.append(f"\n{t(language, 'tariffs_footer')}")
     return (
         "\n".join(lines),
-        section_nav_keyboard(language=language, back_callback="menu:main", include_open_app=True),
+        section_nav_keyboard(
+            language=language,
+            back_callback="menu:main",
+            primary_button=(t(language, "open_tariffs"), _mini_app_url("/tariffs")),
+        ),
     )
 
 
 async def _build_notifications_screen(language: str) -> tuple[str, InlineKeyboardMarkup]:
     return (
         t(language, "notifications_text"),
-        section_nav_keyboard(language=language, back_callback="menu:main", include_open_app=True),
+        section_nav_keyboard(
+            language=language,
+            back_callback="menu:main",
+            primary_button=(t(language, "open_notifications"), _mini_app_url("/profile")),
+        ),
     )
 
 
 async def _build_support_screen(language: str) -> tuple[str, InlineKeyboardMarkup]:
     support_url = settings.bot_support_url.strip()
-    nav_keyboard = section_nav_keyboard(language=language, back_callback="menu:main", include_open_app=True)
+    nav_keyboard = section_nav_keyboard(
+        language=language,
+        back_callback="menu:main",
+        primary_button=(t(language, "open_mini_app"), settings.mini_app_url),
+    )
     if not support_url or "your_support" in support_url:
         return (t(language, "support_placeholder"), nav_keyboard)
 
@@ -344,11 +437,19 @@ async def _build_admin_screen(language: str, user_id: int | None) -> tuple[str, 
     if not _is_admin(user_id):
         return (
             t(language, "admin_only"),
-            section_nav_keyboard(language=language, back_callback="menu:main", include_open_app=True),
+            section_nav_keyboard(
+                language=language,
+                back_callback="menu:main",
+                primary_button=(t(language, "open_mini_app"), settings.mini_app_url),
+            ),
         )
     return (
         t(language, "admin_text"),
-        section_nav_keyboard(language=language, back_callback="menu:main", include_open_app=True),
+        section_nav_keyboard(
+            language=language,
+            back_callback="menu:main",
+            primary_button=(t(language, "open_admin"), _mini_app_url("/admin")),
+        ),
     )
 
 

@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
 import { useLanguage } from "../app/language";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
-import { AppShellSection, HeroCard, SectionHeader, StatCard } from "../components/ui";
+import { AppShellSection, HeroCard, SectionActions, SectionHeader, StatCard } from "../components/ui";
 import { api, type PublicStats } from "../services/api";
 
 export function StatsPage() {
@@ -74,6 +75,15 @@ export function StatsPage() {
               <StatCard label="VIP" value={stats.by_access?.vip ?? 0} tone="warning" />
               <StatCard label={isRu ? "ROI" : "ROI"} value={`${stats.roi}%`} tone="success" />
             </div>
+
+            <SectionActions compact>
+              <Link className="btn secondary" to="/feed">
+                {isRu ? "Открыть ленту" : "Open feed"}
+              </Link>
+              <Link className="btn ghost" to="/tariffs">
+                {isRu ? "Тарифы" : "Tariffs"}
+              </Link>
+            </SectionActions>
           </>
         ) : null}
       </AppShellSection>

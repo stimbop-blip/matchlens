@@ -139,7 +139,7 @@ export function Layout({ children }: PropsWithChildren) {
         <p>{subtitle}</p>
       </header>
 
-      <main className="app-content">{children}</main>
+      <main className="app-content app-scroll">{children}</main>
 
       <nav className="tabbar">
         {tabs.map((tab) => (

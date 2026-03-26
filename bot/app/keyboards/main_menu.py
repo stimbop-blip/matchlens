@@ -32,10 +32,13 @@ def section_nav_keyboard(
     language: str = "ru",
     *,
     back_callback: str = "menu:main",
-    include_open_app: bool = True,
+    include_open_app: bool = False,
+    primary_button: tuple[str, str] | None = None,
 ) -> InlineKeyboardMarkup:
     lang = normalize_language(language)
     rows: list[list[InlineKeyboardButton]] = []
+    if primary_button:
+        rows.append([InlineKeyboardButton(text=primary_button[0], url=primary_button[1])])
     if include_open_app:
         rows.append([InlineKeyboardButton(text=t(lang, "open_mini_app"), url=settings.mini_app_url)])
     rows.append(

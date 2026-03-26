@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { useLanguage } from "../app/language";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
-import { AccessBadge, AppShellSection, SectionHeader, SegmentedTabs } from "../components/ui";
+import { AccessBadge, AppShellSection, CardFooterActions, SectionHeader, SegmentedTabs } from "../components/ui";
 import { api, type Prediction } from "../services/api";
 
 type ModeFilter = "all" | "prematch" | "live";
@@ -171,12 +171,12 @@ export function FeedPage() {
                       {teaser(item.short_description, language)}
                     </p>
 
-                    <div className="feed-footer">
+                    <CardFooterActions>
                       <span className={`badge ${item.status}`}>{statusLabel(item.status, language)}</span>
                       <Link className="feed-open-link" to={`/feed/${item.id}`}>
                         {isRu ? "Подробнее" : "Details"}
                       </Link>
-                    </div>
+                    </CardFooterActions>
                   </article>
                 ))}
               </div>

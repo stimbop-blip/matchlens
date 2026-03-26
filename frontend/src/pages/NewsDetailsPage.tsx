@@ -4,7 +4,7 @@ import { Link, useParams } from "react-router-dom";
 import { useLanguage } from "../app/language";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
-import { AppShellSection, HeroCard, SectionHeader } from "../components/ui";
+import { AppShellSection, HeroCard, SectionActions, SectionHeader } from "../components/ui";
 import { api, type NewsPost } from "../services/api";
 
 function formatDate(value: string | null, language: "ru" | "en") {
@@ -59,14 +59,14 @@ export function NewsDetailsPage() {
 
         {post ? <article className="news-body-card">{post.body}</article> : null}
 
-        <div className="cta-row">
+        <SectionActions compact>
           <Link className="btn secondary" to="/news">
             {isRu ? "Назад к новостям" : "Back to news"}
           </Link>
           <Link className="btn ghost" to="/">
             {isRu ? "На главную" : "Home"}
           </Link>
-        </div>
+        </SectionActions>
       </AppShellSection>
 
       <AppDisclaimer />

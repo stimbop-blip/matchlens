@@ -9,7 +9,9 @@ import {
   AppShellSection,
   HeroCard,
   NewsPreviewCard,
+  QuickActionRow,
   SectionHeader,
+  SectionActions,
   StatCard,
 } from "../components/ui";
 import { api, type Me, type NewsPost, type Prediction, type PublicStats, type ReferralStats } from "../services/api";
@@ -114,14 +116,14 @@ export function HomePage() {
           <span>{isRu ? "Профиль" : "Profile"}: <b>{displayName}</b></span>
           <span>{isRu ? "Статус" : "Status"}: <b>{accessStatus}</b></span>
         </div>
-        <div className="cta-row">
+        <SectionActions>
           <Link className="btn" to="/feed">
             {isRu ? "Открыть ленту" : "Open feed"}
           </Link>
           <Link className="btn secondary" to="/tariffs">
             {isRu ? "Тарифы" : "Tariffs"}
           </Link>
-        </div>
+        </SectionActions>
       </HeroCard>
 
       <AppShellSection>
@@ -136,11 +138,11 @@ export function HomePage() {
           <StatCard label="Premium" value={pendingPremium} />
           <StatCard label="VIP" value={pendingVip} tone="warning" />
         </div>
-        <div className="quick-links">
+        <QuickActionRow>
           <Link to="/feed" className="quick-link">{isRu ? "Лента" : "Feed"}</Link>
           <Link to="/stats" className="quick-link">{isRu ? "Статистика" : "Stats"}</Link>
           <Link to="/tariffs" className="quick-link">{isRu ? "Тарифы" : "Tariffs"}</Link>
-        </div>
+        </QuickActionRow>
       </AppShellSection>
 
       <AppShellSection>
@@ -186,14 +188,14 @@ export function HomePage() {
               <strong>{dateLabel(sub?.ends_at, language)}</strong>
             </div>
           </div>
-          <div className="cta-row">
+          <SectionActions compact>
             <Link className="btn secondary" to="/profile">
               {isRu ? "В профиль" : "Open profile"}
             </Link>
             <Link className="btn ghost" to="/tariffs">
               {isRu ? "К тарифам" : "Tariffs"}
             </Link>
-          </div>
+          </SectionActions>
         </AppShellSection>
 
         <AppShellSection>
@@ -204,9 +206,11 @@ export function HomePage() {
             <StatCard label="ROI" value={`${stats?.roi ?? 0}%`} tone="accent" />
             <StatCard label={isRu ? "Выигрыши / Поражения / Возвраты" : "Wins / Loses / Refunds"} value={`${stats?.wins ?? 0} / ${stats?.loses ?? 0} / ${stats?.refunds ?? 0}`} />
           </div>
-          <Link className="btn ghost" to="/stats">
-            {isRu ? "Открыть статистику" : "Open stats"}
-          </Link>
+          <SectionActions compact>
+            <Link className="btn ghost" to="/stats">
+              {isRu ? "Открыть статистику" : "Open stats"}
+            </Link>
+          </SectionActions>
         </AppShellSection>
       </div>
 
@@ -238,9 +242,11 @@ export function HomePage() {
           <StatCard label={isRu ? "Активировано" : "Activated"} value={referral?.activated ?? 0} />
           <StatCard label={isRu ? "Бонусные дни" : "Bonus days"} value={referral?.bonus_days ?? 0} tone="accent" />
         </div>
-        <Link className="btn ghost" to="/profile#referral">
-          {isRu ? "Управлять в профиле" : "Manage in profile"}
-        </Link>
+        <SectionActions compact>
+          <Link className="btn ghost" to="/profile#referral">
+            {isRu ? "Управлять в профиле" : "Manage in profile"}
+          </Link>
+        </SectionActions>
       </AppShellSection>
 
       <AppDisclaimer />

@@ -9,6 +9,7 @@ import {
   AppShellSection,
   HeroCard,
   PromoCard,
+  SectionActions,
   SectionHeader,
   SettingsSection,
   StatCard,
@@ -190,9 +191,11 @@ export function ProfilePage() {
         ) : null}
 
         {me?.is_admin || me?.role === "admin" ? (
-          <Link className="btn secondary" to="/admin">
-            {isRu ? "Открыть админку" : "Open admin"}
-          </Link>
+          <SectionActions compact>
+            <Link className="btn secondary" to="/admin">
+              {isRu ? "Открыть админку" : "Open admin"}
+            </Link>
+          </SectionActions>
         ) : null}
       </AppShellSection>
 
@@ -229,9 +232,11 @@ export function ProfilePage() {
             </div>
             <div className="input-stack">
               <input value={referral.referral_link} readOnly />
-              <button className="btn secondary" onClick={copyReferral} type="button">
-                {isRu ? "Скопировать ссылку" : "Copy link"}
-              </button>
+              <SectionActions compact>
+                <button className="btn secondary" onClick={copyReferral} type="button">
+                  {isRu ? "Скопировать ссылку" : "Copy link"}
+                </button>
+              </SectionActions>
             </div>
           </>
         ) : null}
@@ -257,9 +262,11 @@ export function ProfilePage() {
             <option value="premium">Premium</option>
             <option value="vip">VIP</option>
           </select>
-          <button className="btn" onClick={applyPromo} type="button">
-            {isRu ? "Применить" : "Apply"}
-          </button>
+          <SectionActions compact>
+            <button className="btn" onClick={applyPromo} type="button">
+              {isRu ? "Применить" : "Apply"}
+            </button>
+          </SectionActions>
           {promoResult ? (
             <p className={`notice ${promoResult.ok ? "success" : "error"}`}>
               {promoResult.message}

@@ -15,30 +15,36 @@ def normalize_language(value: str | None) -> Language:
 TEXTS: dict[Language, dict[str, str]] = {
     "ru": {
         "start_message": (
-            "🔥 <b>Добро пожаловать в PIT BET</b>\n\n"
-            "PIT BET — аналитическая платформа сигналов и статистики для сильных игровых ситуаций.\n"
-            "Мы отслеживаем движение линии, коэффициенты, рыночные сигналы и игровые паттерны, "
-            "чтобы выделять лучшие точки входа.\n\n"
-            "Внутри доступны <b>Free / Premium / VIP</b>, прозрачная статистика, уведомления и Mini App.\n"
-            "Открыть приложение можно через кнопку меню Telegram или из кнопки ниже.\n\n"
-            "Важно: PIT BET не гарантирует прибыль. Используйте сигналы ответственно и с управлением риском."
+            "<b>Добро пожаловать в PIT BET</b>\n\n"
+            "PIT BET — аналитическая платформа сигналов и статистики внутри Telegram.\n"
+            "Мы работаем с линией, коэффициентами и рыночными паттернами, чтобы выделять сильные игровые ситуации.\n\n"
+            "Вам доступны уровни <b>Free / Premium / VIP</b>, Mini App и чистая навигация по разделам.\n"
+            "Откройте нужный экран через меню ниже."
         ),
         "menu_intro": (
-            "<b>PIT BET — меню</b>\n"
-            "Выберите раздел: прогнозы, статистика, профиль, тарифы, уведомления или поддержка."
+            "<b>PIT BET — главное меню</b>\n"
+            "Быстрый доступ к прогнозам, статистике, профилю, тарифам и сервисным разделам."
         ),
         "nav_back": "◀ Назад",
         "nav_menu": "☰ В меню",
-        "open_mini_app": "📱 Открыть Mini App",
+        "open_mini_app": "📱 Открыть PIT BET",
+        "open_feed": "⚽ Открыть ленту",
+        "open_stats": "📊 Открыть статистику",
+        "open_profile": "👤 Открыть профиль",
+        "open_tariffs": "💎 Открыть тарифы",
+        "open_notifications": "⚙ Настроить",
+        "open_admin": "🛠 Открыть админку",
         "free_title": "<b>⚽ Бесплатные прогнозы PIT BET</b>",
         "free_empty": (
             "<b>⚽ Бесплатные прогнозы PIT BET</b>\n"
             "Сейчас в открытой ленте нет новых сигналов."
         ),
         "free_hint": "Нажмите на матч, чтобы открыть детали прогноза.",
-        "free_row": "{idx}. {match}",
+        "free_row": "Подробнее • {match}",
         "free_details_title": "<b>📌 Детали прогноза</b>",
         "free_details_missing": "Не удалось открыть детали. Обновите список бесплатных прогнозов.",
+        "free_details_context": "Контекст сигнала",
+        "free_details_reason": "Почему сигнал интересен",
         "label_league": "Лига",
         "label_signal": "Сигнал",
         "label_odds": "Коэффициент",
@@ -70,8 +76,11 @@ TEXTS: dict[Language, dict[str, str]] = {
         "profile_label_ends": "Доступ до",
         "profile_label_referral": "Реферальный код",
         "profile_label_referral_link": "Реферальная ссылка",
+        "profile_label_invited": "Приглашено",
+        "profile_label_activated": "Активировано",
+        "profile_label_bonus": "Бонусные дни",
         "profile_referral_missing": "не активирован",
-        "profile_hint": "Настройки подписки, реферальной программы и уведомлений доступны в Mini App.",
+        "profile_hint": "Детальная настройка подписки, уведомлений и бонусов доступна в Mini App.",
         "unknown_username": "не указан",
         "status_active": "Активна",
         "status_expired": "Истекла",
@@ -88,10 +97,10 @@ TEXTS: dict[Language, dict[str, str]] = {
         "notifications_text": (
             "<b>🔔 Уведомления PIT BET</b>\n"
             "Управление уведомлениями находится в Mini App: <b>Профиль → Уведомления</b>.\n\n"
-            "Можно включать категории Free / Premium / VIP, результаты и новости."
+            "Доступны категории Free / Premium / VIP, результаты и новости."
         ),
         "support_title": "<b>🛟 Поддержка PIT BET</b>",
-        "support_body": "Если нужна помощь по доступу, оплате или уведомлениям — напишите нам.",
+        "support_body": "Если нужна помощь по доступу, оплате или уведомлениям — мы на связи.",
         "support_button": "Написать в поддержку",
         "support_placeholder": (
             "<b>🛟 Поддержка PIT BET</b>\n"
@@ -102,32 +111,44 @@ TEXTS: dict[Language, dict[str, str]] = {
             "Управление прогнозами, подписками, платежами и рассылками доступно в Mini App."
         ),
         "admin_only": "Эта секция доступна только администраторам.",
+        "status_won": "Выигрыш",
+        "status_lost": "Поражение",
+        "status_refund": "Возврат",
+        "status_pending": "В ожидании",
+        "disclaimer_bot": "PIT BET предоставляет аналитику и не гарантирует финансовый результат. Используйте сервис ответственно.",
     },
     "en": {
         "start_message": (
-            "🔥 <b>Welcome to PIT BET</b>\n\n"
-            "PIT BET is an analytics platform for signals and statistics focused on strong market situations.\n"
-            "We track line movement, odds, market signals, and game patterns to highlight quality entry points.\n\n"
-            "Inside you get <b>Free / Premium / VIP</b>, transparent stats, notifications, and the Mini App.\n"
-            "Open the app from Telegram menu button or from the button below.\n\n"
-            "Important: PIT BET does not guarantee profit. Use signals responsibly with proper risk management."
+            "<b>Welcome to PIT BET</b>\n\n"
+            "PIT BET is an analytics platform for signals and statistics inside Telegram.\n"
+            "We track line movement, odds, and market patterns to highlight strong game situations.\n\n"
+            "You have access to <b>Free / Premium / VIP</b>, the Mini App, and clean section navigation.\n"
+            "Open the section you need from the menu below."
         ),
         "menu_intro": (
-            "<b>PIT BET — Menu</b>\n"
-            "Choose a section: signals, stats, profile, tariffs, notifications, or support."
+            "<b>PIT BET — Main Menu</b>\n"
+            "Quick access to signals, stats, profile, tariffs, and service sections."
         ),
         "nav_back": "◀ Back",
         "nav_menu": "☰ Menu",
-        "open_mini_app": "📱 Open Mini App",
+        "open_mini_app": "📱 Open PIT BET",
+        "open_feed": "⚽ Open feed",
+        "open_stats": "📊 Open stats",
+        "open_profile": "👤 Open profile",
+        "open_tariffs": "💎 Open tariffs",
+        "open_notifications": "⚙ Configure",
+        "open_admin": "🛠 Open admin",
         "free_title": "<b>⚽ PIT BET Free Signals</b>",
         "free_empty": (
             "<b>⚽ PIT BET Free Signals</b>\n"
             "No new open-feed signals right now."
         ),
         "free_hint": "Tap a match to open signal details.",
-        "free_row": "{idx}. {match}",
+        "free_row": "Details • {match}",
         "free_details_title": "<b>📌 Signal details</b>",
         "free_details_missing": "Unable to open details. Refresh free signals list first.",
+        "free_details_context": "Signal context",
+        "free_details_reason": "Why this signal is interesting",
         "label_league": "League",
         "label_signal": "Signal",
         "label_odds": "Odds",
@@ -159,8 +180,11 @@ TEXTS: dict[Language, dict[str, str]] = {
         "profile_label_ends": "Valid until",
         "profile_label_referral": "Referral code",
         "profile_label_referral_link": "Referral link",
+        "profile_label_invited": "Invited",
+        "profile_label_activated": "Activated",
+        "profile_label_bonus": "Bonus days",
         "profile_referral_missing": "not activated",
-        "profile_hint": "Subscription, referral, and notification settings are managed in the Mini App.",
+        "profile_hint": "Detailed subscription, notification, and bonus settings are in the Mini App.",
         "unknown_username": "not set",
         "status_active": "Active",
         "status_expired": "Expired",
@@ -180,7 +204,7 @@ TEXTS: dict[Language, dict[str, str]] = {
             "You can control Free / Premium / VIP categories, outcomes, and news."
         ),
         "support_title": "<b>🛟 PIT BET Support</b>",
-        "support_body": "Need help with access, payments, or notifications? Contact support.",
+        "support_body": "Need help with access, payments, or notifications? We are here for you.",
         "support_button": "Contact support",
         "support_placeholder": (
             "<b>🛟 PIT BET Support</b>\n"
@@ -191,6 +215,11 @@ TEXTS: dict[Language, dict[str, str]] = {
             "Predictions, subscriptions, payments, and campaigns are managed in Mini App."
         ),
         "admin_only": "This section is available to admins only.",
+        "status_won": "Won",
+        "status_lost": "Lost",
+        "status_refund": "Refund",
+        "status_pending": "Pending",
+        "disclaimer_bot": "PIT BET provides analytics and does not guarantee financial outcomes. Please use the service responsibly.",
     },
 }
 
