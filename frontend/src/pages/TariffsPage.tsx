@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
 import { api, type Tariff } from "../services/api";
 
@@ -110,6 +111,7 @@ export function TariffsPage() {
 
         {message ? <p className={`notice ${message.tone}`}>{message.text}</p> : null}
       </section>
+      <AppDisclaimer />
     </Layout>
   );
 }

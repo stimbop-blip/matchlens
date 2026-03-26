@@ -5,6 +5,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     bot_token: str
+    brand_name: str = "PIT BET"
     backend_api_base_url: str = "http://backend:8000"
     mini_app_url: str = "https://matchlens.vercel.app"
     bot_support_url: str = "https://t.me/your_support"

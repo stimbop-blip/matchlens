@@ -17,6 +17,7 @@ class NotificationSettingsOut(BaseModel):
     notify_premium: bool
     notify_vip: bool
     notify_results: bool
+    notify_news: bool
 
 
 class NotificationSettingsUpdateIn(BaseModel):
@@ -25,6 +26,7 @@ class NotificationSettingsUpdateIn(BaseModel):
     notify_premium: bool | None = None
     notify_vip: bool | None = None
     notify_results: bool | None = None
+    notify_news: bool | None = None
 
 
 class ReferralOut(BaseModel):

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
+import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
 import { api, type Me, type NewsPost, type Prediction, type PublicStats, type ReferralStats } from "../services/api";
 
@@ -192,26 +193,6 @@ export function HomePage() {
         </div>
       </section>
 
-      <section className="card home-section">
-        <div className="section-head">
-          <h3>Новости PIT BET</h3>
-          <span className="muted">Что происходит в проекте</span>
-        </div>
-        {newsPreview.length === 0 ? <p className="empty-state">Пока без публикаций. Следите за обновлениями в этой вкладке.</p> : null}
-        <div className="home-news-list">
-          {newsPreview.map((item) => (
-            <article key={item.id} className="home-news-item">
-              <div className="home-news-head">
-                <strong>{item.title}</strong>
-                <span className="badge info">{item.category}</span>
-              </div>
-              <p>{item.body}</p>
-              <div className="home-news-meta">{shortDateTime(item.published_at)}</div>
-            </article>
-          ))}
-        </div>
-      </section>
-
       <div className="home-split">
         <section className="card home-section">
           <div className="section-head">
@@ -309,7 +290,28 @@ export function HomePage() {
         </div>
       </section>
 
+      <section className="card home-section">
+        <div className="section-head">
+          <h3>Новости PIT BET</h3>
+          <span className="muted">Что нового в проекте</span>
+        </div>
+        {newsPreview.length === 0 ? <p className="empty-state">Пока без публикаций. Следите за обновлениями в этой вкладке.</p> : null}
+        <div className="home-news-list">
+          {newsPreview.map((item) => (
+            <article key={item.id} className="home-news-item">
+              <div className="home-news-head">
+                <strong>{item.title}</strong>
+                <span className="badge info">{item.category}</span>
+              </div>
+              <p>{item.body}</p>
+              <div className="home-news-meta">{shortDateTime(item.published_at)}</div>
+            </article>
+          ))}
+        </div>
+      </section>
+
       {error ? <p className="notice error">{error}</p> : null}
+      <AppDisclaimer />
     </Layout>
   );
 }

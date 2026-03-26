@@ -102,7 +102,7 @@ async def free_predictions(message: Message) -> None:
         return
 
     await message.answer(
-        "<b>⚽ Последние бесплатные прогнозы</b>\n"
+        "<b>⚽ Бесплатные прогнозы PIT BET</b>\n"
         "Краткий дайджест открытой ленты PIT BET."
     )
 
@@ -127,7 +127,7 @@ async def free_predictions(message: Message) -> None:
         await message.answer("\n".join(lines))
 
 
-@router.message(F.text.regexp(r"^(?:📊\s*)?Статистика$"))
+@router.message(F.text.regexp(r"^(?:📊\s*)?Статистика(?:\s+PIT BET)?$"))
 async def stats(message: Message) -> None:
     backend_client = get_backend_client()
     if not backend_client:
@@ -157,7 +157,7 @@ async def stats(message: Message) -> None:
     )
 
 
-@router.message(F.text.regexp(r"^(?:👤\s*)?Мой профиль$"))
+@router.message(F.text.regexp(r"^(?:👤\s*)?(?:Профиль PIT BET|Мой профиль)$"))
 async def my_profile(message: Message) -> None:
     if not message.from_user:
         await message.answer("Профиль временно недоступен.")
@@ -179,7 +179,7 @@ async def my_profile(message: Message) -> None:
     username = f"@{user.username}" if user.username else "не указан"
 
     await message.answer(
-        "<b>👤 Мой профиль</b>\n"
+        "<b>👤 Профиль PIT BET</b>\n"
         f"Telegram ID: <code>{user.id}</code>\n"
         f"Ник: {escape(username)}\n\n"
         f"Тариф: <b>{_tariff_label(tariff)}</b>\n"
@@ -189,7 +189,7 @@ async def my_profile(message: Message) -> None:
     )
 
 
-@router.message(F.text.regexp(r"^(?:💎\s*)?Тарифы$"))
+@router.message(F.text.regexp(r"^(?:💎\s*)?Тарифы(?:\s+PIT BET)?$"))
 async def tariffs(message: Message) -> None:
     backend_client = get_backend_client()
     items = await backend_client.get_tariffs() if backend_client else []
@@ -245,7 +245,7 @@ async def support(message: Message) -> None:
         inline_keyboard=[[InlineKeyboardButton(text="Написать в поддержку", url=support_url)]]
     )
     await message.answer(
-        "<b>🛟 Поддержка</b>\n"
+        "<b>🛟 Поддержка PIT BET</b>\n"
         "Если нужна помощь по доступу, оплате или уведомлениям — напишите нам.\n\n"
         "Мы отвечаем максимально быстро в рабочее время.",
         reply_markup=keyboard,

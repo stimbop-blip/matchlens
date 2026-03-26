@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
+import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
 import { api, type Me, type NotificationSettings, type PromoApplyResult, type ReferralStats } from "../services/api";
 import { waitForTelegramInitData } from "../services/telegram";
@@ -247,6 +248,16 @@ export function ProfilePage() {
                   }}
                 />
               </label>
+              <label className="switch-row">
+                <span>Новости PIT BET</span>
+                <input
+                  type="checkbox"
+                  checked={notify.notify_news}
+                  onChange={async (e) => {
+                    void updateNotify({ notify_news: e.target.checked });
+                  }}
+                />
+              </label>
               {notifyMessage ? <p className={`notice ${notifyMessage.tone}`}>{notifyMessage.text}</p> : null}
             </div>
           ) : null}
@@ -258,6 +269,7 @@ export function ProfilePage() {
           </Link>
         ) : null}
       </section>
+      <AppDisclaimer />
     </Layout>
   );
 }

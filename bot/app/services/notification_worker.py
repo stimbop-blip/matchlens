@@ -5,6 +5,7 @@ import logging
 from html import escape
 
 from aiogram import Bot
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 from app.config import settings
 from app.services.backend_client import BackendClient
@@ -42,6 +43,8 @@ async def run_notification_worker(bot: Bot, backend_client: BackendClient) -> No
                 telegram_id = item.get("telegram_id")
                 title = str(item.get("title") or "Обновление PIT BET")
                 message = str(item.get("message") or "")
+                button_text = str(item.get("button_text") or "").strip()
+                button_url = str(item.get("button_url") or "").strip()
 
                 logger.info(
                     "notification_worker processing_notification_id=%s telegram_id=%s",
@@ -64,10 +67,17 @@ async def run_notification_worker(bot: Bot, backend_client: BackendClient) -> No
                     continue
 
                 try:
+                    reply_markup = None
+                    if button_text and button_url:
+                        reply_markup = InlineKeyboardMarkup(
+                            inline_keyboard=[[InlineKeyboardButton(text=button_text, url=button_url)]]
+                        )
+
                     await bot.send_message(
                         chat_id=int(telegram_id),
                         text=_render_message(title, message),
                         disable_web_page_preview=True,
+                        reply_markup=reply_markup,
                     )
                     ack_sent = await backend_client.mark_notification_sent(notification_id)
                     if not ack_sent:

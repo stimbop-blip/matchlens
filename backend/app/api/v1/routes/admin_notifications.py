@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.api.deps import require_admin
@@ -16,7 +16,17 @@ def admin_broadcast(
     db: Session = Depends(get_db),
     _: User = Depends(require_admin),
 ) -> dict:
-    created = queue_broadcast(db, title=payload.title, message=payload.message, access_level=payload.access_level)
+    try:
+        created = queue_broadcast(
+            db,
+            title=payload.title,
+            message=payload.message,
+            access_level=payload.access_level,
+            button_text=payload.button_text,
+            button_url=payload.button_url_str(),
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     return {"ok": True, "queued": created}
 
 
@@ -32,7 +42,20 @@ def admin_campaign_preview(
         access_level=payload.access_level,
         notifications_enabled_only=payload.notifications_enabled_only,
     )
-    return {"ok": True, **result}
+    preview_payload = {
+        "title": payload.title,
+        "message": payload.message,
+        "button_text": payload.button_text,
+        "button_url": payload.button_url_str(),
+    }
+    if not any(preview_payload.values()):
+        preview_payload = None
+
+    return {
+        "ok": True,
+        **result,
+        "preview": preview_payload,
+    }
 
 
 @router.post("/campaign")
@@ -41,14 +64,19 @@ def admin_campaign_send(
     db: Session = Depends(get_db),
     _: User = Depends(require_admin),
 ) -> dict:
-    result = queue_campaign(
-        db,
-        title=payload.title,
-        message=payload.message,
-        segment=payload.segment,
-        access_level=payload.access_level,
-        notifications_enabled_only=payload.notifications_enabled_only,
-    )
+    try:
+        result = queue_campaign(
+            db,
+            title=payload.title,
+            message=payload.message,
+            segment=payload.segment,
+            access_level=payload.access_level,
+            notifications_enabled_only=payload.notifications_enabled_only,
+            button_text=payload.button_text,
+            button_url=payload.button_url_str(),
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     return {"ok": True, **result}
 
 
@@ -58,13 +86,18 @@ def admin_direct_send(
     db: Session = Depends(get_db),
     _: User = Depends(require_admin),
 ) -> dict:
-    result = queue_direct_notification(
-        db,
-        title=payload.title,
-        message=payload.message,
-        telegram_id=payload.telegram_id,
-        user_id=payload.user_id,
-    )
+    try:
+        result = queue_direct_notification(
+            db,
+            title=payload.title,
+            message=payload.message,
+            telegram_id=payload.telegram_id,
+            user_id=payload.user_id,
+            button_text=payload.button_text,
+            button_url=payload.button_url_str(),
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     return {"ok": True, **result}
 
 

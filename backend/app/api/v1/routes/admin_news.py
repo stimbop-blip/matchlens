@@ -9,6 +9,7 @@ from app.core.db import get_db
 from app.models.news_post import NewsPost
 from app.models.user import User
 from app.schemas.news import AdminNewsCreateIn, AdminNewsUpdateIn, NewsOut
+from app.services.notification_service import queue_news_published_notification
 
 router = APIRouter(prefix="/admin/news", tags=["admin"])
 
@@ -46,6 +47,8 @@ def admin_create_news(
     db.add(item)
     db.commit()
     db.refresh(item)
+    if item.is_published:
+        queue_news_published_notification(db, item)
     return NewsOut(
         id=str(item.id),
         title=item.title,
@@ -67,6 +70,8 @@ def admin_update_news(
     if not item:
         raise HTTPException(status_code=404, detail="News not found")
 
+    was_published = bool(item.is_published)
+
     data = payload.model_dump(exclude_none=True)
     if "title" in data:
         item.title = str(data["title"]).strip()
@@ -85,6 +90,8 @@ def admin_update_news(
     db.add(item)
     db.commit()
     db.refresh(item)
+    if not was_published and item.is_published:
+        queue_news_published_notification(db, item)
     return NewsOut(
         id=str(item.id),
         title=item.title,

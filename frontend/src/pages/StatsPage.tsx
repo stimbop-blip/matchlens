@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
 import { api, type PublicStats } from "../services/api";
 
@@ -69,6 +70,7 @@ export function StatsPage() {
           </>
         ) : null}
       </section>
+      <AppDisclaimer />
     </Layout>
   );
 }

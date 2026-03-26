@@ -19,6 +19,7 @@ class UserSettings(Base):
     notify_premium: Mapped[bool] = mapped_column(Boolean, default=True)
     notify_vip: Mapped[bool] = mapped_column(Boolean, default=True)
     notify_results: Mapped[bool] = mapped_column(Boolean, default=True)
+    notify_news: Mapped[bool] = mapped_column(Boolean, default=True)
     notify_subscription: Mapped[bool] = mapped_column(Boolean, default=True)
     timezone: Mapped[str] = mapped_column(String(64), default="Europe/Moscow")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

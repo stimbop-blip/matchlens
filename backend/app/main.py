@@ -53,8 +53,23 @@ def on_startup() -> None:
                 conn.execute(text("ALTER TABLE user_settings ADD COLUMN notify_vip BOOLEAN DEFAULT TRUE"))
             if "notify_results" not in columns:
                 conn.execute(text("ALTER TABLE user_settings ADD COLUMN notify_results BOOLEAN DEFAULT TRUE"))
+            if "notify_news" not in columns:
+                conn.execute(text("ALTER TABLE user_settings ADD COLUMN notify_news BOOLEAN DEFAULT TRUE"))
             if "notify_subscription" not in columns:
                 conn.execute(text("ALTER TABLE user_settings ADD COLUMN notify_subscription BOOLEAN DEFAULT TRUE"))
+
+        notifications_table_exists = conn.execute(text("SELECT to_regclass('public.notifications')")).scalar()
+        if notifications_table_exists:
+            notification_columns = {
+                row[0]
+                for row in conn.execute(
+                    text("SELECT column_name FROM information_schema.columns WHERE table_name = 'notifications'")
+                )
+            }
+            if "cta_text" not in notification_columns:
+                conn.execute(text("ALTER TABLE notifications ADD COLUMN cta_text VARCHAR(80)"))
+            if "cta_url" not in notification_columns:
+                conn.execute(text("ALTER TABLE notifications ADD COLUMN cta_url VARCHAR(1024)"))
 
     if settings.auto_create_tables:
         db = SessionLocal()

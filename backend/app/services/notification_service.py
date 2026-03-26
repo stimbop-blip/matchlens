@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import logging
 from datetime import UTC, datetime, timedelta
+from urllib.parse import urlparse
 
 from sqlalchemy import and_, desc, or_, select
 from sqlalchemy.orm import Session
 
 from app.models.enums import UserRole
+from app.models.news_post import NewsPost
 from app.models.notification import Notification
 from app.models.prediction import Prediction
 from app.models.subscription import Subscription
@@ -118,6 +120,29 @@ def _user_settings_map(db: Session) -> dict[str, UserSettings]:
     return {str(item.user_id): item for item in rows}
 
 
+def _normalize_button(button_text: str | None = None, button_url: str | None = None) -> tuple[str | None, str | None]:
+    text = (button_text or "").strip() or None
+    url = (button_url or "").strip() or None
+
+    if bool(text) != bool(url):
+        raise ValueError("Для кнопки укажите и текст, и URL")
+    if not text or not url:
+        return None, None
+
+    parsed = urlparse(url)
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        raise ValueError("URL кнопки должен начинаться с http:// или https://")
+
+    return text, url
+
+
+def _news_preview(body: str) -> str:
+    compact = " ".join(body.split())
+    if len(compact) <= 220:
+        return compact
+    return f"{compact[:217].rstrip()}..."
+
+
 def _build_prediction_created_payload(prediction: Prediction) -> tuple[str, str]:
     access_level = prediction.access_level.value
     title = f"PIT BET • Новый прогноз • {_access_label(access_level)}"
@@ -172,6 +197,7 @@ def get_or_create_user_settings(db: Session, user: User) -> UserSettings:
         notify_premium=True,
         notify_vip=True,
         notify_results=True,
+        notify_news=True,
         notify_subscription=True,
     )
     db.add(settings)
@@ -188,12 +214,13 @@ def get_notification_settings(db: Session, user: User) -> dict:
         "notify_premium": bool(settings.notify_premium),
         "notify_vip": bool(settings.notify_vip),
         "notify_results": bool(settings.notify_results),
+        "notify_news": bool(settings.notify_news),
     }
 
 
 def update_notification_settings(db: Session, user: User, payload: dict) -> dict:
     settings = get_or_create_user_settings(db, user)
-    for field in ["notifications_enabled", "notify_free", "notify_premium", "notify_vip", "notify_results"]:
+    for field in ["notifications_enabled", "notify_free", "notify_premium", "notify_vip", "notify_results", "notify_news"]:
         if field in payload and payload[field] is not None:
             setattr(settings, field, bool(payload[field]))
     db.add(settings)
@@ -202,7 +229,15 @@ def update_notification_settings(db: Session, user: User, payload: dict) -> dict
     return get_notification_settings(db, user)
 
 
-def queue_broadcast(db: Session, title: str, message: str, access_level: str = "free") -> int:
+def queue_broadcast(
+    db: Session,
+    title: str,
+    message: str,
+    access_level: str = "free",
+    button_text: str | None = None,
+    button_url: str | None = None,
+) -> int:
+    cta_text, cta_url = _normalize_button(button_text, button_url)
     users = db.scalars(select(User)).all()
     level_map = _active_level_map(db)
     settings_map = _user_settings_map(db)
@@ -231,7 +266,17 @@ def queue_broadcast(db: Session, title: str, message: str, access_level: str = "
             counters["skip_access_pref"] += 1
             continue
 
-        db.add(Notification(user_id=user.id, type="manual", title=title, message=message, status="queued"))
+        db.add(
+            Notification(
+                user_id=user.id,
+                type="manual",
+                title=title,
+                message=message,
+                cta_text=cta_text,
+                cta_url=cta_url,
+                status="queued",
+            )
+        )
         counters["queued"] += 1
 
     db.commit()
@@ -377,6 +422,58 @@ def queue_prediction_result_notification(db: Session, prediction: Prediction) ->
     return counters["queued"]
 
 
+def queue_news_published_notification(db: Session, news_post: NewsPost) -> int:
+    if not news_post.is_published:
+        return 0
+
+    users = db.scalars(select(User)).all()
+    settings_map = _user_settings_map(db)
+    title = "PIT BET • Новость проекта"
+    message = (
+        f"{news_post.title}\n\n"
+        f"{_news_preview(news_post.body)}\n\n"
+        "Откройте PIT BET Mini App, чтобы посмотреть все обновления."
+    )
+
+    counters = {
+        "total": len(users),
+        "queued": 0,
+        "skip_disabled": 0,
+        "skip_news_disabled": 0,
+    }
+
+    for user in users:
+        settings = settings_map.get(str(user.id))
+        if settings and not settings.notifications_enabled:
+            counters["skip_disabled"] += 1
+            continue
+        if settings and not settings.notify_news:
+            counters["skip_news_disabled"] += 1
+            continue
+
+        db.add(
+            Notification(
+                user_id=user.id,
+                type="news_published",
+                title=title,
+                message=message,
+                status="queued",
+            )
+        )
+        counters["queued"] += 1
+
+    db.commit()
+    logger.info(
+        "notification_news_published queued=%s total=%s news_id=%s skip_disabled=%s skip_news_disabled=%s",
+        counters["queued"],
+        counters["total"],
+        news_post.id,
+        counters["skip_disabled"],
+        counters["skip_news_disabled"],
+    )
+    return counters["queued"]
+
+
 def _segment_recipients(
     db: Session,
     segment: str,
@@ -449,7 +546,10 @@ def queue_campaign(
     segment: str,
     access_level: str | None = None,
     notifications_enabled_only: bool = False,
+    button_text: str | None = None,
+    button_url: str | None = None,
 ) -> dict:
+    cta_text, cta_url = _normalize_button(button_text, button_url)
     recipients = _segment_recipients(
         db,
         segment=segment,
@@ -458,7 +558,17 @@ def queue_campaign(
     )
     queued = 0
     for user in recipients:
-        db.add(Notification(user_id=user.id, type="admin_campaign", title=title, message=message, status="queued"))
+        db.add(
+            Notification(
+                user_id=user.id,
+                type="admin_campaign",
+                title=title,
+                message=message,
+                cta_text=cta_text,
+                cta_url=cta_url,
+                status="queued",
+            )
+        )
         queued += 1
     db.commit()
     logger.info(
@@ -478,7 +588,10 @@ def queue_direct_notification(
     message: str,
     telegram_id: int | None = None,
     user_id: str | None = None,
+    button_text: str | None = None,
+    button_url: str | None = None,
 ) -> dict:
+    cta_text, cta_url = _normalize_button(button_text, button_url)
     user: User | None = None
     if user_id:
         user = db.get(User, user_id)
@@ -488,7 +601,17 @@ def queue_direct_notification(
         logger.info("notification_direct skipped reason=user_not_found telegram_id=%s user_id=%s", telegram_id, user_id)
         return {"queued": 0, "reason": "user_not_found"}
 
-    db.add(Notification(user_id=user.id, type="admin_direct", title=title, message=message, status="queued"))
+    db.add(
+        Notification(
+            user_id=user.id,
+            type="admin_direct",
+            title=title,
+            message=message,
+            cta_text=cta_text,
+            cta_url=cta_url,
+            status="queued",
+        )
+    )
     db.commit()
     logger.info("notification_direct queued=1 user_id=%s telegram_id=%s", user.id, user.telegram_id)
     return {"queued": 1, "user_id": str(user.id), "telegram_id": user.telegram_id}

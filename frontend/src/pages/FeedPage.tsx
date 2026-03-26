@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
+import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
 import { api, type Prediction } from "../services/api";
 
@@ -158,6 +159,7 @@ export function FeedPage() {
           </div>
         ))}
       </section>
+      <AppDisclaimer />
     </Layout>
   );
 }

@@ -489,6 +489,17 @@ a:focus {
   background: rgba(34, 63, 103, 0.28);
 }
 
+.app-disclaimer {
+  margin: 2px 4px 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(55, 90, 143, 0.38);
+  background: rgba(11, 22, 39, 0.6);
+  color: rgba(152, 172, 200, 0.9);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
 .tariff-grid {
   display: grid;
   gap: 10px;

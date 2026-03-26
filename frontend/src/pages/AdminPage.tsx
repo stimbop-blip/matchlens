@@ -84,7 +84,15 @@ export function AdminPage() {
   const [campaignNotifOnly, setCampaignNotifOnly] = useState(false);
   const [campaignTitle, setCampaignTitle] = useState("");
   const [campaignMessage, setCampaignMessage] = useState("");
+  const [campaignButtonText, setCampaignButtonText] = useState("");
+  const [campaignButtonUrl, setCampaignButtonUrl] = useState("");
   const [campaignPreviewCount, setCampaignPreviewCount] = useState<number | null>(null);
+  const [campaignPreviewPayload, setCampaignPreviewPayload] = useState<{
+    title?: string | null;
+    message?: string | null;
+    button_text?: string | null;
+    button_url?: string | null;
+  } | null>(null);
   const [deliveryStats, setDeliveryStats] = useState<{ total: number; sent: number; failed: number; queued: number } | null>(null);
 
   const notifyInfo = (text: string) => {
@@ -370,11 +378,26 @@ export function AdminPage() {
   const onDirectMessageUser = async (user: AdminUser) => {
     const text = window.prompt(`Сообщение для @${user.username || user.telegram_id}:`);
     if (!text || !text.trim()) return;
+
+    const buttonTextRaw = window.prompt("Текст кнопки (опционально). Оставьте пустым, если кнопка не нужна:") || "";
+    const buttonText = buttonTextRaw.trim();
+    let buttonUrl: string | undefined;
+    if (buttonText) {
+      const buttonUrlRaw = window.prompt("Ссылка кнопки (https://...):") || "";
+      if (!buttonUrlRaw.trim()) {
+        notifyError("Чтобы отправить кнопку, укажите ссылку");
+        return;
+      }
+      buttonUrl = buttonUrlRaw.trim();
+    }
+
     try {
       const result = await api.adminDirectSend({
         title: "Сообщение от PIT BET",
         message: text.trim(),
         user_id: user.id,
+        button_text: buttonText || undefined,
+        button_url: buttonUrl,
       });
       if (result.queued > 0) {
         notifySuccess("Личное сообщение поставлено в очередь");
@@ -387,13 +410,25 @@ export function AdminPage() {
   };
 
   const onCampaignPreview = async () => {
+    const buttonText = campaignButtonText.trim();
+    const buttonUrl = campaignButtonUrl.trim();
+    if ((buttonText && !buttonUrl) || (!buttonText && buttonUrl)) {
+      notifyError("Для кнопки укажите и текст, и ссылку");
+      return;
+    }
+
     try {
       const preview = await api.adminCampaignPreview({
         segment: campaignSegment,
         access_level: campaignAccess === "all" ? undefined : campaignAccess,
         notifications_enabled_only: campaignNotifOnly,
+        title: campaignTitle.trim() || undefined,
+        message: campaignMessage.trim() || undefined,
+        button_text: buttonText || undefined,
+        button_url: buttonUrl || undefined,
       });
       setCampaignPreviewCount(preview.count);
+      setCampaignPreviewPayload(preview.preview || null);
       notifyInfo(`Найдено получателей: ${preview.count}`);
     } catch (e) {
       notifyError(textError(e, "Не удалось сделать превью рассылки"));
@@ -405,6 +440,12 @@ export function AdminPage() {
       notifyError("Заполните заголовок и текст рассылки");
       return;
     }
+    const buttonText = campaignButtonText.trim();
+    const buttonUrl = campaignButtonUrl.trim();
+    if ((buttonText && !buttonUrl) || (!buttonText && buttonUrl)) {
+      notifyError("Для кнопки укажите и текст, и ссылку");
+      return;
+    }
     if (!window.confirm("Подтвердить массовую рассылку?")) return;
     try {
       const result = await api.adminCampaignSend({
@@ -413,11 +454,16 @@ export function AdminPage() {
         segment: campaignSegment,
         access_level: campaignAccess === "all" ? undefined : campaignAccess,
         notifications_enabled_only: campaignNotifOnly,
+        button_text: buttonText || undefined,
+        button_url: buttonUrl || undefined,
       });
       notifySuccess(`Рассылка поставлена в очередь: ${result.queued}`);
       setCampaignTitle("");
       setCampaignMessage("");
+      setCampaignButtonText("");
+      setCampaignButtonUrl("");
       setCampaignPreviewCount(null);
+      setCampaignPreviewPayload(null);
     } catch (e) {
       notifyError(textError(e, "Не удалось запустить рассылку"));
     }
@@ -870,6 +916,10 @@ export function AdminPage() {
             <div className="admin-form">
               <input value={campaignTitle} onChange={(e) => setCampaignTitle(e.target.value)} placeholder="Заголовок рассылки" />
               <textarea value={campaignMessage} onChange={(e) => setCampaignMessage(e.target.value)} rows={4} placeholder="Текст сообщения" />
+              <div className="admin-grid-2">
+                <input value={campaignButtonText} onChange={(e) => setCampaignButtonText(e.target.value)} placeholder="Текст кнопки (опционально)" />
+                <input value={campaignButtonUrl} onChange={(e) => setCampaignButtonUrl(e.target.value)} placeholder="Ссылка кнопки https://..." />
+              </div>
               <div className="admin-grid-3">
                 <select value={campaignSegment} onChange={(e) => setCampaignSegment(e.target.value)}>
                   <option value="all">Все пользователи</option>
@@ -896,6 +946,20 @@ export function AdminPage() {
                 <button className="btn" onClick={onCampaignSend}>Отправить рассылку</button>
               </div>
               {campaignPreviewCount !== null ? <p className="muted">Оценка получателей: {campaignPreviewCount}</p> : null}
+              {campaignPreviewPayload ? (
+                <div className="card-lite">
+                  <p className="stacked"><b>Предпросмотр сообщения</b></p>
+                  <p className="stacked"><b>{campaignPreviewPayload.title || "Без заголовка"}</b></p>
+                  <p className="stacked">{campaignPreviewPayload.message || ""}</p>
+                  {campaignPreviewPayload.button_text && campaignPreviewPayload.button_url ? (
+                    <p className="stacked">
+                      Кнопка: <b>{campaignPreviewPayload.button_text}</b> ({campaignPreviewPayload.button_url})
+                    </p>
+                  ) : (
+                    <p className="stacked muted">Без кнопки</p>
+                  )}
+                </div>
+              ) : null}
               {deliveryStats ? (
                 <p className="muted">
                   Доставка (последние 500): всего {deliveryStats.total} • отправлено {deliveryStats.sent} • ошибок {deliveryStats.failed} • в очереди {deliveryStats.queued}
