@@ -2,7 +2,7 @@ import contextlib
 
 from aiogram import Router
 from aiogram.filters import CommandStart
-from aiogram.types import Message
+from aiogram.types import Message, ReplyKeyboardRemove
 
 from app.config import settings
 from app.keyboards.main_menu import main_menu_keyboard
@@ -49,8 +49,19 @@ async def cmd_start(message: Message) -> None:
     with contextlib.suppress(Exception):
         await message.delete()
 
-    await message.answer(
+    sent = await message.answer(
         t(language, "start_message"),
-        reply_markup=main_menu_keyboard(language=language, is_admin=bool(user and user.id in settings.admin_ids())),
+        reply_markup=ReplyKeyboardRemove(),
         disable_web_page_preview=True,
     )
+
+    try:
+        await sent.edit_reply_markup(
+            reply_markup=main_menu_keyboard(language=language, is_admin=bool(user and user.id in settings.admin_ids()))
+        )
+    except Exception:
+        await message.answer(
+            t(language, "menu_intro"),
+            reply_markup=main_menu_keyboard(language=language, is_admin=bool(user and user.id in settings.admin_ids())),
+            disable_web_page_preview=True,
+        )
