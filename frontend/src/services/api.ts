@@ -183,12 +183,14 @@ export const api = {
     }),
   mySubscription: () => request<{ tariff: string; status: string; ends_at: string | null }>("/subscriptions/me"),
   tariffs: () => request<Tariff[]>("/tariffs"),
-  predictions: (params?: { mode?: string; status?: string; access_level?: string; risk_level?: string }) => {
+  predictions: (params?: { mode?: string; status?: string; access_level?: string; risk_level?: string; limit?: number; offset?: number }) => {
     const search = new URLSearchParams();
     if (params?.mode) search.set("mode", params.mode);
     if (params?.status) search.set("status", params.status);
     if (params?.access_level) search.set("access_level", params.access_level);
     if (params?.risk_level) search.set("risk_level", params.risk_level);
+    if (typeof params?.limit === "number") search.set("limit", String(params.limit));
+    if (typeof params?.offset === "number") search.set("offset", String(params.offset));
     const suffix = search.toString() ? `?${search.toString()}` : "";
     return request<Prediction[]>(`/predictions${suffix}`);
   },
