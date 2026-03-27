@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class BotUserSyncIn(BaseModel):
@@ -42,11 +42,17 @@ class BotTariffOut(BaseModel):
     price_rub: int
     duration_days: int
     description: str | None = None
+    options: list[dict[str, int | str]] = Field(default_factory=list)
 
 
 class BotUserPreferencesOut(BaseModel):
     language: str = "ru"
     theme: str = "dark"
+
+
+class BotUserPreferencesUpdateIn(BaseModel):
+    language: str | None = None
+    theme: str | None = None
 
 
 class BotReferralOut(BaseModel):

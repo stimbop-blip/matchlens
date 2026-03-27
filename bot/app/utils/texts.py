@@ -31,6 +31,7 @@ TEXTS: dict[Language, dict[str, str]] = {
         "open_profile": "👤 Открыть профиль",
         "open_tariffs": "💎 Открыть тарифы",
         "open_notifications": "⚙ Настроить уведомления",
+        "open_settings": "⚙️ Настройки",
         "open_admin": "🛠 Открыть админку",
         "open_referrals": "👤 Открыть профиль",
         "open_referrals_show_link": "📋 Показать ссылку",
@@ -94,9 +95,60 @@ TEXTS: dict[Language, dict[str, str]] = {
         "status_refund": "Возврат",
         "status_pending": "В ожидании",
         "tariffs_title": "<b>💎 Тарифы PIT BET</b>",
-        "tariffs_subtitle": "Free / Premium / VIP и периоды 7 / 30 / 90 дней:",
+        "tariffs_subtitle": "Уровни доступа и сроки подписки:",
         "tariffs_days": "дней",
-        "tariffs_footer": "Оплата доступна автоматически и через перевод на карту. Подключение и продление — внутри PIT BET.",
+        "tariffs_footer": "Оплата и продление доступны внутри PIT BET.",
+        "tariffs_section_free": (
+            "<b>Free</b>\n"
+            "Для знакомства с PIT BET.\n"
+            "• бесплатные сигналы\n"
+            "• базовая статистика\n"
+            "• новости проекта\n"
+            "• ограниченный доступ к ленте"
+        ),
+        "tariffs_section_premium": (
+            "<b>Premium</b>\n"
+            "Основной доступ для ежедневного использования.\n"
+            "• полная Premium-лента\n"
+            "• ранний доступ к сигналам\n"
+            "• уведомления о новых публикациях\n"
+            "• уведомления о результатах\n"
+            "• краткие разборы\n"
+            "• архив Premium-сигналов\n"
+            "• метки \"Выбор дня\""
+        ),
+        "tariffs_section_vip": (
+            "<b>VIP</b>\n"
+            "Максимум доступа и приоритетный уровень.\n"
+            "• всё из Premium\n"
+            "• VIP-сигналы\n"
+            "• strongest setups / top picks\n"
+            "• live / hot picks\n"
+            "• самый ранний доступ\n"
+            "• расширенные разборы\n"
+            "• отдельный VIP-блок\n"
+            "• приоритетные уведомления"
+        ),
+        "tariffs_premium_durations": "Сроки Premium:",
+        "tariffs_vip_durations": "Сроки VIP:",
+        "tariff_7_label": "7 дней — быстрый старт",
+        "tariff_30_label": "30 дней — <b>лучший выбор</b>",
+        "tariff_90_label": "90 дней — <b>максимальная выгода</b>",
+        "tariff_vip_7_label": "7 дней — тест максимального доступа",
+        "tariff_vip_30_label": "30 дней — основной VIP-доступ",
+        "tariff_vip_90_label": "90 дней — <b>максимум возможностей</b>",
+        "tariff_price_unknown": "цена уточняется",
+        "settings_title": "⚙️ <b>Настройки PIT BET</b>",
+        "settings_body": "Выберите раздел настроек. Расширенные параметры доступны внутри PIT BET.",
+        "settings_current_language": "Текущий язык",
+        "settings_open_notifications": "🔔 Уведомления",
+        "settings_language": "🌐 Язык",
+        "settings_language_title": "🌐 <b>Язык интерфейса</b>",
+        "settings_language_body": "Выберите язык бота:",
+        "settings_language_saved": "Язык обновлен.",
+        "settings_language_failed": "Не удалось сохранить язык. Попробуйте позже.",
+        "settings_lang_ru": "Русский",
+        "settings_lang_en": "English",
         "tariffs_fallback": (
             "<b>💎 Тарифы PIT BET</b>\n"
             "Не удалось загрузить тарифы прямо сейчас."
@@ -194,6 +246,7 @@ TEXTS: dict[Language, dict[str, str]] = {
         "open_profile": "👤 Open profile",
         "open_tariffs": "💎 Open tariffs",
         "open_notifications": "⚙ Configure notifications",
+        "open_settings": "⚙️ Settings",
         "open_admin": "🛠 Open admin",
         "open_referrals": "👤 Open profile",
         "open_referrals_show_link": "📋 Show link",
@@ -257,9 +310,60 @@ TEXTS: dict[Language, dict[str, str]] = {
         "status_refund": "Refund",
         "status_pending": "Pending",
         "tariffs_title": "<b>💎 PIT BET Tariffs</b>",
-        "tariffs_subtitle": "Free / Premium / VIP with 7 / 30 / 90 day periods:",
+        "tariffs_subtitle": "Access levels and subscription durations:",
         "tariffs_days": "days",
-        "tariffs_footer": "Automatic checkout and manual card transfer are available. Activation and renewal are inside PIT BET.",
+        "tariffs_footer": "Payment and renewal are available inside PIT BET.",
+        "tariffs_section_free": (
+            "<b>Free</b>\n"
+            "Entry level to explore PIT BET.\n"
+            "• free signals\n"
+            "• basic stats\n"
+            "• project news\n"
+            "• limited feed access"
+        ),
+        "tariffs_section_premium": (
+            "<b>Premium</b>\n"
+            "Core access for daily use.\n"
+            "• full Premium feed\n"
+            "• early access to signals\n"
+            "• notifications about new posts\n"
+            "• result updates\n"
+            "• short breakdowns\n"
+            "• Premium archive\n"
+            "• \"Pick of the day\" tags"
+        ),
+        "tariffs_section_vip": (
+            "<b>VIP</b>\n"
+            "Maximum access and priority level.\n"
+            "• everything from Premium\n"
+            "• VIP signals\n"
+            "• strongest setups / top picks\n"
+            "• live / hot picks\n"
+            "• earliest access\n"
+            "• extended breakdowns\n"
+            "• dedicated VIP block\n"
+            "• priority notifications"
+        ),
+        "tariffs_premium_durations": "Premium durations:",
+        "tariffs_vip_durations": "VIP durations:",
+        "tariff_7_label": "7 days — fast start",
+        "tariff_30_label": "30 days — <b>best choice</b>",
+        "tariff_90_label": "90 days — <b>maximum value</b>",
+        "tariff_vip_7_label": "7 days — maximum access test",
+        "tariff_vip_30_label": "30 days — core VIP access",
+        "tariff_vip_90_label": "90 days — <b>maximum capabilities</b>",
+        "tariff_price_unknown": "price pending",
+        "settings_title": "⚙️ <b>PIT BET Settings</b>",
+        "settings_body": "Choose a settings section. Extended preferences are available in PIT BET app.",
+        "settings_current_language": "Current language",
+        "settings_open_notifications": "🔔 Notifications",
+        "settings_language": "🌐 Language",
+        "settings_language_title": "🌐 <b>Interface language</b>",
+        "settings_language_body": "Choose bot language:",
+        "settings_language_saved": "Language updated.",
+        "settings_language_failed": "Unable to save language. Try again later.",
+        "settings_lang_ru": "Russian",
+        "settings_lang_en": "English",
         "tariffs_fallback": (
             "<b>💎 PIT BET Tariffs</b>\n"
             "Unable to load tariffs right now."
@@ -327,7 +431,8 @@ BUTTONS: dict[Language, dict[str, str]] = {
         "tariffs": "💎 Тарифы",
         "referrals": "💥 Рефералы",
         "notifications": "🔔 Уведомления",
-        "support": "🦸‍♂️ Поддержка",
+        "settings": "⚙️ Настройки",
+        "support": "🆘 Поддержка",
         "admin": "🛠 Админка",
         "about": "ℹ Кто мы и как это работает ?",
     },
@@ -339,7 +444,8 @@ BUTTONS: dict[Language, dict[str, str]] = {
         "tariffs": "💎 PIT BET Tariffs",
         "referrals": "💥 Referrals",
         "notifications": "🔔 Notifications",
-        "support": "🦸‍♂️ Support",
+        "settings": "⚙️ Settings",
+        "support": "🆘 Support",
         "admin": "🛠 Admin",
         "about": "ℹ Who we are and how it works?",
     },

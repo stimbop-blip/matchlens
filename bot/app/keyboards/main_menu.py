@@ -20,8 +20,9 @@ def main_menu_keyboard(language: str = "ru", is_admin: bool = False) -> InlineKe
         ],
         [
             InlineKeyboardButton(text=button(lang, "notifications"), callback_data="menu:notifications"),
-            InlineKeyboardButton(text=button(lang, "support"), callback_data="menu:support"),
+            InlineKeyboardButton(text=button(lang, "settings"), callback_data="menu:settings"),
         ],
+        [InlineKeyboardButton(text=button(lang, "support"), callback_data="menu:support")],
         [InlineKeyboardButton(text=button(lang, "about"), callback_data="menu:about")],
     ]
 

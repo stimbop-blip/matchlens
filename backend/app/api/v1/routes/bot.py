@@ -17,6 +17,7 @@ from app.schemas.bot import (
     BotSubscriptionOut,
     BotTariffOut,
     BotUserPreferencesOut,
+    BotUserPreferencesUpdateIn,
     BotUserSyncIn,
     PublicStatsOut,
 )
@@ -27,6 +28,7 @@ from app.services.notification_service import (
     mark_notification_sent,
     pull_queued_notifications,
     queue_expiring_subscription_notifications,
+    update_user_preferences,
 )
 from app.services.referral_service import referral_overview
 from app.services.stats_service import get_public_stats
@@ -39,6 +41,19 @@ TARIFF_DESCRIPTION = {
     "free": "Знакомство с PIT BET: часть бесплатных сигналов и базовый доступ.",
     "premium": "Основной тариф: полная Premium-лента, уведомления и разборы.",
     "vip": "Максимум: VIP-сигналы, ранний доступ и лайв-отбор.",
+}
+
+TARIFF_OPTIONS = {
+    "premium": [
+        {"duration_days": 7, "price_rub": 490, "label": "fast_start"},
+        {"duration_days": 30, "price_rub": 1490, "label": "best_choice"},
+        {"duration_days": 90, "price_rub": 3990, "label": "max_value"},
+    ],
+    "vip": [
+        {"duration_days": 7, "price_rub": 1290, "label": "vip_test"},
+        {"duration_days": 30, "price_rub": 3990, "label": "vip_core"},
+        {"duration_days": 90, "price_rub": 10490, "label": "vip_max"},
+    ],
 }
 
 
@@ -55,6 +70,19 @@ def bot_user_preferences(telegram_id: int, db: Session = Depends(get_db)) -> Bot
         return BotUserPreferencesOut(language="ru", theme="dark")
     payload = get_user_preferences(db, user)
     return BotUserPreferencesOut(**payload)
+
+
+@router.patch("/users/{telegram_id}/preferences", response_model=BotUserPreferencesOut)
+def bot_user_preferences_update(
+    telegram_id: int,
+    payload: BotUserPreferencesUpdateIn,
+    db: Session = Depends(get_db),
+) -> BotUserPreferencesOut:
+    user = db.scalar(select(User).where(User.telegram_id == telegram_id))
+    if not user:
+        return BotUserPreferencesOut(language="ru", theme="dark")
+    updated = update_user_preferences(db, user, payload.model_dump(exclude_none=True))
+    return BotUserPreferencesOut(**updated)
 
 
 @router.get("/users/{telegram_id}/referral", response_model=BotReferralOut)
@@ -142,6 +170,7 @@ def bot_tariffs(db: Session = Depends(get_db)) -> list[BotTariffOut]:
             price_rub=item.price_rub,
             duration_days=item.duration_days,
             description=item.description or TARIFF_DESCRIPTION.get(item.code),
+            options=TARIFF_OPTIONS.get(item.code, []),
         )
         for item in records
     ]

@@ -15,7 +15,11 @@ logger = logging.getLogger(__name__)
 
 def _render_message(title: str, message: str) -> str:
     title_text = escape(title.strip() or "Обновление PIT BET")
-    body_text = escape(message.strip())
+    raw_message = message.strip()
+    if title.strip().startswith("💬 Уточнение по оплате PIT BET"):
+        body_text = raw_message
+    else:
+        body_text = escape(raw_message)
     if body_text:
         return f"<b>{title_text}</b>\n\n{body_text}"
     return f"<b>{title_text}</b>"

@@ -14,7 +14,7 @@ from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMar
 from app.config import settings
 from app.keyboards.main_menu import main_menu_keyboard, section_nav_keyboard
 from app.services.container import get_backend_client
-from app.utils.texts import button, normalize_language, t, tariff_presentation
+from app.utils.texts import button, normalize_language, t
 
 router = Router()
 
@@ -174,6 +174,8 @@ def _legacy_action_map() -> dict[str, str]:
         button("en", "referrals"): "menu:referrals",
         button("ru", "notifications"): "menu:notifications",
         button("en", "notifications"): "menu:notifications",
+        button("ru", "settings"): "menu:settings",
+        button("en", "settings"): "menu:settings",
         button("ru", "support"): "menu:support",
         button("en", "support"): "menu:support",
         button("ru", "admin"): "menu:admin",
@@ -516,32 +518,101 @@ async def _build_tariffs_screen(language: str) -> tuple[str, InlineKeyboardMarku
             ),
         )
 
-    presentation = tariff_presentation(language)
-    lines = [t(language, "tariffs_title"), t(language, "tariffs_subtitle")]
-
+    price_map: dict[str, dict[int, int]] = {"premium": {}, "vip": {}}
     for item in items:
-        code = str(item.get("code") or "free")
-        data = presentation.get(code, presentation["free"])
-        name = escape(str(data["label"]))
-        price = escape(str(item.get("price_rub", 0)))
-        duration = escape(str(item.get("duration_days", 0)))
-        tag = escape(str(data["tag"]))
-        short = escape(str(data.get("short") or ""))
-        lines.append(
-            f"\n<b>{name}</b> — <i>{tag}</i>\n"
-            f"{price} RUB • {duration} {t(language, 'tariffs_days')}\n"
-            f"{short}"
-        )
+        code = str(item.get("code") or "").strip().lower()
+        if code not in {"premium", "vip"}:
+            continue
+        options = item.get("options")
+        if isinstance(options, list):
+            for option in options:
+                if not isinstance(option, dict):
+                    continue
+                try:
+                    days = int(option.get("duration_days") or 0)
+                    price = int(option.get("price_rub") or 0)
+                except (TypeError, ValueError):
+                    continue
+                if days in {7, 30, 90} and price > 0:
+                    price_map[code][days] = price
 
-    lines.append(f"\n{t(language, 'tariffs_footer')}")
+        try:
+            duration = int(item.get("duration_days") or 0)
+            price = int(item.get("price_rub") or 0)
+        except (TypeError, ValueError):
+            continue
+        if duration in {7, 30, 90} and price > 0:
+            price_map[code][duration] = price
+
+    def duration_line(code: str, days: int, base_label_key: str) -> str:
+        label = t(language, base_label_key)
+        price = price_map.get(code, {}).get(days)
+        if price and price > 0:
+            return f"• {label} — <b>{price} RUB</b>"
+        return f"• {label} — {t(language, 'tariff_price_unknown')}"
+
+    lines = [
+        t(language, "tariffs_title"),
+        "",
+        t(language, "tariffs_section_free"),
+        "",
+        t(language, "tariffs_section_premium"),
+        "",
+        t(language, "tariffs_premium_durations"),
+        duration_line("premium", 7, "tariff_7_label"),
+        duration_line("premium", 30, "tariff_30_label"),
+        duration_line("premium", 90, "tariff_90_label"),
+        "",
+        t(language, "tariffs_section_vip"),
+        "",
+        t(language, "tariffs_vip_durations"),
+        duration_line("vip", 7, "tariff_vip_7_label"),
+        duration_line("vip", 30, "tariff_vip_30_label"),
+        duration_line("vip", 90, "tariff_vip_90_label"),
+        "",
+        t(language, "tariffs_footer"),
+    ]
     return (
-        "\n".join(lines),
+        "\n".join(lines).strip(),
         section_nav_keyboard(
             language=language,
             back_callback="menu:main",
             primary_button=(t(language, "open_tariffs"), _mini_app_url("/tariffs")),
         ),
     )
+
+
+async def _build_settings_screen(language: str) -> tuple[str, InlineKeyboardMarkup]:
+    rows = [
+        [InlineKeyboardButton(text=t(language, "settings_language"), callback_data="menu:settings:language")],
+        [InlineKeyboardButton(text=t(language, "settings_open_notifications"), callback_data="menu:notifications")],
+        [InlineKeyboardButton(text=t(language, "open_mini_app"), web_app=WebAppInfo(url=settings.mini_app_url))],
+        [
+            InlineKeyboardButton(text=t(language, "nav_back"), callback_data="menu:main"),
+            InlineKeyboardButton(text=t(language, "nav_menu"), callback_data="menu:main"),
+        ],
+    ]
+    text = (
+        f"{t(language, 'settings_title')}\n\n"
+        f"{t(language, 'settings_current_language')}: <b>{escape(t(language, 'settings_lang_ru') if language == 'ru' else t(language, 'settings_lang_en'))}</b>\n"
+        f"{t(language, 'settings_body')}"
+    )
+    return text, InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+async def _build_settings_language_screen(language: str, notice_key: str | None = None) -> tuple[str, InlineKeyboardMarkup]:
+    lines = [t(language, "settings_language_title"), t(language, "settings_language_body")]
+    if notice_key:
+        lines.extend(["", t(language, notice_key)])
+    rows = [
+        [InlineKeyboardButton(text=t(language, "settings_lang_ru"), callback_data="menu:settings:language:set:ru")],
+        [InlineKeyboardButton(text=t(language, "settings_lang_en"), callback_data="menu:settings:language:set:en")],
+        [
+            InlineKeyboardButton(text=t(language, "nav_back"), callback_data="menu:settings"),
+            InlineKeyboardButton(text=t(language, "nav_menu"), callback_data="menu:main"),
+        ],
+    ]
+    return "\n\n".join(lines), InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 async def _build_notifications_screen(language: str) -> tuple[str, InlineKeyboardMarkup]:
@@ -689,6 +760,23 @@ async def _build_screen(
         return await _build_referrals_screen(language, user_id, show_link=True)
     if action == "menu:notifications":
         return await _build_notifications_screen(language)
+    if action == "menu:settings":
+        return await _build_settings_screen(language)
+    if action == "menu:settings:language":
+        return await _build_settings_language_screen(language)
+    if action.startswith("menu:settings:language:set:"):
+        target = action.rsplit(":", maxsplit=1)[-1]
+        next_language = normalize_language(target)
+        backend_client = get_backend_client()
+        notice_key = "settings_language_saved"
+        if backend_client and user_id:
+            updated = await backend_client.update_user_preferences(user_id, {"language": next_language})
+            if not updated:
+                notice_key = "settings_language_failed"
+                next_language = language
+            else:
+                next_language = normalize_language(str(updated.get("language") or next_language))
+        return await _build_settings_language_screen(next_language, notice_key=notice_key)
     if action == "menu:support":
         return await _build_support_screen(language)
     if action == "menu:admin":

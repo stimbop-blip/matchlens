@@ -44,6 +44,23 @@ class BackendClient:
             return False
         return True
 
+    async def _patch_json(self, path: str, params: dict[str, Any] | None = None, json: dict[str, Any] | None = None) -> Any | None:
+        try:
+            response = await self._client.patch(path, params=params, json=json)
+        except Exception as exc:
+            logger.warning("Backend PATCH failed path=%s reason=%s", path, exc)
+            return None
+
+        if response.status_code != 200:
+            logger.warning("Backend PATCH non-200 path=%s status=%s", path, response.status_code)
+            return None
+
+        try:
+            return response.json()
+        except Exception as exc:
+            logger.warning("Backend PATCH invalid JSON path=%s reason=%s", path, exc)
+            return None
+
     async def sync_user(self, telegram_user: dict[str, Any]) -> None:
         ok = await self._post_ok("/api/v1/bot/users/sync", json=telegram_user)
         if not ok:
@@ -56,6 +73,10 @@ class BackendClient:
     async def get_user_preferences(self, telegram_id: int) -> dict[str, Any] | None:
         payload = await self._get_json(f"/api/v1/bot/users/{telegram_id}/preferences")
         return payload if isinstance(payload, dict) else None
+
+    async def update_user_preferences(self, telegram_id: int, payload: dict[str, Any]) -> dict[str, Any] | None:
+        data = await self._patch_json(f"/api/v1/bot/users/{telegram_id}/preferences", json=payload)
+        return data if isinstance(data, dict) else None
 
     async def get_user_referral(self, telegram_id: int) -> dict[str, Any] | None:
         payload = await self._get_json(f"/api/v1/bot/users/{telegram_id}/referral")

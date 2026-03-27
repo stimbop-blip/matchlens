@@ -1,3 +1,5 @@
+import logging
+from html import escape
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -13,8 +15,10 @@ from app.models.tariff import Tariff
 from app.models.user import User
 from app.schemas.payment import AdminPaymentStatusUpdateIn
 from app.services.payment_service import activate_subscription_for_payment
+from app.services.notification_service import queue_direct_notification
 
 router = APIRouter(prefix="/admin/payments", tags=["admin"])
+logger = logging.getLogger(__name__)
 
 
 @router.get("")
@@ -90,6 +94,30 @@ def admin_update_payment_status(
     if target == PaymentStatus.succeeded:
         activate_subscription_for_payment(db, payment)
         return {"ok": True, "id": str(payment.id), "status": PaymentStatus.succeeded.value}
+
+    if target == PaymentStatus.requires_clarification:
+        admin_text = (payload.review_comment or "").strip() or "Нужны дополнительные данные по оплате."
+        clarification_message = (
+            "Нам нужно уточнить данные по вашему платежу.\n"
+            "Сообщение от поддержки:\n\n"
+            f"<i>{escape(admin_text)}</i>\n\n"
+            "Пожалуйста, откройте PIT BET или ответьте в поддержку, если нужна помощь."
+        )
+        result = queue_direct_notification(
+            db,
+            title="💬 Уточнение по оплате PIT BET",
+            message=clarification_message,
+            user_id=str(payment.user_id),
+        )
+        if int(result.get("queued", 0)) <= 0:
+            logger.warning(
+                "payment_clarification_not_queued payment_id=%s user_id=%s reason=%s",
+                payment.id,
+                payment.user_id,
+                result.get("reason"),
+            )
+        else:
+            logger.info("payment_clarification_queued payment_id=%s user_id=%s", payment.id, payment.user_id)
 
     payment.paid_at = None
     db.add(payment)
