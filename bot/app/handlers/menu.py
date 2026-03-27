@@ -145,19 +145,15 @@ async def _send_screen(message: Message, text: str, reply_markup: InlineKeyboard
 
 async def _send_clean_menu(message: Message, language: str, user_id: int | None) -> None:
     text, markup = await _build_menu_screen(language, user_id)
-    sent = await message.answer(
+    cleanup = await message.answer(".", reply_markup=ReplyKeyboardRemove())
+    with contextlib.suppress(Exception):
+        await cleanup.delete()
+
+    await message.answer(
         text,
-        reply_markup=ReplyKeyboardRemove(),
+        reply_markup=markup,
         disable_web_page_preview=True,
     )
-    try:
-        await sent.edit_reply_markup(reply_markup=markup)
-    except Exception:
-        await message.answer(
-            text,
-            reply_markup=markup,
-            disable_web_page_preview=True,
-        )
 
 
 async def _edit_screen(query: CallbackQuery, text: str, reply_markup: InlineKeyboardMarkup) -> None:
