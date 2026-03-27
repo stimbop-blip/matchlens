@@ -74,8 +74,8 @@ export function MenuPage() {
           title={isRu ? "Меню" : "Menu"}
           subtitle={
             isRu
-              ? "Настройки, доступ и сервисные разделы PIT BET"
-              : "Settings, access, and service sections of PIT BET"
+              ? "Настройки, сервисные разделы и управление продуктом"
+              : "Settings, service sections, and product control"
           }
         />
 
@@ -125,6 +125,15 @@ export function MenuPage() {
           <SettingsRow icon="📘" title={isRu ? "Правила использования" : "Rules of use"} to="/menu/rules" />
           <SettingsRow icon="⚖️" title={isRu ? "Ответственная игра" : "Responsible play"} to="/menu/responsible" />
         </SettingsSection>
+
+        <div className="service-spotlight">
+          <strong>{isRu ? "PIT BET Service" : "PIT BET Service"}</strong>
+          <p>
+            {isRu
+              ? "Актуальные новости, поддержка и правила использования доступны в одном месте."
+              : "News updates, support, and product rules are available in one place."}
+          </p>
+        </div>
 
         {me?.is_admin || me?.role === "admin" ? (
           <SettingsSection title={isRu ? "Для admin" : "For admin"}>

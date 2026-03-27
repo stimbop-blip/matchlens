@@ -4,16 +4,7 @@ import { Link } from "react-router-dom";
 import { useLanguage } from "../app/language";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
-import {
-  AccessBadge,
-  AppShellSection,
-  HeroCard,
-  PromoCard,
-  SectionActions,
-  SectionHeader,
-  SettingsSection,
-  StatCard,
-} from "../components/ui";
+import { AccessBadge, AppShellSection, HeroCard, PromoCard, SectionActions, SectionHeader, SettingsSection, StatCard } from "../components/ui";
 import { api, type Me, type MyPayment, type NotificationSettings, type PromoApplyResult, type ReferralStats } from "../services/api";
 import { waitForTelegramInitData } from "../services/telegram";
 
@@ -30,10 +21,10 @@ function tariffLabel(value: string): string {
 }
 
 function subscriptionStatusLabel(value: string, language: "ru" | "en"): string {
-  if (value === "active") return language === "ru" ? "Активна" : "Active";
-  if (value === "expired") return language === "ru" ? "Истекла" : "Expired";
-  if (value === "canceled") return language === "ru" ? "Отменена" : "Canceled";
-  return language === "ru" ? "Не активна" : "Inactive";
+  if (value === "active") return language === "ru" ? "Активен" : "Active";
+  if (value === "expired") return language === "ru" ? "Истек" : "Expired";
+  if (value === "canceled") return language === "ru" ? "Отменен" : "Canceled";
+  return language === "ru" ? "Не активен" : "Inactive";
 }
 
 function paymentStatusLabel(value: string, language: "ru" | "en"): string {
@@ -129,13 +120,7 @@ export function ProfilePage() {
       }
     } catch (e) {
       const text = e instanceof Error ? e.message : isRu ? "Не удалось применить промокод" : "Promo apply failed";
-      setPromoResult({
-        ok: false,
-        mode: "error",
-        kind: "error",
-        code,
-        message: text,
-      });
+      setPromoResult({ ok: false, mode: "error", kind: "error", code, message: text });
     }
   };
 
@@ -156,11 +141,7 @@ export function ProfilePage() {
       : "Join PIT BET using my referral link.";
     try {
       if (navigator.share) {
-        await navigator.share({
-          title: "PIT BET",
-          text: shareText,
-          url: referral.referral_link,
-        });
+        await navigator.share({ title: "PIT BET", text: shareText, url: referral.referral_link });
         return;
       }
       await navigator.clipboard.writeText(referral.referral_link);
@@ -174,87 +155,51 @@ export function ProfilePage() {
     <Layout>
       <HeroCard
         eyebrow="PIT BET"
-        title={isRu ? "Личный кабинет" : "Account center"}
+        title={isRu ? "Личный кабинет" : "Personal area"}
         description={
           isRu
-            ? "Управляйте доступом, уведомлениями, промокодами и реферальной программой."
-            : "Manage access, notifications, promo codes, and referral program."
+            ? "Управляйте доступом, оплатами, бонусами и настройками аккаунта"
+            : "Manage access, payments, bonuses, and account settings"
         }
         right={sub ? <AccessBadge level={tariffCode(sub.tariff)} label={tariffLabel(sub.tariff)} /> : undefined}
       >
-        <div className="stack-list compact">
-          <div className="info-row">
-            <span>{isRu ? "Статус" : "Status"}</span>
-            <strong>{sub ? subscriptionStatusLabel(sub.status, language) : "—"}</strong>
-          </div>
-          <div className="info-row">
-            <span>{isRu ? "Доступ до" : "Valid until"}</span>
-            <strong>{sub ? dateLabel(sub.ends_at, language) : "—"}</strong>
-          </div>
+        <div className="stat-grid compact">
+          <StatCard label={isRu ? "Статус" : "Status"} value={sub ? subscriptionStatusLabel(sub.status, language) : "—"} />
+          <StatCard label={isRu ? "Доступ до" : "Valid until"} value={sub ? dateLabel(sub.ends_at, language) : "—"} tone="accent" />
         </div>
       </HeroCard>
 
       <AppShellSection>
-        <SectionHeader
-          title={isRu ? "Пользователь" : "User profile"}
-          subtitle={loading ? (isRu ? "Загружаем данные..." : "Loading data...") : undefined}
-        />
-
+        <SectionHeader title={isRu ? "Пользователь" : "User"} subtitle={loading ? (isRu ? "Загружаем данные..." : "Loading data...") : undefined} />
         {!loading && !me ? <p className="empty-state">{isRu ? "Профиль временно недоступен." : "Profile is temporarily unavailable."}</p> : null}
 
         {me ? (
-          <div className="stack-list">
-            <div className="info-row">
-              <span>{isRu ? "Имя" : "Name"}</span>
-              <strong>{me.first_name || "—"}</strong>
-            </div>
-            <div className="info-row">
-              <span>{isRu ? "Ник в Telegram" : "Telegram username"}</span>
-              <strong>{me.username ? `@${me.username}` : "—"}</strong>
-            </div>
-            <div className="info-row">
-              <span>Telegram ID</span>
-              <strong>{me.telegram_id}</strong>
-            </div>
-            <div className="info-row">
-              <span>{isRu ? "Роль" : "Role"}</span>
-              <strong>{me.is_admin ? (isRu ? "Администратор" : "Admin") : isRu ? "Пользователь" : "User"}</strong>
-            </div>
+          <div className="stack-list compact">
+            <div className="info-row"><span>{isRu ? "Имя" : "Name"}</span><strong>{me.first_name || "—"}</strong></div>
+            <div className="info-row"><span>{isRu ? "Username" : "Username"}</span><strong>{me.username ? `@${me.username}` : "—"}</strong></div>
+            <div className="info-row"><span>Telegram ID</span><strong>{me.telegram_id}</strong></div>
+            <div className="info-row"><span>{isRu ? "Роль" : "Role"}</span><strong>{me.is_admin ? (isRu ? "Администратор" : "Admin") : isRu ? "Пользователь" : "User"}</strong></div>
           </div>
         ) : null}
 
         {me?.is_admin || me?.role === "admin" ? (
           <SectionActions compact>
-            <Link className="btn secondary" to="/admin">
-              {isRu ? "Открыть админку" : "Open admin"}
-            </Link>
+            <Link className="btn secondary" to="/admin">{isRu ? "Открыть админку" : "Open admin"}</Link>
           </SectionActions>
         ) : null}
       </AppShellSection>
 
       <AppShellSection id="subscription">
-        <SectionHeader
-          title={isRu ? "Текущий доступ" : "Current access"}
-          subtitle={isRu ? "Тариф, статус и срок действия" : "Tariff, status, and validity"}
-        />
+        <SectionHeader title={isRu ? "Подписка и оплаты" : "Subscription and payments"} subtitle={isRu ? "Текущий доступ и последние платежи" : "Current access and latest payments"} />
         <div className="stat-grid compact">
           <StatCard label={isRu ? "Тариф" : "Tariff"} value={sub ? tariffLabel(sub.tariff) : "—"} tone="accent" />
           <StatCard label={isRu ? "Статус" : "Status"} value={sub ? subscriptionStatusLabel(sub.status, language) : "—"} />
           <StatCard label={isRu ? "Доступ до" : "Valid until"} value={sub ? dateLabel(sub.ends_at, language) : "—"} />
         </div>
-      </AppShellSection>
-
-      <AppShellSection id="payments">
-        <SectionHeader
-          title={isRu ? "Оплаты и подтверждение" : "Payments and review"}
-          subtitle={isRu ? "Статусы ручных и автоматических оплат" : "Manual and automatic payment statuses"}
-        />
         {payments.length === 0 ? <p className="empty-state">{isRu ? "Платежей пока нет." : "No payments yet."}</p> : null}
-        {payments.slice(0, 5).map((item) => (
+        {payments.slice(0, 4).map((item) => (
           <div className="info-row" key={item.id}>
-            <span>
-              {item.tariff_code.toUpperCase()} • {item.duration_days} {isRu ? "дней" : "days"} • {item.amount_rub} RUB
-            </span>
+            <span>{item.tariff_code.toUpperCase()} • {item.duration_days} {isRu ? "дней" : "days"} • {item.amount_rub} RUB</span>
             <strong>{paymentStatusLabel(item.status, language)}</strong>
             <small className="muted-line">{item.payment_method_name || item.payment_method_code || ""}</small>
             {item.review_comment ? <small className="muted-line">{item.review_comment}</small> : null}
@@ -263,37 +208,12 @@ export function ProfilePage() {
       </AppShellSection>
 
       <AppShellSection id="referral">
-        <SectionHeader
-          title={isRu ? "Реферальная программа" : "Referral program"}
-          subtitle={
-            isRu
-              ? "Бонусные дни доступа за активацию приглашенных пользователей"
-              : "Bonus access days for activated invited users"
-          }
-        />
+        <SectionHeader title={isRu ? "Реферальная программа" : "Referral program"} subtitle={isRu ? "Бонусные дни за активацию приглашенных" : "Bonus days for activated invites"} />
         {!referral ? <p className="empty-state">{isRu ? "Данные недоступны." : "Data unavailable."}</p> : null}
         {referral ? (
           <>
-            <div className="referral-promo-note">
-              <p>
-                {isRu
-                  ? "Делитесь ссылкой PIT BET: после первой оплаты Premium или VIP вашим приглашенным пользователем бонус начисляется автоматически."
-                  : "Share your PIT BET link: after the first Premium or VIP purchase by your invited user, bonus days are credited automatically."}
-              </p>
-              <ul>
-                <li>{isRu ? "Premium-покупка реферала: +7 дней Premium" : "Referral Premium purchase: +7 Premium days"}</li>
-                <li>{isRu ? "VIP-покупка реферала: +14 дней Premium" : "Referral VIP purchase: +14 Premium days"}</li>
-                <li>{isRu ? "Друг получает скидку 10% на первую покупку" : "Friend gets 10% off the first purchase"}</li>
-              </ul>
-            </div>
-
-            <div className="stack-list compact">
-              <div className="info-row">
-                <span>{isRu ? "Реферальный код" : "Referral code"}</span>
-                <strong>{referral.referral_code}</strong>
-              </div>
-            </div>
             <div className="stat-grid compact">
+              <StatCard label={isRu ? "Код" : "Code"} value={referral.referral_code} />
               <StatCard label={isRu ? "Приглашено" : "Invited"} value={referral.invited} />
               <StatCard label={isRu ? "Активировано" : "Activated"} value={referral.activated} />
               <StatCard label={isRu ? "Бонусные дни" : "Bonus days"} value={referral.bonus_days} tone="accent" />
@@ -301,12 +221,8 @@ export function ProfilePage() {
             <div className="input-stack">
               <input value={referral.referral_link} readOnly />
               <SectionActions compact>
-                <button className="btn secondary" onClick={copyReferral} type="button">
-                  {isRu ? "Скопировать ссылку" : "Copy link"}
-                </button>
-                <button className="btn ghost" onClick={shareReferral} type="button">
-                  {isRu ? "Поделиться" : "Share"}
-                </button>
+                <button className="btn secondary" onClick={copyReferral} type="button">{isRu ? "Скопировать ссылку" : "Copy link"}</button>
+                <button className="btn ghost" onClick={shareReferral} type="button">{isRu ? "Поделиться" : "Share"}</button>
               </SectionActions>
             </div>
           </>
@@ -315,72 +231,40 @@ export function ProfilePage() {
 
       <PromoCard
         title={isRu ? "Промокод PIT BET" : "PIT BET promo code"}
-        description={
-          isRu
-            ? "Введите промокод, чтобы получить скидку или бонусные дни доступа."
-            : "Enter a promo code to get a discount or bonus access days."
-        }
+        description={isRu ? "Скидка или бонусные дни по промокоду" : "Discount or bonus days by promo code"}
       >
-        <p className="muted-line">{isRu ? "Используйте промокод для скидки на тариф или бонусных дней." : "Use a promo code for tariff discount or bonus days."}</p>
         <div className="input-stack" id="promo">
-          <input
-            value={promoCode}
-            onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-            placeholder={isRu ? "Введите промокод" : "Enter promo code"}
-          />
-          <select value={promoTariff} onChange={(e) => setPromoTariff(e.target.value as "free" | "premium" | "vip")}>
+          <input value={promoCode} onChange={(e) => setPromoCode(e.target.value.toUpperCase())} placeholder={isRu ? "Введите промокод" : "Enter promo code"} />
+          <select value={promoTariff} onChange={(e) => setPromoTariff(e.target.value as "free" | "premium" | "vip")}> 
             <option value="free">Free</option>
             <option value="premium">Premium</option>
             <option value="vip">VIP</option>
           </select>
           <SectionActions compact>
-            <button className="btn" onClick={applyPromo} type="button">
-              {isRu ? "Применить" : "Apply"}
-            </button>
+            <button className="btn" onClick={applyPromo} type="button">{isRu ? "Применить" : "Apply"}</button>
           </SectionActions>
           {promoResult ? (
             <p className={`notice ${promoResult.ok ? "success" : "error"}`}>
               {promoResult.message}
-              {promoResult.final_price_rub !== undefined && promoResult.final_price_rub !== null
-                ? ` ${isRu ? "Итог" : "Final"}: ${promoResult.final_price_rub} RUB.`
-                : ""}
+              {promoResult.final_price_rub !== undefined && promoResult.final_price_rub !== null ? ` ${isRu ? "Итог" : "Final"}: ${promoResult.final_price_rub} RUB.` : ""}
             </p>
           ) : null}
-          <p className="muted-line">{isRu ? "История активаций доступна в уведомлениях и событиях аккаунта." : "Activation history is available in your account events and notifications."}</p>
         </div>
       </PromoCard>
 
       <AppShellSection id="notifications">
-        <SectionHeader title={isRu ? "Уведомления" : "Notifications"} />
+        <SectionHeader title={isRu ? "Уведомления" : "Notifications"} subtitle={isRu ? "Компактные настройки категорий" : "Compact category settings"} />
 
         {!notify ? <p className="empty-state">{isRu ? "Настройки временно недоступны." : "Settings are unavailable."}</p> : null}
 
         {notify ? (
           <SettingsSection title={isRu ? "Категории" : "Categories"}>
-            <label className="switch-row">
-              <span>{isRu ? "Получать уведомления" : "Enable notifications"}</span>
-              <input type="checkbox" checked={notify.notifications_enabled} onChange={(e) => void updateNotify({ notifications_enabled: e.target.checked })} />
-            </label>
-            <label className="switch-row">
-              <span>{isRu ? "Новые сигналы Free" : "New Free signals"}</span>
-              <input type="checkbox" checked={notify.notify_free} onChange={(e) => void updateNotify({ notify_free: e.target.checked })} />
-            </label>
-            <label className="switch-row">
-              <span>{isRu ? "Новые сигналы Premium" : "New Premium signals"}</span>
-              <input type="checkbox" checked={notify.notify_premium} onChange={(e) => void updateNotify({ notify_premium: e.target.checked })} />
-            </label>
-            <label className="switch-row">
-              <span>{isRu ? "Новые сигналы VIP" : "New VIP signals"}</span>
-              <input type="checkbox" checked={notify.notify_vip} onChange={(e) => void updateNotify({ notify_vip: e.target.checked })} />
-            </label>
-            <label className="switch-row">
-              <span>{isRu ? "Результаты" : "Results"}</span>
-              <input type="checkbox" checked={notify.notify_results} onChange={(e) => void updateNotify({ notify_results: e.target.checked })} />
-            </label>
-            <label className="switch-row">
-              <span>{isRu ? "Новости PIT BET" : "PIT BET news"}</span>
-              <input type="checkbox" checked={notify.notify_news} onChange={(e) => void updateNotify({ notify_news: e.target.checked })} />
-            </label>
+            <label className="switch-row"><span>{isRu ? "Получать уведомления" : "Enable notifications"}</span><input type="checkbox" checked={notify.notifications_enabled} onChange={(e) => void updateNotify({ notifications_enabled: e.target.checked })} /></label>
+            <label className="switch-row"><span>{isRu ? "Новые сигналы Free" : "New Free signals"}</span><input type="checkbox" checked={notify.notify_free} onChange={(e) => void updateNotify({ notify_free: e.target.checked })} /></label>
+            <label className="switch-row"><span>{isRu ? "Новые сигналы Premium" : "New Premium signals"}</span><input type="checkbox" checked={notify.notify_premium} onChange={(e) => void updateNotify({ notify_premium: e.target.checked })} /></label>
+            <label className="switch-row"><span>{isRu ? "Новые сигналы VIP" : "New VIP signals"}</span><input type="checkbox" checked={notify.notify_vip} onChange={(e) => void updateNotify({ notify_vip: e.target.checked })} /></label>
+            <label className="switch-row"><span>{isRu ? "Результаты" : "Results"}</span><input type="checkbox" checked={notify.notify_results} onChange={(e) => void updateNotify({ notify_results: e.target.checked })} /></label>
+            <label className="switch-row"><span>{isRu ? "Новости PIT BET" : "PIT BET news"}</span><input type="checkbox" checked={notify.notify_news} onChange={(e) => void updateNotify({ notify_news: e.target.checked })} /></label>
           </SettingsSection>
         ) : null}
 

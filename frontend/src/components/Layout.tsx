@@ -87,9 +87,21 @@ export function Layout({ children }: PropsWithChildren) {
     return isRu ? "Главная" : "Home";
   }, [isRu, location.pathname]);
 
-  const subtitle = isRu
-    ? "Сигналы, статистика и доступ к сильным игровым ситуациям"
-    : "Signals, statistics, and access to strong market situations";
+  const subtitle = useMemo(() => {
+    if (location.pathname.startsWith("/feed")) {
+      return isRu ? "Прематч и live-сигналы с быстрой фильтрацией" : "Prematch and live signals with fast filtering";
+    }
+    if (location.pathname.startsWith("/stats")) {
+      return isRu ? "Фактические результаты, ROI и структура сигналов" : "Actual results, ROI, and signal structure";
+    }
+    if (location.pathname.startsWith("/profile")) {
+      return isRu ? "Доступ, оплата, бонусы и настройки аккаунта" : "Access, payments, bonuses, and account settings";
+    }
+    if (location.pathname.startsWith("/menu") || location.pathname.startsWith("/tariffs") || location.pathname.startsWith("/news")) {
+      return isRu ? "Настройки, сервисные разделы и управление продуктом" : "Settings, service sections, and product control";
+    }
+    return isRu ? "Отобранные сигналы, доступ и ключевые события PIT BET" : "Selected signals, access, and key PIT BET updates";
+  }, [isRu, location.pathname]);
 
   const tabs = [
     {

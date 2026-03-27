@@ -27,14 +27,14 @@ export function StatsPage() {
     <Layout>
       <HeroCard
         eyebrow="PIT BET"
-        title={isRu ? "Статистика и результативность" : "Performance dashboard"}
+        title={isRu ? "Результаты и структура сигналов" : "Results and signal structure"}
         description={
           isRu
-            ? "Дашборд показывает фактические показатели PIT BET: объем, точность, ROI и структуру результатов."
-            : "Dashboard shows PIT BET performance: volume, hit rate, ROI, and outcomes breakdown."
+            ? "Фактические показатели PIT BET: объем, точность, ROI и текущая динамика."
+            : "Actual PIT BET metrics: volume, hit rate, ROI, and current momentum."
         }
       >
-        <div className="stat-grid">
+        <div className="stat-grid compact">
           <StatCard label={isRu ? "Прогнозов" : "Predictions"} value={stats?.total ?? 0} tone="accent" />
           <StatCard label={isRu ? "Точность" : "Hit rate"} value={`${stats?.hit_rate ?? 0}%`} tone="success" />
           <StatCard label="ROI" value={`${stats?.roi ?? 0}%`} tone="warning" />
@@ -44,15 +44,15 @@ export function StatsPage() {
 
       <AppShellSection>
         <SectionHeader
-          title={isRu ? "Ключевые KPI" : "Core KPI"}
-          subtitle={isRu ? "Срез по фактическим исходам" : "Snapshot of actual outcomes"}
+          title={isRu ? "Ключевые результаты" : "Key outcomes"}
+          subtitle={isRu ? "Распределение завершенных сигналов" : "Completed signal distribution"}
         />
 
         {loading ? <p className="muted-line">{isRu ? "Обновляем показатели..." : "Refreshing metrics..."}</p> : null}
         {!loading && !stats ? (
-          <div className="empty-block">
+          <div className="empty-block subtle">
             <p className="empty-state">{isRu ? "Не удалось загрузить статистику." : "Failed to load statistics."}</p>
-            <p className="muted-line">{isRu ? "Проверьте подключение и повторите попытку позже." : "Check connection and try again later."}</p>
+            <p className="muted-line">{isRu ? "Проверьте подключение и попробуйте снова." : "Check your connection and try again."}</p>
           </div>
         ) : null}
 
@@ -62,27 +62,24 @@ export function StatsPage() {
               <StatCard label={isRu ? "Выигрыши" : "Wins"} value={stats.wins} tone="success" />
               <StatCard label={isRu ? "Поражения" : "Loses"} value={stats.loses} tone="warning" />
               <StatCard label={isRu ? "Возвраты" : "Refunds"} value={stats.refunds} />
-              <StatCard label={isRu ? "Прогнозов всего" : "Total predictions"} value={stats.total} tone="accent" />
+              <StatCard label={isRu ? "Всего" : "Total"} value={stats.total} tone="accent" />
             </div>
 
-            <SectionHeader
-              title={isRu ? "Разбивка по доступу" : "Access breakdown"}
-              subtitle={isRu ? "Структура Free / Premium / VIP" : "Free / Premium / VIP structure"}
-            />
-            <div className="stat-grid">
-              <StatCard label="Free" value={stats.by_access?.free ?? 0} />
-              <StatCard label="Premium" value={stats.by_access?.premium ?? 0} tone="accent" />
-              <StatCard label="VIP" value={stats.by_access?.vip ?? 0} tone="warning" />
-              <StatCard label={isRu ? "ROI" : "ROI"} value={`${stats.roi}%`} tone="success" />
+            <div className="stats-structure-block">
+              <SectionHeader
+                title={isRu ? "Структура по доступу" : "Access structure"}
+                subtitle={isRu ? "Free / Premium / VIP" : "Free / Premium / VIP"}
+              />
+              <div className="stat-grid compact">
+                <StatCard label="Free" value={stats.by_access?.free ?? 0} />
+                <StatCard label="Premium" value={stats.by_access?.premium ?? 0} tone="accent" />
+                <StatCard label="VIP" value={stats.by_access?.vip ?? 0} tone="warning" />
+              </div>
             </div>
 
             <SectionActions compact>
-              <Link className="btn secondary" to="/feed">
-                {isRu ? "Открыть ленту" : "Open feed"}
-              </Link>
-              <Link className="btn ghost" to="/tariffs">
-                {isRu ? "Тарифы" : "Tariffs"}
-              </Link>
+              <Link className="btn secondary" to="/feed">{isRu ? "Открыть ленту" : "Open feed"}</Link>
+              <Link className="btn ghost" to="/tariffs">{isRu ? "Смотреть тарифы" : "View tariffs"}</Link>
             </SectionActions>
           </>
         ) : null}

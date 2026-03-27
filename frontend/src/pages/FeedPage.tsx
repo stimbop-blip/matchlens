@@ -19,7 +19,16 @@ function statusLabel(status: Prediction["status"], language: "ru" | "en"): strin
 
 function modeLabel(mode: Prediction["mode"], language: "ru" | "en"): string {
   if (mode === "live") return "Live";
-  return language === "ru" ? "Прематч" : "Prematch";
+  return language === "ru" ? "Prematch" : "Prematch";
+}
+
+function sportEmoji(sport: string): string {
+  const normalized = sport.toLowerCase();
+  if (normalized.includes("football") || normalized.includes("soccer")) return "⚽";
+  if (normalized.includes("basket")) return "🏀";
+  if (normalized.includes("tennis")) return "🎾";
+  if (normalized.includes("hockey")) return "🏒";
+  return "🎯";
 }
 
 function dateLabel(value: string, language: "ru" | "en") {
@@ -31,6 +40,17 @@ function dateLabel(value: string, language: "ru" | "en") {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function teaser(value: string | null | undefined, language: "ru" | "en"): string {
+  const source = (value || "").replace(/\s+/g, " ").trim();
+  if (!source) {
+    return language === "ru"
+      ? "Краткий комментарий появится после обновления сигнала."
+      : "Short analyst comment appears after signal update.";
+  }
+  if (source.length <= 110) return source;
+  return `${source.slice(0, 107).trim()}...`;
 }
 
 function dayHeading(date: Date, language: "ru" | "en"): string {
@@ -48,15 +68,12 @@ function dayHeading(date: Date, language: "ru" | "en"): string {
   });
 }
 
-function teaser(value: string | null | undefined, language: "ru" | "en"): string {
-  const source = (value || "").trim();
-  if (!source) {
-    return language === "ru"
-      ? "Комментарий аналитика появится после обновления сигнала."
-      : "Analyst comment appears once the signal is updated.";
-  }
-  if (source.length <= 160) return source;
-  return `${source.slice(0, 157).trim()}...`;
+function signalMarks(item: Prediction, language: "ru" | "en"): string[] {
+  const marks: string[] = [];
+  if (item.mode === "live") marks.push("Live");
+  if (item.access_level === "vip" && item.status === "pending") marks.push(language === "ru" ? "Strong Setup" : "Strong Setup");
+  if (item.odds >= 2.2 && item.status === "pending") marks.push(language === "ru" ? "Hot Pick" : "Hot Pick");
+  return marks.slice(0, 2);
 }
 
 export function FeedPage() {
@@ -93,7 +110,7 @@ export function FeedPage() {
 
   const modeOptions = [
     { value: "all", label: isRu ? "Все" : "All" },
-    { value: "prematch", label: isRu ? "Прематч" : "Prematch" },
+    { value: "prematch", label: "Prematch" },
     { value: "live", label: "Live" },
   ];
 
@@ -110,11 +127,7 @@ export function FeedPage() {
       <AppShellSection>
         <SectionHeader
           title={isRu ? "Лента сигналов" : "Signals feed"}
-          subtitle={
-            isRu
-              ? "Прематч и live-сигналы с фильтрацией по статусу"
-              : "Prematch and live signals with clean status filtering"
-          }
+          subtitle={isRu ? "Прематч и live-сигналы с быстрой фильтрацией" : "Prematch and live signals with fast filtering"}
           action={<span className="hint-chip">{items.length}</span>}
         />
 
@@ -129,56 +142,65 @@ export function FeedPage() {
           <p className="empty-state">{isRu ? "По этим фильтрам сигналов нет." : "No signals for current filters."}</p>
         ) : null}
 
-        <div className="feed-list">
+        <div className="feed-list premium-feed">
           {groups.map(([title, predictions]) => (
             <section key={title} className="feed-day-block">
               <h3 className="feed-day-title">{title}</h3>
               <div className="feed-cards">
-                {predictions.map((item) => (
-                  <article key={item.id} className="feed-card">
-                    <div className="feed-card-head">
-                      <div>
-                        <Link className="feed-card-main-link" to={`/feed/${item.id}`}>
-                          <strong>{item.match_name}</strong>
+                {predictions.map((item) => {
+                  const marks = signalMarks(item, language);
+                  return (
+                    <article key={item.id} className="feed-card signal-card">
+                      <div className="feed-card-head">
+                        <div>
+                          <Link className="feed-card-main-link" to={`/feed/${item.id}`}>
+                            <strong>{sportEmoji(item.sport_type)} {item.match_name}</strong>
+                          </Link>
+                          <p>{item.league || (isRu ? "Без лиги" : "No league")}</p>
+                        </div>
+                        <AccessBadge level={item.access_level} />
+                      </div>
+
+                      <div className="feed-meta-row top">
+                        <span className="badge info">{modeLabel(item.mode, language)}</span>
+                        <span>{dateLabel(item.event_start_at, language)}</span>
+                        <span className={`badge ${item.status}`}>{statusLabel(item.status, language)}</span>
+                      </div>
+
+                      {marks.length > 0 ? (
+                        <div className="feed-marks-row">
+                          {marks.map((mark) => (
+                            <span key={mark} className="mark-pill">{mark}</span>
+                          ))}
+                        </div>
+                      ) : null}
+
+                      <div className="feed-signal-grid">
+                        <div>
+                          <small>{isRu ? "Сигнал" : "Signal"}</small>
+                          <p>{item.signal_type}</p>
+                        </div>
+                        <div>
+                          <small>{isRu ? "Коэффициент" : "Odds"}</small>
+                          <p className="value-strong">{item.odds}</p>
+                        </div>
+                        <div>
+                          <small>{isRu ? "Риск" : "Risk"}</small>
+                          <p>{item.risk_level}</p>
+                        </div>
+                      </div>
+
+                      <p className="feed-note">{teaser(item.short_description, language)}</p>
+
+                      <CardFooterActions>
+                        <span className="muted-line">{item.sport_type}</span>
+                        <Link className="feed-open-link" to={`/feed/${item.id}`}>
+                          {isRu ? "Подробнее" : "Details"}
                         </Link>
-                        <p>{item.league || (isRu ? "Без лиги" : "No league")}</p>
-                      </div>
-                      <AccessBadge level={item.access_level} />
-                    </div>
-
-                    <div className="feed-meta-row">
-                      <span>{item.sport_type}</span>
-                      <span>{modeLabel(item.mode, language)}</span>
-                      <span>{dateLabel(item.event_start_at, language)}</span>
-                    </div>
-
-                    <div className="feed-signal-grid">
-                      <div>
-                        <small>{isRu ? "Сигнал" : "Signal"}</small>
-                        <p>{item.signal_type}</p>
-                      </div>
-                      <div>
-                        <small>{isRu ? "Коэффициент" : "Odds"}</small>
-                        <p>{item.odds}</p>
-                      </div>
-                      <div>
-                        <small>{isRu ? "Риск" : "Risk"}</small>
-                        <p>{item.risk_level}</p>
-                      </div>
-                    </div>
-
-                    <p className="feed-note">
-                      {teaser(item.short_description, language)}
-                    </p>
-
-                    <CardFooterActions>
-                      <span className={`badge ${item.status}`}>{statusLabel(item.status, language)}</span>
-                      <Link className="feed-open-link" to={`/feed/${item.id}`}>
-                        {isRu ? "Подробнее" : "Details"}
-                      </Link>
-                    </CardFooterActions>
-                  </article>
-                ))}
+                      </CardFooterActions>
+                    </article>
+                  );
+                })}
               </div>
             </section>
           ))}
