@@ -10,34 +10,50 @@ type CommandHubProps = {
 };
 
 type HubEntry = {
-  to: string;
-  icon: string;
+  id: string;
+  to?: string;
+  href?: string;
   titleKey: string;
-  subtitleKey?: string;
+  descKey: string;
+  section: "core" | "service" | "settings" | "legal";
   adminOnly?: boolean;
+  disabled?: boolean;
 };
 
-const QUICK_ENTRIES: HubEntry[] = [
-  { to: "/", icon: "🏠", titleKey: "hub.quick.overview" },
-  { to: "/feed", icon: "🎯", titleKey: "hub.quick.signals" },
-  { to: "/stats", icon: "📈", titleKey: "hub.quick.performance" },
-  { to: "/profile", icon: "👤", titleKey: "hub.quick.account" },
-];
-
-const SERVICE_ENTRIES: HubEntry[] = [
-  { to: "/tariffs", icon: "💎", titleKey: "hub.services.tariffs", subtitleKey: "hub.tag.membership" },
-  { to: "/news", icon: "📰", titleKey: "hub.services.news", subtitleKey: "hub.tag.updates" },
-  { to: "/profile#referral", icon: "👥", titleKey: "hub.services.referrals", subtitleKey: "hub.tag.bonus" },
-  { to: "/profile#notifications", icon: "🔔", titleKey: "hub.services.notifications", subtitleKey: "hub.tag.alerts" },
-  { to: "/menu/language", icon: "🌐", titleKey: "hub.services.settings", subtitleKey: "hub.tag.language" },
-  { to: "/menu", icon: "🛟", titleKey: "hub.services.support", subtitleKey: "hub.tag.help" },
-  { to: "/menu/rules", icon: "📘", titleKey: "hub.services.rules", subtitleKey: "hub.tag.policy" },
-  { to: "/menu/responsible", icon: "⚖️", titleKey: "hub.services.responsible", subtitleKey: "hub.tag.responsible" },
-  { to: "/admin", icon: "🛠", titleKey: "hub.admin.open", subtitleKey: "hub.tag.admin", adminOnly: true },
-];
+const SUPPORT_URL = import.meta.env.VITE_SUPPORT_URL || "https://t.me/your_support";
 
 export function CommandHub({ open, isAdmin, onClose }: CommandHubProps) {
   const { t } = useI18n();
+  const supportConfigured = !SUPPORT_URL.includes("your_support");
+
+  const entries: HubEntry[] = [
+    { id: "signals", to: "/feed", titleKey: "hub.item.signals.title", descKey: "hub.item.signals.desc", section: "core" },
+    { id: "stats", to: "/stats", titleKey: "hub.item.stats.title", descKey: "hub.item.stats.desc", section: "core" },
+    { id: "profile", to: "/profile", titleKey: "hub.item.profile.title", descKey: "hub.item.profile.desc", section: "core" },
+    { id: "tariffs", to: "/tariffs", titleKey: "hub.item.tariffs.title", descKey: "hub.item.tariffs.desc", section: "core" },
+    { id: "news", to: "/news", titleKey: "hub.item.news.title", descKey: "hub.item.news.desc", section: "service" },
+    { id: "referrals", to: "/profile#referral", titleKey: "hub.item.referrals.title", descKey: "hub.item.referrals.desc", section: "service" },
+    { id: "notifications", to: "/profile#notifications", titleKey: "hub.item.notifications.title", descKey: "hub.item.notifications.desc", section: "service" },
+    {
+      id: "support",
+      href: supportConfigured ? SUPPORT_URL : undefined,
+      titleKey: "hub.item.support.title",
+      descKey: supportConfigured ? "hub.item.support.desc" : "hub.support.notSet",
+      section: "service",
+      disabled: !supportConfigured,
+    },
+    { id: "language", to: "/menu/language", titleKey: "hub.item.language.title", descKey: "hub.item.language.desc", section: "settings" },
+    { id: "theme", to: "/menu/theme", titleKey: "hub.item.theme.title", descKey: "hub.item.theme.desc", section: "settings" },
+    { id: "rules", to: "/menu/rules", titleKey: "hub.item.rules.title", descKey: "hub.item.rules.desc", section: "legal" },
+    {
+      id: "responsible",
+      to: "/menu/responsible",
+      titleKey: "hub.item.responsible.title",
+      descKey: "hub.item.responsible.desc",
+      section: "legal",
+    },
+    { id: "admin", to: "/admin", titleKey: "hub.item.admin.title", descKey: "hub.item.admin.desc", section: "service", adminOnly: true },
+  ];
 
   useEffect(() => {
     if (!open) return;
@@ -48,39 +64,74 @@ export function CommandHub({ open, isAdmin, onClose }: CommandHubProps) {
     };
   }, [open]);
 
+  const renderEntry = (entry: HubEntry) => {
+    const body = (
+      <>
+        <strong>{t(entry.titleKey)}</strong>
+        <p>{t(entry.descKey)}</p>
+      </>
+    );
+
+    if (entry.disabled) {
+      return (
+        <div key={entry.id} className="pb-hub-card disabled">
+          {body}
+        </div>
+      );
+    }
+
+    if (entry.href) {
+      return (
+        <a key={entry.id} href={entry.href} target="_blank" rel="noreferrer" className="pb-hub-card" onClick={onClose}>
+          {body}
+        </a>
+      );
+    }
+
+    return (
+      <Link key={entry.id} to={entry.to || "/"} className="pb-hub-card" onClick={onClose}>
+        {body}
+      </Link>
+    );
+  };
+
+  const filtered = entries.filter((entry) => !entry.adminOnly || isAdmin);
+
   return (
-    <div className={open ? "hub-overlay open" : "hub-overlay"} aria-hidden={!open}>
-      <button type="button" className="hub-backdrop" onClick={onClose} aria-label={t("hub.close")} />
-      <section className="hub-panel" role="dialog" aria-modal="true" aria-label={t("hub.title")}>
-        <div className="hub-head">
+    <div className={open ? "pb-hub-overlay open" : "pb-hub-overlay"} aria-hidden={!open}>
+      <button className="pb-hub-backdrop" type="button" onClick={onClose} aria-label={t("hub.close")} />
+      <section className="pb-hub-sheet" role="dialog" aria-modal="true" aria-label={t("hub.title")}
+      >
+        <header className="pb-hub-head">
           <div>
-            <span className="hero-eyebrow">{t("hub.eyebrow")}</span>
+            <span className="pb-eyebrow">{t("hub.eyebrow")}</span>
             <h2>{t("hub.title")}</h2>
             <p>{t("hub.subtitle")}</p>
           </div>
-          <button type="button" className="hub-close" onClick={onClose}>
+          <button className="pb-btn pb-btn-ghost" type="button" onClick={onClose}>
             {t("hub.close")}
           </button>
+        </header>
+
+        <div className="pb-hub-section">
+          <h3>{t("hub.section.core")}</h3>
+          <div className="pb-hub-grid">{filtered.filter((entry) => entry.section === "core").map(renderEntry)}</div>
         </div>
 
-        <div className="hub-grid">
-          {QUICK_ENTRIES.map((entry) => (
-            <Link key={entry.to} to={entry.to} className="hub-card" onClick={onClose}>
-              <span className="hub-card-icon">{entry.icon}</span>
-              <strong>{t(entry.titleKey)}</strong>
-            </Link>
-          ))}
+        <div className="pb-hub-section">
+          <h3>{t("hub.section.service")}</h3>
+          <div className="pb-hub-grid">{filtered.filter((entry) => entry.section === "service").map(renderEntry)}</div>
         </div>
 
-        <div className="hub-service-list">
-          <h3>{t("hub.services.title")}</h3>
-          {SERVICE_ENTRIES.filter((item) => !item.adminOnly || isAdmin).map((entry) => (
-            <Link key={entry.to} to={entry.to} className="hub-service-row" onClick={onClose}>
-              <span>{entry.icon}</span>
-              <strong>{t(entry.titleKey)}</strong>
-              <small>{entry.subtitleKey ? t(entry.subtitleKey) : ""}</small>
-            </Link>
-          ))}
+        <div className="pb-hub-section split">
+          <div>
+            <h3>{t("hub.section.settings")}</h3>
+            <div className="pb-hub-grid compact">{filtered.filter((entry) => entry.section === "settings").map(renderEntry)}</div>
+          </div>
+          <div>
+            <h3>{t("hub.section.legal")}</h3>
+            <div className="pb-hub-grid compact">{filtered.filter((entry) => entry.section === "legal").map(renderEntry)}</div>
+          </div>
         </div>
       </section>
     </div>

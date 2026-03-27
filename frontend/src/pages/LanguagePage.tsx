@@ -10,7 +10,7 @@ export function LanguagePage() {
   const { language, setLanguage } = useLanguage();
   const { t } = useI18n();
 
-  const applyLanguage = (next: AppLanguage) => {
+  const apply = (next: AppLanguage) => {
     setLanguage(next);
     navigate("/menu");
   };
@@ -18,25 +18,22 @@ export function LanguagePage() {
   return (
     <Layout>
       <AppShellSection>
-        <SectionHeader
-          title={t("language.title")}
-          subtitle={t("language.subtitle")}
-        />
+        <SectionHeader title={t("language.title")} subtitle={t("language.subtitle")} />
 
-        <SettingsSection title={t("language.section")}>
+        <SettingsSection title={t("layout.title.language")}>
           <SettingsRow
-            icon="🇷🇺"
+            icon="RU"
             title={t("language.ru")}
-            subtitle={t("language.option.ru")}
-            onClick={() => applyLanguage("ru")}
-            right={language === "ru" ? <span className="language-check">✓</span> : undefined}
+            subtitle={t("language.optionRu")}
+            onClick={() => apply("ru")}
+            right={language === "ru" ? <span className="pb-check">*</span> : undefined}
           />
           <SettingsRow
-            icon="🇬🇧"
+            icon="EN"
             title={t("language.en")}
-            subtitle={t("language.option.en")}
-            onClick={() => applyLanguage("en")}
-            right={language === "en" ? <span className="language-check">✓</span> : undefined}
+            subtitle={t("language.optionEn")}
+            onClick={() => apply("en")}
+            right={language === "en" ? <span className="pb-check">*</span> : undefined}
           />
         </SettingsSection>
       </AppShellSection>

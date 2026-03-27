@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useI18n } from "../app/i18n";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
-import { AppShellSection, HeroCard, NewsPreviewCard, SectionHeader } from "../components/ui";
+import { AppShellSection, MarketPulse, NewsRibbon, SectionHeader } from "../components/ui";
 import { api, type NewsPost } from "../services/api";
 
 function formatDate(value: string | null, language: "ru" | "en", fallback: string) {
@@ -35,27 +35,33 @@ export function NewsPage() {
 
   return (
     <Layout>
-      <HeroCard eyebrow="PIT BET" title={t("news.hero.title")} description={t("news.hero.subtitle")} />
+      <section className="pb-hero-panel pb-reveal">
+        <span className="pb-eyebrow">PIT BET</span>
+        <h2>{t("news.hero.title")}</h2>
+        <p>{t("news.hero.subtitle")}</p>
+        <MarketPulse label={t("news.stream.title")} values={[52, 48, 58, 54, 62, 57, 65, 61, 68, 70]} tag={t("common.live")} />
+      </section>
 
       <AppShellSection>
         <SectionHeader title={t("news.stream.title")} subtitle={t("news.stream.subtitle")} />
 
-        {loading ? <p className="muted-line">{t("news.loading")}</p> : null}
-        {!loading && items.length === 0 ? <p className="empty-state">{t("news.empty")}</p> : null}
+        {loading ? <p className="pb-empty-state">{t("news.loading")}</p> : null}
+        {!loading && items.length === 0 ? <p className="pb-empty-state">{t("news.empty")}</p> : null}
 
-        <div className="news-list compact">
-          {items.map((item) => (
-            <NewsPreviewCard
-              key={item.id}
-              title={item.title}
-              body={item.body}
-              category={item.category}
-              meta={formatDate(item.published_at, language, t("common.noDate"))}
-              to={`/news/${item.id}`}
-              cta={t("news.read")}
-            />
-          ))}
-        </div>
+        {items.length > 0 ? (
+          <div className="pb-news-grid">
+            {items.map((item) => (
+              <NewsRibbon
+                key={item.id}
+                title={item.title}
+                body={item.body}
+                category={item.category}
+                meta={formatDate(item.published_at, language, t("common.noDate"))}
+                to={`/news/${item.id}`}
+              />
+            ))}
+          </div>
+        ) : null}
       </AppShellSection>
 
       <AppDisclaimer />

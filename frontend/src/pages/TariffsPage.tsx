@@ -3,57 +3,72 @@ import { useEffect, useMemo, useState } from "react";
 import { useI18n } from "../app/i18n";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
-import { AccessBadge, AppShellSection, HeroCard, SectionHeader, Sparkline } from "../components/ui";
+import { AppShellSection, CTACluster, MarketPulse, MembershipCard, SectionHeader } from "../components/ui";
 import { api, type PaymentCreateResult, type PaymentMethod, type PaymentQuote, type Tariff } from "../services/api";
 
 type PlanCode = "premium" | "vip";
 type Duration = 7 | 30 | 90;
 
-const DURATION_LABEL: Record<Duration, string> = { 7: "7", 30: "30", 90: "90" };
+const DEFAULT_OPTIONS: Array<{ duration_days: Duration; price_rub: number }> = [
+  { duration_days: 7, price_rub: 0 },
+  { duration_days: 30, price_rub: 0 },
+  { duration_days: 90, price_rub: 0 },
+];
 
 export function TariffsPage() {
   const { t } = useI18n();
 
   const [tariffs, setTariffs] = useState<Tariff[]>([]);
   const [methods, setMethods] = useState<PaymentMethod[]>([]);
+
   const [selectedPlan, setSelectedPlan] = useState<PlanCode>("premium");
   const [selectedDuration, setSelectedDuration] = useState<Duration>(30);
-  const [selectedMethod, setSelectedMethod] = useState<string>("");
+  const [selectedMethod, setSelectedMethod] = useState("");
   const [promoCode, setPromoCode] = useState("");
+
   const [quote, setQuote] = useState<PaymentQuote | null>(null);
   const [paymentResult, setPaymentResult] = useState<PaymentCreateResult | null>(null);
   const [manualMeta, setManualMeta] = useState({ transfer_reference: "", note: "", proof: "" });
+
   const [loadingQuote, setLoadingQuote] = useState(false);
   const [loadingPay, setLoadingPay] = useState(false);
-  const [message, setMessage] = useState<{ tone: "error" | "info" | "success"; text: string } | null>(null);
+  const [message, setMessage] = useState<{ tone: "success" | "error" | "info"; text: string } | null>(null);
 
   useEffect(() => {
-    Promise.all([api.tariffs(), api.paymentMethods()])
-      .then(([tariffData, methodData]) => {
-        setTariffs(tariffData);
-        setMethods(methodData);
-        if (methodData.length > 0) setSelectedMethod(methodData[0].code);
-      })
-      .catch(() => {
-        setTariffs([]);
-        setMethods([]);
-      });
+    const load = async () => {
+      const results = await Promise.allSettled([api.tariffs(), api.paymentMethods()]);
+      const [tariffRes, methodRes] = results;
+      setTariffs(tariffRes.status === "fulfilled" ? tariffRes.value : []);
+      const nextMethods = methodRes.status === "fulfilled" ? methodRes.value : [];
+      setMethods(nextMethods);
+      if (nextMethods.length > 0) setSelectedMethod(nextMethods[0].code);
+    };
+    void load();
   }, []);
 
   useEffect(() => {
-    if (!selectedMethod) return;
     setLoadingQuote(true);
     api
       .quotePayment({ tariff_code: selectedPlan, duration_days: selectedDuration, promo_code: promoCode.trim() || undefined })
-      .then((result) => setQuote(result))
+      .then(setQuote)
       .catch(() => setQuote(null))
       .finally(() => setLoadingQuote(false));
-  }, [selectedPlan, selectedDuration, promoCode, selectedMethod]);
+  }, [selectedDuration, selectedPlan, promoCode]);
 
-  const freeTariff = tariffs.find((x) => x.code === "free");
-  const selectedTariff = tariffs.find((x) => x.code === selectedPlan);
-  const selectedMethodObj = methods.find((x) => x.code === selectedMethod) || null;
-  const selectedOptions = useMemo(() => (selectedTariff?.options?.length ? selectedTariff.options : []), [selectedTariff]);
+  const freePlan = tariffs.find((item) => item.code === "free");
+  const selectedTariff = tariffs.find((item) => item.code === selectedPlan);
+  const selectedMethodMeta = methods.find((method) => method.code === selectedMethod) || null;
+
+  const durationOptions = useMemo(() => {
+    if (!selectedTariff?.options?.length) return DEFAULT_OPTIONS;
+    return selectedTariff.options
+      .map((option) => ({
+        duration_days: option.duration_days as Duration,
+        price_rub: option.price_rub,
+        badge: option.badge || undefined,
+      }))
+      .filter((option) => option.duration_days === 7 || option.duration_days === 30 || option.duration_days === 90);
+  }, [selectedTariff]);
 
   const createPayment = async () => {
     if (!selectedMethod) {
@@ -62,6 +77,7 @@ export function TariffsPage() {
     }
     setLoadingPay(true);
     setMessage(null);
+
     try {
       const result = await api.createPayment({
         tariff_code: selectedPlan,
@@ -69,12 +85,13 @@ export function TariffsPage() {
         payment_method_code: selectedMethod,
         promo_code: promoCode.trim() || undefined,
       });
+
       setPaymentResult(result);
       if (result.payment_method_type === "auto" && result.payment_url) {
         window.location.href = result.payment_url;
         return;
       }
-      setMessage({ tone: "info", text: t("tariffs.pay.manualHint") });
+      setMessage({ tone: "info", text: t("tariffs.manual.hint") });
     } catch (e) {
       setMessage({ tone: "error", text: e instanceof Error ? e.message : t("tariffs.pay.createFail") });
     } finally {
@@ -86,61 +103,60 @@ export function TariffsPage() {
     if (!paymentResult) return;
     try {
       const result = await api.confirmManualPayment(paymentResult.payment_id, manualMeta);
-      setMessage({
-        tone: "success",
-        text: result.status === "pending_manual_review" ? t("tariffs.pay.review") : t("tariffs.pay.confirmed"),
-      });
+      setMessage({ tone: "success", text: result.status === "pending_manual_review" ? t("tariffs.manual.review") : t("tariffs.manual.confirmed") });
     } catch (e) {
-      setMessage({ tone: "error", text: e instanceof Error ? e.message : t("tariffs.pay.confirmFail") });
+      setMessage({ tone: "error", text: e instanceof Error ? e.message : t("tariffs.manual.confirmFail") });
     }
   };
 
   return (
     <Layout>
-      <HeroCard eyebrow="PIT BET" title={t("tariffs.hero.title")} description={t("tariffs.hero.subtitle")}>
-        <div className="market-ribbon">
-          <span>{t("tariffs.hero.pulse")}</span>
-          <Sparkline values={[74, 69, 64, 60, 54, 49, 43, 38, 34, 30]} />
-          <span className="live-pulse">{t("common.vip")}</span>
+      <section className="pb-hero-panel pb-reveal">
+        <div className="pb-hero-top">
+          <span className="pb-eyebrow">PIT BET</span>
+          <span className="pb-live-pill">{t("layout.title.tariffs")}</span>
         </div>
-      </HeroCard>
+
+        <h2>{t("tariffs.hero.title")}</h2>
+        <p>{t("tariffs.hero.subtitle")}</p>
+
+        <MarketPulse label={t("tariffs.hero.pulse")} values={[78, 73, 69, 66, 63, 59, 54, 49, 45, 40]} tag={t("common.vip")} />
+      </section>
 
       <AppShellSection>
-        <SectionHeader title={t("tariffs.levels.title")} subtitle={t("tariffs.levels.subtitle")} />
+        <SectionHeader title={t("tariffs.tiers.title")} subtitle={t("tariffs.tiers.subtitle")} />
 
-        <div className="tariff-grid premium-membership-grid">
-          {freeTariff ? (
-            <article className="tariff-card free-tier">
-              <div className="tariff-head">
-                <div>
-                  <h3>{t("common.free")}</h3>
-                  <p className="tariff-chip">{t("tariffs.free.entry")}</p>
-                </div>
-                <AccessBadge level="free" />
-              </div>
-              <p className="tariff-price">0 RUB</p>
-              <ul>{(freeTariff.perks || []).map((perk) => <li key={perk}>{perk}</li>)}</ul>
-            </article>
+        <div className="pb-membership-grid">
+          {freePlan ? (
+            <MembershipCard
+              title={t("common.free")}
+              description={t("tariffs.free.entry")}
+              price="0 RUB"
+              features={freePlan.perks || []}
+              active={false}
+              action={<span className="pb-btn pb-btn-ghost disabled">{t("tariffs.selected")}</span>}
+            />
           ) : null}
 
           {(["premium", "vip"] as PlanCode[]).map((plan) => {
-            const tariff = tariffs.find((x) => x.code === plan);
+            const tariff = tariffs.find((item) => item.code === plan);
             if (!tariff) return null;
             const active = selectedPlan === plan;
             return (
-              <article key={plan} className={`tariff-card ${plan === "premium" ? "featured" : "max"} ${active ? "selected" : ""}`}>
-                <div className="tariff-head">
-                  <div>
-                    <h3>{plan === "premium" ? t("common.premium") : t("common.vip")}</h3>
-                    <p className="tariff-chip">{plan === "premium" ? t("tariffs.bestChoice") : t("tariffs.elite")}</p>
-                  </div>
-                  <AccessBadge level={plan} />
-                </div>
-                <ul>{(tariff.perks || []).map((perk) => <li key={perk}>{perk}</li>)}</ul>
-                <button type="button" className={`btn ${active ? "secondary" : "ghost"}`} onClick={() => setSelectedPlan(plan)}>
-                  {active ? t("tariffs.selected") : t("tariffs.select")}
-                </button>
-              </article>
+              <MembershipCard
+                key={plan}
+                title={plan === "premium" ? t("common.premium") : t("common.vip")}
+                badge={plan === "premium" ? t("tariffs.premium.badge") : t("tariffs.vip.badge")}
+                description={tariff.description || ""}
+                price={`${tariff.price_rub} RUB`}
+                features={tariff.perks || []}
+                active={active}
+                action={
+                  <button className={active ? "pb-btn pb-btn-secondary" : "pb-btn pb-btn-ghost"} type="button" onClick={() => setSelectedPlan(plan)}>
+                    {active ? t("tariffs.selected") : t("tariffs.select")}
+                  </button>
+                }
+              />
             );
           })}
         </div>
@@ -149,73 +165,140 @@ export function TariffsPage() {
       <AppShellSection>
         <SectionHeader title={t("tariffs.setup.title")} subtitle={t("tariffs.setup.subtitle")} />
 
-        <div className="period-switcher">
-          {(selectedOptions.length ? selectedOptions : [{ duration_days: 7, price_rub: 0 }, { duration_days: 30, price_rub: 0 }, { duration_days: 90, price_rub: 0 }]).map((option) => {
-            const days = option.duration_days as Duration;
-            const active = selectedDuration === days;
+        <div className="pb-duration-row">
+          {(durationOptions.length > 0 ? durationOptions : DEFAULT_OPTIONS).map((option) => {
+            const active = selectedDuration === option.duration_days;
             return (
-              <button key={days} className={`period-pill ${active ? "active" : ""}`} onClick={() => setSelectedDuration(days)} type="button">
-                <strong>{DURATION_LABEL[days]} {t("tariffs.days")}</strong>
-                {option.price_rub ? <span>{option.price_rub} RUB</span> : null}
-                {option.badge ? <small>{option.badge}</small> : null}
+              <button key={option.duration_days} type="button" className={active ? "pb-duration-pill active" : "pb-duration-pill"} onClick={() => setSelectedDuration(option.duration_days)}>
+                <strong>
+                  {option.duration_days} {t("common.days")}
+                </strong>
+                <span>{option.price_rub} RUB</span>
+                {"badge" in option && option.badge ? <small>{option.badge}</small> : null}
               </button>
             );
           })}
         </div>
 
-        <div className="payment-method-grid">
-          {methods.map((method) => (
-            <button key={method.code} type="button" className={`payment-method-card ${selectedMethod === method.code ? "active" : ""}`} onClick={() => setSelectedMethod(method.code)}>
-              <strong>{method.name}</strong>
-              <span>{method.method_type === "manual" ? t("tariffs.method.manual") : t("tariffs.method.auto")}</span>
-              {method.instructions ? <small>{method.instructions}</small> : null}
-            </button>
-          ))}
+        <div className="pb-method-grid">
+          {methods.map((method) => {
+            const active = selectedMethod === method.code;
+            return (
+              <button key={method.code} type="button" className={active ? "pb-method-card active" : "pb-method-card"} onClick={() => setSelectedMethod(method.code)}>
+                <strong>{method.name}</strong>
+                <span>{method.method_type === "manual" ? t("tariffs.method.manual") : t("tariffs.method.auto")}</span>
+                {method.instructions ? <p>{method.instructions}</p> : null}
+              </button>
+            );
+          })}
         </div>
 
-        <div className="input-stack">
-          <input value={promoCode} onChange={(e) => setPromoCode(e.target.value.toUpperCase())} placeholder={t("tariffs.promo.placeholder")} />
+        <div className="pb-input-stack">
+          <input value={promoCode} onChange={(event) => setPromoCode(event.target.value.toUpperCase())} placeholder={t("tariffs.promo.placeholder")} />
         </div>
 
-        <div className="payment-summary-card">
-          <div className="info-row"><span>{t("tariffs.summary.plan")}</span><strong>{selectedPlan === "premium" ? t("common.premium") : t("common.vip")}</strong></div>
-          <div className="info-row"><span>{t("tariffs.summary.period")}</span><strong>{selectedDuration} {t("tariffs.days")}</strong></div>
-          <div className="info-row"><span>{t("tariffs.summary.method")}</span><strong>{selectedMethodObj?.name || "—"}</strong></div>
-          <div className="info-row"><span>{t("tariffs.summary.base")}</span><strong>{quote?.original_amount_rub ?? "—"} RUB</strong></div>
-          <div className="info-row"><span>{t("tariffs.summary.discount")}</span><strong>{quote ? `${quote.discount_rub} RUB` : "—"}</strong></div>
-          <div className="info-row total"><span>{t("tariffs.summary.final")}</span><strong>{quote?.final_amount_rub ?? "—"} RUB</strong></div>
-          {loadingQuote ? <p className="muted-line">{t("tariffs.summary.refresh")}</p> : null}
-          {quote?.message ? <p className="muted-line">{quote.message}</p> : null}
-        </div>
+        <article className="pb-summary-card">
+          <h3>{t("tariffs.summary.title")}</h3>
+          <div>
+            <span>{t("tariffs.summary.plan")}</span>
+            <strong>{selectedPlan === "premium" ? t("common.premium") : t("common.vip")}</strong>
+          </div>
+          <div>
+            <span>{t("tariffs.summary.period")}</span>
+            <strong>
+              {selectedDuration} {t("common.days")}
+            </strong>
+          </div>
+          <div>
+            <span>{t("tariffs.summary.method")}</span>
+            <strong>{selectedMethodMeta?.name || "—"}</strong>
+          </div>
+          <div>
+            <span>{t("tariffs.summary.base")}</span>
+            <strong>{quote?.original_amount_rub ?? "—"} RUB</strong>
+          </div>
+          <div>
+            <span>{t("tariffs.summary.discount")}</span>
+            <strong>{quote ? `${quote.discount_rub} RUB` : "—"}</strong>
+          </div>
+          <div className="total">
+            <span>{t("tariffs.summary.final")}</span>
+            <strong>{quote?.final_amount_rub ?? "—"} RUB</strong>
+          </div>
+          {loadingQuote ? <p>{t("tariffs.summary.refresh")}</p> : null}
+          {quote?.message ? <p>{quote.message}</p> : null}
+        </article>
 
-        <button className="btn" onClick={createPayment} type="button" disabled={loadingPay || loadingQuote || !selectedMethod}>
-          {loadingPay
-            ? t("tariffs.pay.prepare")
-            : selectedMethodObj?.method_type === "manual"
-              ? t("tariffs.pay.details")
-              : t("tariffs.pay.go")}
-        </button>
+        <CTACluster>
+          <button className="pb-btn pb-btn-primary" type="button" onClick={createPayment} disabled={loadingPay || loadingQuote || !selectedMethod}>
+            {loadingPay
+              ? t("tariffs.pay.prepare")
+              : selectedMethodMeta?.method_type === "manual"
+                ? t("tariffs.pay.details")
+                : t("tariffs.pay.go")}
+          </button>
+        </CTACluster>
 
         {paymentResult?.payment_method_type === "manual" ? (
-          <div className="manual-payment-card">
-            <h3>{t("tariffs.pay.manualTitle")}</h3>
-            <p>{t("tariffs.pay.manualHint")}</p>
-            <div className="stack-list compact">
-              {paymentResult.card_number ? <div className="info-row"><span>{t("tariffs.pay.card")}</span><strong>{paymentResult.card_number}</strong></div> : null}
-              {paymentResult.recipient_name ? <div className="info-row"><span>{t("tariffs.pay.recipient")}</span><strong>{paymentResult.recipient_name}</strong></div> : null}
-              {paymentResult.payment_details ? <div className="info-row"><span>{t("tariffs.pay.detailsLabel")}</span><strong>{paymentResult.payment_details}</strong></div> : null}
-              <div className="info-row"><span>{t("tariffs.pay.amount")}</span><strong>{paymentResult.amount_rub} RUB</strong></div>
+          <article className="pb-manual-card">
+            <h3>{t("tariffs.manual.title")}</h3>
+            <p>{t("tariffs.manual.hint")}</p>
+            <div className="pb-info-list">
+              {paymentResult.card_number ? (
+                <div>
+                  <span>{t("tariffs.manual.card")}</span>
+                  <strong>{paymentResult.card_number}</strong>
+                </div>
+              ) : null}
+              {paymentResult.recipient_name ? (
+                <div>
+                  <span>{t("tariffs.manual.recipient")}</span>
+                  <strong>{paymentResult.recipient_name}</strong>
+                </div>
+              ) : null}
+              {paymentResult.payment_details ? (
+                <div>
+                  <span>{t("tariffs.manual.details")}</span>
+                  <strong>{paymentResult.payment_details}</strong>
+                </div>
+              ) : null}
+              <div>
+                <span>{t("tariffs.manual.amount")}</span>
+                <strong>{paymentResult.amount_rub} RUB</strong>
+              </div>
             </div>
-            <div className="input-stack">
-              <input placeholder={t("tariffs.pay.ref")} value={manualMeta.transfer_reference} onChange={(e) => setManualMeta((prev) => ({ ...prev, transfer_reference: e.target.value }))} />
-              <textarea rows={3} placeholder={t("tariffs.pay.note")} value={manualMeta.note} onChange={(e) => setManualMeta((prev) => ({ ...prev, note: e.target.value }))} />
-              <input placeholder={t("tariffs.pay.proof")} value={manualMeta.proof} onChange={(e) => setManualMeta((prev) => ({ ...prev, proof: e.target.value }))} />
-              <button className="btn secondary" type="button" onClick={confirmManual}>{t("tariffs.pay.confirm")}</button>
+
+            <div className="pb-input-stack">
+              <input
+                value={manualMeta.transfer_reference}
+                onChange={(event) => setManualMeta((prev) => ({ ...prev, transfer_reference: event.target.value }))}
+                placeholder={t("tariffs.manual.ref")}
+              />
+              <textarea
+                rows={3}
+                value={manualMeta.note}
+                onChange={(event) => setManualMeta((prev) => ({ ...prev, note: event.target.value }))}
+                placeholder={t("tariffs.manual.note")}
+              />
+              <input
+                value={manualMeta.proof}
+                onChange={(event) => setManualMeta((prev) => ({ ...prev, proof: event.target.value }))}
+                placeholder={t("tariffs.manual.proof")}
+              />
+
+              <button className="pb-btn pb-btn-secondary" type="button" onClick={confirmManual}>
+                {t("tariffs.manual.confirm")}
+              </button>
             </div>
-          </div>
+          </article>
         ) : null}
 
-        {message ? <p className={`notice ${message.tone}`}>{message.text}</p> : null}
+        {message ? <p className={message.tone === "error" ? "pb-notice error" : message.tone === "success" ? "pb-notice success" : "pb-notice"}>{message.text}</p> : null}
+      </AppShellSection>
+
+      <AppShellSection>
+        <SectionHeader title={t("tariffs.extra.title")} />
+        <p className="pb-article-text">{t("tariffs.extra.text")}</p>
       </AppShellSection>
 
       <AppDisclaimer />

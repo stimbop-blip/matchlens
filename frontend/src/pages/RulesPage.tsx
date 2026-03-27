@@ -9,18 +9,13 @@ export function RulesPage() {
   return (
     <Layout>
       <AppShellSection>
-        <SectionHeader
-          title={t("rules.title")}
-          subtitle={t("rules.subtitle")}
-        />
-
-        <div className="stack-list">
+        <SectionHeader title={t("rules.title")} subtitle={t("rules.subtitle")} />
+        <div className="pb-article-stack">
           <p>{t("rules.p1")}</p>
           <p>{t("rules.p2")}</p>
           <p>{t("rules.p3")}</p>
         </div>
       </AppShellSection>
-
       <AppDisclaimer />
     </Layout>
   );

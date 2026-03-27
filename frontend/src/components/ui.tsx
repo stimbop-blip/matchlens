@@ -1,11 +1,11 @@
-import { type ReactNode } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { useI18n } from "../app/i18n";
 
-type Classable = {
-  className?: string;
-};
+function cx(...items: Array<string | false | null | undefined>) {
+  return items.filter(Boolean).join(" ");
+}
 
 export function AppShellSection({
   children,
@@ -13,206 +13,201 @@ export function AppShellSection({
   id,
 }: {
   children: ReactNode;
+  className?: string;
   id?: string;
-} & Classable) {
+}) {
   return (
-    <section id={id} className={className ? `app-section ${className}` : "app-section"}>
+    <section id={id} className={cx("pb-panel pb-reveal", className)}>
       {children}
     </section>
   );
 }
 
 export function SectionHeader({
+  eyebrow,
   title,
   subtitle,
   action,
 }: {
+  eyebrow?: string;
   title: string;
   subtitle?: string;
   action?: ReactNode;
 }) {
   return (
-    <div className="section-header">
+    <div className="pb-section-head">
       <div>
+        {eyebrow ? <span className="pb-eyebrow">{eyebrow}</span> : null}
         <h2>{title}</h2>
         {subtitle ? <p>{subtitle}</p> : null}
       </div>
-      {action ? <div className="section-action">{action}</div> : null}
+      {action ? <div className="pb-section-action">{action}</div> : null}
     </div>
   );
-}
-
-export function HeroCard({
-  eyebrow,
-  title,
-  description,
-  right,
-  children,
-}: {
-  eyebrow: string;
-  title: string;
-  description: string;
-  right?: ReactNode;
-  children?: ReactNode;
-}) {
-  return (
-    <div className="hero-card">
-      <div className="hero-top">
-        <div>
-          <span className="hero-eyebrow">{eyebrow}</span>
-          <h2>{title}</h2>
-        </div>
-        {right ? <div>{right}</div> : null}
-      </div>
-      <p className="hero-description">{description}</p>
-      {children ? <div className="hero-actions">{children}</div> : null}
-    </div>
-  );
-}
-
-export function StatCard({
-  label,
-  value,
-  note,
-  tone = "default",
-}: {
-  label: string;
-  value: string | number;
-  note?: string;
-  tone?: "default" | "accent" | "success" | "warning";
-}) {
-  return (
-    <article className={`stat-card ${tone}`}>
-      <span>{label}</span>
-      <strong>{value}</strong>
-      {note ? <small>{note}</small> : null}
-    </article>
-  );
-}
-
-export function SectionActions({ children, compact = false }: { children: ReactNode; compact?: boolean }) {
-  return <div className={compact ? "section-actions compact" : "section-actions"}>{children}</div>;
-}
-
-export function CardFooterActions({ children }: { children: ReactNode }) {
-  return <div className="card-footer-actions">{children}</div>;
-}
-
-export function QuickActionRow({ children }: { children: ReactNode }) {
-  return <div className="quick-action-row">{children}</div>;
 }
 
 export function AccessBadge({
   level,
   label,
+  className,
 }: {
   level: "free" | "premium" | "vip";
   label?: string;
+  className?: string;
 }) {
-  return <span className={`access-badge ${level}`}>{label || level.toUpperCase()}</span>;
+  return <span className={cx("pb-access-badge", level, className)}>{label || level.toUpperCase()}</span>;
 }
 
-export function SettingsSection({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section className="settings-section">
-      <h3>{title}</h3>
-      <div className="settings-list">{children}</div>
-    </section>
-  );
-}
-
-type SettingsRowProps = {
-  icon: ReactNode;
-  title: string;
-  subtitle?: string;
-  value?: string;
-  to?: string;
-  href?: string;
-  onClick?: () => void;
-  disabled?: boolean;
-  right?: ReactNode;
-  danger?: boolean;
-};
-
-function RowContent({ icon, title, subtitle, value, right }: Omit<SettingsRowProps, "to" | "href" | "onClick" | "disabled" | "danger">) {
-  return (
-    <>
-      <div className="settings-row-main">
-        <span className="settings-row-icon">{icon}</span>
-        <span className="settings-row-text">
-          <strong>{title}</strong>
-          {subtitle ? <small>{subtitle}</small> : null}
-        </span>
-      </div>
-      <div className="settings-row-side">
-        {value ? <span className="settings-row-value">{value}</span> : null}
-        {right || <span className="settings-row-chevron">›</span>}
-      </div>
-    </>
-  );
-}
-
-export function SettingsRow(props: SettingsRowProps) {
-  const className = props.danger ? "settings-row danger" : "settings-row";
-  const content = <RowContent icon={props.icon} title={props.title} subtitle={props.subtitle} value={props.value} right={props.right} />;
-
-  if (props.disabled) {
-    return <div className={`${className} disabled`}>{content}</div>;
-  }
-
-  if (props.onClick) {
-    return (
-      <button className={className} onClick={props.onClick} type="button">
-        {content}
-      </button>
-    );
-  }
-
-  if (props.href) {
-    return (
-      <a className={className} href={props.href} target="_blank" rel="noreferrer">
-        {content}
-      </a>
-    );
-  }
-
-  if (props.to) {
-    return (
-      <Link className={className} to={props.to}>
-        {content}
-      </Link>
-    );
-  }
-
-  return <div className={className}>{content}</div>;
-}
-
-export function SegmentedTabs({
+export function AnimatedNumber({
   value,
-  options,
-  onChange,
+  duration = 700,
+  decimals = 0,
+  prefix = "",
+  suffix = "",
+  className,
 }: {
-  value: string;
-  options: Array<{ value: string; label: string }>;
-  onChange: (next: string) => void;
+  value: number;
+  duration?: number;
+  decimals?: number;
+  prefix?: string;
+  suffix?: string;
+  className?: string;
+}) {
+  const [display, setDisplay] = useState(0);
+
+  useEffect(() => {
+    const start = performance.now();
+    const from = display;
+    const delta = value - from;
+    let frame = 0;
+
+    const tick = (now: number) => {
+      const progress = Math.min(1, (now - start) / duration);
+      const eased = 1 - (1 - progress) * (1 - progress);
+      setDisplay(from + delta * eased);
+      if (progress < 1) frame = requestAnimationFrame(tick);
+    };
+
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, duration]);
+
+  const text = useMemo(() => `${prefix}${display.toFixed(decimals)}${suffix}`, [display, decimals, prefix, suffix]);
+  return <strong className={cx("pb-animated-number", className)}>{text}</strong>;
+}
+
+export function Sparkline({ values, className }: { values: number[]; className?: string }) {
+  if (!values.length) return null;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const span = Math.max(1, max - min);
+  const points = values
+    .map((value, index) => {
+      const x = (index / Math.max(1, values.length - 1)) * 100;
+      const y = 100 - ((value - min) / span) * 100;
+      return `${x},${y}`;
+    })
+    .join(" ");
+
+  return (
+    <svg className={cx("pb-sparkline", className)} viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+      <polyline points={points} />
+    </svg>
+  );
+}
+
+export function MarketPulse({ label, values, tag }: { label: string; values: number[]; tag: string }) {
+  return (
+    <div className="pb-market-pulse">
+      <span>{label}</span>
+      <Sparkline values={values} />
+      <em>{tag}</em>
+    </div>
+  );
+}
+
+export function CTACluster({ children, className }: { children: ReactNode; className?: string }) {
+  return <div className={cx("pb-cta-cluster", className)}>{children}</div>;
+}
+
+export function ActivityBand({
+  items,
+}: {
+  items: Array<{ label: string; value: string | number; tone?: "default" | "accent" | "success" | "warning" }>;
 }) {
   return (
-    <div className="segmented-tabs" role="tablist">
-      {options.map((option) => (
-        <button
-          key={option.value}
-          className={option.value === value ? "active" : ""}
-          onClick={() => onChange(option.value)}
-          type="button"
-        >
-          {option.label}
-        </button>
+    <div className="pb-activity-band">
+      {items.map((item) => (
+        <article key={item.label} className={cx("pb-activity-item", item.tone || "default")}>
+          <span>{item.label}</span>
+          <strong>{item.value}</strong>
+        </article>
       ))}
     </div>
   );
 }
 
-export function NewsPreviewCard({
+export function InsightCard({
+  title,
+  text,
+  tone = "default",
+}: {
+  title: string;
+  text: string;
+  tone?: "default" | "accent" | "warning";
+}) {
+  return (
+    <article className={cx("pb-insight-card", tone)}>
+      <h3>{title}</h3>
+      <p>{text}</p>
+    </article>
+  );
+}
+
+export function RingStat({
+  title,
+  subtitle,
+  items,
+}: {
+  title: string;
+  subtitle: string;
+  items: Array<{ label: string; value: number; color: string }>;
+}) {
+  const total = Math.max(1, items.reduce((acc, item) => acc + item.value, 0));
+  let cursor = 0;
+  const segments = items
+    .map((item) => {
+      const start = (cursor / total) * 360;
+      const end = ((cursor + item.value) / total) * 360;
+      cursor += item.value;
+      return `${item.color} ${start}deg ${end}deg`;
+    })
+    .join(", ");
+
+  return (
+    <div className="pb-ring-stat">
+      <div className="pb-ring" style={{ background: `conic-gradient(${segments})` }}>
+        <div>
+          <small>{subtitle}</small>
+          <strong>{total}</strong>
+        </div>
+      </div>
+      <div className="pb-ring-legend">
+        <h3>{title}</h3>
+        {items.map((item) => (
+          <div key={item.label}>
+            <span style={{ background: item.color }} />
+            <p>{item.label}</p>
+            <strong>{item.value}</strong>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function NewsRibbon({
   title,
   body,
   category,
@@ -228,18 +223,17 @@ export function NewsPreviewCard({
   cta?: string;
 }) {
   const { t } = useI18n();
-
   return (
-    <article className="news-card">
-      <div className="news-card-head">
+    <article className="pb-news-card">
+      <div className="pb-news-card-head">
         <strong>{title}</strong>
-        <span className="badge info">{category}</span>
+        <span>{category}</span>
       </div>
-      <p className="news-preview-body">{body}</p>
-      <div className="news-meta-row">
+      <p>{body}</p>
+      <div className="pb-news-card-foot">
         <small>{meta}</small>
         {to ? (
-          <Link className="news-open-link" to={to}>
+          <Link to={to} className="pb-link-inline">
             {cta || t("news.read")}
           </Link>
         ) : null}
@@ -248,56 +242,227 @@ export function NewsPreviewCard({
   );
 }
 
-export function PromoCard({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description: string;
-  children: ReactNode;
-}) {
-  return (
-    <section className="promo-card">
-      <h3>{title}</h3>
-      <p>{description}</p>
-      <div>{children}</div>
-    </section>
-  );
-}
-
-export function BottomNavItem({
+export function SignalCardV3({
   to,
-  active,
-  label,
-  icon,
-  accent = false,
+  match,
+  league,
+  sport,
+  mode,
+  access,
+  status,
+  kickoff,
+  odds,
+  risk,
+  signal,
+  teaser,
+  tags,
+  hint,
 }: {
   to: string;
-  active: boolean;
-  label: string;
-  icon: ReactNode;
-  accent?: boolean;
+  match: string;
+  league: string;
+  sport: string;
+  mode: string;
+  access: ReactNode;
+  status: string;
+  kickoff: string;
+  odds: string | number;
+  risk: string;
+  signal: string;
+  teaser: string;
+  tags: string[];
+  hint: string;
 }) {
+  const { t } = useI18n();
+
   return (
-    <Link to={to} className={active ? `tab-item ${accent ? "accent" : ""} active` : `tab-item ${accent ? "accent" : ""}`}>
-      <span className="tab-item-icon">{icon}</span>
-      <span className="tab-item-label">{label}</span>
+    <Link to={to} className="pb-signal-card pb-reveal">
+      <div className="pb-signal-head">
+        <div>
+          <h3>{match}</h3>
+          <p>{league}</p>
+        </div>
+        {access}
+      </div>
+
+      <div className="pb-signal-meta">
+        <span>{mode}</span>
+        <span>{status}</span>
+        <span>{kickoff}</span>
+      </div>
+
+      <div className="pb-signal-grid">
+        <div>
+          <small>{t("feed.label.odds")}</small>
+          <strong>{odds}</strong>
+        </div>
+        <div>
+          <small>{t("feed.label.risk")}</small>
+          <strong>{risk}</strong>
+        </div>
+        <div>
+          <small>{t("feed.label.signal")}</small>
+          <strong>{signal}</strong>
+        </div>
+        <div>
+          <small>{t("feed.label.sport")}</small>
+          <strong>{sport}</strong>
+        </div>
+      </div>
+
+      <p className="pb-signal-teaser">{teaser}</p>
+
+      <div className="pb-signal-foot">
+        <div className="pb-tag-row">
+          {tags.map((tag) => (
+            <span key={tag}>{tag}</span>
+          ))}
+        </div>
+        <em>{hint}</em>
+      </div>
     </Link>
   );
 }
 
-export function Sparkline({ values }: { values: number[] }) {
-  const points = values
-    .map((value, index) => {
-      const x = (index / Math.max(values.length - 1, 1)) * 100;
-      const y = 100 - value;
-      return `${x},${y}`;
-    })
-    .join(" ");
+export function SettingsSection({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <svg viewBox="0 0 100 100" className="sparkline" aria-hidden="true">
-      <polyline points={points} />
-    </svg>
+    <section className="pb-settings-section">
+      <h3>{title}</h3>
+      <div className="pb-settings-list">{children}</div>
+    </section>
   );
+}
+
+type SettingsRowProps = {
+  icon: ReactNode;
+  title: string;
+  subtitle?: string;
+  value?: string;
+  to?: string;
+  href?: string;
+  onClick?: () => void;
+  disabled?: boolean;
+  right?: ReactNode;
+};
+
+function SettingsRowBody({ icon, title, subtitle, value, right }: Omit<SettingsRowProps, "to" | "href" | "onClick" | "disabled">) {
+  return (
+    <>
+      <div className="pb-settings-main">
+        <span className="pb-settings-icon">{icon}</span>
+        <span>
+          <strong>{title}</strong>
+          {subtitle ? <small>{subtitle}</small> : null}
+        </span>
+      </div>
+      <div className="pb-settings-side">
+        {value ? <span>{value}</span> : null}
+        {right || <em>></em>}
+      </div>
+    </>
+  );
+}
+
+export function SettingsRow(props: SettingsRowProps) {
+  const className = cx("pb-settings-row", props.disabled && "disabled");
+  const body = <SettingsRowBody icon={props.icon} title={props.title} subtitle={props.subtitle} value={props.value} right={props.right} />;
+
+  if (props.disabled) return <div className={className}>{body}</div>;
+  if (props.onClick)
+    return (
+      <button className={className} onClick={props.onClick} type="button">
+        {body}
+      </button>
+    );
+  if (props.href)
+    return (
+      <a className={className} href={props.href} target="_blank" rel="noreferrer">
+        {body}
+      </a>
+    );
+  if (props.to)
+    return (
+      <Link className={className} to={props.to}>
+        {body}
+      </Link>
+    );
+  return <div className={className}>{body}</div>;
+}
+
+export function SegmentedTabs({
+  value,
+  options,
+  onChange,
+}: {
+  value: string;
+  options: Array<{ value: string; label: string }>;
+  onChange: (next: string) => void;
+}) {
+  return (
+    <div className="pb-segmented-tabs" role="tablist">
+      {options.map((option) => (
+        <button key={option.value} className={option.value === value ? "active" : ""} onClick={() => onChange(option.value)} type="button">
+          {option.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+export function MembershipCard({
+  title,
+  badge,
+  description,
+  price,
+  features,
+  active,
+  action,
+}: {
+  title: string;
+  badge?: string;
+  description: string;
+  price: string;
+  features: string[];
+  active: boolean;
+  action: ReactNode;
+}) {
+  return (
+    <article className={cx("pb-membership-card", active && "active")}>
+      <div className="pb-membership-head">
+        <div>
+          <h3>{title}</h3>
+          <p>{description}</p>
+        </div>
+        {badge ? <span>{badge}</span> : null}
+      </div>
+      <strong className="pb-membership-price">{price}</strong>
+      <ul>
+        {features.map((feature) => (
+          <li key={feature}>{feature}</li>
+        ))}
+      </ul>
+      <div className="pb-membership-action">{action}</div>
+    </article>
+  );
+}
+
+export function ToggleRow({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (next: boolean) => void;
+}) {
+  return (
+    <label className="pb-toggle-row">
+      <span>{label}</span>
+      <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} />
+    </label>
+  );
+}
+
+export function PremiumFooterNote({ children }: { children: ReactNode }) {
+  return <footer className="pb-footer-note">{children}</footer>;
 }

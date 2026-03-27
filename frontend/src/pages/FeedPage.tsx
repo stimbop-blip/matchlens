@@ -1,23 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 
 import { useI18n } from "../app/i18n";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
-import { AccessBadge, AppShellSection, CardFooterActions, SectionHeader, SegmentedTabs } from "../components/ui";
+import { AccessBadge, AppShellSection, SectionHeader, SegmentedTabs, SignalCardV3 } from "../components/ui";
 import { api, type Prediction } from "../services/api";
 
+type AccessFilter = "all" | "free" | "premium" | "vip";
 type ModeFilter = "all" | "prematch" | "live";
 type StatusFilter = "all" | "pending" | "won" | "lost" | "refund";
-
-function sportEmoji(sport: string): string {
-  const normalized = sport.toLowerCase();
-  if (normalized.includes("football") || normalized.includes("soccer")) return "⚽";
-  if (normalized.includes("basket")) return "🏀";
-  if (normalized.includes("tennis")) return "🎾";
-  if (normalized.includes("hockey")) return "🏒";
-  return "🎯";
-}
+type RiskFilter = "all" | "low" | "medium" | "high";
 
 function formatDate(value: string, language: "ru" | "en") {
   const date = new Date(value);
@@ -30,21 +22,14 @@ function formatDate(value: string, language: "ru" | "en") {
   });
 }
 
-function teaser(value: string | null | undefined, fallback: string): string {
-  const source = (value || "").replace(/\s+/g, " ").trim();
-  if (!source) return fallback;
-  if (source.length <= 110) return source;
-  return `${source.slice(0, 107).trim()}...`;
-}
-
-function dayHeading(date: Date, language: "ru" | "en", t: (key: string) => string): string {
+function dayHeading(date: Date, language: "ru" | "en", t: (key: string) => string) {
   const now = new Date();
   const target = new Date(date.getFullYear(), date.getMonth(), date.getDate());
   const current = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const diffDays = Math.round((target.getTime() - current.getTime()) / 86400000);
-  if (diffDays === 0) return t("feed.day.today");
-  if (diffDays === 1) return t("feed.day.tomorrow");
-  if (diffDays === -1) return t("feed.day.yesterday");
+  const diff = Math.round((target.getTime() - current.getTime()) / 86400000);
+  if (diff === 0) return t("feed.day.today");
+  if (diff === 1) return t("feed.day.tomorrow");
+  if (diff === -1) return t("feed.day.yesterday");
   return target.toLocaleDateString(language === "ru" ? "ru-RU" : "en-US", {
     day: "numeric",
     month: "long",
@@ -52,25 +37,30 @@ function dayHeading(date: Date, language: "ru" | "en", t: (key: string) => strin
   });
 }
 
-function markList(item: Prediction, t: (key: string) => string): string[] {
-  const list: string[] = [];
-  if (item.mode === "live") list.push(t("common.live"));
-  if (item.access_level === "vip" && item.status === "pending") list.push(t("feed.mark.strong"));
-  if (item.odds >= 2.2 && item.status === "pending") list.push(t("feed.mark.hot"));
-  return list.slice(0, 2);
-}
-
-function statusLabel(status: Prediction["status"], t: (key: string) => string): string {
+function statusLabel(status: Prediction["status"], t: (key: string) => string) {
   if (status === "won") return t("feed.status.won");
   if (status === "lost") return t("feed.status.lost");
   if (status === "refund") return t("feed.status.refund");
   return t("feed.status.pending");
 }
 
-function riskLabel(value: Prediction["risk_level"], t: (key: string) => string): string {
-  if (value === "low") return t("common.risk.low");
-  if (value === "high") return t("common.risk.high");
+function riskLabel(level: string, t: (key: string) => string) {
+  if (level === "low") return t("common.risk.low");
+  if (level === "high") return t("common.risk.high");
   return t("common.risk.medium");
+}
+
+function accessLabel(level: Prediction["access_level"], t: (key: string) => string) {
+  if (level === "premium") return t("common.premium");
+  if (level === "vip") return t("common.vip");
+  return t("common.free");
+}
+
+function teaser(value: string | null | undefined, fallback: string) {
+  const source = (value || "").replace(/\s+/g, " ").trim();
+  if (!source) return fallback;
+  if (source.length <= 150) return source;
+  return `${source.slice(0, 147).trim()}...`;
 }
 
 export function FeedPage() {
@@ -79,18 +69,27 @@ export function FeedPage() {
   const [items, setItems] = useState<Prediction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const [access, setAccess] = useState<AccessFilter>("all");
   const [mode, setMode] = useState<ModeFilter>("all");
   const [status, setStatus] = useState<StatusFilter>("all");
+  const [risk, setRisk] = useState<RiskFilter>("all");
 
   useEffect(() => {
     setLoading(true);
     setError("");
     api
-      .predictions({ mode: mode === "all" ? undefined : mode, status: status === "all" ? undefined : status })
+      .predictions({
+        access_level: access === "all" ? undefined : access,
+        mode: mode === "all" ? undefined : mode,
+        status: status === "all" ? undefined : status,
+        risk_level: risk === "all" ? undefined : risk,
+        limit: 220,
+      })
       .then(setItems)
       .catch((e: Error) => setError(e.message || t("prediction.error")))
       .finally(() => setLoading(false));
-  }, [mode, status, t]);
+  }, [access, mode, risk, status, t]);
 
   const groups = useMemo(() => {
     const sorted = [...items].sort((a, b) => new Date(a.event_start_at).getTime() - new Date(b.event_start_at).getTime());
@@ -102,6 +101,13 @@ export function FeedPage() {
     });
     return Array.from(map.entries());
   }, [items, language, t]);
+
+  const accessOptions = [
+    { value: "all", label: t("common.all") },
+    { value: "free", label: t("common.free") },
+    { value: "premium", label: t("common.premium") },
+    { value: "vip", label: t("common.vip") },
+  ];
 
   const modeOptions = [
     { value: "all", label: t("common.all") },
@@ -117,77 +123,78 @@ export function FeedPage() {
     { value: "refund", label: t("feed.status.refund") },
   ];
 
+  const riskOptions = [
+    { value: "all", label: t("common.all") },
+    { value: "low", label: t("common.risk.low") },
+    { value: "medium", label: t("common.risk.medium") },
+    { value: "high", label: t("common.risk.high") },
+  ];
+
   return (
     <Layout>
       <AppShellSection>
-        <SectionHeader title={t("feed.title")} subtitle={t("feed.subtitle")} action={<span className="hint-chip">{items.length}</span>} />
+        <SectionHeader
+          title={t("feed.hero.title")}
+          subtitle={t("feed.hero.subtitle")}
+          action={
+            <span className="pb-hint-chip">
+              {items.length}
+            </span>
+          }
+        />
 
-        <div className="filter-stack sticky-filters">
-          <SegmentedTabs value={mode} options={modeOptions} onChange={(next) => setMode(next as ModeFilter)} />
-          <SegmentedTabs value={status} options={statusOptions} onChange={(next) => setStatus(next as StatusFilter)} />
+        <div className="pb-filterbar">
+          <div>
+            <small>{t("feed.filter.access")}</small>
+            <SegmentedTabs value={access} options={accessOptions} onChange={(next) => setAccess(next as AccessFilter)} />
+          </div>
+          <div>
+            <small>{t("feed.filter.mode")}</small>
+            <SegmentedTabs value={mode} options={modeOptions} onChange={(next) => setMode(next as ModeFilter)} />
+          </div>
+          <div>
+            <small>{t("feed.filter.status")}</small>
+            <SegmentedTabs value={status} options={statusOptions} onChange={(next) => setStatus(next as StatusFilter)} />
+          </div>
+          <div>
+            <small>{t("feed.filter.risk")}</small>
+            <SegmentedTabs value={risk} options={riskOptions} onChange={(next) => setRisk(next as RiskFilter)} />
+          </div>
         </div>
 
-        {loading ? <p className="muted-line">{t("feed.loading")}</p> : null}
-        {error ? <p className="error-msg">{error}</p> : null}
-        {!loading && !error && items.length === 0 ? <p className="empty-state">{t("feed.empty")}</p> : null}
+        {loading ? <p className="pb-empty-state">{t("feed.loading")}</p> : null}
+        {error ? <p className="pb-error-state">{error}</p> : null}
+        {!loading && !error && items.length === 0 ? <p className="pb-empty-state">{t("feed.empty")}</p> : null}
 
-        <div className="feed-list premium-feed">
-          {groups.map(([title, predictions]) => (
-            <section key={title} className="feed-day-block">
-              <h3 className="feed-day-title">{title}</h3>
-              <div className="feed-cards">
-                {predictions.map((item) => {
-                  const marks = markList(item, t);
+        <div className="pb-feed-groups">
+          {groups.map(([day, list]) => (
+            <section key={day}>
+              <h3 className="pb-day-title">{day}</h3>
+              <div className="pb-feed-grid">
+                {list.map((item, index) => {
+                  const tags = [item.mode === "live" ? t("common.live") : t("common.prematch")];
+                  if (item.status === "pending" && item.access_level === "vip") tags.push(t("feed.tag.strong"));
+                  if (item.status === "pending" && item.odds >= 2.2) tags.push(t("feed.tag.hot"));
+                  if (item.status === "pending" && index === 0) tags.push(t("feed.tag.pick"));
+
                   return (
-                    <article key={item.id} className="feed-card signal-card">
-                      <div className="feed-card-head">
-                        <div>
-                          <Link className="feed-card-main-link" to={`/feed/${item.id}`}>
-                            <strong>{sportEmoji(item.sport_type)} {item.match_name}</strong>
-                          </Link>
-                          <p>{item.league || t("feed.noLeague")}</p>
-                        </div>
-                        <AccessBadge level={item.access_level} />
-                      </div>
-
-                      <div className="feed-meta-row top">
-                        <span className="badge info">{item.mode === "live" ? t("common.live") : t("common.prematch")}</span>
-                        <span>{formatDate(item.event_start_at, language)}</span>
-                        <span className={`badge ${item.status}`}>{statusLabel(item.status, t)}</span>
-                      </div>
-
-                      {marks.length > 0 ? (
-                        <div className="feed-marks-row">
-                          {marks.map((mark) => (
-                            <span key={mark} className="mark-pill">{mark}</span>
-                          ))}
-                        </div>
-                      ) : null}
-
-                      <div className="feed-signal-grid">
-                        <div>
-                          <small>{t("feed.signal")}</small>
-                          <p>{item.signal_type}</p>
-                        </div>
-                        <div>
-                          <small>{t("feed.odds")}</small>
-                          <p className="value-strong">{item.odds}</p>
-                        </div>
-                        <div>
-                          <small>{t("feed.risk")}</small>
-                          <p>{riskLabel(item.risk_level, t)}</p>
-                        </div>
-                      </div>
-
-                      <p className="feed-note">{teaser(item.short_description, t("feed.comment.empty"))}</p>
-
-                      <CardFooterActions>
-                        <span className="muted-line">{item.sport_type}</span>
-                        <Link className="feed-open-link" to={`/feed/${item.id}`}>
-                          {t("feed.details")}
-                        </Link>
-                      </CardFooterActions>
-                    </article>
+                    <SignalCardV3
+                      key={item.id}
+                      to={`/feed/${item.id}`}
+                      match={item.match_name}
+                      league={item.league || t("feed.noLeague")}
+                      sport={item.sport_type}
+                      mode={item.mode === "live" ? t("common.live") : t("common.prematch")}
+                      access={<AccessBadge level={item.access_level} label={accessLabel(item.access_level, t)} />}
+                      status={statusLabel(item.status, t)}
+                      kickoff={formatDate(item.event_start_at, language)}
+                      odds={item.odds}
+                      risk={riskLabel(item.risk_level, t)}
+                      signal={item.signal_type}
+                      teaser={teaser(item.short_description, t("feed.teaserFallback"))}
+                      tags={tags}
+                      hint={t("feed.detailsHint")}
+                    />
                   );
                 })}
               </div>

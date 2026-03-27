@@ -11,7 +11,7 @@ export function ThemePage() {
   const { t } = useI18n();
   const { theme, setTheme } = useTheme();
 
-  const applyTheme = (next: AppTheme) => {
+  const apply = (next: AppTheme) => {
     setTheme(next);
     navigate("/menu");
   };
@@ -19,35 +19,22 @@ export function ThemePage() {
   return (
     <Layout>
       <AppShellSection>
-        <SectionHeader
-          title={t("theme.title")}
-          subtitle={t("theme.subtitle")}
-        />
+        <SectionHeader title={t("theme.title")} subtitle={t("theme.subtitle")} />
 
-        <SettingsSection title={t("theme.section")}>
+        <SettingsSection title={t("layout.title.theme")}>
           <SettingsRow
-            icon="🌙"
+            icon="DK"
             title={t("theme.dark")}
-            subtitle={t("theme.dark.desc")}
-            onClick={() => applyTheme("dark")}
-            right={
-              <span className="theme-row-right">
-                <span className="theme-swatch dark" />
-                {theme === "dark" ? <span className="language-check">✓</span> : null}
-              </span>
-            }
+            subtitle={t("theme.darkDesc")}
+            onClick={() => apply("dark")}
+            right={theme === "dark" ? <span className="pb-check">*</span> : undefined}
           />
           <SettingsRow
-            icon="☀️"
+            icon="LT"
             title={t("theme.light")}
-            subtitle={t("theme.light.desc")}
-            onClick={() => applyTheme("light")}
-            right={
-              <span className="theme-row-right">
-                <span className="theme-swatch light" />
-                {theme === "light" ? <span className="language-check">✓</span> : null}
-              </span>
-            }
+            subtitle={t("theme.lightDesc")}
+            onClick={() => apply("light")}
+            right={theme === "light" ? <span className="pb-check">*</span> : undefined}
           />
         </SettingsSection>
       </AppShellSection>

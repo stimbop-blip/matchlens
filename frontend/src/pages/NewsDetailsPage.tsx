@@ -4,7 +4,7 @@ import { Link, useParams } from "react-router-dom";
 import { useI18n } from "../app/i18n";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
-import { AppShellSection, HeroCard, SectionActions, SectionHeader } from "../components/ui";
+import { AppShellSection, CTACluster, SectionHeader } from "../components/ui";
 import { api, type NewsPost } from "../services/api";
 
 function formatDate(value: string | null, language: "ru" | "en", fallback: string) {
@@ -40,26 +40,30 @@ export function NewsDetailsPage() {
   return (
     <Layout>
       {post ? (
-        <HeroCard
-          eyebrow="PIT BET"
-          title={post.title}
-          description={post.category || t("layout.title.news")}
-          right={<span className="badge info">{formatDate(post.published_at, language, t("common.noDate"))}</span>}
-        />
+        <section className="pb-hero-panel pb-reveal">
+          <span className="pb-eyebrow">PIT BET</span>
+          <h2>{post.title}</h2>
+          <p>{post.category || t("layout.title.news")}</p>
+          <div className="pb-meta-line">
+            <span>{formatDate(post.published_at, language, t("common.noDate"))}</span>
+          </div>
+        </section>
       ) : null}
 
       <AppShellSection>
-        <SectionHeader title={t("news.details.title")} />
+        <SectionHeader title={t("news.article.title")} />
+        {loading ? <p className="pb-empty-state">{t("news.article.loading")}</p> : null}
+        {!loading && !post ? <p className="pb-empty-state">{t("news.article.empty")}</p> : null}
+        {post ? <article className="pb-article-text long">{post.body}</article> : null}
 
-        {loading ? <p className="muted-line">{t("news.details.loading")}</p> : null}
-        {!loading && !post ? <p className="empty-state">{t("news.details.empty")}</p> : null}
-
-        {post ? <article className="news-body-card">{post.body}</article> : null}
-
-        <SectionActions compact>
-          <Link className="btn secondary" to="/news">{t("news.details.back")}</Link>
-          <Link className="btn ghost" to="/">{t("news.details.home")}</Link>
-        </SectionActions>
+        <CTACluster>
+          <Link className="pb-btn pb-btn-secondary" to="/news">
+            {t("news.article.back")}
+          </Link>
+          <Link className="pb-btn pb-btn-ghost" to="/">
+            {t("news.article.home")}
+          </Link>
+        </CTACluster>
       </AppShellSection>
 
       <AppDisclaimer />

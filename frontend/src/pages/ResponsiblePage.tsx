@@ -9,18 +9,13 @@ export function ResponsiblePage() {
   return (
     <Layout>
       <AppShellSection>
-        <SectionHeader
-          title={t("responsible.title")}
-          subtitle={t("responsible.subtitle")}
-        />
-
-        <div className="stack-list">
+        <SectionHeader title={t("responsible.title")} subtitle={t("responsible.subtitle")} />
+        <div className="pb-article-stack">
           <p>{t("responsible.p1")}</p>
           <p>{t("responsible.p2")}</p>
           <p>{t("responsible.p3")}</p>
         </div>
       </AppShellSection>
-
       <AppDisclaimer />
     </Layout>
   );
