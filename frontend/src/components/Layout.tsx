@@ -1,50 +1,14 @@
 import { type PropsWithChildren, useEffect, useMemo, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { useLanguage } from "../app/language";
 import { api } from "../services/api";
-import { waitForTelegramInitData } from "../services/telegram";
-import { BottomNavItem } from "./ui";
-
-function HomeIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M4 11.8 12 5l8 6.8V20a1 1 0 0 1-1 1h-5v-5h-4v5H5a1 1 0 0 1-1-1z" />
-    </svg>
-  );
-}
-
-function FeedIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3H4zm0 5h16v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm3 2v2h4v-2zm6 0v2h4v-2z" />
-    </svg>
-  );
-}
-
-function StatsIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M4 19h16v2H4zM6 10h3v8H6zm5-4h3v12h-3zm5 6h3v6h-3z" />
-    </svg>
-  );
-}
-
-function ProfileIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M12 4a4.2 4.2 0 1 1 0 8.4A4.2 4.2 0 0 1 12 4m0 10.4c4.8 0 8 2.4 8 5.2V21H4v-1.4c0-2.8 3.2-5.2 8-5.2" />
-    </svg>
-  );
-}
-
-function MenuIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z" />
-    </svg>
-  );
-}
+import {
+  configureTelegramBackButton,
+  configureTelegramMainButton,
+  configureTelegramSettingsButton,
+  waitForTelegramInitData,
+} from "../services/telegram";
 
 function HubIcon() {
   return (
@@ -58,6 +22,7 @@ export function Layout({ children }: PropsWithChildren) {
   const { language } = useLanguage();
   const [isAdmin, setIsAdmin] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const isRu = language === "ru";
 
   useEffect(() => {
@@ -111,64 +76,57 @@ export function Layout({ children }: PropsWithChildren) {
     return isRu ? "Отобранные сигналы, доступ и ключевые события PIT BET" : "Selected signals, access, and key PIT BET updates";
   }, [isRu, location.pathname]);
 
-  const tabs = [
-    {
-      to: "/",
-      label: isRu ? "Обзор" : "Overview",
-      icon: <HomeIcon />,
-      active: location.pathname === "/",
-    },
-    {
-      to: "/feed",
-      label: isRu ? "Сигналы" : "Signals",
-      icon: <FeedIcon />,
-      active: location.pathname.startsWith("/feed"),
-    },
-    {
-      to: "/stats",
-      label: isRu ? "Performance" : "Performance",
-      icon: <StatsIcon />,
-      active: location.pathname.startsWith("/stats"),
-    },
-    {
-      to: "/profile",
-      label: isRu ? "Аккаунт" : "Account",
-      icon: <ProfileIcon />,
-      active: location.pathname.startsWith("/profile"),
-    },
-  ];
+  useEffect(() => {
+    const isHome = location.pathname === "/";
+    const cleanupBack = configureTelegramBackButton(!isHome, () => {
+      if (window.history.length > 1) {
+        navigate(-1);
+      } else {
+        navigate("/");
+      }
+    });
 
-  const hubActive =
-    location.pathname.startsWith("/menu") ||
-    location.pathname.startsWith("/tariffs") ||
-    location.pathname.startsWith("/news") ||
-    (isAdmin && location.pathname.startsWith("/admin"));
+    const cleanupSettings = configureTelegramSettingsButton(true, () => navigate("/menu"));
+
+    const mainLabel =
+      location.pathname === "/"
+        ? isRu
+          ? "Открыть сигналы"
+          : "Open signals"
+        : location.pathname.startsWith("/feed")
+          ? isRu
+            ? "Открыть тарифы"
+            : "Open tariffs"
+          : "";
+    const mainTarget = location.pathname === "/" ? "/feed" : location.pathname.startsWith("/feed") ? "/tariffs" : null;
+    const cleanupMain = configureTelegramMainButton(Boolean(mainTarget), mainLabel, () => {
+      if (mainTarget) navigate(mainTarget);
+    });
+
+    return () => {
+      cleanupBack();
+      cleanupSettings();
+      cleanupMain();
+    };
+  }, [isRu, location.pathname, navigate]);
 
   return (
     <div className="app-shell">
       <header className="app-topbar">
-        <span className="brand-pill">PIT BET</span>
+        <div className="topbar-row">
+          <span className="brand-pill">PIT BET</span>
+          <Link className="hub-launcher" to="/menu" aria-label={isRu ? "Открыть hub" : "Open hub"}>
+            <HubIcon />
+          </Link>
+        </div>
         <div className="title-row">
           <h1>{pageTitle}</h1>
-          {isAdmin ? <span className="role-badge">Admin</span> : null}
+          {isAdmin ? <span className="role-badge">{isRu ? "Админ" : "Admin"}</span> : null}
         </div>
         <p>{subtitle}</p>
       </header>
 
       <main className="app-content app-scroll">{children}</main>
-
-      <nav className="command-dock" aria-label={isRu ? "Навигация" : "Navigation"}>
-        {tabs.map((tab) => (
-          <BottomNavItem key={tab.to} to={tab.to} icon={tab.icon} label={tab.label} active={tab.active} />
-        ))}
-        <BottomNavItem
-          to="/menu"
-          icon={hubActive ? <HubIcon /> : <MenuIcon />}
-          label={isRu ? "Hub" : "Hub"}
-          active={hubActive}
-          accent
-        />
-      </nav>
     </div>
   );
 }

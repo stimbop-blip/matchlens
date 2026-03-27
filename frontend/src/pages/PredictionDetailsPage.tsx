@@ -26,9 +26,9 @@ function statusLabel(status: Prediction["status"], language: "ru" | "en") {
 }
 
 function signalMark(item: Prediction, language: "ru" | "en") {
-  if (item.mode === "live") return "Live";
-  if (item.access_level === "vip") return language === "ru" ? "Strong Setup" : "Strong Setup";
-  return language === "ru" ? "Prematch" : "Prematch";
+  if (item.mode === "live") return language === "ru" ? "Лайв" : "Live";
+  if (item.access_level === "vip") return language === "ru" ? "Сильный сетап" : "Strong setup";
+  return language === "ru" ? "Прематч" : "Prematch";
 }
 
 export function PredictionDetailsPage() {
@@ -60,7 +60,7 @@ export function PredictionDetailsPage() {
     <Layout>
       {item ? (
         <HeroCard
-          eyebrow="PIT BET Signal"
+          eyebrow={isRu ? "Сигнал PIT BET" : "PIT BET Signal"}
           title={item.match_name}
           description={item.league || (isRu ? "Лига уточняется" : "League pending")}
           right={<AccessBadge level={item.access_level} />}
@@ -68,13 +68,13 @@ export function PredictionDetailsPage() {
           <div className="feed-meta-row top">
             <span className="badge info">{signalMark(item, language)}</span>
             <span className={`badge ${item.status}`}>{statusLabel(item.status, language)}</span>
-            <span className="mark-pill">{item.mode === "live" ? "Live" : "Prematch"}</span>
+            <span className="mark-pill">{item.mode === "live" ? (isRu ? "Лайв" : "Live") : isRu ? "Прематч" : "Prematch"}</span>
           </div>
         </HeroCard>
       ) : null}
 
       <AppShellSection>
-        <SectionHeader title={isRu ? "Signal breakdown" : "Signal breakdown"} />
+        <SectionHeader title={isRu ? "Разбор сигнала" : "Signal breakdown"} />
 
         {loading ? <p className="muted-line">{isRu ? "Загружаем данные..." : "Loading details..."}</p> : null}
         {!loading && error ? <p className="error-msg">{error}</p> : null}

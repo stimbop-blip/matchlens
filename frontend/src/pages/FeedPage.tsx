@@ -18,8 +18,8 @@ function statusLabel(status: Prediction["status"], language: "ru" | "en"): strin
 }
 
 function modeLabel(mode: Prediction["mode"], language: "ru" | "en"): string {
-  if (mode === "live") return "Live";
-  return language === "ru" ? "Prematch" : "Prematch";
+  if (mode === "live") return language === "ru" ? "Лайв" : "Live";
+  return language === "ru" ? "Прематч" : "Prematch";
 }
 
 function sportEmoji(sport: string): string {
@@ -70,9 +70,9 @@ function dayHeading(date: Date, language: "ru" | "en"): string {
 
 function signalMarks(item: Prediction, language: "ru" | "en"): string[] {
   const marks: string[] = [];
-  if (item.mode === "live") marks.push("Live");
-  if (item.access_level === "vip" && item.status === "pending") marks.push(language === "ru" ? "Strong Setup" : "Strong Setup");
-  if (item.odds >= 2.2 && item.status === "pending") marks.push(language === "ru" ? "Hot Pick" : "Hot Pick");
+  if (item.mode === "live") marks.push(language === "ru" ? "Лайв" : "Live");
+  if (item.access_level === "vip" && item.status === "pending") marks.push(language === "ru" ? "Сильный сетап" : "Strong setup");
+  if (item.odds >= 2.2 && item.status === "pending") marks.push(language === "ru" ? "Горячий пик" : "Hot pick");
   return marks.slice(0, 2);
 }
 
@@ -110,8 +110,8 @@ export function FeedPage() {
 
   const modeOptions = [
     { value: "all", label: isRu ? "Все" : "All" },
-    { value: "prematch", label: "Prematch" },
-    { value: "live", label: "Live" },
+    { value: "prematch", label: isRu ? "Прематч" : "Prematch" },
+    { value: "live", label: isRu ? "Лайв" : "Live" },
   ];
 
   const statusOptions = [

@@ -35,7 +35,7 @@ export function StatsPage() {
         }
       >
         <div className="market-ribbon stats-ribbon">
-          <span>{isRu ? "Performance pulse" : "Performance pulse"}</span>
+          <span>{isRu ? "Пульс результатов" : "Performance pulse"}</span>
           <Sparkline values={[60, 54, 58, 49, 44, 52, 47, 38, 41, 33]} />
           <span className="live-pulse">ROI</span>
         </div>
@@ -83,7 +83,7 @@ export function StatsPage() {
             </div>
 
             <div className="insight-card">
-              <strong>{isRu ? "Performance insight" : "Performance insight"}</strong>
+              <strong>{isRu ? "Ключевой инсайт" : "Key insight"}</strong>
               <p>
                 {isRu
                   ? "Сигналы PIT BET показывают текущую структуру результативности по уровням доступа. Используйте ROI и hit rate как навигатор дисциплины, а не как обещание результата."

@@ -63,7 +63,7 @@ export function MenuPage() {
   return (
     <Layout>
       <HeroCard
-        eyebrow="PIT BET Hub"
+        eyebrow={isRu ? "Центр управления PIT BET" : "PIT BET Hub"}
         title={isRu ? "Командный центр продукта" : "Product command center"}
         description={
           isRu
@@ -74,7 +74,7 @@ export function MenuPage() {
       />
 
       <AppShellSection>
-        <SectionHeader title={isRu ? "Навигационный hub" : "Navigation hub"} subtitle={isRu ? "Ежедневные и сервисные сценарии" : "Daily and service scenarios"} />
+        <SectionHeader title={isRu ? "Навигационный центр" : "Navigation hub"} subtitle={isRu ? "Ежедневные и сервисные сценарии" : "Daily and service scenarios"} />
 
         <SettingsSection title={isRu ? "Настройки" : "Settings"}>
           <SettingsRow icon="🌐" title={isRu ? "Язык" : "Language"} value={languageValue} to="/menu/language" />

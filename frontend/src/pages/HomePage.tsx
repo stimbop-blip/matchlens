@@ -106,6 +106,7 @@ export function HomePage() {
 
   const previewNews = news.slice(0, 3);
   const displayName = me?.first_name || (me?.username ? `@${me.username}` : isRu ? "Пользователь PIT BET" : "PIT BET user");
+  const t = (ru: string, en: string) => (isRu ? ru : en);
 
   return (
     <Layout>
@@ -120,9 +121,9 @@ export function HomePage() {
         right={<AccessBadge level={tariffCode(sub?.tariff)} label={tariffLabel(sub?.tariff)} />}
       >
         <div className="market-ribbon">
-          <span>{isRu ? "Market motion" : "Market motion"}</span>
+          <span>{t("Пульс рынка", "Market pulse")}</span>
           <Sparkline values={[72, 66, 69, 58, 61, 44, 48, 32, 38, 27]} />
-          <span className="live-pulse">LIVE</span>
+          <span className="live-pulse">{t("ЛАЙВ", "LIVE")}</span>
         </div>
         <div className="hero-mini-info">
           <span>{isRu ? "Тариф" : "Tariff"}: <b>{tariffLabel(sub?.tariff)}</b></span>
@@ -146,14 +147,14 @@ export function HomePage() {
             <p>{isRu ? "Сейчас в работе" : "Currently in play"}</p>
           </article>
           <div className="today-secondary-grid">
-            <StatCard label="Free" value={pendingFree} />
-            <StatCard label="Premium" value={pendingPremium} tone="accent" />
-            <StatCard label="VIP" value={pendingVip} tone="warning" />
+              <StatCard label="Free" value={pendingFree} />
+              <StatCard label="Premium" value={pendingPremium} tone="accent" />
+              <StatCard label="VIP" value={pendingVip} tone="warning" />
           </div>
         </div>
         <div className="today-inline-metrics">
           <span>{isRu ? "Live" : "Live"}: <b>{liveCount}</b></span>
-          <span>{isRu ? "Prematch" : "Prematch"}: <b>{prematchCount}</b></span>
+          <span>{t("Прематч", "Prematch")}: <b>{prematchCount}</b></span>
           <span>{isRu ? "Закрыто сегодня" : "Closed today"}: <b>{closedToday}</b></span>
         </div>
       </AppShellSection>

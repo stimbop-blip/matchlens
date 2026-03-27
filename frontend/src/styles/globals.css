@@ -1516,7 +1516,31 @@ a:focus {
 .app-content {
   gap: 14px;
   padding: 14px 12px;
-  padding-bottom: calc(106px + env(safe-area-inset-bottom));
+  padding-bottom: calc(34px + env(safe-area-inset-bottom));
+}
+
+.topbar-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.hub-launcher {
+  width: 36px;
+  height: 36px;
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 42%, var(--border-subtle));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent-soft) 58%, transparent);
+  display: grid;
+  place-items: center;
+  color: var(--accent-primary);
+}
+
+.hub-launcher svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
 }
 
 .app-section,

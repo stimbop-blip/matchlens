@@ -10,6 +10,25 @@ declare global {
         };
         setHeaderColor?: (value: string) => void;
         setBackgroundColor?: (value: string) => void;
+        MainButton?: {
+          setText: (text: string) => void;
+          show: () => void;
+          hide: () => void;
+          onClick: (cb: () => void) => void;
+          offClick: (cb: () => void) => void;
+        };
+        BackButton?: {
+          show: () => void;
+          hide: () => void;
+          onClick: (cb: () => void) => void;
+          offClick: (cb: () => void) => void;
+        };
+        SettingsButton?: {
+          show: () => void;
+          hide: () => void;
+          onClick: (cb: () => void) => void;
+          offClick: (cb: () => void) => void;
+        };
       };
     };
   }
@@ -82,4 +101,41 @@ export async function initTelegramWebApp(): Promise<void> {
     }
     await new Promise((resolve) => setTimeout(resolve, TELEGRAM_POLL_MS));
   }
+}
+
+export function configureTelegramBackButton(visible: boolean, onClick: () => void): () => void {
+  const button = window.Telegram?.WebApp?.BackButton;
+  if (!button) return () => undefined;
+  if (visible) {
+    button.show();
+    button.onClick(onClick);
+    return () => button.offClick(onClick);
+  }
+  button.hide();
+  return () => undefined;
+}
+
+export function configureTelegramMainButton(visible: boolean, text: string, onClick: () => void): () => void {
+  const button = window.Telegram?.WebApp?.MainButton;
+  if (!button) return () => undefined;
+  if (visible) {
+    button.setText(text);
+    button.show();
+    button.onClick(onClick);
+    return () => button.offClick(onClick);
+  }
+  button.hide();
+  return () => undefined;
+}
+
+export function configureTelegramSettingsButton(visible: boolean, onClick: () => void): () => void {
+  const button = window.Telegram?.WebApp?.SettingsButton;
+  if (!button) return () => undefined;
+  if (visible) {
+    button.show();
+    button.onClick(onClick);
+    return () => button.offClick(onClick);
+  }
+  button.hide();
+  return () => undefined;
 }

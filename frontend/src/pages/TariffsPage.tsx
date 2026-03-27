@@ -111,8 +111,8 @@ export function TariffsPage() {
   return (
     <Layout>
       <HeroCard
-        eyebrow="PIT BET Membership"
-        title={isRu ? "Membership-доступ с разной глубиной сигналов" : "Membership access with different signal depth"}
+        eyebrow={isRu ? "PIT BET Подписка" : "PIT BET Membership"}
+        title={isRu ? "Подписка с разной глубиной сигналов" : "Membership access with different signal depth"}
         description={
           isRu
             ? "Free для знакомства, Premium как основной рабочий уровень, VIP как elite-доступ с максимальной скоростью."
@@ -120,21 +120,21 @@ export function TariffsPage() {
         }
       >
         <div className="market-ribbon">
-          <span>{isRu ? "Access momentum" : "Access momentum"}</span>
+          <span>{isRu ? "Пульс доступа" : "Access momentum"}</span>
           <Sparkline values={[74, 69, 64, 60, 54, 49, 43, 38, 34, 30]} />
-          <span className="live-pulse">VIP</span>
+          <span className="live-pulse">{isRu ? "ВИП" : "VIP"}</span>
         </div>
       </HeroCard>
 
       <AppShellSection>
-        <SectionHeader title={isRu ? "Тарифные уровни" : "Membership tiers"} subtitle={isRu ? "Free / Premium / VIP" : "Free / Premium / VIP"} />
+        <SectionHeader title={isRu ? "Тарифные уровни" : "Membership tiers"} subtitle="Free / Premium / VIP" />
 
         <div className="tariff-grid premium-membership-grid">
           {freeTariff ? (
             <article className="tariff-card free-tier">
               <div className="tariff-head">
                 <div>
-                  <h3>Free</h3>
+                    <h3>Free</h3>
                   <p className="tariff-chip">{isRu ? "Входной уровень" : "Entry level"}</p>
                 </div>
                 <AccessBadge level="free" />
@@ -153,7 +153,7 @@ export function TariffsPage() {
                 <div className="tariff-head">
                   <div>
                     <h3>{plan === "premium" ? "Premium" : "VIP"}</h3>
-                    <p className="tariff-chip">{plan === "premium" ? (isRu ? "Best choice" : "Best choice") : isRu ? "Elite access" : "Elite access"}</p>
+                    <p className="tariff-chip">{plan === "premium" ? (isRu ? "Лучший выбор" : "Best choice") : isRu ? "Элитный доступ" : "Elite access"}</p>
                   </div>
                   <AccessBadge level={plan} />
                 </div>
