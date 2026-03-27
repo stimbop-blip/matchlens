@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 
+import { useI18n } from "../app/i18n";
 import { useLanguage, type AppLanguage } from "../app/language";
 import { Layout } from "../components/Layout";
 import { AppShellSection, SectionHeader, SettingsRow, SettingsSection } from "../components/ui";
@@ -7,7 +8,7 @@ import { AppShellSection, SectionHeader, SettingsRow, SettingsSection } from "..
 export function LanguagePage() {
   const navigate = useNavigate();
   const { language, setLanguage } = useLanguage();
-  const isRu = language === "ru";
+  const { t } = useI18n();
 
   const applyLanguage = (next: AppLanguage) => {
     setLanguage(next);
@@ -18,22 +19,22 @@ export function LanguagePage() {
     <Layout>
       <AppShellSection>
         <SectionHeader
-          title={isRu ? "Язык" : "Language"}
-          subtitle={isRu ? "Выберите язык интерфейса PIT BET" : "Choose your PIT BET interface language"}
+          title={t("language.title")}
+          subtitle={t("language.subtitle")}
         />
 
-        <SettingsSection title={isRu ? "Выбор языка" : "Language selection"}>
+        <SettingsSection title={t("language.section")}>
           <SettingsRow
             icon="🇷🇺"
-            title="Русский"
-            subtitle="Russian"
+            title={t("language.ru")}
+            subtitle={t("language.option.ru")}
             onClick={() => applyLanguage("ru")}
             right={language === "ru" ? <span className="language-check">✓</span> : undefined}
           />
           <SettingsRow
             icon="🇬🇧"
-            title="English"
-            subtitle="English"
+            title={t("language.en")}
+            subtitle={t("language.option.en")}
             onClick={() => applyLanguage("en")}
             right={language === "en" ? <span className="language-check">✓</span> : undefined}
           />

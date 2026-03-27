@@ -1,54 +1,55 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
-import { useLanguage } from "../app/language";
+import { useI18n } from "../app/i18n";
+import { resolveSubscriptionSnapshot } from "../app/subscription";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
 import { AccessBadge, AppShellSection, HeroCard, PromoCard, SectionActions, SectionHeader, SettingsSection, StatCard } from "../components/ui";
 import { api, type Me, type MyPayment, type NotificationSettings, type PromoApplyResult, type ReferralStats } from "../services/api";
 import { waitForTelegramInitData } from "../services/telegram";
 
-function tariffCode(value: string): "free" | "premium" | "vip" {
-  if (value === "premium") return "premium";
-  if (value === "vip") return "vip";
-  return "free";
-}
-
-function tariffLabel(value: string): string {
-  if (value === "premium") return "Premium";
-  if (value === "vip") return "VIP";
-  return "Free";
-}
-
-function subscriptionStatusLabel(value: string, language: "ru" | "en"): string {
-  if (value === "active") return language === "ru" ? "Активен" : "Active";
-  if (value === "expired") return language === "ru" ? "Истек" : "Expired";
-  if (value === "canceled") return language === "ru" ? "Отменен" : "Canceled";
-  return language === "ru" ? "Не активен" : "Inactive";
-}
-
-function paymentStatusLabel(value: string, language: "ru" | "en"): string {
-  if (value === "pending_manual_review") return language === "ru" ? "Ожидает подтверждения" : "Pending manual review";
-  if (value === "requires_clarification") return language === "ru" ? "Ожидает уточнения" : "Needs clarification";
-  if (value === "succeeded") return language === "ru" ? "Подтвержден" : "Confirmed";
-  if (value === "failed") return language === "ru" ? "Отклонен" : "Rejected";
-  if (value === "canceled") return language === "ru" ? "Отменен" : "Canceled";
-  return language === "ru" ? "Ожидает оплаты" : "Awaiting payment";
-}
-
-function dateLabel(value: string | null | undefined, language: "ru" | "en") {
+function formatDate(value: string | null | undefined, language: "ru" | "en") {
   if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "—";
   return date.toLocaleString(language === "ru" ? "ru-RU" : "en-US");
 }
 
+function tariffLabel(level: "free" | "premium" | "vip", t: (key: string) => string) {
+  if (level === "premium") return t("common.premium");
+  if (level === "vip") return t("common.vip");
+  return t("common.free");
+}
+
+function normalizeTariff(value: string): "free" | "premium" | "vip" {
+  if (value === "premium") return "premium";
+  if (value === "vip") return "vip";
+  return "free";
+}
+
+function statusLabel(status: "active" | "expired" | "canceled" | "inactive" | "unknown", t: (key: string) => string) {
+  if (status === "active") return t("common.status.active");
+  if (status === "expired") return t("common.status.expired");
+  if (status === "canceled") return t("common.status.canceled");
+  if (status === "inactive") return t("common.status.inactive");
+  return t("common.status.unknown");
+}
+
+function paymentStatusLabel(value: string, t: (key: string) => string) {
+  if (value === "pending_manual_review") return t("common.payment.pending_manual_review");
+  if (value === "requires_clarification") return t("common.payment.requires_clarification");
+  if (value === "succeeded") return t("common.payment.succeeded");
+  if (value === "failed") return t("common.payment.failed");
+  if (value === "canceled") return t("common.payment.canceled");
+  return t("common.payment.pending");
+}
+
 export function ProfilePage() {
-  const { language } = useLanguage();
-  const isRu = language === "ru";
+  const { t, language } = useI18n();
 
   const [me, setMe] = useState<Me | null>(null);
-  const [sub, setSub] = useState<{ tariff: string; status: string; ends_at: string | null } | null>(null);
+  const [subRaw, setSubRaw] = useState<{ tariff: string; status: string; ends_at: string | null } | null>(null);
   const [notify, setNotify] = useState<NotificationSettings | null>(null);
   const [referral, setReferral] = useState<ReferralStats | null>(null);
   const [promoCode, setPromoCode] = useState("");
@@ -66,28 +67,22 @@ export function ProfilePage() {
         setLoading(false);
         return;
       }
+      const results = await Promise.allSettled([
+        api.me(),
+        api.mySubscription(),
+        api.myNotificationSettings(),
+        api.myReferral(),
+        api.myPayments(),
+      ]);
+      if (!alive) return;
 
-      Promise.all([api.me(), api.mySubscription(), api.myNotificationSettings(), api.myReferral(), api.myPayments()])
-        .then(([meData, subData, notifyData, referralData, paymentData]) => {
-          if (!alive) return;
-          setMe(meData);
-          setSub(subData);
-          setNotify(notifyData);
-          setReferral(referralData);
-          setPayments(paymentData);
-        })
-        .catch(() => {
-          if (!alive) return;
-          setMe(null);
-          setSub(null);
-          setNotify(null);
-          setReferral(null);
-          setPayments([]);
-        })
-        .finally(() => {
-          if (!alive) return;
-          setLoading(false);
-        });
+      const [meRes, subRes, notifyRes, referralRes, paymentsRes] = results;
+      setMe(meRes.status === "fulfilled" ? meRes.value : null);
+      setSubRaw(subRes.status === "fulfilled" ? subRes.value : null);
+      setNotify(notifyRes.status === "fulfilled" ? notifyRes.value : null);
+      setReferral(referralRes.status === "fulfilled" ? referralRes.value : null);
+      setPayments(paymentsRes.status === "fulfilled" ? paymentsRes.value : []);
+      setLoading(false);
     };
 
     void load();
@@ -96,13 +91,15 @@ export function ProfilePage() {
     };
   }, []);
 
+  const sub = resolveSubscriptionSnapshot(subRaw);
+
   const updateNotify = async (payload: Partial<NotificationSettings>) => {
     try {
       const updated = await api.updateMyNotificationSettings(payload);
       setNotify(updated);
-      setNotifyMessage({ tone: "success", text: isRu ? "Настройки сохранены" : "Settings saved" });
+      setNotifyMessage({ tone: "success", text: t("profile.notifications.saved") });
     } catch {
-      setNotifyMessage({ tone: "error", text: isRu ? "Не удалось сохранить настройки" : "Failed to save settings" });
+      setNotifyMessage({ tone: "error", text: t("profile.notifications.fail") });
     }
   };
 
@@ -115,11 +112,11 @@ export function ProfilePage() {
       setPromoCode("");
       if (result.mode === "bonus_applied") {
         const [subData, referralData] = await Promise.all([api.mySubscription(), api.myReferral()]);
-        setSub(subData);
+        setSubRaw(subData);
         setReferral(referralData);
       }
     } catch (e) {
-      const text = e instanceof Error ? e.message : isRu ? "Не удалось применить промокод" : "Promo apply failed";
+      const text = e instanceof Error ? e.message : t("profile.promo.fail");
       setPromoResult({ ok: false, mode: "error", kind: "error", code, message: text });
     }
   };
@@ -128,26 +125,24 @@ export function ProfilePage() {
     if (!referral?.referral_link) return;
     try {
       await navigator.clipboard.writeText(referral.referral_link);
-      setNotifyMessage({ tone: "success", text: isRu ? "Ссылка скопирована" : "Link copied" });
+      setNotifyMessage({ tone: "success", text: t("profile.ref.copy.ok") });
     } catch {
-      setNotifyMessage({ tone: "error", text: isRu ? "Не удалось скопировать ссылку" : "Failed to copy link" });
+      setNotifyMessage({ tone: "error", text: t("profile.ref.copy.fail") });
     }
   };
 
   const shareReferral = async () => {
     if (!referral?.referral_link) return;
-    const shareText = isRu
-      ? "Присоединяйся к PIT BET по моей реферальной ссылке."
-      : "Join PIT BET using my referral link.";
+    const shareText = t("profile.ref.share.text");
     try {
       if (navigator.share) {
         await navigator.share({ title: "PIT BET", text: shareText, url: referral.referral_link });
         return;
       }
       await navigator.clipboard.writeText(referral.referral_link);
-      setNotifyMessage({ tone: "success", text: isRu ? "Ссылка готова к отправке" : "Link copied and ready to share" });
+      setNotifyMessage({ tone: "success", text: t("profile.ref.share.ok") });
     } catch {
-      setNotifyMessage({ tone: "error", text: isRu ? "Не удалось поделиться ссылкой" : "Failed to share link" });
+      setNotifyMessage({ tone: "error", text: t("profile.ref.share.fail") });
     }
   };
 
@@ -155,52 +150,48 @@ export function ProfilePage() {
     <Layout>
       <HeroCard
         eyebrow="PIT BET"
-        title={isRu ? "Личный кабинет" : "Personal area"}
-        description={
-          isRu
-            ? "Управляйте доступом, оплатами, бонусами и настройками аккаунта"
-            : "Manage access, payments, bonuses, and account settings"
-        }
-        right={sub ? <AccessBadge level={tariffCode(sub.tariff)} label={tariffLabel(sub.tariff)} /> : undefined}
+        title={t("profile.hero.title")}
+        description={t("profile.hero.subtitle")}
+        right={<AccessBadge level={sub.tariff} label={tariffLabel(sub.tariff, t)} />}
       >
         <div className="stat-grid compact">
-          <StatCard label={isRu ? "Статус" : "Status"} value={sub ? subscriptionStatusLabel(sub.status, language) : "—"} />
-          <StatCard label={isRu ? "Доступ до" : "Valid until"} value={sub ? dateLabel(sub.ends_at, language) : "—"} tone="accent" />
+          <StatCard label={t("profile.sub.status")} value={statusLabel(sub.status, t)} />
+          <StatCard label={t("profile.sub.until")} value={formatDate(sub.ends_at, language)} tone="accent" />
         </div>
       </HeroCard>
 
       <AppShellSection>
-        <SectionHeader title={isRu ? "Пользователь" : "User"} subtitle={loading ? (isRu ? "Загружаем данные..." : "Loading data...") : undefined} />
-        {!loading && !me ? <p className="empty-state">{isRu ? "Профиль временно недоступен." : "Profile is temporarily unavailable."}</p> : null}
+        <SectionHeader title={t("profile.user.title")} subtitle={loading ? t("common.loading") : undefined} />
+        {!loading && !me ? <p className="empty-state">{t("profile.user.unavailable")}</p> : null}
 
         {me ? (
           <div className="stack-list compact">
-            <div className="info-row"><span>{isRu ? "Имя" : "Name"}</span><strong>{me.first_name || "—"}</strong></div>
-            <div className="info-row"><span>{isRu ? "Username" : "Username"}</span><strong>{me.username ? `@${me.username}` : "—"}</strong></div>
-            <div className="info-row"><span>Telegram ID</span><strong>{me.telegram_id}</strong></div>
-            <div className="info-row"><span>{isRu ? "Роль" : "Role"}</span><strong>{me.is_admin ? (isRu ? "Администратор" : "Admin") : isRu ? "Пользователь" : "User"}</strong></div>
+            <div className="info-row"><span>{t("profile.user.name")}</span><strong>{me.first_name || "—"}</strong></div>
+            <div className="info-row"><span>{t("profile.user.username")}</span><strong>{me.username ? `@${me.username}` : "—"}</strong></div>
+            <div className="info-row"><span>{t("profile.user.telegramId")}</span><strong>{me.telegram_id}</strong></div>
+            <div className="info-row"><span>{t("profile.user.role")}</span><strong>{me.is_admin ? t("profile.user.roleAdmin") : t("profile.user.roleUser")}</strong></div>
           </div>
         ) : null}
 
         {me?.is_admin || me?.role === "admin" ? (
           <SectionActions compact>
-            <Link className="btn secondary" to="/admin">{isRu ? "Открыть админку" : "Open admin"}</Link>
+            <Link className="btn secondary" to="/admin">{t("profile.openAdmin")}</Link>
           </SectionActions>
         ) : null}
       </AppShellSection>
 
       <AppShellSection id="subscription">
-        <SectionHeader title={isRu ? "Подписка и оплаты" : "Subscription and payments"} subtitle={isRu ? "Текущий доступ и последние платежи" : "Current access and latest payments"} />
+        <SectionHeader title={t("profile.sub.title")} subtitle={t("profile.sub.subtitle")} />
         <div className="stat-grid compact">
-          <StatCard label={isRu ? "Тариф" : "Tariff"} value={sub ? tariffLabel(sub.tariff) : "—"} tone="accent" />
-          <StatCard label={isRu ? "Статус" : "Status"} value={sub ? subscriptionStatusLabel(sub.status, language) : "—"} />
-          <StatCard label={isRu ? "Доступ до" : "Valid until"} value={sub ? dateLabel(sub.ends_at, language) : "—"} />
+          <StatCard label={t("profile.sub.tariff")} value={tariffLabel(sub.tariff, t)} tone="accent" />
+          <StatCard label={t("profile.sub.status")} value={statusLabel(sub.status, t)} />
+          <StatCard label={t("profile.sub.until")} value={formatDate(sub.ends_at, language)} />
         </div>
-        {payments.length === 0 ? <p className="empty-state">{isRu ? "Платежей пока нет." : "No payments yet."}</p> : null}
+        {payments.length === 0 ? <p className="empty-state">{t("profile.payments.empty")}</p> : null}
         {payments.slice(0, 4).map((item) => (
           <div className="info-row" key={item.id}>
-            <span>{item.tariff_code.toUpperCase()} • {item.duration_days} {isRu ? "дней" : "days"} • {item.amount_rub} RUB</span>
-            <strong>{paymentStatusLabel(item.status, language)}</strong>
+            <span>{tariffLabel(normalizeTariff(item.tariff_code), t)} • {item.duration_days} {t("tariffs.days")} • {item.amount_rub} RUB</span>
+            <strong>{paymentStatusLabel(item.status, t)}</strong>
             <small className="muted-line">{item.payment_method_name || item.payment_method_code || ""}</small>
             {item.review_comment ? <small className="muted-line">{item.review_comment}</small> : null}
           </div>
@@ -208,63 +199,60 @@ export function ProfilePage() {
       </AppShellSection>
 
       <AppShellSection id="referral">
-        <SectionHeader title={isRu ? "Реферальная программа" : "Referral program"} subtitle={isRu ? "Бонусные дни за активацию приглашенных" : "Bonus days for activated invites"} />
-        {!referral ? <p className="empty-state">{isRu ? "Данные недоступны." : "Data unavailable."}</p> : null}
+        <SectionHeader title={t("profile.ref.title")} subtitle={t("profile.ref.subtitle")} />
+        {!referral ? <p className="empty-state">{t("profile.ref.empty")}</p> : null}
         {referral ? (
           <>
             <div className="stat-grid compact">
-              <StatCard label={isRu ? "Код" : "Code"} value={referral.referral_code} />
-              <StatCard label={isRu ? "Приглашено" : "Invited"} value={referral.invited} />
-              <StatCard label={isRu ? "Активировано" : "Activated"} value={referral.activated} />
-              <StatCard label={isRu ? "Бонусные дни" : "Bonus days"} value={referral.bonus_days} tone="accent" />
+              <StatCard label={t("profile.ref.code")} value={referral.referral_code} />
+              <StatCard label={t("profile.ref.invited")} value={referral.invited} />
+              <StatCard label={t("profile.ref.activated")} value={referral.activated} />
+              <StatCard label={t("profile.ref.bonus")} value={referral.bonus_days} tone="accent" />
             </div>
             <div className="input-stack">
               <input value={referral.referral_link} readOnly />
               <SectionActions compact>
-                <button className="btn secondary" onClick={copyReferral} type="button">{isRu ? "Скопировать ссылку" : "Copy link"}</button>
-                <button className="btn ghost" onClick={shareReferral} type="button">{isRu ? "Поделиться" : "Share"}</button>
+                <button className="btn secondary" onClick={copyReferral} type="button">{t("profile.ref.copy")}</button>
+                <button className="btn ghost" onClick={shareReferral} type="button">{t("profile.ref.share")}</button>
               </SectionActions>
             </div>
           </>
         ) : null}
       </AppShellSection>
 
-      <PromoCard
-        title={isRu ? "Промокод PIT BET" : "PIT BET promo code"}
-        description={isRu ? "Скидка или бонусные дни по промокоду" : "Discount or bonus days by promo code"}
-      >
+      <PromoCard title={t("profile.promo.title")} description={t("profile.promo.subtitle")}>
         <div className="input-stack" id="promo">
-          <input value={promoCode} onChange={(e) => setPromoCode(e.target.value.toUpperCase())} placeholder={isRu ? "Введите промокод" : "Enter promo code"} />
+          <input value={promoCode} onChange={(e) => setPromoCode(e.target.value.toUpperCase())} placeholder={t("profile.promo.placeholder")} />
           <select value={promoTariff} onChange={(e) => setPromoTariff(e.target.value as "free" | "premium" | "vip")}> 
-            <option value="free">Free</option>
-            <option value="premium">Premium</option>
-            <option value="vip">VIP</option>
+            <option value="free">{t("common.free")}</option>
+            <option value="premium">{t("common.premium")}</option>
+            <option value="vip">{t("common.vip")}</option>
           </select>
           <SectionActions compact>
-            <button className="btn" onClick={applyPromo} type="button">{isRu ? "Применить" : "Apply"}</button>
+            <button className="btn" onClick={applyPromo} type="button">{t("profile.promo.apply")}</button>
           </SectionActions>
           {promoResult ? (
             <p className={`notice ${promoResult.ok ? "success" : "error"}`}>
               {promoResult.message}
-              {promoResult.final_price_rub !== undefined && promoResult.final_price_rub !== null ? ` ${isRu ? "Итог" : "Final"}: ${promoResult.final_price_rub} RUB.` : ""}
+              {promoResult.final_price_rub !== undefined && promoResult.final_price_rub !== null ? ` ${t("profile.promo.final")}: ${promoResult.final_price_rub} RUB.` : ""}
             </p>
           ) : null}
         </div>
       </PromoCard>
 
       <AppShellSection id="notifications">
-        <SectionHeader title={isRu ? "Уведомления" : "Notifications"} subtitle={isRu ? "Компактные настройки категорий" : "Compact category settings"} />
+        <SectionHeader title={t("profile.notifications.title")} subtitle={t("profile.notifications.subtitle")} />
 
-        {!notify ? <p className="empty-state">{isRu ? "Настройки временно недоступны." : "Settings are unavailable."}</p> : null}
+        {!notify ? <p className="empty-state">{t("profile.notifications.empty")}</p> : null}
 
         {notify ? (
-          <SettingsSection title={isRu ? "Категории" : "Categories"}>
-            <label className="switch-row"><span>{isRu ? "Получать уведомления" : "Enable notifications"}</span><input type="checkbox" checked={notify.notifications_enabled} onChange={(e) => void updateNotify({ notifications_enabled: e.target.checked })} /></label>
-            <label className="switch-row"><span>{isRu ? "Новые сигналы Free" : "New Free signals"}</span><input type="checkbox" checked={notify.notify_free} onChange={(e) => void updateNotify({ notify_free: e.target.checked })} /></label>
-            <label className="switch-row"><span>{isRu ? "Новые сигналы Premium" : "New Premium signals"}</span><input type="checkbox" checked={notify.notify_premium} onChange={(e) => void updateNotify({ notify_premium: e.target.checked })} /></label>
-            <label className="switch-row"><span>{isRu ? "Новые сигналы VIP" : "New VIP signals"}</span><input type="checkbox" checked={notify.notify_vip} onChange={(e) => void updateNotify({ notify_vip: e.target.checked })} /></label>
-            <label className="switch-row"><span>{isRu ? "Результаты" : "Results"}</span><input type="checkbox" checked={notify.notify_results} onChange={(e) => void updateNotify({ notify_results: e.target.checked })} /></label>
-            <label className="switch-row"><span>{isRu ? "Новости PIT BET" : "PIT BET news"}</span><input type="checkbox" checked={notify.notify_news} onChange={(e) => void updateNotify({ notify_news: e.target.checked })} /></label>
+          <SettingsSection title={t("profile.notifications.title")}>
+            <label className="switch-row"><span>{t("profile.notifications.enable")}</span><input type="checkbox" checked={notify.notifications_enabled} onChange={(e) => void updateNotify({ notifications_enabled: e.target.checked })} /></label>
+            <label className="switch-row"><span>{t("profile.notifications.free")}</span><input type="checkbox" checked={notify.notify_free} onChange={(e) => void updateNotify({ notify_free: e.target.checked })} /></label>
+            <label className="switch-row"><span>{t("profile.notifications.premium")}</span><input type="checkbox" checked={notify.notify_premium} onChange={(e) => void updateNotify({ notify_premium: e.target.checked })} /></label>
+            <label className="switch-row"><span>{t("profile.notifications.vip")}</span><input type="checkbox" checked={notify.notify_vip} onChange={(e) => void updateNotify({ notify_vip: e.target.checked })} /></label>
+            <label className="switch-row"><span>{t("profile.notifications.results")}</span><input type="checkbox" checked={notify.notify_results} onChange={(e) => void updateNotify({ notify_results: e.target.checked })} /></label>
+            <label className="switch-row"><span>{t("profile.notifications.news")}</span><input type="checkbox" checked={notify.notify_news} onChange={(e) => void updateNotify({ notify_news: e.target.checked })} /></label>
           </SettingsSection>
         ) : null}
 

@@ -1,7 +1,7 @@
 import { type PropsWithChildren, useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
-import { useLanguage } from "../app/language";
+import { useI18n } from "../app/i18n";
 import { api } from "../services/api";
 import {
   configureTelegramBackButton,
@@ -9,6 +9,7 @@ import {
   configureTelegramSettingsButton,
   waitForTelegramInitData,
 } from "../services/telegram";
+import { CommandHub } from "./CommandHub";
 
 function HubIcon() {
   return (
@@ -18,12 +19,48 @@ function HubIcon() {
   );
 }
 
+function pageTitleKey(pathname: string): string {
+  if (pathname.startsWith("/feed")) return "layout.title.feed";
+  if (pathname.startsWith("/stats")) return "layout.title.stats";
+  if (pathname.startsWith("/profile")) return "layout.title.profile";
+  if (pathname.startsWith("/menu/language")) return "layout.title.language";
+  if (pathname.startsWith("/menu/theme")) return "layout.title.theme";
+  if (pathname.startsWith("/menu/rules")) return "layout.title.rules";
+  if (pathname.startsWith("/menu/responsible")) return "layout.title.responsible";
+  if (pathname.startsWith("/menu")) return "layout.title.menu";
+  if (pathname.startsWith("/tariffs")) return "layout.title.tariffs";
+  if (pathname.startsWith("/news")) return "layout.title.news";
+  if (pathname.startsWith("/admin")) return "layout.title.admin";
+  return "layout.title.home";
+}
+
+function pageSubtitleKey(pathname: string): string {
+  if (pathname.startsWith("/feed")) return "layout.subtitle.feed";
+  if (pathname.startsWith("/stats")) return "layout.subtitle.stats";
+  if (pathname.startsWith("/profile")) return "layout.subtitle.profile";
+  if (pathname.startsWith("/menu") || pathname.startsWith("/admin")) return "layout.subtitle.hub";
+  if (pathname.startsWith("/news")) return "layout.subtitle.news";
+  if (pathname.startsWith("/tariffs")) return "layout.subtitle.tariffs";
+  if (pathname === "/") return "layout.subtitle.home";
+  return "layout.subtitle.generic";
+}
+
+function mainAction(pathname: string): { labelKey: string; target: string } | null {
+  if (pathname === "/") return { labelKey: "layout.main.home", target: "/feed" };
+  if (pathname.startsWith("/feed")) return { labelKey: "layout.main.feed", target: "/tariffs" };
+  if (pathname.startsWith("/stats")) return { labelKey: "layout.main.stats", target: "/feed" };
+  if (pathname.startsWith("/profile")) return { labelKey: "layout.main.profile", target: "/tariffs" };
+  if (pathname.startsWith("/news")) return { labelKey: "layout.main.news", target: "/feed" };
+  if (pathname.startsWith("/tariffs")) return { labelKey: "layout.main.tariffs", target: "/profile" };
+  return null;
+}
+
 export function Layout({ children }: PropsWithChildren) {
-  const { language } = useLanguage();
+  const { t } = useI18n();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [hubOpen, setHubOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const isRu = language === "ru";
 
   useEffect(() => {
     let alive = true;
@@ -45,40 +82,22 @@ export function Layout({ children }: PropsWithChildren) {
     };
   }, []);
 
-  const pageTitle = useMemo(() => {
-    if (location.pathname.startsWith("/feed")) return isRu ? "Лента" : "Feed";
-    if (location.pathname.startsWith("/stats")) return isRu ? "Статистика" : "Stats";
-    if (location.pathname.startsWith("/profile")) return isRu ? "Профиль" : "Profile";
-    if (location.pathname.startsWith("/menu/language")) return isRu ? "Язык" : "Language";
-    if (location.pathname.startsWith("/menu/theme")) return isRu ? "Тема" : "Theme";
-    if (location.pathname.startsWith("/menu/rules")) return isRu ? "Правила" : "Rules";
-    if (location.pathname.startsWith("/menu/responsible")) return isRu ? "Ответственная игра" : "Responsible play";
-    if (location.pathname.startsWith("/menu")) return isRu ? "Меню" : "Menu";
-    if (location.pathname.startsWith("/tariffs")) return isRu ? "Тарифы" : "Tariffs";
-    if (location.pathname.startsWith("/news")) return isRu ? "Новости" : "News";
-    if (location.pathname.startsWith("/admin")) return isRu ? "Админка" : "Admin";
-    return isRu ? "Главная" : "Home";
-  }, [isRu, location.pathname]);
+  useEffect(() => {
+    setHubOpen(false);
+  }, [location.pathname]);
 
-  const subtitle = useMemo(() => {
-    if (location.pathname.startsWith("/feed")) {
-      return isRu ? "Прематч и live-сигналы с быстрой фильтрацией" : "Prematch and live signals with fast filtering";
-    }
-    if (location.pathname.startsWith("/stats")) {
-      return isRu ? "Фактические результаты, ROI и структура сигналов" : "Actual results, ROI, and signal structure";
-    }
-    if (location.pathname.startsWith("/profile")) {
-      return isRu ? "Доступ, оплата, бонусы и настройки аккаунта" : "Access, payments, bonuses, and account settings";
-    }
-    if (location.pathname.startsWith("/menu") || location.pathname.startsWith("/tariffs") || location.pathname.startsWith("/news")) {
-      return isRu ? "Настройки, сервисные разделы и управление продуктом" : "Settings, service sections, and product control";
-    }
-    return isRu ? "Отобранные сигналы, доступ и ключевые события PIT BET" : "Selected signals, access, and key PIT BET updates";
-  }, [isRu, location.pathname]);
+  const pageTitle = useMemo(() => t(pageTitleKey(location.pathname)), [location.pathname, t]);
+  const subtitle = useMemo(() => t(pageSubtitleKey(location.pathname)), [location.pathname, t]);
 
   useEffect(() => {
     const isHome = location.pathname === "/";
-    const cleanupBack = configureTelegramBackButton(!isHome, () => {
+    const action = mainAction(location.pathname);
+
+    const cleanupBack = configureTelegramBackButton(hubOpen || !isHome, () => {
+      if (hubOpen) {
+        setHubOpen(false);
+        return;
+      }
       if (window.history.length > 1) {
         navigate(-1);
       } else {
@@ -86,21 +105,10 @@ export function Layout({ children }: PropsWithChildren) {
       }
     });
 
-    const cleanupSettings = configureTelegramSettingsButton(true, () => navigate("/menu"));
+    const cleanupSettings = configureTelegramSettingsButton(true, () => setHubOpen(true));
 
-    const mainLabel =
-      location.pathname === "/"
-        ? isRu
-          ? "Открыть сигналы"
-          : "Open signals"
-        : location.pathname.startsWith("/feed")
-          ? isRu
-            ? "Открыть тарифы"
-            : "Open tariffs"
-          : "";
-    const mainTarget = location.pathname === "/" ? "/feed" : location.pathname.startsWith("/feed") ? "/tariffs" : null;
-    const cleanupMain = configureTelegramMainButton(Boolean(mainTarget), mainLabel, () => {
-      if (mainTarget) navigate(mainTarget);
+    const cleanupMain = configureTelegramMainButton(Boolean(action && !hubOpen), action ? t(action.labelKey) : "", () => {
+      if (action) navigate(action.target);
     });
 
     return () => {
@@ -108,25 +116,27 @@ export function Layout({ children }: PropsWithChildren) {
       cleanupSettings();
       cleanupMain();
     };
-  }, [isRu, location.pathname, navigate]);
+  }, [hubOpen, location.pathname, navigate, t]);
 
   return (
     <div className="app-shell">
       <header className="app-topbar">
         <div className="topbar-row">
           <span className="brand-pill">PIT BET</span>
-          <Link className="hub-launcher" to="/menu" aria-label={isRu ? "Открыть hub" : "Open hub"}>
+          <button className="hub-launcher" type="button" aria-label={t("layout.hub.open")} onClick={() => setHubOpen(true)}>
             <HubIcon />
-          </Link>
+          </button>
         </div>
         <div className="title-row">
           <h1>{pageTitle}</h1>
-          {isAdmin ? <span className="role-badge">{isRu ? "Админ" : "Admin"}</span> : null}
+          {isAdmin ? <span className="role-badge">{t("layout.role.admin")}</span> : null}
         </div>
         <p>{subtitle}</p>
       </header>
 
       <main className="app-content app-scroll">{children}</main>
+
+      <CommandHub open={hubOpen} onClose={() => setHubOpen(false)} isAdmin={isAdmin} />
     </div>
   );
 }

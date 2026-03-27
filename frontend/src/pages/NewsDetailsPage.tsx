@@ -1,16 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
-import { useLanguage } from "../app/language";
+import { useI18n } from "../app/i18n";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
 import { AppShellSection, HeroCard, SectionActions, SectionHeader } from "../components/ui";
 import { api, type NewsPost } from "../services/api";
 
-function formatDate(value: string | null, language: "ru" | "en") {
-  if (!value) return language === "ru" ? "Без даты" : "No date";
+function formatDate(value: string | null, language: "ru" | "en", fallback: string) {
+  if (!value) return fallback;
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return language === "ru" ? "Без даты" : "No date";
+  if (Number.isNaN(date.getTime())) return fallback;
   return date.toLocaleString(language === "ru" ? "ru-RU" : "en-US", {
     day: "2-digit",
     month: "2-digit",
@@ -20,9 +20,8 @@ function formatDate(value: string | null, language: "ru" | "en") {
 }
 
 export function NewsDetailsPage() {
-  const { language } = useLanguage();
+  const { t, language } = useI18n();
   const { newsId } = useParams<{ newsId: string }>();
-  const isRu = language === "ru";
 
   const [items, setItems] = useState<NewsPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,24 +41,24 @@ export function NewsDetailsPage() {
     <Layout>
       {post ? (
         <HeroCard
-          eyebrow="PIT BET Newsroom"
+          eyebrow="PIT BET"
           title={post.title}
-          description={post.category || (isRu ? "Новости" : "News")}
-          right={<span className="badge info">{formatDate(post.published_at, language)}</span>}
+          description={post.category || t("layout.title.news")}
+          right={<span className="badge info">{formatDate(post.published_at, language, t("common.noDate"))}</span>}
         />
       ) : null}
 
       <AppShellSection>
-        <SectionHeader title={isRu ? "Новостной материал" : "News material"} />
+        <SectionHeader title={t("news.details.title")} />
 
-        {loading ? <p className="muted-line">{isRu ? "Загрузка поста..." : "Loading post..."}</p> : null}
-        {!loading && !post ? <p className="empty-state">{isRu ? "Пост не найден или скрыт." : "Post not found or unpublished."}</p> : null}
+        {loading ? <p className="muted-line">{t("news.details.loading")}</p> : null}
+        {!loading && !post ? <p className="empty-state">{t("news.details.empty")}</p> : null}
 
         {post ? <article className="news-body-card">{post.body}</article> : null}
 
         <SectionActions compact>
-          <Link className="btn secondary" to="/news">{isRu ? "Назад к новостям" : "Back to news"}</Link>
-          <Link className="btn ghost" to="/">{isRu ? "На обзор" : "To overview"}</Link>
+          <Link className="btn secondary" to="/news">{t("news.details.back")}</Link>
+          <Link className="btn ghost" to="/">{t("news.details.home")}</Link>
         </SectionActions>
       </AppShellSection>
 

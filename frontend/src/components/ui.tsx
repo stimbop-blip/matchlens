@@ -1,6 +1,8 @@
 import { type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
+import { useI18n } from "../app/i18n";
+
 type Classable = {
   className?: string;
 };
@@ -225,6 +227,8 @@ export function NewsPreviewCard({
   to?: string;
   cta?: string;
 }) {
+  const { t } = useI18n();
+
   return (
     <article className="news-card">
       <div className="news-card-head">
@@ -236,7 +240,7 @@ export function NewsPreviewCard({
         <small>{meta}</small>
         {to ? (
           <Link className="news-open-link" to={to}>
-            {cta || "Подробнее"}
+            {cta || t("news.read")}
           </Link>
         ) : null}
       </div>

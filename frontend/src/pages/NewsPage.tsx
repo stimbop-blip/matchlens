@@ -1,15 +1,15 @@
 import { useEffect, useState } from "react";
 
-import { useLanguage } from "../app/language";
+import { useI18n } from "../app/i18n";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
 import { AppShellSection, HeroCard, NewsPreviewCard, SectionHeader } from "../components/ui";
 import { api, type NewsPost } from "../services/api";
 
-function formatDate(value: string | null, language: "ru" | "en") {
-  if (!value) return language === "ru" ? "Без даты" : "No date";
+function formatDate(value: string | null, language: "ru" | "en", fallback: string) {
+  if (!value) return fallback;
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return language === "ru" ? "Без даты" : "No date";
+  if (Number.isNaN(date.getTime())) return fallback;
   return date.toLocaleString(language === "ru" ? "ru-RU" : "en-US", {
     day: "2-digit",
     month: "2-digit",
@@ -19,8 +19,7 @@ function formatDate(value: string | null, language: "ru" | "en") {
 }
 
 export function NewsPage() {
-  const { language } = useLanguage();
-  const isRu = language === "ru";
+  const { t, language } = useI18n();
 
   const [items, setItems] = useState<NewsPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,21 +35,13 @@ export function NewsPage() {
 
   return (
     <Layout>
-      <HeroCard
-        eyebrow="PIT BET Newsroom"
-        title={isRu ? "Продуктовые апдейты и рыночные события" : "Product updates and market events"}
-        description={
-          isRu
-            ? "Ключевые обновления платформы, тарифов и сервисных изменений PIT BET."
-            : "Key platform updates, tariff changes, and service-level updates from PIT BET."
-        }
-      />
+      <HeroCard eyebrow="PIT BET" title={t("news.hero.title")} description={t("news.hero.subtitle")} />
 
       <AppShellSection>
-        <SectionHeader title={isRu ? "Лента новостей" : "News stream"} subtitle={isRu ? "Официальные публикации" : "Official publications"} />
+        <SectionHeader title={t("news.stream.title")} subtitle={t("news.stream.subtitle")} />
 
-        {loading ? <p className="muted-line">{isRu ? "Загружаем новости..." : "Loading news..."}</p> : null}
-        {!loading && items.length === 0 ? <p className="empty-state">{isRu ? "Пока нет публикаций." : "No posts yet."}</p> : null}
+        {loading ? <p className="muted-line">{t("news.loading")}</p> : null}
+        {!loading && items.length === 0 ? <p className="empty-state">{t("news.empty")}</p> : null}
 
         <div className="news-list compact">
           {items.map((item) => (
@@ -59,9 +50,9 @@ export function NewsPage() {
               title={item.title}
               body={item.body}
               category={item.category}
-              meta={formatDate(item.published_at, language)}
+              meta={formatDate(item.published_at, language, t("common.noDate"))}
               to={`/news/${item.id}`}
-              cta={isRu ? "Читать" : "Read"}
+              cta={t("news.read")}
             />
           ))}
         </div>

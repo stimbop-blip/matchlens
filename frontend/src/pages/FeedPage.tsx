@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
-import { useLanguage } from "../app/language";
+import { useI18n } from "../app/i18n";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
 import { AccessBadge, AppShellSection, CardFooterActions, SectionHeader, SegmentedTabs } from "../components/ui";
@@ -9,18 +9,6 @@ import { api, type Prediction } from "../services/api";
 
 type ModeFilter = "all" | "prematch" | "live";
 type StatusFilter = "all" | "pending" | "won" | "lost" | "refund";
-
-function statusLabel(status: Prediction["status"], language: "ru" | "en"): string {
-  if (status === "won") return language === "ru" ? "Выигрыш" : "Won";
-  if (status === "lost") return language === "ru" ? "Проигрыш" : "Lost";
-  if (status === "refund") return language === "ru" ? "Возврат" : "Refund";
-  return language === "ru" ? "В ожидании" : "Pending";
-}
-
-function modeLabel(mode: Prediction["mode"], language: "ru" | "en"): string {
-  if (mode === "live") return language === "ru" ? "Лайв" : "Live";
-  return language === "ru" ? "Прематч" : "Prematch";
-}
 
 function sportEmoji(sport: string): string {
   const normalized = sport.toLowerCase();
@@ -31,7 +19,7 @@ function sportEmoji(sport: string): string {
   return "🎯";
 }
 
-function dateLabel(value: string, language: "ru" | "en") {
+function formatDate(value: string, language: "ru" | "en") {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleString(language === "ru" ? "ru-RU" : "en-US", {
@@ -42,25 +30,21 @@ function dateLabel(value: string, language: "ru" | "en") {
   });
 }
 
-function teaser(value: string | null | undefined, language: "ru" | "en"): string {
+function teaser(value: string | null | undefined, fallback: string): string {
   const source = (value || "").replace(/\s+/g, " ").trim();
-  if (!source) {
-    return language === "ru"
-      ? "Краткий комментарий появится после обновления сигнала."
-      : "Short analyst comment appears after signal update.";
-  }
+  if (!source) return fallback;
   if (source.length <= 110) return source;
   return `${source.slice(0, 107).trim()}...`;
 }
 
-function dayHeading(date: Date, language: "ru" | "en"): string {
+function dayHeading(date: Date, language: "ru" | "en", t: (key: string) => string): string {
   const now = new Date();
   const target = new Date(date.getFullYear(), date.getMonth(), date.getDate());
   const current = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const diffDays = Math.round((target.getTime() - current.getTime()) / 86400000);
-  if (diffDays === 0) return language === "ru" ? "Сегодня" : "Today";
-  if (diffDays === 1) return language === "ru" ? "Завтра" : "Tomorrow";
-  if (diffDays === -1) return language === "ru" ? "Вчера" : "Yesterday";
+  if (diffDays === 0) return t("feed.day.today");
+  if (diffDays === 1) return t("feed.day.tomorrow");
+  if (diffDays === -1) return t("feed.day.yesterday");
   return target.toLocaleDateString(language === "ru" ? "ru-RU" : "en-US", {
     day: "numeric",
     month: "long",
@@ -68,17 +52,29 @@ function dayHeading(date: Date, language: "ru" | "en"): string {
   });
 }
 
-function signalMarks(item: Prediction, language: "ru" | "en"): string[] {
-  const marks: string[] = [];
-  if (item.mode === "live") marks.push(language === "ru" ? "Лайв" : "Live");
-  if (item.access_level === "vip" && item.status === "pending") marks.push(language === "ru" ? "Сильный сетап" : "Strong setup");
-  if (item.odds >= 2.2 && item.status === "pending") marks.push(language === "ru" ? "Горячий пик" : "Hot pick");
-  return marks.slice(0, 2);
+function markList(item: Prediction, t: (key: string) => string): string[] {
+  const list: string[] = [];
+  if (item.mode === "live") list.push(t("common.live"));
+  if (item.access_level === "vip" && item.status === "pending") list.push(t("feed.mark.strong"));
+  if (item.odds >= 2.2 && item.status === "pending") list.push(t("feed.mark.hot"));
+  return list.slice(0, 2);
+}
+
+function statusLabel(status: Prediction["status"], t: (key: string) => string): string {
+  if (status === "won") return t("feed.status.won");
+  if (status === "lost") return t("feed.status.lost");
+  if (status === "refund") return t("feed.status.refund");
+  return t("feed.status.pending");
+}
+
+function riskLabel(value: Prediction["risk_level"], t: (key: string) => string): string {
+  if (value === "low") return t("common.risk.low");
+  if (value === "high") return t("common.risk.high");
+  return t("common.risk.medium");
 }
 
 export function FeedPage() {
-  const { language } = useLanguage();
-  const isRu = language === "ru";
+  const { t, language } = useI18n();
 
   const [items, setItems] = useState<Prediction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -92,55 +88,48 @@ export function FeedPage() {
     api
       .predictions({ mode: mode === "all" ? undefined : mode, status: status === "all" ? undefined : status })
       .then(setItems)
-      .catch((e: Error) => setError(e.message || (isRu ? "Не удалось загрузить прогнозы" : "Failed to load signals")))
+      .catch((e: Error) => setError(e.message || t("prediction.error")))
       .finally(() => setLoading(false));
-  }, [isRu, mode, status]);
+  }, [mode, status, t]);
 
   const groups = useMemo(() => {
     const sorted = [...items].sort((a, b) => new Date(a.event_start_at).getTime() - new Date(b.event_start_at).getTime());
     const map = new Map<string, Prediction[]>();
     sorted.forEach((item) => {
-      const date = new Date(item.event_start_at);
-      const key = dayHeading(date, language);
+      const key = dayHeading(new Date(item.event_start_at), language, t);
       if (!map.has(key)) map.set(key, []);
       map.get(key)?.push(item);
     });
     return Array.from(map.entries());
-  }, [items, language]);
+  }, [items, language, t]);
 
   const modeOptions = [
-    { value: "all", label: isRu ? "Все" : "All" },
-    { value: "prematch", label: isRu ? "Прематч" : "Prematch" },
-    { value: "live", label: isRu ? "Лайв" : "Live" },
+    { value: "all", label: t("common.all") },
+    { value: "prematch", label: t("common.prematch") },
+    { value: "live", label: t("common.live") },
   ];
 
   const statusOptions = [
-    { value: "all", label: isRu ? "Все" : "All" },
-    { value: "pending", label: isRu ? "В ожидании" : "Pending" },
-    { value: "won", label: isRu ? "Выигрыш" : "Won" },
-    { value: "lost", label: isRu ? "Проигрыш" : "Lost" },
-    { value: "refund", label: isRu ? "Возврат" : "Refund" },
+    { value: "all", label: t("common.all") },
+    { value: "pending", label: t("feed.status.pending") },
+    { value: "won", label: t("feed.status.won") },
+    { value: "lost", label: t("feed.status.lost") },
+    { value: "refund", label: t("feed.status.refund") },
   ];
 
   return (
     <Layout>
       <AppShellSection>
-        <SectionHeader
-          title={isRu ? "Лента сигналов" : "Signals feed"}
-          subtitle={isRu ? "Прематч и live-сигналы с быстрой фильтрацией" : "Prematch and live signals with fast filtering"}
-          action={<span className="hint-chip">{items.length}</span>}
-        />
+        <SectionHeader title={t("feed.title")} subtitle={t("feed.subtitle")} action={<span className="hint-chip">{items.length}</span>} />
 
-        <div className="filter-stack">
+        <div className="filter-stack sticky-filters">
           <SegmentedTabs value={mode} options={modeOptions} onChange={(next) => setMode(next as ModeFilter)} />
           <SegmentedTabs value={status} options={statusOptions} onChange={(next) => setStatus(next as StatusFilter)} />
         </div>
 
-        {loading ? <p className="muted-line">{isRu ? "Загружаем ленту..." : "Loading feed..."}</p> : null}
+        {loading ? <p className="muted-line">{t("feed.loading")}</p> : null}
         {error ? <p className="error-msg">{error}</p> : null}
-        {!loading && !error && items.length === 0 ? (
-          <p className="empty-state">{isRu ? "По этим фильтрам сигналов нет." : "No signals for current filters."}</p>
-        ) : null}
+        {!loading && !error && items.length === 0 ? <p className="empty-state">{t("feed.empty")}</p> : null}
 
         <div className="feed-list premium-feed">
           {groups.map(([title, predictions]) => (
@@ -148,7 +137,7 @@ export function FeedPage() {
               <h3 className="feed-day-title">{title}</h3>
               <div className="feed-cards">
                 {predictions.map((item) => {
-                  const marks = signalMarks(item, language);
+                  const marks = markList(item, t);
                   return (
                     <article key={item.id} className="feed-card signal-card">
                       <div className="feed-card-head">
@@ -156,15 +145,15 @@ export function FeedPage() {
                           <Link className="feed-card-main-link" to={`/feed/${item.id}`}>
                             <strong>{sportEmoji(item.sport_type)} {item.match_name}</strong>
                           </Link>
-                          <p>{item.league || (isRu ? "Без лиги" : "No league")}</p>
+                          <p>{item.league || t("feed.noLeague")}</p>
                         </div>
                         <AccessBadge level={item.access_level} />
                       </div>
 
                       <div className="feed-meta-row top">
-                        <span className="badge info">{modeLabel(item.mode, language)}</span>
-                        <span>{dateLabel(item.event_start_at, language)}</span>
-                        <span className={`badge ${item.status}`}>{statusLabel(item.status, language)}</span>
+                        <span className="badge info">{item.mode === "live" ? t("common.live") : t("common.prematch")}</span>
+                        <span>{formatDate(item.event_start_at, language)}</span>
+                        <span className={`badge ${item.status}`}>{statusLabel(item.status, t)}</span>
                       </div>
 
                       {marks.length > 0 ? (
@@ -177,25 +166,25 @@ export function FeedPage() {
 
                       <div className="feed-signal-grid">
                         <div>
-                          <small>{isRu ? "Сигнал" : "Signal"}</small>
+                          <small>{t("feed.signal")}</small>
                           <p>{item.signal_type}</p>
                         </div>
                         <div>
-                          <small>{isRu ? "Коэффициент" : "Odds"}</small>
+                          <small>{t("feed.odds")}</small>
                           <p className="value-strong">{item.odds}</p>
                         </div>
                         <div>
-                          <small>{isRu ? "Риск" : "Risk"}</small>
-                          <p>{item.risk_level}</p>
+                          <small>{t("feed.risk")}</small>
+                          <p>{riskLabel(item.risk_level, t)}</p>
                         </div>
                       </div>
 
-                      <p className="feed-note">{teaser(item.short_description, language)}</p>
+                      <p className="feed-note">{teaser(item.short_description, t("feed.comment.empty"))}</p>
 
                       <CardFooterActions>
                         <span className="muted-line">{item.sport_type}</span>
                         <Link className="feed-open-link" to={`/feed/${item.id}`}>
-                          {isRu ? "Подробнее" : "Details"}
+                          {t("feed.details")}
                         </Link>
                       </CardFooterActions>
                     </article>

@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 
-import { useLanguage, useTheme } from "../app/language";
+import { useI18n } from "../app/i18n";
+import { resolveSubscriptionSnapshot } from "../app/subscription";
+import { useTheme } from "../app/language";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
 import { AccessBadge, AppShellSection, HeroCard, SectionHeader, SettingsRow, SettingsSection } from "../components/ui";
@@ -8,103 +10,88 @@ import { api, type Me, type NotificationSettings, type ReferralStats } from "../
 
 const SUPPORT_URL = import.meta.env.VITE_SUPPORT_URL || "https://t.me/your_support";
 
-function tariffCode(value: string | undefined): "free" | "premium" | "vip" {
-  if (value === "premium") return "premium";
-  if (value === "vip") return "vip";
-  return "free";
-}
-
-function tariffLabel(code: string | null | undefined) {
-  if (code === "vip") return "VIP";
-  if (code === "premium") return "Premium";
-  return "Free";
+function tariffLabel(level: "free" | "premium" | "vip", t: (key: string) => string) {
+  if (level === "premium") return t("common.premium");
+  if (level === "vip") return t("common.vip");
+  return t("common.free");
 }
 
 export function MenuPage() {
-  const { language } = useLanguage();
+  const { t, language } = useI18n();
   const { theme } = useTheme();
-  const isRu = language === "ru";
 
   const [me, setMe] = useState<Me | null>(null);
   const [notify, setNotify] = useState<NotificationSettings | null>(null);
-  const [sub, setSub] = useState<{ tariff: string; status: string; ends_at: string | null } | null>(null);
+  const [subRaw, setSubRaw] = useState<{ tariff: string; status: string; ends_at: string | null } | null>(null);
   const [referral, setReferral] = useState<ReferralStats | null>(null);
 
   useEffect(() => {
     let alive = true;
-    Promise.all([api.me(), api.myNotificationSettings(), api.mySubscription(), api.myReferral()])
-      .then(([meData, notifyData, subData, referralData]) => {
-        if (!alive) return;
-        setMe(meData);
-        setNotify(notifyData);
-        setSub(subData);
-        setReferral(referralData);
-      })
-      .catch(() => {
-        if (!alive) return;
-        setMe(null);
-        setNotify(null);
-        setSub(null);
-        setReferral(null);
-      });
-
+    const load = async () => {
+      const results = await Promise.allSettled([api.me(), api.myNotificationSettings(), api.mySubscription(), api.myReferral()]);
+      if (!alive) return;
+      const [meRes, notifyRes, subRes, referralRes] = results;
+      setMe(meRes.status === "fulfilled" ? meRes.value : null);
+      setNotify(notifyRes.status === "fulfilled" ? notifyRes.value : null);
+      setSubRaw(subRes.status === "fulfilled" ? subRes.value : null);
+      setReferral(referralRes.status === "fulfilled" ? referralRes.value : null);
+    };
+    void load();
     return () => {
       alive = false;
     };
   }, []);
 
+  const sub = resolveSubscriptionSnapshot(subRaw);
+
   const supportConfigured = !SUPPORT_URL.includes("your_support");
-  const languageValue = language === "ru" ? (isRu ? "Русский" : "Russian") : "English";
-  const themeValue = theme === "light" ? (isRu ? "Светлая" : "Light") : isRu ? "Темная" : "Dark";
-  const notificationsValue = notify?.notifications_enabled ? (isRu ? "Активны" : "Active") : isRu ? "Выключены" : "Off";
-  const subscriptionValue = sub ? tariffLabel(sub.tariff) : isRu ? "Загрузка" : "Loading";
+  const languageValue = language === "ru" ? t("language.ru") : t("language.en");
+  const themeValue = theme === "light" ? t("menu.light") : t("menu.dark");
+  const notificationsValue = notify?.notifications_enabled ? t("menu.state.active") : t("menu.state.off");
+  const subscriptionValue = subRaw ? tariffLabel(sub.tariff, t) : t("menu.loading");
   const referralValue = `${referral?.invited ?? 0}/${referral?.activated ?? 0}`;
 
   return (
     <Layout>
       <HeroCard
-        eyebrow={isRu ? "Центр управления PIT BET" : "PIT BET Hub"}
-        title={isRu ? "Командный центр продукта" : "Product command center"}
-        description={
-          isRu
-            ? "Настройки, сервисные разделы и управление доступом в одном месте."
-            : "Settings, service sections, and access management in one place."
-        }
-        right={<AccessBadge level={tariffCode(sub?.tariff)} label={tariffLabel(sub?.tariff)} />}
+        eyebrow={t("menu.hero.eyebrow")}
+        title={t("menu.hero.title")}
+        description={t("menu.hero.subtitle")}
+        right={<AccessBadge level={sub.tariff} label={tariffLabel(sub.tariff, t)} />}
       />
 
       <AppShellSection>
-        <SectionHeader title={isRu ? "Навигационный центр" : "Navigation hub"} subtitle={isRu ? "Ежедневные и сервисные сценарии" : "Daily and service scenarios"} />
+        <SectionHeader title={t("layout.title.menu")} subtitle={t("layout.subtitle.hub")} />
 
-        <SettingsSection title={isRu ? "Настройки" : "Settings"}>
-          <SettingsRow icon="🌐" title={isRu ? "Язык" : "Language"} value={languageValue} to="/menu/language" />
-          <SettingsRow icon="🌓" title={isRu ? "Тема" : "Theme"} value={themeValue} to="/menu/theme" />
-          <SettingsRow icon="🔔" title={isRu ? "Уведомления" : "Notifications"} value={notificationsValue} to="/profile#notifications" />
+        <SettingsSection title={t("menu.section.settings")}>
+          <SettingsRow icon="🌐" title={t("menu.language")} value={languageValue} to="/menu/language" />
+          <SettingsRow icon="🌓" title={t("menu.theme")} value={themeValue} to="/menu/theme" />
+          <SettingsRow icon="🔔" title={t("menu.notifications")} value={notificationsValue} to="/profile#notifications" />
         </SettingsSection>
 
-        <SettingsSection title={isRu ? "Аккаунт" : "Account"}>
-          <SettingsRow icon="💎" title={isRu ? "Моя подписка" : "My subscription"} value={subscriptionValue} to="/profile#subscription" />
-          <SettingsRow icon="👥" title={isRu ? "Реферальная программа" : "Referral program"} subtitle={isRu ? "Приглашено / активировано" : "Invited / activated"} value={referralValue} to="/profile#referral" />
-          <SettingsRow icon="🎟" title={isRu ? "Промокоды" : "Promo codes"} to="/profile#promo" />
+        <SettingsSection title={t("menu.section.account")}>
+          <SettingsRow icon="💎" title={t("menu.subscription")} value={subscriptionValue} to="/profile#subscription" />
+          <SettingsRow icon="👥" title={t("menu.referral")} subtitle={t("profile.ref.subtitle")} value={referralValue} to="/profile#referral" />
+          <SettingsRow icon="🎟" title={t("menu.promo")} to="/profile#promo" />
         </SettingsSection>
 
-        <SettingsSection title={isRu ? "Сервис" : "Service"}>
-          <SettingsRow icon="📰" title={isRu ? "Новости PIT BET" : "PIT BET news"} to="/news" />
+        <SettingsSection title={t("menu.section.service")}>
+          <SettingsRow icon="📰" title={t("menu.news")} to="/news" />
           <SettingsRow
             icon="🛟"
-            title={isRu ? "Поддержка" : "Support"}
-            value={supportConfigured ? undefined : isRu ? "Не настроено" : "Not configured"}
+            title={t("menu.support")}
+            value={supportConfigured ? undefined : t("menu.notConfigured")}
             href={supportConfigured ? SUPPORT_URL : undefined}
             disabled={!supportConfigured}
           />
-          <SettingsRow icon="📘" title={isRu ? "Правила использования" : "Rules of use"} to="/menu/rules" />
-          <SettingsRow icon="⚖️" title={isRu ? "Ответственная игра" : "Responsible play"} to="/menu/responsible" />
-          <SettingsRow icon="💳" title={isRu ? "Тарифы и доступ" : "Tariffs and access"} to="/tariffs" />
+          <SettingsRow icon="📘" title={t("menu.rules")} to="/menu/rules" />
+          <SettingsRow icon="⚖️" title={t("menu.responsible")} to="/menu/responsible" />
+          <SettingsRow icon="💳" title={t("menu.tariffs")} to="/tariffs" />
         </SettingsSection>
 
         {me?.is_admin || me?.role === "admin" ? (
-          <SettingsSection title={isRu ? "Для admin" : "For admin"}>
-            <SettingsRow icon="🛠" title={isRu ? "Админка" : "Admin panel"} to="/admin" />
+          <SettingsSection title={t("menu.section.admin")}>
+            <SettingsRow icon="🛠" title={t("menu.admin")} to="/admin" />
           </SettingsSection>
         ) : null}
       </AppShellSection>

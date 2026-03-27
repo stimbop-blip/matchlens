@@ -1543,6 +1543,158 @@ a:focus {
   fill: currentColor;
 }
 
+.sticky-filters {
+  position: sticky;
+  top: 118px;
+  z-index: 9;
+  padding: 8px;
+  margin: 0 -4px 8px;
+  border: 1px solid color-mix(in srgb, var(--border-subtle) 70%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface-1) 90%, transparent);
+  backdrop-filter: blur(16px);
+}
+
+.hub-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+}
+
+.hub-backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(4, 9, 18, 0.74);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.hub-panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-width: 620px;
+  margin: 0 auto;
+  max-height: min(84vh, 820px);
+  overflow: auto;
+  padding: 16px 12px calc(14px + env(safe-area-inset-bottom));
+  border-radius: 22px 22px 0 0;
+  border: 1px solid color-mix(in srgb, var(--border-subtle) 80%, transparent);
+  border-bottom: 0;
+  background:
+    radial-gradient(circle at 86% -14%, color-mix(in srgb, var(--accent-soft) 86%, transparent), transparent 52%),
+    linear-gradient(165deg, color-mix(in srgb, var(--surface-2) 90%, transparent), color-mix(in srgb, var(--surface-1) 96%, transparent));
+  box-shadow: 0 -22px 52px rgba(0, 0, 0, 0.48);
+  transform: translateY(24px);
+  opacity: 0;
+  transition: transform 0.22s ease, opacity 0.22s ease;
+}
+
+.hub-overlay.open {
+  pointer-events: auto;
+}
+
+.hub-overlay.open .hub-backdrop {
+  opacity: 1;
+}
+
+.hub-overlay.open .hub-panel {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.hub-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.hub-head h2 {
+  margin-top: 8px;
+  font-size: 20px;
+}
+
+.hub-head p {
+  margin-top: 6px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.hub-close {
+  border: 1px solid color-mix(in srgb, var(--border-subtle) 70%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-3) 64%, transparent);
+  color: var(--text-secondary);
+  padding: 7px 11px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.hub-grid {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.hub-card {
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 28%, var(--border-subtle));
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--accent-soft) 50%, var(--surface-2));
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  min-height: 84px;
+  padding: 11px;
+}
+
+.hub-card-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.hub-card strong {
+  font-size: 14px;
+}
+
+.hub-service-list {
+  margin-top: 14px;
+  display: grid;
+  gap: 8px;
+}
+
+.hub-service-list h3 {
+  margin: 2px 2px 0;
+  color: var(--text-secondary);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.32px;
+}
+
+.hub-service-row {
+  border: 1px solid color-mix(in srgb, var(--border-subtle) 74%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface-3) 46%, transparent);
+  display: grid;
+  grid-template-columns: 20px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+}
+
+.hub-service-row strong {
+  font-size: 14px;
+}
+
+.hub-service-row small {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
 .app-section,
 .card,
 .promo-card {
@@ -1896,6 +2048,22 @@ a:focus {
 }
 
 @media (max-width: 460px) {
+  .sticky-filters {
+    top: 108px;
+  }
+
+  .hub-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hub-service-row {
+    grid-template-columns: 20px 1fr;
+  }
+
+  .hub-service-row small {
+    grid-column: 2;
+  }
+
   .today-grid,
   .advantage-grid {
     grid-template-columns: 1fr;

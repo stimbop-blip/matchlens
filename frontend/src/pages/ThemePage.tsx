@@ -1,15 +1,15 @@
 import { useNavigate } from "react-router-dom";
 
-import { useLanguage, useTheme } from "../app/language";
+import { useI18n } from "../app/i18n";
+import { useTheme } from "../app/language";
 import { Layout } from "../components/Layout";
 import { AppShellSection, SectionHeader, SettingsRow, SettingsSection } from "../components/ui";
 import type { AppTheme } from "../services/telegram";
 
 export function ThemePage() {
   const navigate = useNavigate();
-  const { language } = useLanguage();
+  const { t } = useI18n();
   const { theme, setTheme } = useTheme();
-  const isRu = language === "ru";
 
   const applyTheme = (next: AppTheme) => {
     setTheme(next);
@@ -20,15 +20,15 @@ export function ThemePage() {
     <Layout>
       <AppShellSection>
         <SectionHeader
-          title={isRu ? "Тема" : "Theme"}
-          subtitle={isRu ? "Выберите визуальный режим PIT BET" : "Choose your PIT BET visual mode"}
+          title={t("theme.title")}
+          subtitle={t("theme.subtitle")}
         />
 
-        <SettingsSection title={isRu ? "Выбор темы" : "Theme selection"}>
+        <SettingsSection title={t("theme.section")}>
           <SettingsRow
             icon="🌙"
-            title={isRu ? "Темная" : "Dark"}
-            subtitle={isRu ? "Глубокий контраст и мягкий фон" : "Deep contrast and calm surfaces"}
+            title={t("theme.dark")}
+            subtitle={t("theme.dark.desc")}
             onClick={() => applyTheme("dark")}
             right={
               <span className="theme-row-right">
@@ -39,8 +39,8 @@ export function ThemePage() {
           />
           <SettingsRow
             icon="☀️"
-            title={isRu ? "Светлая" : "Light"}
-            subtitle={isRu ? "Чистый светлый интерфейс" : "Clean bright interface"}
+            title={t("theme.light")}
+            subtitle={t("theme.light.desc")}
             onClick={() => applyTheme("light")}
             right={
               <span className="theme-row-right">

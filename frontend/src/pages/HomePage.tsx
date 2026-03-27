@@ -1,35 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
-import { useLanguage } from "../app/language";
+import { useI18n } from "../app/i18n";
+import { resolveSubscriptionSnapshot } from "../app/subscription";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
 import { AccessBadge, AppShellSection, HeroCard, NewsPreviewCard, SectionActions, SectionHeader, Sparkline, StatCard } from "../components/ui";
 import { api, type Me, type NewsPost, type Prediction, type PublicStats, type ReferralStats } from "../services/api";
 
-function tariffCode(value: string | null | undefined): "free" | "premium" | "vip" {
-  if (value === "premium") return "premium";
-  if (value === "vip") return "vip";
-  return "free";
-}
-
-function tariffLabel(value: string | null | undefined): string {
-  if (value === "premium") return "Premium";
-  if (value === "vip") return "VIP";
-  return "Free";
-}
-
-function statusLabel(value: string | null | undefined, language: "ru" | "en") {
-  if (value === "active") return language === "ru" ? "Активен" : "Active";
-  if (value === "expired") return language === "ru" ? "Истек" : "Expired";
-  if (value === "canceled") return language === "ru" ? "Отменен" : "Canceled";
-  return language === "ru" ? "Не активен" : "Inactive";
-}
-
-function dateLabel(value: string | null | undefined, language: "ru" | "en") {
-  if (!value) return language === "ru" ? "Без даты" : "No date";
+function formatDate(value: string | null | undefined, language: "ru" | "en", fallback: string) {
+  if (!value) return fallback;
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return language === "ru" ? "Без даты" : "No date";
+  if (Number.isNaN(date.getTime())) return fallback;
   return date.toLocaleString(language === "ru" ? "ru-RU" : "en-US", {
     day: "2-digit",
     month: "2-digit",
@@ -42,50 +24,59 @@ function isSameDay(date: Date, other: Date) {
   return date.getFullYear() === other.getFullYear() && date.getMonth() === other.getMonth() && date.getDate() === other.getDate();
 }
 
+function tariffLabel(level: "free" | "premium" | "vip", t: (key: string) => string) {
+  if (level === "premium") return t("common.premium");
+  if (level === "vip") return t("common.vip");
+  return t("common.free");
+}
+
+function statusLabel(status: "active" | "expired" | "canceled" | "inactive" | "unknown", t: (key: string) => string) {
+  if (status === "active") return t("common.status.active");
+  if (status === "expired") return t("common.status.expired");
+  if (status === "canceled") return t("common.status.canceled");
+  if (status === "inactive") return t("common.status.inactive");
+  return t("common.status.unknown");
+}
+
 export function HomePage() {
-  const { language } = useLanguage();
-  const isRu = language === "ru";
+  const { t, language } = useI18n();
 
   const [me, setMe] = useState<Me | null>(null);
   const [stats, setStats] = useState<PublicStats | null>(null);
-  const [sub, setSub] = useState<{ tariff: string; status: string; ends_at: string | null } | null>(null);
+  const [subRaw, setSubRaw] = useState<{ tariff: string; status: string; ends_at: string | null } | null>(null);
   const [news, setNews] = useState<NewsPost[]>([]);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [referral, setReferral] = useState<ReferralStats | null>(null);
 
   useEffect(() => {
     let alive = true;
-    Promise.all([
-      api.me(),
-      api.stats(),
-      api.mySubscription(),
-      api.news(),
-      api.myReferral(),
-      api.predictions({ limit: 140 }),
-    ])
-      .then(([meData, statsData, subData, newsData, referralData, predictionData]) => {
-        if (!alive) return;
-        setMe(meData);
-        setStats(statsData);
-        setSub({ tariff: subData.tariff, status: subData.status, ends_at: subData.ends_at });
-        setNews(newsData);
-        setReferral(referralData);
-        setPredictions(predictionData);
-      })
-      .catch(() => {
-        if (!alive) return;
-        setMe(null);
-        setStats(null);
-        setSub(null);
-        setNews([]);
-        setReferral(null);
-        setPredictions([]);
-      });
+    const load = async () => {
+      const results = await Promise.allSettled([
+        api.me(),
+        api.stats(),
+        api.mySubscription(),
+        api.news(),
+        api.myReferral(),
+        api.predictions({ limit: 140 }),
+      ]);
+      if (!alive) return;
 
+      const [meRes, statsRes, subRes, newsRes, referralRes, predictionRes] = results;
+      setMe(meRes.status === "fulfilled" ? meRes.value : null);
+      setStats(statsRes.status === "fulfilled" ? statsRes.value : null);
+      setSubRaw(subRes.status === "fulfilled" ? subRes.value : null);
+      setNews(newsRes.status === "fulfilled" ? newsRes.value : []);
+      setReferral(referralRes.status === "fulfilled" ? referralRes.value : null);
+      setPredictions(predictionRes.status === "fulfilled" ? predictionRes.value : []);
+    };
+
+    void load();
     return () => {
       alive = false;
     };
   }, []);
+
+  const sub = resolveSubscriptionSnapshot(subRaw);
 
   const pending = predictions.filter((item) => item.status === "pending");
   const pendingFree = pending.filter((item) => item.access_level === "free").length;
@@ -105,111 +96,104 @@ export function HomePage() {
   }, [predictions]);
 
   const previewNews = news.slice(0, 3);
-  const displayName = me?.first_name || (me?.username ? `@${me.username}` : isRu ? "Пользователь PIT BET" : "PIT BET user");
-  const t = (ru: string, en: string) => (isRu ? ru : en);
+  const displayName = me?.first_name || (me?.username ? `@${me.username}` : "PIT BET");
 
   return (
     <Layout>
       <HeroCard
         eyebrow="PIT BET"
-        title={isRu ? "Считывай рынок раньше. Действуй по сильным сигналам." : "Read market shifts earlier. Act on stronger signals."}
-        description={
-          isRu
-            ? "PIT BET отслеживает движение линии, коэффициенты и игровые паттерны, чтобы выделять самые сильные игровые ситуации."
-            : "PIT BET tracks line movement, odds, and game patterns to surface the strongest game situations."
-        }
-        right={<AccessBadge level={tariffCode(sub?.tariff)} label={tariffLabel(sub?.tariff)} />}
+        title={t("home.hero.title")}
+        description={t("home.hero.subtitle")}
+        right={<AccessBadge level={sub.tariff} label={tariffLabel(sub.tariff, t)} />}
       >
         <div className="market-ribbon">
-          <span>{t("Пульс рынка", "Market pulse")}</span>
+          <span>{t("home.hero.market")}</span>
           <Sparkline values={[72, 66, 69, 58, 61, 44, 48, 32, 38, 27]} />
-          <span className="live-pulse">{t("ЛАЙВ", "LIVE")}</span>
+          <span className="live-pulse">{t("home.hero.live")}</span>
         </div>
         <div className="hero-mini-info">
-          <span>{isRu ? "Тариф" : "Tariff"}: <b>{tariffLabel(sub?.tariff)}</b></span>
-          <span>{isRu ? "Статус" : "Status"}: <b>{statusLabel(sub?.status, language)}</b></span>
+          <span>{t("home.hero.tariff")}: <b>{tariffLabel(sub.tariff, t)}</b></span>
+          <span>{t("home.hero.status")}: <b>{statusLabel(sub.status, t)}</b></span>
+          <span>{t("home.hero.until")}: <b>{formatDate(sub.ends_at, language, "—")}</b></span>
         </div>
         <SectionActions>
-          <Link className="btn" to="/feed">{isRu ? "Открыть ленту" : "Open feed"}</Link>
-          <Link className="btn secondary" to="/tariffs">{isRu ? "Смотреть тарифы" : "View tariffs"}</Link>
+          <Link className="btn" to="/feed">{t("home.hero.openSignals")}</Link>
+          <Link className="btn secondary" to="/tariffs">{t("home.hero.openTariffs")}</Link>
         </SectionActions>
       </HeroCard>
 
       <AppShellSection>
-        <SectionHeader
-          title={isRu ? "Главное сегодня" : "Main focus today"}
-          subtitle={isRu ? "Живой срез активности по сигналам" : "Live snapshot of signal activity"}
-        />
+        <SectionHeader title={t("home.snapshot.title")} subtitle={t("home.snapshot.subtitle")} />
         <div className="today-grid">
           <article className="today-primary-card">
-            <small>{isRu ? "Активных сигналов" : "Active signals"}</small>
+            <small>{t("home.snapshot.active")}</small>
             <strong>{pending.length}</strong>
-            <p>{isRu ? "Сейчас в работе" : "Currently in play"}</p>
+            <p>{t("home.snapshot.inPlay")}</p>
           </article>
           <div className="today-secondary-grid">
-              <StatCard label="Free" value={pendingFree} />
-              <StatCard label="Premium" value={pendingPremium} tone="accent" />
-              <StatCard label="VIP" value={pendingVip} tone="warning" />
+            <StatCard label={t("common.free")} value={pendingFree} />
+            <StatCard label={t("common.premium")} value={pendingPremium} tone="accent" />
+            <StatCard label={t("common.vip")} value={pendingVip} tone="warning" />
           </div>
         </div>
         <div className="today-inline-metrics">
-          <span>{isRu ? "Live" : "Live"}: <b>{liveCount}</b></span>
-          <span>{t("Прематч", "Prematch")}: <b>{prematchCount}</b></span>
-          <span>{isRu ? "Закрыто сегодня" : "Closed today"}: <b>{closedToday}</b></span>
+          <span>{t("common.live")}: <b>{liveCount}</b></span>
+          <span>{t("common.prematch")}: <b>{prematchCount}</b></span>
+          <span>{t("home.snapshot.settled")}: <b>{closedToday}</b></span>
         </div>
       </AppShellSection>
 
       <AppShellSection>
-        <SectionHeader title={isRu ? "Преимущества" : "Core advantages"} />
+        <SectionHeader title={t("home.why.title")} />
         <div className="advantage-grid">
           <article className="feature-card strong wide">
-            <h3>{isRu ? "Рыночные сигналы" : "Market signals"}</h3>
-            <p>{isRu ? "Отбор по движению линии и коэффициентам с учетом контекста матча." : "Selection by line movement and odds with game context."}</p>
+            <h3>{t("home.why.market.title")}</h3>
+            <p>{t("home.why.market.desc")}</p>
           </article>
           <article className="feature-card">
-            <h3>{isRu ? "Прозрачная статистика" : "Transparent statistics"}</h3>
-            <p>{isRu ? "ROI, hit rate и реальная структура результатов без шума." : "ROI, hit rate, and real outcome structure without noise."}</p>
+            <h3>{t("home.why.stats.title")}</h3>
+            <p>{t("home.why.stats.desc")}</p>
           </article>
           <article className="feature-card accent">
-            <h3>{isRu ? "Доступ по уровням" : "Tiered access"}</h3>
-            <p>{isRu ? "Free, Premium и VIP под разную глубину и скорость работы." : "Free, Premium, and VIP for different depth and speed."}</p>
+            <h3>{t("home.why.access.title")}</h3>
+            <p>{t("home.why.access.desc")}</p>
           </article>
         </div>
       </AppShellSection>
 
       <div className="split-grid">
         <AppShellSection>
-          <SectionHeader title={isRu ? "Твой доступ" : "Your access"} />
+          <SectionHeader title={t("home.access.title")} />
           <div className="stack-list compact">
-            <div className="info-row"><span>{isRu ? "Пользователь" : "User"}</span><strong>{displayName}</strong></div>
-            <div className="info-row"><span>{isRu ? "Тариф" : "Tariff"}</span><strong>{tariffLabel(sub?.tariff)}</strong></div>
-            <div className="info-row"><span>{isRu ? "Статус" : "Status"}</span><strong>{statusLabel(sub?.status, language)}</strong></div>
-            <div className="info-row"><span>{isRu ? "Доступ до" : "Valid until"}</span><strong>{dateLabel(sub?.ends_at, language)}</strong></div>
+            <div className="info-row"><span>{t("home.access.user")}</span><strong>{displayName}</strong></div>
+            <div className="info-row"><span>{t("home.access.tariff")}</span><strong>{tariffLabel(sub.tariff, t)}</strong></div>
+            <div className="info-row"><span>{t("home.access.status")}</span><strong>{statusLabel(sub.status, t)}</strong></div>
+            <div className="info-row"><span>{t("home.access.until")}</span><strong>{formatDate(sub.ends_at, language, "—")}</strong></div>
           </div>
           <SectionActions compact>
-            <Link className="btn secondary" to="/profile">{isRu ? "Управлять доступом" : "Manage access"}</Link>
+            <Link className="btn secondary" to="/profile">{t("home.access.action")}</Link>
           </SectionActions>
         </AppShellSection>
 
         <AppShellSection>
-          <SectionHeader title={isRu ? "Статистика" : "Statistics"} subtitle={isRu ? "Короткий teaser" : "Compact teaser"} />
+          <SectionHeader title={t("home.performance.title")} subtitle={t("home.performance.subtitle")} />
           <div className="stat-grid compact">
-            <StatCard label={isRu ? "Прогнозов" : "Predictions"} value={stats?.total ?? 0} />
-            <StatCard label={isRu ? "Точность" : "Hit rate"} value={`${stats?.hit_rate ?? 0}%`} tone="success" />
-            <StatCard label="ROI" value={`${stats?.roi ?? 0}%`} tone="accent" />
-            <StatCard label="W/L/R" value={`${stats?.wins ?? 0}/${stats?.loses ?? 0}/${stats?.refunds ?? 0}`} />
+            <StatCard label={t("home.performance.total")} value={stats?.total ?? 0} />
+            <StatCard label={t("home.performance.hit")} value={`${stats?.hit_rate ?? 0}%`} tone="success" />
+            <StatCard label={t("common.roi")} value={`${stats?.roi ?? 0}%`} tone="accent" />
+            <StatCard label={t("home.performance.ratio")} value={`${stats?.wins ?? 0}/${stats?.loses ?? 0}/${stats?.refunds ?? 0}`} />
           </div>
           <SectionActions compact>
-            <Link className="btn ghost" to="/stats">{isRu ? "Открыть статистику" : "Open stats"}</Link>
+            <Link className="btn ghost" to="/stats">{t("home.performance.action")}</Link>
           </SectionActions>
         </AppShellSection>
       </div>
 
       <AppShellSection>
-        <SectionHeader title={isRu ? "Новости PIT BET" : "PIT BET News"} action={<Link className="text-link" to="/news">{isRu ? "Все новости" : "All news"}</Link>} />
+        <SectionHeader title={t("home.news.title")} action={<Link className="text-link" to="/news">{t("home.news.all")}</Link>} />
         {previewNews.length === 0 ? (
           <div className="empty-block subtle">
-            <p className="empty-state">{isRu ? "Новых публикаций пока нет." : "No fresh publications yet."}</p>
+            <p className="empty-state">{t("home.news.empty")}</p>
           </div>
         ) : (
           <div className="news-list compact">
@@ -219,9 +203,9 @@ export function HomePage() {
                 title={item.title}
                 body={item.body}
                 category={item.category}
-                meta={dateLabel(item.published_at, language)}
+                meta={formatDate(item.published_at, language, t("common.noDate"))}
                 to={`/news/${item.id}`}
-                cta={isRu ? "Открыть" : "Open"}
+                cta={t("home.news.open")}
               />
             ))}
           </div>
@@ -229,21 +213,15 @@ export function HomePage() {
       </AppShellSection>
 
       <AppShellSection>
-        <SectionHeader title={isRu ? "Рефералы и бонусы" : "Referrals and bonuses"} />
+        <SectionHeader title={t("home.ref.title")} />
         <div className="stat-grid compact">
-          <StatCard label={isRu ? "Приглашено" : "Invited"} value={referral?.invited ?? 0} />
-          <StatCard label={isRu ? "Активировано" : "Activated"} value={referral?.activated ?? 0} />
-          <StatCard label={isRu ? "Бонусные дни" : "Bonus days"} value={referral?.bonus_days ?? 0} tone="accent" />
+          <StatCard label={t("profile.ref.invited")} value={referral?.invited ?? 0} />
+          <StatCard label={t("profile.ref.activated")} value={referral?.activated ?? 0} />
+          <StatCard label={t("profile.ref.bonus")} value={referral?.bonus_days ?? 0} tone="accent" />
         </div>
-        <p className="muted-line">
-          {isRu
-            ? "Приглашай друзей и продлевай доступ бонусными днями после их активации."
-            : "Invite friends and extend your access with bonus days after activation."}
-        </p>
+        <p className="muted-line">{t("home.ref.text")}</p>
         <SectionActions compact>
-          <Link className="btn ghost" to="/profile#referral">
-            {isRu ? "Открыть реферальную программу" : "Open referral program"}
-          </Link>
+          <Link className="btn ghost" to="/profile#referral">{t("home.ref.action")}</Link>
         </SectionActions>
       </AppShellSection>
 
