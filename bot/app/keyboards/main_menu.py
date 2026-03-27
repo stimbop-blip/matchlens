@@ -1,4 +1,4 @@
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 
 from app.config import settings
 from app.utils.texts import button, normalize_language, t
@@ -7,7 +7,7 @@ from app.utils.texts import button, normalize_language, t
 def main_menu_keyboard(language: str = "ru", is_admin: bool = False) -> InlineKeyboardMarkup:
     lang = normalize_language(language)
     rows: list[list[InlineKeyboardButton]] = [
-        [InlineKeyboardButton(text=t(lang, "open_mini_app"), url=settings.mini_app_url)],
+        [InlineKeyboardButton(text=t(lang, "open_mini_app"), web_app=WebAppInfo(url=settings.mini_app_url))],
         [
             InlineKeyboardButton(text=button(lang, "free"), callback_data="menu:free"),
             InlineKeyboardButton(text=button(lang, "stats"), callback_data="menu:stats"),
@@ -36,13 +36,17 @@ def section_nav_keyboard(
     back_callback: str = "menu:main",
     include_open_app: bool = False,
     primary_button: tuple[str, str] | None = None,
+    primary_is_web_app: bool = True,
 ) -> InlineKeyboardMarkup:
     lang = normalize_language(language)
     rows: list[list[InlineKeyboardButton]] = []
     if primary_button:
-        rows.append([InlineKeyboardButton(text=primary_button[0], url=primary_button[1])])
+        if primary_is_web_app:
+            rows.append([InlineKeyboardButton(text=primary_button[0], web_app=WebAppInfo(url=primary_button[1]))])
+        else:
+            rows.append([InlineKeyboardButton(text=primary_button[0], url=primary_button[1])])
     if include_open_app:
-        rows.append([InlineKeyboardButton(text=t(lang, "open_mini_app"), url=settings.mini_app_url)])
+        rows.append([InlineKeyboardButton(text=t(lang, "open_mini_app"), web_app=WebAppInfo(url=settings.mini_app_url))])
     rows.append(
         [
             InlineKeyboardButton(text=t(lang, "nav_back"), callback_data=back_callback),
