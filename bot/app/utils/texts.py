@@ -16,11 +16,11 @@ TEXTS: dict[Language, dict[str, str]] = {
     "ru": {
         "start_message": (
             "<b>PIT BET — главное меню</b>\n\n"
-            "Быстрый доступ к прогнозам, статистике, профилю, тарифам и сервисным разделам."
+            "Открой приложение или выбери нужный раздел: бесплатные прогнозы, тарифы, профиль, статистика и сервисные функции."
         ),
         "menu_intro": (
             "<b>PIT BET — главное меню</b>\n"
-            "Быстрый доступ к прогнозам, статистике, профилю, тарифам и сервисным разделам."
+            "Открой приложение или выбери нужный раздел."
         ),
         "nav_back": "Назад",
         "nav_menu": "В меню",
@@ -73,8 +73,8 @@ TEXTS: dict[Language, dict[str, str]] = {
         "stats_refunds": "Возвраты",
         "stats_pending": "В ожидании",
         "profile_unavailable": "Профиль временно недоступен.",
-        "profile_title": "<b>👤 Профиль PIT BET</b>",
-        "profile_label_username": "Ник",
+        "profile_title": "<b>👤 Личный кабинет PIT BET</b>",
+        "profile_label_username": "Username",
         "profile_label_tariff": "Тариф",
         "profile_label_status": "Статус",
         "profile_label_ends": "Доступ до",
@@ -84,7 +84,7 @@ TEXTS: dict[Language, dict[str, str]] = {
         "profile_label_activated": "Активировано",
         "profile_label_bonus": "Бонусные дни",
         "profile_referral_missing": "не активирован",
-        "profile_hint": "Детальная настройка профиля и уведомлений доступна в приложении PIT BET.",
+        "profile_hint": "Управление доступом, оплатой и расширенными настройками доступно внутри PIT BET.",
         "unknown_username": "не указан",
         "status_active": "Активна",
         "status_expired": "Истекла",
@@ -142,6 +142,7 @@ TEXTS: dict[Language, dict[str, str]] = {
         "settings_body": "Выберите раздел настроек. Расширенные параметры доступны внутри PIT BET.",
         "settings_current_language": "Текущий язык",
         "settings_open_notifications": "🔔 Уведомления",
+        "settings_my_access": "👤 Мой доступ",
         "settings_language": "🌐 Язык",
         "settings_language_title": "🌐 <b>Язык интерфейса</b>",
         "settings_language_body": "Выберите язык бота:",
@@ -158,9 +159,9 @@ TEXTS: dict[Language, dict[str, str]] = {
             "Настройки уведомлений доступны в приложении: <b>Профиль → Уведомления</b>.\n\n"
             "Можно гибко управлять категориями Free / Premium / VIP, результатами и новостями."
         ),
-        "news_title": "⚡️ <b>Новости PIT BET</b>",
+        "news_title": "⚡ <b>Новости PIT BET</b>",
         "news_empty": (
-            "⚡️ <b>Новости PIT BET</b>\n"
+            "⚡ <b>Новости PIT BET</b>\n"
             "Сейчас новых публикаций нет. Проверяйте раздел позже."
         ),
         "news_hint": "Последние публикации:",
@@ -197,7 +198,7 @@ TEXTS: dict[Language, dict[str, str]] = {
             "Управление прогнозами, подписками, платежами и рассылками доступно в приложении."
         ),
         "admin_only": "Эта секция доступна только администраторам.",
-        "about_title": "ℹ <b>О PIT BET</b>",
+        "about_title": "ℹ <b>Как работает PIT BET</b>",
         "about_text": (
             "PIT BET — это аналитическая платформа сигналов, а не обычный капперский канал.\n\n"
             "Внутри PIT BET работает система отбора, которая в реальном времени отслеживает:\n"
@@ -222,20 +223,12 @@ TEXTS: dict[Language, dict[str, str]] = {
     },
     "en": {
         "start_message": (
-            "🔥 <b>Welcome to PIT BET</b>\n\n"
-            "PIT BET is a platform for signals, statistics, and access to strong game situations.\n\n"
-            "Here you get:\n"
-            "• free signals to explore the product\n"
-            "• Premium and VIP access to stronger setups\n"
-            "• transparent performance statistics\n"
-            "• notifications about new signals and outcomes\n"
-            "• a convenient app directly inside Telegram\n\n"
-            "PIT BET tracks line movement, odds, market signals, and game patterns to quickly spot the most interesting situations.\n\n"
-            "Choose where to start below, or open PIT BET via the app button."
+            "<b>PIT BET — Main Menu</b>\n\n"
+            "Open the app or choose a section: free signals, tariffs, profile, stats, and service features."
         ),
         "menu_intro": (
             "<b>PIT BET — Main Menu</b>\n"
-            "Quick access to signals, stats, profile, tariffs, and service sections."
+            "Open the app or choose a section."
         ),
         "nav_back": "Back",
         "nav_menu": "Menu",
@@ -288,7 +281,7 @@ TEXTS: dict[Language, dict[str, str]] = {
         "stats_refunds": "Refunds",
         "stats_pending": "Pending",
         "profile_unavailable": "Profile is temporarily unavailable.",
-        "profile_title": "<b>👤 PIT BET Profile</b>",
+        "profile_title": "<b>👤 PIT BET Personal Area</b>",
         "profile_label_username": "Username",
         "profile_label_tariff": "Tariff",
         "profile_label_status": "Status",
@@ -357,6 +350,7 @@ TEXTS: dict[Language, dict[str, str]] = {
         "settings_body": "Choose a settings section. Extended preferences are available in PIT BET app.",
         "settings_current_language": "Current language",
         "settings_open_notifications": "🔔 Notifications",
+        "settings_my_access": "👤 My access",
         "settings_language": "🌐 Language",
         "settings_language_title": "🌐 <b>Interface language</b>",
         "settings_language_body": "Choose bot language:",
@@ -373,9 +367,9 @@ TEXTS: dict[Language, dict[str, str]] = {
             "Notification settings are available in the app: <b>Profile → Notifications</b>.\n\n"
             "You can control Free / Premium / VIP categories, outcomes, and news."
         ),
-        "news_title": "⚡️ <b>PIT BET News</b>",
+        "news_title": "⚡ <b>PIT BET News</b>",
         "news_empty": (
-            "⚡️ <b>PIT BET News</b>\n"
+            "⚡ <b>PIT BET News</b>\n"
             "No new publications right now. Check again soon."
         ),
         "news_hint": "Latest posts:",
@@ -412,7 +406,7 @@ TEXTS: dict[Language, dict[str, str]] = {
             "Predictions, subscriptions, payments, and campaigns are managed in the app."
         ),
         "admin_only": "This section is available to admins only.",
-        "about_title": "<b>ℹ About PIT BET</b>",
+        "about_title": "<b>ℹ How PIT BET Works</b>",
         "about_text": (
             "PIT BET is a platform for signals, statistics, and access to strong game situations.\n"
             "The service helps users navigate line movement, odds, and market patterns faster.\n\n"
@@ -424,30 +418,30 @@ TEXTS: dict[Language, dict[str, str]] = {
 
 BUTTONS: dict[Language, dict[str, str]] = {
     "ru": {
-        "news": "⚡️ Новости PIT BET",
+        "news": "⚡ Новости",
         "free": "⚽ Бесплатные прогнозы",
         "stats": "📊 Статистика",
-        "profile": "👨‍💻 Профиль",
+        "profile": "👤 Профиль",
         "tariffs": "💎 Тарифы",
-        "referrals": "💥 Рефералы",
+        "referrals": "👥 Рефералы",
         "notifications": "🔔 Уведомления",
         "settings": "⚙️ Настройки",
         "support": "🆘 Поддержка",
         "admin": "🛠 Админка",
-        "about": "ℹ Кто мы и как это работает ?",
+        "about": "ℹ Как работает PIT BET",
     },
     "en": {
-        "news": "⚡️ PIT BET News",
+        "news": "⚡ News",
         "free": "⚽ Free Signals",
         "stats": "📊 PIT BET Stats",
-        "profile": "👨‍💻 Profile",
+        "profile": "👤 Profile",
         "tariffs": "💎 PIT BET Tariffs",
-        "referrals": "💥 Referrals",
+        "referrals": "👥 Referrals",
         "notifications": "🔔 Notifications",
         "settings": "⚙️ Settings",
         "support": "🆘 Support",
         "admin": "🛠 Admin",
-        "about": "ℹ Who we are and how it works?",
+        "about": "ℹ How PIT BET Works",
     },
 }
 

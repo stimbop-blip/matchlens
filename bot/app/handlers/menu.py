@@ -497,10 +497,18 @@ async def _build_profile_screen(language: str, user_id: int | None, username: st
 
     return (
         "\n".join(lines),
-        section_nav_keyboard(
-            language=language,
-            back_callback="menu:main",
-            primary_button=(t(language, "open_profile"), _mini_app_url("/profile")),
+        InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(text=button(language, "referrals"), callback_data="menu:referrals"),
+                    InlineKeyboardButton(text=button(language, "tariffs"), callback_data="menu:tariffs"),
+                ],
+                [InlineKeyboardButton(text=t(language, "open_profile"), web_app=WebAppInfo(url=_mini_app_url("/profile")))],
+                [
+                    InlineKeyboardButton(text=t(language, "nav_back"), callback_data="menu:main"),
+                    InlineKeyboardButton(text=t(language, "nav_menu"), callback_data="menu:main"),
+                ],
+            ]
         ),
     )
 
@@ -585,7 +593,8 @@ async def _build_tariffs_screen(language: str) -> tuple[str, InlineKeyboardMarku
 async def _build_settings_screen(language: str) -> tuple[str, InlineKeyboardMarkup]:
     rows = [
         [InlineKeyboardButton(text=t(language, "settings_language"), callback_data="menu:settings:language")],
-        [InlineKeyboardButton(text=t(language, "settings_open_notifications"), callback_data="menu:notifications")],
+        [InlineKeyboardButton(text=t(language, "settings_open_notifications"), callback_data="menu:settings:notifications")],
+        [InlineKeyboardButton(text=t(language, "settings_my_access"), callback_data="menu:profile")],
         [InlineKeyboardButton(text=t(language, "open_mini_app"), web_app=WebAppInfo(url=settings.mini_app_url))],
         [
             InlineKeyboardButton(text=t(language, "nav_back"), callback_data="menu:main"),
@@ -613,6 +622,17 @@ async def _build_settings_language_screen(language: str, notice_key: str | None 
         ],
     ]
     return "\n\n".join(lines), InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+async def _build_settings_notifications_screen(language: str) -> tuple[str, InlineKeyboardMarkup]:
+    return (
+        t(language, "notifications_text"),
+        section_nav_keyboard(
+            language=language,
+            back_callback="menu:settings",
+            primary_button=(t(language, "open_notifications"), _mini_app_url("/profile")),
+        ),
+    )
 
 
 async def _build_notifications_screen(language: str) -> tuple[str, InlineKeyboardMarkup]:
@@ -713,11 +733,7 @@ async def _build_admin_screen(language: str, user_id: int | None) -> tuple[str, 
 async def _build_about_screen(language: str) -> tuple[str, InlineKeyboardMarkup]:
     return (
         f"{t(language, 'about_title')}\n\n{t(language, 'about_text')}",
-        section_nav_keyboard(
-            language=language,
-            back_callback="menu:main",
-            primary_button=(t(language, "open_mini_app"), settings.mini_app_url),
-        ),
+        section_nav_keyboard(language=language, back_callback="menu:main"),
     )
 
 
@@ -764,6 +780,8 @@ async def _build_screen(
         return await _build_settings_screen(language)
     if action == "menu:settings:language":
         return await _build_settings_language_screen(language)
+    if action == "menu:settings:notifications":
+        return await _build_settings_notifications_screen(language)
     if action.startswith("menu:settings:language:set:"):
         target = action.rsplit(":", maxsplit=1)[-1]
         next_language = normalize_language(target)
