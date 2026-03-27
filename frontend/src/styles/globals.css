@@ -1181,6 +1181,14 @@ a:focus {
   border-color: color-mix(in srgb, var(--warning) 52%, var(--border-strong));
 }
 
+.tariff-card.selected {
+  outline: 2px solid color-mix(in srgb, var(--accent-primary) 55%, transparent);
+}
+
+.tariff-card.free-tier {
+  border-style: dashed;
+}
+
 .tariff-chip {
   margin-top: 6px;
   display: inline-flex;
@@ -1237,6 +1245,98 @@ a:focus {
 .tariff-note {
   color: var(--text-secondary);
   margin-bottom: 10px;
+  font-size: 13px;
+}
+
+.period-switcher {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.period-pill {
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface-3) 72%, transparent);
+  color: var(--text-primary);
+  padding: 10px;
+  text-align: left;
+  display: grid;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.period-pill.active {
+  border-color: color-mix(in srgb, var(--accent-primary) 50%, var(--border));
+  background: color-mix(in srgb, var(--accent-soft) 70%, var(--surface-2));
+}
+
+.period-pill strong {
+  font-size: 14px;
+}
+
+.period-pill span,
+.period-pill small {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.payment-method-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.payment-method-card {
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--surface-3) 72%, transparent);
+  padding: 12px;
+  text-align: left;
+  display: grid;
+  gap: 6px;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.payment-method-card.active {
+  border-color: color-mix(in srgb, var(--accent-primary) 54%, var(--border));
+  background: color-mix(in srgb, var(--accent-soft) 72%, var(--surface-2));
+}
+
+.payment-method-card span,
+.payment-method-card small {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.payment-summary-card {
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 38%, var(--border-subtle));
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--accent-soft) 58%, var(--surface-2));
+  padding: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.payment-summary-card .info-row.total {
+  border-color: color-mix(in srgb, var(--accent-primary) 48%, var(--border-subtle));
+}
+
+.manual-payment-card {
+  border: 1px solid color-mix(in srgb, var(--warning) 48%, var(--border-subtle));
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--surface-2) 78%, transparent);
+  padding: 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.manual-payment-card h3 {
+  font-size: 18px;
+}
+
+.manual-payment-card p {
+  color: var(--text-secondary);
   font-size: 13px;
 }
 

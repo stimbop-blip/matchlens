@@ -94,9 +94,9 @@ TEXTS: dict[Language, dict[str, str]] = {
         "status_refund": "Возврат",
         "status_pending": "В ожидании",
         "tariffs_title": "<b>💎 Тарифы PIT BET</b>",
-        "tariffs_subtitle": "Коротко по уровням доступа:",
+        "tariffs_subtitle": "Free / Premium / VIP и периоды 7 / 30 / 90 дней:",
         "tariffs_days": "дней",
-        "tariffs_footer": "Подключение и управление тарифами — внутри PIT BET.",
+        "tariffs_footer": "Оплата доступна автоматически и через перевод на карту. Подключение и продление — внутри PIT BET.",
         "tariffs_fallback": (
             "<b>💎 Тарифы PIT BET</b>\n"
             "Не удалось загрузить тарифы прямо сейчас."
@@ -246,7 +246,7 @@ TEXTS: dict[Language, dict[str, str]] = {
         "profile_label_activated": "Activated",
         "profile_label_bonus": "Bonus days",
         "profile_referral_missing": "not activated",
-        "profile_hint": "Detailed profile and notification settings are available in the PIT BET app.",
+        "profile_hint": "Detailed profile, payment status, and notification settings are available in the PIT BET app.",
         "unknown_username": "not set",
         "status_active": "Active",
         "status_expired": "Expired",
@@ -257,9 +257,9 @@ TEXTS: dict[Language, dict[str, str]] = {
         "status_refund": "Refund",
         "status_pending": "Pending",
         "tariffs_title": "<b>💎 PIT BET Tariffs</b>",
-        "tariffs_subtitle": "Quick access-level overview:",
+        "tariffs_subtitle": "Free / Premium / VIP with 7 / 30 / 90 day periods:",
         "tariffs_days": "days",
-        "tariffs_footer": "Activation and tariff management are available inside PIT BET.",
+        "tariffs_footer": "Automatic checkout and manual card transfer are available. Activation and renewal are inside PIT BET.",
         "tariffs_fallback": (
             "<b>💎 PIT BET Tariffs</b>\n"
             "Unable to load tariffs right now."

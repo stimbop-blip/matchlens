@@ -1,6 +1,7 @@
 from app.models.news_post import NewsPost
 from app.models.notification import Notification
 from app.models.payment import Payment
+from app.models.payment_method import PaymentMethod
 from app.models.prediction import Prediction
 from app.models.promo_code import PromoCode
 from app.models.promo_code_activation import PromoCodeActivation
@@ -12,6 +13,7 @@ from app.models.user_settings import UserSettings
 
 __all__ = [
     "Payment",
+    "PaymentMethod",
     "Notification",
     "NewsPost",
     "Prediction",

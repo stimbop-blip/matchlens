@@ -27,6 +27,8 @@ class PredictionStatus(str, Enum):
 
 class PaymentStatus(str, Enum):
     pending = "pending"
+    pending_manual_review = "pending_manual_review"
+    requires_clarification = "requires_clarification"
     succeeded = "succeeded"
     failed = "failed"
     canceled = "canceled"

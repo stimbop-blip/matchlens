@@ -1,3 +1,5 @@
+import contextlib
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
@@ -5,8 +7,8 @@ from sqlalchemy import text
 from app.api.v1.router import api_router
 from app.core.config import settings
 from app.core.db import Base, SessionLocal, engine
-from app.models import NewsPost, Notification, Payment, Prediction, PromoCode, PromoCodeActivation, ReferralBonus, Subscription, Tariff, User, UserSettings  # noqa: F401
-from app.services.seed_service import seed_tariffs
+from app.models import NewsPost, Notification, Payment, PaymentMethod, Prediction, PromoCode, PromoCodeActivation, ReferralBonus, Subscription, Tariff, User, UserSettings  # noqa: F401
+from app.services.seed_service import seed_payment_methods, seed_tariffs
 
 app = FastAPI(title=settings.app_name, debug=settings.debug)
 
@@ -75,9 +77,39 @@ def on_startup() -> None:
             if "cta_url" not in notification_columns:
                 conn.execute(text("ALTER TABLE notifications ADD COLUMN cta_url VARCHAR(1024)"))
 
+        payment_table_exists = conn.execute(text("SELECT to_regclass('public.payments')")).scalar()
+        if payment_table_exists:
+            payment_columns = {
+                row[0]
+                for row in conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name = 'payments'"))
+            }
+            if "method_code" not in payment_columns:
+                conn.execute(text("ALTER TABLE payments ADD COLUMN method_code VARCHAR(40)"))
+            if "method_name_snapshot" not in payment_columns:
+                conn.execute(text("ALTER TABLE payments ADD COLUMN method_name_snapshot VARCHAR(120)"))
+            if "duration_days_snapshot" not in payment_columns:
+                conn.execute(text("ALTER TABLE payments ADD COLUMN duration_days_snapshot INTEGER DEFAULT 30"))
+            if "access_level_snapshot" not in payment_columns:
+                conn.execute(text("ALTER TABLE payments ADD COLUMN access_level_snapshot VARCHAR(16) DEFAULT 'premium'"))
+            if "manual_note" not in payment_columns:
+                conn.execute(text("ALTER TABLE payments ADD COLUMN manual_note TEXT"))
+            if "manual_proof" not in payment_columns:
+                conn.execute(text("ALTER TABLE payments ADD COLUMN manual_proof TEXT"))
+            if "review_comment" not in payment_columns:
+                conn.execute(text("ALTER TABLE payments ADD COLUMN review_comment TEXT"))
+            if "reviewed_by_user_id" not in payment_columns:
+                conn.execute(text("ALTER TABLE payments ADD COLUMN reviewed_by_user_id UUID"))
+            if "reviewed_at" not in payment_columns:
+                conn.execute(text("ALTER TABLE payments ADD COLUMN reviewed_at TIMESTAMPTZ"))
+            with contextlib.suppress(Exception):
+                conn.execute(text("ALTER TYPE paymentstatus ADD VALUE IF NOT EXISTS 'pending_manual_review'"))
+            with contextlib.suppress(Exception):
+                conn.execute(text("ALTER TYPE paymentstatus ADD VALUE IF NOT EXISTS 'requires_clarification'"))
+
     if settings.auto_create_tables:
         db = SessionLocal()
         try:
             seed_tariffs(db)
+            seed_payment_methods(db)
         finally:
             db.close()

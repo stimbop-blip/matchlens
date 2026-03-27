@@ -168,12 +168,13 @@ def apply_promo_code(db: Session, user: User, code: str, tariff_code: str | None
     raise ValueError("Неподдерживаемый тип промокода")
 
 
-def consume_discount_for_payment(db: Session, user: User, tariff: Tariff, code: str | None) -> dict:
+def consume_discount_for_payment(db: Session, user: User, tariff: Tariff, code: str | None, base_amount: int | None = None) -> dict:
+    base_price = int(base_amount if base_amount is not None else tariff.price_rub)
     if not code:
         return {
             "promo_code": None,
             "discount_rub": 0,
-            "final_price_rub": int(tariff.price_rub),
+            "final_price_rub": base_price,
             "message": None,
         }
 
@@ -187,7 +188,7 @@ def consume_discount_for_payment(db: Session, user: User, tariff: Tariff, code: 
     if not is_valid:
         raise ValueError(reason or "Промокод недоступен")
 
-    discount_rub, final_price_rub = _discount_value(tariff.price_rub, promo)
+    discount_rub, final_price_rub = _discount_value(base_price, promo)
     _create_activation(db, promo, user, benefit_type=promo.kind, benefit_value=discount_rub)
 
     return {

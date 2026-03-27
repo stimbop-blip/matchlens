@@ -6,6 +6,7 @@ import {
   api,
   type AdminPayment,
   type AdminPromoCode,
+  type PaymentMethod,
   type AdminStats,
   type AdminSubscription,
   type AdminUser,
@@ -13,13 +14,14 @@ import {
   type Prediction,
 } from "../services/api";
 
-type TabKey = "predictions" | "users" | "subscriptions" | "payments" | "news" | "promocodes" | "broadcasts" | "events";
+type TabKey = "predictions" | "users" | "subscriptions" | "payments" | "payment_methods" | "news" | "promocodes" | "broadcasts" | "events";
 
 const TABS: Array<{ key: TabKey; ru: string; en: string }> = [
   { key: "predictions", ru: "Прогнозы", en: "Predictions" },
   { key: "users", ru: "Пользователи", en: "Users" },
   { key: "subscriptions", ru: "Подписки", en: "Subscriptions" },
   { key: "payments", ru: "Платежи", en: "Payments" },
+  { key: "payment_methods", ru: "Способы оплаты", en: "Payment methods" },
   { key: "news", ru: "Новости", en: "News" },
   { key: "promocodes", ru: "Промокоды", en: "Promo codes" },
   { key: "broadcasts", ru: "Рассылки", en: "Campaigns" },
@@ -46,6 +48,8 @@ function statusLabel(value: string, language: "ru" | "en"): string {
   if (value === "canceled") return language === "ru" ? "Отменен" : "Canceled";
   if (value === "active") return language === "ru" ? "Активна" : "Active";
   if (value === "expired") return language === "ru" ? "Истекла" : "Expired";
+  if (value === "pending_manual_review") return language === "ru" ? "Ожидает подтверждения" : "Pending manual review";
+  if (value === "requires_clarification") return language === "ru" ? "Ожидает уточнения" : "Needs clarification";
   return language === "ru" ? "В ожидании" : "Pending";
 }
 
@@ -72,6 +76,7 @@ export function AdminPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [subscriptions, setSubscriptions] = useState<AdminSubscription[]>([]);
   const [payments, setPayments] = useState<AdminPayment[]>([]);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [news, setNews] = useState<NewsPost[]>([]);
   const [promoCodes, setPromoCodes] = useState<AdminPromoCode[]>([]);
   const [stats, setStats] = useState<AdminStats | null>(null);
@@ -119,11 +124,12 @@ export function AdminPage() {
     const role = usersRoleFilter === "all" ? undefined : usersRoleFilter;
     const subStatus = subStatusFilter === "all" ? undefined : subStatusFilter;
     const payStatus = paymentStatusFilter === "all" ? undefined : paymentStatusFilter;
-    const [p, u, s, pay, n, promos, st] = await Promise.all([
+    const [p, u, s, pay, paymentMethodList, n, promos, st] = await Promise.all([
       api.adminPredictions(),
       api.adminUsers({ q: usersQuery || undefined, role }),
       api.adminSubscriptions({ q: subQuery || undefined, status: subStatus }),
       api.adminPayments({ user_query: paymentQuery || undefined, status: payStatus }),
+      api.adminPaymentMethods(),
       api.adminNews(),
       api.adminPromoCodes(),
       api.adminStats(),
@@ -132,6 +138,7 @@ export function AdminPage() {
     setUsers(u);
     setSubscriptions(s);
     setPayments(pay);
+    setPaymentMethods(paymentMethodList);
     setNews(n);
     setPromoCodes(promos);
     setStats(st);
@@ -288,13 +295,50 @@ export function AdminPage() {
     }
   };
 
-  const onPaymentStatus = async (paymentId: string, status: "pending" | "succeeded" | "failed" | "canceled") => {
+  const onPaymentStatus = async (
+    paymentId: string,
+    status: "pending" | "pending_manual_review" | "requires_clarification" | "succeeded" | "failed" | "canceled",
+    reviewComment?: string
+  ) => {
     try {
-      await api.adminUpdatePaymentStatus(paymentId, status);
+      await api.adminUpdatePaymentStatus(paymentId, status, reviewComment);
       notifySuccess(tx("Статус платежа обновлен", "Payment status updated"));
       await loadAll();
     } catch (e) {
       notifyError(textError(e, tx("Не удалось обновить платеж", "Failed to update payment")));
+    }
+  };
+
+  const onCreatePaymentMethod = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    try {
+      await api.adminCreatePaymentMethod({
+        code: String(fd.get("code") || "").trim(),
+        name: String(fd.get("name") || "").trim(),
+        method_type: String(fd.get("method_type") || "manual") as "auto" | "manual",
+        is_active: fd.get("is_active") === "on",
+        sort_order: Number(fd.get("sort_order") || 100),
+        card_number: String(fd.get("card_number") || "").trim() || null,
+        recipient_name: String(fd.get("recipient_name") || "").trim() || null,
+        payment_details: String(fd.get("payment_details") || "").trim() || null,
+        instructions: String(fd.get("instructions") || "").trim() || null,
+      });
+      notifySuccess(tx("Метод оплаты добавлен", "Payment method created"));
+      e.currentTarget.reset();
+      await loadAll();
+    } catch (e) {
+      notifyError(textError(e, tx("Не удалось создать метод оплаты", "Failed to create payment method")));
+    }
+  };
+
+  const onPatchPaymentMethod = async (code: string, payload: Partial<PaymentMethod>) => {
+    try {
+      await api.adminUpdatePaymentMethod(code, payload);
+      notifySuccess(tx("Метод оплаты обновлен", "Payment method updated"));
+      await loadAll();
+    } catch (e) {
+      notifyError(textError(e, tx("Не удалось обновить метод оплаты", "Failed to update payment method")));
     }
   };
 
@@ -744,6 +788,8 @@ export function AdminPage() {
               <select value={paymentStatusFilter} onChange={(e) => setPaymentStatusFilter(e.target.value)}>
                 <option value="all">{tx("Все статусы", "All statuses")}</option>
                 <option value="pending">{tx("В ожидании", "Pending")}</option>
+                <option value="pending_manual_review">{tx("Ожидает подтверждения", "Pending review")}</option>
+                <option value="requires_clarification">{tx("Ожидает уточнения", "Needs clarification")}</option>
                 <option value="succeeded">{tx("Успешный", "Succeeded")}</option>
                 <option value="failed">{tx("Ошибка", "Failed")}</option>
                 <option value="canceled">{tx("Отменен", "Canceled")}</option>
@@ -753,14 +799,93 @@ export function AdminPage() {
               {payments.map((payment) => (
                 <article key={payment.id} className="prediction-card admin-item">
                   <div className="prediction-top">
-                    <strong>{payment.amount_rub} RUB • {accessLabel(payment.tariff_code, language)}</strong>
+                    <strong>{payment.amount_rub} RUB • {accessLabel(payment.access_level, language)} • {payment.duration_days} {tx("дн", "d")}</strong>
                     <span className={`badge ${payment.status}`}>{statusLabel(payment.status, language)}</span>
                   </div>
                   <p className="muted">@{payment.username || "-"} • tg: {payment.telegram_id}</p>
+                  <p className="muted">{tx("Метод", "Method")}: {payment.method_name || payment.method_code || "-"}</p>
                   <p className="muted">order: {payment.provider_order_id}</p>
+                  {payment.manual_note ? <p className="muted">{tx("Комментарий", "Comment")}: {payment.manual_note}</p> : null}
+                  {payment.manual_proof ? <p className="muted">{tx("Подтверждение", "Proof")}: {payment.manual_proof}</p> : null}
+                  {payment.review_comment ? <p className="muted">{tx("Комментарий админа", "Admin comment")}: {payment.review_comment}</p> : null}
                   <div className="admin-grid-2">
                     <button className="btn" onClick={() => onPaymentStatus(payment.id, "succeeded")}>{tx("Пометить успешным", "Mark succeeded")}</button>
-                    <button className="btn danger" onClick={() => onPaymentStatus(payment.id, "failed")}>{tx("Пометить ошибкой", "Mark failed")}</button>
+                    <button
+                      className="btn ghost"
+                      onClick={() => {
+                        const comment = window.prompt(tx("Что нужно уточнить у пользователя?", "What should be clarified with user?")) || "";
+                        void onPaymentStatus(payment.id, "requires_clarification", comment);
+                      }}
+                    >
+                      {tx("Запросить уточнение", "Request clarification")}
+                    </button>
+                    <button
+                      className="btn danger"
+                      onClick={() => {
+                        const comment = window.prompt(tx("Причина отклонения", "Rejection reason")) || "";
+                        void onPaymentStatus(payment.id, "failed", comment);
+                      }}
+                    >
+                      {tx("Отклонить", "Reject")}
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {tab === "payment_methods" ? (
+          <div className="admin-panel">
+            <h3>{tx("Способы оплаты", "Payment methods")}</h3>
+            <form className="admin-form" onSubmit={onCreatePaymentMethod}>
+              <div className="admin-grid-3">
+                <input name="code" placeholder={tx("Код метода", "Method code")} required />
+                <input name="name" placeholder={tx("Название", "Name")} required />
+                <select name="method_type" defaultValue="manual">
+                  <option value="auto">{tx("Авто", "Auto")}</option>
+                  <option value="manual">{tx("Ручной", "Manual")}</option>
+                </select>
+              </div>
+              <div className="admin-grid-3">
+                <input name="sort_order" type="number" defaultValue="100" placeholder={tx("Порядок", "Sort order")} />
+                <input name="card_number" placeholder={tx("Номер карты", "Card number")} />
+                <input name="recipient_name" placeholder={tx("Получатель", "Recipient")} />
+              </div>
+              <input name="payment_details" placeholder={tx("Реквизиты / детали", "Payment details")} />
+              <textarea name="instructions" rows={2} placeholder={tx("Инструкция для пользователя", "User instructions")} />
+              <label className="switch-row" style={{ padding: "0 4px" }}>
+                <span>{tx("Активен", "Active")}</span>
+                <input name="is_active" type="checkbox" defaultChecked />
+              </label>
+              <button className="btn" type="submit">{tx("Добавить метод", "Create method")}</button>
+            </form>
+
+            <div className="admin-list">
+              {paymentMethods.map((method) => (
+                <article key={method.code} className="prediction-card admin-item">
+                  <div className="prediction-top">
+                    <strong>{method.name}</strong>
+                    <span className={`badge ${method.is_active ? "success" : "failed"}`}>{method.is_active ? tx("Активен", "Active") : tx("Выключен", "Inactive")}</span>
+                  </div>
+                  <p className="muted">code: {method.code} • {method.method_type}</p>
+                  {method.instructions ? <p className="muted">{method.instructions}</p> : null}
+                  {method.card_number ? <p className="muted">{tx("Карта", "Card")}: {method.card_number}</p> : null}
+                  {method.recipient_name ? <p className="muted">{tx("Получатель", "Recipient")}: {method.recipient_name}</p> : null}
+                  <div className="cta-row wrap">
+                    <button className="btn ghost" onClick={() => onPatchPaymentMethod(method.code, { is_active: !method.is_active })}>
+                      {method.is_active ? tx("Выключить", "Disable") : tx("Включить", "Enable")}
+                    </button>
+                    <button
+                      className="btn"
+                      onClick={() => {
+                        const details = window.prompt(tx("Новые реквизиты", "New payment details"), method.payment_details || "") || "";
+                        const instructions = window.prompt(tx("Новая инструкция", "New instructions"), method.instructions || "") || "";
+                        void onPatchPaymentMethod(method.code, { payment_details: details, instructions });
+                      }}
+                    >
+                      {tx("Обновить реквизиты", "Update details")}
+                    </button>
                   </div>
                 </article>
               ))}

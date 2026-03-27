@@ -63,6 +63,13 @@ export type Tariff = {
   duration_days: number;
   access_level: "free" | "premium" | "vip";
   description: string | null;
+  perks: string[];
+  options: Array<{
+    duration_days: number;
+    price_rub: number;
+    badge?: string | null;
+    benefit_label?: string | null;
+  }>;
 };
 
 export type AdminUser = {
@@ -88,10 +95,77 @@ export type AdminPayment = {
   telegram_id: number;
   username: string | null;
   tariff_code: string;
+  access_level: "free" | "premium" | "vip";
+  duration_days: number;
   amount_rub: number;
-  status: "pending" | "succeeded" | "failed" | "canceled";
+  status: "pending" | "pending_manual_review" | "requires_clarification" | "succeeded" | "failed" | "canceled";
+  method_code: string | null;
+  method_name: string | null;
   provider_order_id: string;
+  manual_note: string | null;
+  manual_proof: string | null;
+  review_comment: string | null;
   created_at: string | null;
+};
+
+export type PaymentMethod = {
+  code: string;
+  name: string;
+  method_type: "auto" | "manual";
+  is_active: boolean;
+  sort_order: number;
+  card_number?: string | null;
+  recipient_name?: string | null;
+  payment_details?: string | null;
+  instructions?: string | null;
+};
+
+export type PaymentQuote = {
+  tariff_code: "premium" | "vip";
+  duration_days: number;
+  access_level: "premium" | "vip";
+  original_amount_rub: number;
+  final_amount_rub: number;
+  discount_rub: number;
+  applied_discount_source?: "promo" | "referral" | null;
+  promo_code?: string | null;
+  message?: string | null;
+};
+
+export type PaymentCreateResult = {
+  payment_id: string;
+  status: string;
+  amount_rub: number;
+  original_amount_rub: number;
+  discount_rub: number;
+  applied_discount_source?: "promo" | "referral" | null;
+  promo_code?: string | null;
+  promo_message?: string | null;
+  tariff_code: "premium" | "vip";
+  duration_days: number;
+  access_level: "premium" | "vip";
+  payment_method_code: string;
+  payment_method_name: string;
+  payment_method_type: "auto" | "manual";
+  payment_url?: string | null;
+  instructions?: string | null;
+  card_number?: string | null;
+  recipient_name?: string | null;
+  payment_details?: string | null;
+};
+
+export type MyPayment = {
+  id: string;
+  status: "pending" | "pending_manual_review" | "requires_clarification" | "succeeded" | "failed" | "canceled";
+  amount_rub: number;
+  tariff_code: string;
+  duration_days: number;
+  payment_method_code?: string | null;
+  payment_method_name?: string | null;
+  manual_note?: string | null;
+  manual_proof?: string | null;
+  review_comment?: string | null;
+  created_at: string;
 };
 
 export type AdminSubscription = {
@@ -217,11 +291,23 @@ export const api = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
-  createPayment: (tariffCode: "premium" | "vip", promoCode?: string) =>
-    request<{ payment_id: string; payment_url: string; amount_rub: number; original_amount_rub?: number | null; discount_rub?: number; promo_code?: string | null; promo_message?: string | null; status: string }>("/payments/create", {
+  paymentMethods: () => request<PaymentMethod[]>("/payments/methods"),
+  quotePayment: (payload: { tariff_code: "premium" | "vip"; duration_days: 7 | 30 | 90; promo_code?: string }) =>
+    request<PaymentQuote>("/payments/quote", {
       method: "POST",
-      body: JSON.stringify({ tariff_code: tariffCode, promo_code: promoCode || undefined }),
+      body: JSON.stringify(payload),
     }),
+  createPayment: (payload: { tariff_code: "premium" | "vip"; duration_days: 7 | 30 | 90; payment_method_code?: string; promo_code?: string }) =>
+    request<PaymentCreateResult>("/payments/create", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  confirmManualPayment: (paymentId: string, payload: { transfer_reference?: string; note?: string; proof?: string }) =>
+    request<{ ok?: boolean; status: string }>(`/payments/${paymentId}/manual-confirm`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  myPayments: () => request<MyPayment[]>("/payments/my"),
 
   adminPredictions: () => request<Prediction[]>("/admin/predictions"),
   adminCreatePrediction: (payload: Record<string, unknown>) =>
@@ -290,10 +376,25 @@ export const api = {
     const suffix = search.toString() ? `?${search.toString()}` : "";
     return request<AdminPayment[]>(`/admin/payments${suffix}`);
   },
-  adminUpdatePaymentStatus: (id: string, status: "pending" | "succeeded" | "failed" | "canceled") =>
+  adminUpdatePaymentStatus: (
+    id: string,
+    status: "pending" | "pending_manual_review" | "requires_clarification" | "succeeded" | "failed" | "canceled",
+    review_comment?: string
+  ) =>
     request<{ ok: boolean }>(`/admin/payments/${id}/status`, {
       method: "PATCH",
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ status, review_comment }),
+    }),
+  adminPaymentMethods: () => request<PaymentMethod[]>("/admin/payment-methods"),
+  adminCreatePaymentMethod: (payload: PaymentMethod) =>
+    request<PaymentMethod>("/admin/payment-methods", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  adminUpdatePaymentMethod: (code: string, payload: Partial<PaymentMethod>) =>
+    request<PaymentMethod>(`/admin/payment-methods/${code}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
     }),
 
   adminStats: () => request<AdminStats>("/admin/stats"),

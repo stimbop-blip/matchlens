@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from app.api.v1.routes.admin_news import router as admin_news_router
+from app.api.v1.routes.admin_payment_methods import router as admin_payment_methods_router
 from app.api.v1.routes.admin_payments import router as admin_payments_router
 from app.api.v1.routes.admin_notifications import router as admin_notifications_router
 from app.api.v1.routes.admin_promocodes import router as admin_promocodes_router
@@ -37,6 +38,7 @@ api_router.include_router(admin_news_router)
 api_router.include_router(admin_promocodes_router)
 api_router.include_router(admin_users_router)
 api_router.include_router(admin_payments_router)
+api_router.include_router(admin_payment_methods_router)
 api_router.include_router(admin_subscriptions_router)
 api_router.include_router(admin_stats_router)
 api_router.include_router(admin_notifications_router)

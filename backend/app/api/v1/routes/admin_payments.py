@@ -1,7 +1,6 @@
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, Field
 from sqlalchemy import String, cast, desc, select
 from sqlalchemy.orm import Session
 
@@ -12,13 +11,10 @@ from app.models.payment import Payment
 from app.models.subscription import Subscription
 from app.models.tariff import Tariff
 from app.models.user import User
+from app.schemas.payment import AdminPaymentStatusUpdateIn
 from app.services.payment_service import activate_subscription_for_payment
 
 router = APIRouter(prefix="/admin/payments", tags=["admin"])
-
-
-class AdminPaymentStatusUpdateIn(BaseModel):
-    status: str = Field(pattern="^(pending|succeeded|failed|canceled)$")
 
 
 @router.get("")
@@ -28,12 +24,20 @@ def admin_list_payments(
     status: str | None = Query(default=None),
     user_query: str | None = Query(default=None),
 ) -> list[dict]:
+    valid_statuses = {
+        "pending",
+        "pending_manual_review",
+        "requires_clarification",
+        "succeeded",
+        "failed",
+        "canceled",
+    }
     stmt = (
         select(Payment, Tariff, User)
         .join(Tariff, Tariff.id == Payment.tariff_id)
         .join(User, User.id == Payment.user_id)
     )
-    if status in {"pending", "succeeded", "failed", "canceled"}:
+    if status in valid_statuses:
         stmt = stmt.where(Payment.status == PaymentStatus(status))
     if user_query:
         q = f"%{user_query.lower()}%"
@@ -51,9 +55,16 @@ def admin_list_payments(
             "telegram_id": user.telegram_id,
             "username": user.username,
             "tariff_code": tariff.code,
+            "access_level": payment.access_level_snapshot,
+            "duration_days": payment.duration_days_snapshot,
             "amount_rub": payment.amount_rub,
             "status": payment.status.value,
+            "method_code": payment.method_code,
+            "method_name": payment.method_name_snapshot,
             "provider_order_id": payment.provider_order_id,
+            "manual_note": payment.manual_note,
+            "manual_proof": payment.manual_proof,
+            "review_comment": payment.review_comment,
             "created_at": payment.created_at.isoformat() if payment.created_at else None,
         }
         for payment, tariff, user in rows
@@ -65,7 +76,7 @@ def admin_update_payment_status(
     payment_id: str,
     payload: AdminPaymentStatusUpdateIn,
     db: Session = Depends(get_db),
-    _: User = Depends(require_admin),
+    admin_user: User = Depends(require_admin),
 ) -> dict:
     payment = db.get(Payment, payment_id)
     if not payment:
@@ -73,13 +84,14 @@ def admin_update_payment_status(
 
     target = PaymentStatus(payload.status)
     payment.status = target
+    payment.review_comment = payload.review_comment.strip() if payload.review_comment else payment.review_comment
+    payment.reviewed_by_user_id = admin_user.id
+    payment.reviewed_at = datetime.now(UTC)
     if target == PaymentStatus.succeeded:
         activate_subscription_for_payment(db, payment)
         return {"ok": True, "id": str(payment.id), "status": PaymentStatus.succeeded.value}
 
-    if target != PaymentStatus.succeeded:
-        payment.paid_at = None if target != PaymentStatus.succeeded else payment.paid_at
-
+    payment.paid_at = None
     db.add(payment)
     db.commit()
     db.refresh(payment)

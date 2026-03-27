@@ -14,7 +14,7 @@ import {
   SettingsSection,
   StatCard,
 } from "../components/ui";
-import { api, type Me, type NotificationSettings, type PromoApplyResult, type ReferralStats } from "../services/api";
+import { api, type Me, type MyPayment, type NotificationSettings, type PromoApplyResult, type ReferralStats } from "../services/api";
 import { waitForTelegramInitData } from "../services/telegram";
 
 function tariffCode(value: string): "free" | "premium" | "vip" {
@@ -36,6 +36,15 @@ function subscriptionStatusLabel(value: string, language: "ru" | "en"): string {
   return language === "ru" ? "Не активна" : "Inactive";
 }
 
+function paymentStatusLabel(value: string, language: "ru" | "en"): string {
+  if (value === "pending_manual_review") return language === "ru" ? "Ожидает подтверждения" : "Pending manual review";
+  if (value === "requires_clarification") return language === "ru" ? "Ожидает уточнения" : "Needs clarification";
+  if (value === "succeeded") return language === "ru" ? "Подтвержден" : "Confirmed";
+  if (value === "failed") return language === "ru" ? "Отклонен" : "Rejected";
+  if (value === "canceled") return language === "ru" ? "Отменен" : "Canceled";
+  return language === "ru" ? "Ожидает оплаты" : "Awaiting payment";
+}
+
 function dateLabel(value: string | null | undefined, language: "ru" | "en") {
   if (!value) return "—";
   const date = new Date(value);
@@ -54,6 +63,7 @@ export function ProfilePage() {
   const [promoCode, setPromoCode] = useState("");
   const [promoTariff, setPromoTariff] = useState<"free" | "premium" | "vip">("premium");
   const [promoResult, setPromoResult] = useState<PromoApplyResult | null>(null);
+  const [payments, setPayments] = useState<MyPayment[]>([]);
   const [notifyMessage, setNotifyMessage] = useState<{ tone: "success" | "error"; text: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -66,13 +76,14 @@ export function ProfilePage() {
         return;
       }
 
-      Promise.all([api.me(), api.mySubscription(), api.myNotificationSettings(), api.myReferral()])
-        .then(([meData, subData, notifyData, referralData]) => {
+      Promise.all([api.me(), api.mySubscription(), api.myNotificationSettings(), api.myReferral(), api.myPayments()])
+        .then(([meData, subData, notifyData, referralData, paymentData]) => {
           if (!alive) return;
           setMe(meData);
           setSub(subData);
           setNotify(notifyData);
           setReferral(referralData);
+          setPayments(paymentData);
         })
         .catch(() => {
           if (!alive) return;
@@ -80,6 +91,7 @@ export function ProfilePage() {
           setSub(null);
           setNotify(null);
           setReferral(null);
+          setPayments([]);
         })
         .finally(() => {
           if (!alive) return;
@@ -230,6 +242,24 @@ export function ProfilePage() {
           <StatCard label={isRu ? "Статус" : "Status"} value={sub ? subscriptionStatusLabel(sub.status, language) : "—"} />
           <StatCard label={isRu ? "Доступ до" : "Valid until"} value={sub ? dateLabel(sub.ends_at, language) : "—"} />
         </div>
+      </AppShellSection>
+
+      <AppShellSection id="payments">
+        <SectionHeader
+          title={isRu ? "Оплаты и подтверждение" : "Payments and review"}
+          subtitle={isRu ? "Статусы ручных и автоматических оплат" : "Manual and automatic payment statuses"}
+        />
+        {payments.length === 0 ? <p className="empty-state">{isRu ? "Платежей пока нет." : "No payments yet."}</p> : null}
+        {payments.slice(0, 5).map((item) => (
+          <div className="info-row" key={item.id}>
+            <span>
+              {item.tariff_code.toUpperCase()} • {item.duration_days} {isRu ? "дней" : "days"} • {item.amount_rub} RUB
+            </span>
+            <strong>{paymentStatusLabel(item.status, language)}</strong>
+            <small className="muted-line">{item.payment_method_name || item.payment_method_code || ""}</small>
+            {item.review_comment ? <small className="muted-line">{item.review_comment}</small> : null}
+          </div>
+        ))}
       </AppShellSection>
 
       <AppShellSection id="referral">
