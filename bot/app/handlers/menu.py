@@ -9,7 +9,7 @@ from urllib.parse import urlsplit, urlunsplit
 from aiogram import F, Router
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command
-from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message, ReplyKeyboardRemove
+from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message, ReplyKeyboardRemove, WebAppInfo
 
 from app.config import settings
 from app.keyboards.main_menu import main_menu_keyboard, section_nav_keyboard
@@ -126,6 +126,8 @@ def _legacy_action_map() -> dict[str, str]:
         button("en", "profile"): "menu:profile",
         button("ru", "tariffs"): "menu:tariffs",
         button("en", "tariffs"): "menu:tariffs",
+        button("ru", "referrals"): "menu:referrals",
+        button("en", "referrals"): "menu:referrals",
         button("ru", "notifications"): "menu:notifications",
         button("en", "notifications"): "menu:notifications",
         button("ru", "support"): "menu:support",
@@ -427,6 +429,40 @@ async def _build_notifications_screen(language: str) -> tuple[str, InlineKeyboar
     )
 
 
+async def _build_referrals_screen(language: str, user_id: int | None) -> tuple[str, InlineKeyboardMarkup]:
+    backend_client = get_backend_client()
+    referral = await backend_client.get_user_referral(user_id) if backend_client and user_id else None
+
+    code = str(referral.get("referral_code") or "-") if referral else "-"
+    link = str(referral.get("referral_link") or "") if referral else ""
+    invited = str(referral.get("invited") or 0) if referral else "0"
+    activated = str(referral.get("activated") or 0) if referral else "0"
+    bonus_days = str(referral.get("bonus_days") or 0) if referral else "0"
+
+    text = (
+        f"{t(language, 'referrals_title')}\n\n"
+        f"{t(language, 'referrals_body')}\n\n"
+        f"{t(language, 'referrals_stats').format(code=escape(code), invited=escape(invited), activated=escape(activated), bonus_days=escape(bonus_days))}"
+    )
+
+    rows: list[list[InlineKeyboardButton]] = []
+    if link:
+        rows.append([InlineKeyboardButton(text=t(language, "open_referral_link"), url=link)])
+    rows.append(
+        [
+            InlineKeyboardButton(text=t(language, "open_referrals"), web_app=WebAppInfo(url=_mini_app_url("/profile"))),
+            InlineKeyboardButton(text=t(language, "open_referral_tariffs"), web_app=WebAppInfo(url=_mini_app_url("/tariffs"))),
+        ]
+    )
+    rows.append(
+        [
+            InlineKeyboardButton(text=t(language, "nav_back"), callback_data="menu:main"),
+            InlineKeyboardButton(text=t(language, "nav_menu"), callback_data="menu:main"),
+        ]
+    )
+    return text, InlineKeyboardMarkup(inline_keyboard=rows)
+
+
 async def _build_support_screen(language: str) -> tuple[str, InlineKeyboardMarkup]:
     support_url = settings.bot_support_url.strip()
     nav_keyboard = section_nav_keyboard(
@@ -502,6 +538,8 @@ async def _build_screen(
         return await _build_profile_screen(language, user_id, username)
     if action == "menu:tariffs":
         return await _build_tariffs_screen(language)
+    if action == "menu:referrals":
+        return await _build_referrals_screen(language, user_id)
     if action == "menu:notifications":
         return await _build_notifications_screen(language)
     if action == "menu:support":

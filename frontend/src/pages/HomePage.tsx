@@ -236,12 +236,24 @@ export function HomePage() {
       </AppShellSection>
 
       <AppShellSection>
-        <SectionHeader title={isRu ? "Рефералы и бонусы" : "Referrals and bonuses"} />
+        <SectionHeader
+          title={isRu ? "Рефералы и бонусы" : "Referrals and bonuses"}
+          subtitle={
+            isRu
+              ? "Приглашай друзей в PIT BET и получай бонусные дни доступа после их активации"
+              : "Invite friends to PIT BET and earn bonus access days after activation"
+          }
+        />
         <div className="stat-grid compact">
           <StatCard label={isRu ? "Приглашено" : "Invited"} value={referral?.invited ?? 0} />
           <StatCard label={isRu ? "Активировано" : "Activated"} value={referral?.activated ?? 0} />
           <StatCard label={isRu ? "Бонусные дни" : "Bonus days"} value={referral?.bonus_days ?? 0} tone="accent" />
         </div>
+        <p className="muted-line">
+          {isRu
+            ? "За Premium-покупку приглашенного пользователя: +7 дней Premium. За VIP-покупку: +14 дней Premium."
+            : "Referral Premium purchase gives +7 Premium days. Referral VIP purchase gives +14 Premium days."}
+        </p>
         <SectionActions compact>
           <Link className="btn ghost" to="/profile#referral">
             {isRu ? "Управлять в профиле" : "Manage in profile"}

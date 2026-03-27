@@ -137,6 +137,27 @@ export function ProfilePage() {
     }
   };
 
+  const shareReferral = async () => {
+    if (!referral?.referral_link) return;
+    const shareText = isRu
+      ? "Присоединяйся к PIT BET по моей реферальной ссылке."
+      : "Join PIT BET using my referral link.";
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: "PIT BET",
+          text: shareText,
+          url: referral.referral_link,
+        });
+        return;
+      }
+      await navigator.clipboard.writeText(referral.referral_link);
+      setNotifyMessage({ tone: "success", text: isRu ? "Ссылка готова к отправке" : "Link copied and ready to share" });
+    } catch {
+      setNotifyMessage({ tone: "error", text: isRu ? "Не удалось поделиться ссылкой" : "Failed to share link" });
+    }
+  };
+
   return (
     <Layout>
       <HeroCard
@@ -213,12 +234,29 @@ export function ProfilePage() {
 
       <AppShellSection id="referral">
         <SectionHeader
-          title={isRu ? "Рефералы и бонусы" : "Referrals and bonuses"}
-          subtitle={isRu ? "Код, ссылка и прогресс приглашений" : "Code, link, and referral progress"}
+          title={isRu ? "Реферальная программа" : "Referral program"}
+          subtitle={
+            isRu
+              ? "Бонусные дни доступа за активацию приглашенных пользователей"
+              : "Bonus access days for activated invited users"
+          }
         />
         {!referral ? <p className="empty-state">{isRu ? "Данные недоступны." : "Data unavailable."}</p> : null}
         {referral ? (
           <>
+            <div className="referral-promo-note">
+              <p>
+                {isRu
+                  ? "Делитесь ссылкой PIT BET: после первой оплаты Premium или VIP вашим приглашенным пользователем бонус начисляется автоматически."
+                  : "Share your PIT BET link: after the first Premium or VIP purchase by your invited user, bonus days are credited automatically."}
+              </p>
+              <ul>
+                <li>{isRu ? "Premium-покупка реферала: +7 дней Premium" : "Referral Premium purchase: +7 Premium days"}</li>
+                <li>{isRu ? "VIP-покупка реферала: +14 дней Premium" : "Referral VIP purchase: +14 Premium days"}</li>
+                <li>{isRu ? "Друг получает скидку 10% на первую покупку" : "Friend gets 10% off the first purchase"}</li>
+              </ul>
+            </div>
+
             <div className="stack-list compact">
               <div className="info-row">
                 <span>{isRu ? "Реферальный код" : "Referral code"}</span>
@@ -235,6 +273,9 @@ export function ProfilePage() {
               <SectionActions compact>
                 <button className="btn secondary" onClick={copyReferral} type="button">
                   {isRu ? "Скопировать ссылку" : "Copy link"}
+                </button>
+                <button className="btn ghost" onClick={shareReferral} type="button">
+                  {isRu ? "Поделиться" : "Share"}
                 </button>
               </SectionActions>
             </div>

@@ -17,15 +17,17 @@ def main_menu_keyboard(language: str = "ru", is_admin: bool = False) -> InlineKe
             InlineKeyboardButton(text=button(lang, "tariffs"), callback_data="menu:tariffs"),
         ],
         [
+            InlineKeyboardButton(text=button(lang, "referrals"), callback_data="menu:referrals"),
             InlineKeyboardButton(text=button(lang, "notifications"), callback_data="menu:notifications"),
+        ],
+        [
             InlineKeyboardButton(text=button(lang, "support"), callback_data="menu:support"),
+            InlineKeyboardButton(text=button(lang, "about"), callback_data="menu:about"),
         ],
     ]
 
     if is_admin:
         rows.append([InlineKeyboardButton(text=button(lang, "admin"), callback_data="menu:admin")])
-
-    rows.append([InlineKeyboardButton(text=button(lang, "about"), callback_data="menu:about")])
 
     return InlineKeyboardMarkup(inline_keyboard=rows)
 

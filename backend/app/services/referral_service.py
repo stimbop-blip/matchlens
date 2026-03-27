@@ -36,17 +36,8 @@ def referral_overview(db: Session, user: User) -> dict:
     code = ensure_referral_code(db, user)
     invited_count = int(db.scalar(select(func.count(User.id)).where(User.referred_by_user_id == user.id)) or 0)
 
-    now = datetime.now(UTC)
     activated_count = int(
-        db.scalar(
-            select(func.count(distinct(Subscription.user_id)))
-            .join(Tariff, Tariff.id == Subscription.tariff_id)
-            .join(User, User.id == Subscription.user_id)
-            .where(User.referred_by_user_id == user.id)
-            .where(Subscription.status == SubscriptionStatus.active)
-            .where(Subscription.ends_at > now)
-            .where(Tariff.code.in_(["premium", "vip"]))
-        )
+        db.scalar(select(func.count(distinct(ReferralBonus.referred_user_id))).where(ReferralBonus.referrer_user_id == user.id))
         or 0
     )
 

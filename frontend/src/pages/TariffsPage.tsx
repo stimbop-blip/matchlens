@@ -79,6 +79,12 @@ export function TariffsPage() {
           subtitle={isRu ? "Free, Premium, VIP — под разную нагрузку" : "Free, Premium, VIP for different workload"}
         />
 
+        <p className="referral-hint-line">
+          {isRu
+            ? "Доступ можно продлевать не только покупкой, но и бонусными днями по реферальной программе PIT BET."
+            : "Access can be extended not only by purchase, but also by referral bonus days in PIT BET."}
+        </p>
+
         {tariffs.length === 0 ? <p className="empty-state">{isRu ? "Тарифы временно недоступны." : "Tariffs are temporarily unavailable."}</p> : null}
 
         <div className="tariff-grid">

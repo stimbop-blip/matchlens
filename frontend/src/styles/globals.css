@@ -1108,6 +1108,40 @@ a:focus {
   margin-top: 10px;
 }
 
+.referral-promo-note {
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 40%, var(--border-subtle));
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--accent-soft) 68%, var(--surface-2));
+  padding: 14px;
+}
+
+.referral-promo-note p {
+  color: var(--text-primary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.referral-promo-note ul {
+  margin: 10px 0 0;
+  padding-left: 18px;
+  color: var(--text-secondary);
+}
+
+.referral-promo-note li {
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+
+.referral-hint-line {
+  border: 1px dashed var(--border-subtle);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface-3) 72%, transparent);
+  padding: 10px 12px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
 .details-body {
   margin-top: 8px;
   border: 1px solid var(--border-subtle);

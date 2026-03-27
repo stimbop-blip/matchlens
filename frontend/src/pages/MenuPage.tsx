@@ -63,6 +63,9 @@ export function MenuPage() {
       ? "Загрузка"
       : "Loading";
   const bonusValue = isRu ? `${referral?.bonus_days ?? 0} дн.` : `${referral?.bonus_days ?? 0} days`;
+  const referralProgressValue = isRu
+    ? `${referral?.invited ?? 0} / ${referral?.activated ?? 0}`
+    : `${referral?.invited ?? 0} / ${referral?.activated ?? 0}`;
 
   return (
     <Layout>
@@ -96,8 +99,9 @@ export function MenuPage() {
           />
           <SettingsRow
             icon="👥"
-            title={isRu ? "Реферальная ссылка" : "Referral link"}
-            value={referral?.referral_code || "—"}
+            title={isRu ? "Реферальная программа" : "Referral program"}
+            subtitle={isRu ? "Приглашено / активировано" : "Invited / activated"}
+            value={referralProgressValue}
             to="/profile#referral"
           />
           <SettingsRow icon="🎟" title={isRu ? "Промокоды" : "Promo codes"} to="/profile#promo" />

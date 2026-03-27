@@ -18,13 +18,49 @@ from app.models.user import User
 from app.services.promo_service import consume_discount_for_payment
 from app.services.referral_service import apply_referral_bonus_on_activation
 
+REFERRAL_FIRST_PURCHASE_DISCOUNT_PERCENT = 10
+
+
+def _has_paid_tariff_purchase(db: Session, user_id: object) -> bool:
+    row = db.scalar(
+        select(Payment.id)
+        .join(Tariff, Tariff.id == Payment.tariff_id)
+        .where(Payment.user_id == user_id)
+        .where(Payment.status == PaymentStatus.succeeded)
+        .where(Tariff.code.in_(["premium", "vip"]))
+        .limit(1)
+    )
+    return bool(row)
+
+
+def _referral_first_purchase_discount(db: Session, user: User, tariff: Tariff) -> tuple[int, int, str | None]:
+    if tariff.code not in {"premium", "vip"}:
+        return 0, int(tariff.price_rub), None
+    if not user.referred_by_user_id:
+        return 0, int(tariff.price_rub), None
+    if _has_paid_tariff_purchase(db, user.id):
+        return 0, int(tariff.price_rub), None
+
+    discount_rub = round(int(tariff.price_rub) * (REFERRAL_FIRST_PURCHASE_DISCOUNT_PERCENT / 100))
+    final_amount = max(1, int(tariff.price_rub) - discount_rub)
+    return discount_rub, final_amount, f"Реферальная скидка {REFERRAL_FIRST_PURCHASE_DISCOUNT_PERCENT}% применена"
+
 
 def create_payment_for_tariff(db: Session, user: User, tariff_code: str, promo_code: str | None = None) -> tuple[Payment, dict]:
     tariff = db.scalar(select(Tariff).where(Tariff.code == tariff_code, Tariff.is_active.is_(True)))
     if not tariff:
         raise ValueError("Tariff not found")
 
-    discount_result = consume_discount_for_payment(db, user, tariff, promo_code)
+    if promo_code:
+        discount_result = consume_discount_for_payment(db, user, tariff, promo_code)
+    else:
+        discount_rub, final_price_rub, message = _referral_first_purchase_discount(db, user, tariff)
+        discount_result = {
+            "promo_code": None,
+            "discount_rub": int(discount_rub),
+            "final_price_rub": int(final_price_rub),
+            "message": message,
+        }
     final_amount = int(discount_result["final_price_rub"])
 
     order_id = f"ml-{uuid4().hex[:16]}"
@@ -127,8 +163,9 @@ def activate_subscription_for_payment(db: Session, payment: Payment) -> Subscrip
     db.add(payment)
 
     activated_user = db.get(User, payment.user_id)
-    if activated_user:
-        apply_referral_bonus_on_activation(db, activated_user)
+    if activated_user and tariff.code in {"premium", "vip"}:
+        bonus_days = 14 if tariff.code == "vip" else 7
+        apply_referral_bonus_on_activation(db, activated_user, bonus_days=bonus_days)
 
     db.commit()
     db.refresh(subscription)
