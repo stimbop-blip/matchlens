@@ -1,14 +1,18 @@
+from datetime import UTC, datetime
+
 from fastapi import APIRouter, Depends
-from sqlalchemy import select
+from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
 from app.models.enums import AccessLevel
+from app.models.news_post import NewsPost
 from app.models.tariff import Tariff
 from app.models.user import User
 from app.schemas.bot import BotPredictionShortOut
 from app.schemas.notification import BotNotificationOut
 from app.schemas.bot import (
+    BotNewsOut,
     BotReferralOut,
     BotSubscriptionOut,
     BotTariffOut,
@@ -100,6 +104,29 @@ def bot_latest_free_predictions(limit: int = 3, db: Session = Depends(get_db)) -
             odds=float(item.odds),
             event_start_at=item.event_start_at.isoformat(),
             short_description=item.short_description,
+        )
+        for item in rows
+    ]
+
+
+@router.get("/news/latest", response_model=list[BotNewsOut])
+def bot_latest_news(limit: int = 3, db: Session = Depends(get_db)) -> list[BotNewsOut]:
+    now = datetime.now(UTC)
+    rows = db.scalars(
+        select(NewsPost)
+        .where(NewsPost.is_published.is_(True))
+        .where((NewsPost.published_at.is_(None)) | (NewsPost.published_at <= now))
+        .order_by(desc(NewsPost.published_at), desc(NewsPost.created_at))
+        .limit(limit)
+    ).all()
+
+    return [
+        BotNewsOut(
+            id=str(item.id),
+            title=item.title,
+            body=item.body,
+            category=item.category,
+            published_at=item.published_at.isoformat() if item.published_at else None,
         )
         for item in rows
     ]

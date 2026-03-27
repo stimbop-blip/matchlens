@@ -55,3 +55,11 @@ class BotReferralOut(BaseModel):
     invited: int = 0
     activated: int = 0
     bonus_days: int = 0
+
+
+class BotNewsOut(BaseModel):
+    id: str
+    title: str
+    body: str
+    category: str
+    published_at: str | None = None

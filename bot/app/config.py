@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     brand_name: str = "PIT BET"
     backend_api_base_url: str = "http://backend:8000"
     mini_app_url: str = "https://matchlens.vercel.app"
+    bot_username: str = ""
     bot_support_url: str = "https://t.me/your_support"
     bot_log_level: str = "INFO"
     notifications_poll_interval: int = 10

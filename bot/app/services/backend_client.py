@@ -69,6 +69,10 @@ class BackendClient:
         payload = await self._get_json("/api/v1/bot/predictions/free", params={"limit": limit})
         return payload if isinstance(payload, list) else []
 
+    async def get_latest_news(self, limit: int = 3) -> list[dict[str, Any]]:
+        payload = await self._get_json("/api/v1/bot/news/latest", params={"limit": limit})
+        return payload if isinstance(payload, list) else []
+
     async def get_tariffs(self) -> list[dict[str, Any]]:
         payload = await self._get_json("/api/v1/bot/tariffs")
         return payload if isinstance(payload, list) else []

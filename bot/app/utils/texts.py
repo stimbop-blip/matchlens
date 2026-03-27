@@ -106,10 +106,16 @@ TEXTS: dict[Language, dict[str, str]] = {
             "Можно гибко управлять категориями Free / Premium / VIP, результатами и новостями."
         ),
         "news_title": "⚡️ <b>Новости PIT BET</b>",
-        "news_text": (
-            "Следите за обновлениями продукта, тарифов и аналитических блоков PIT BET.\n\n"
-            "Свежие публикации доступны в разделе новостей внутри приложения."
+        "news_empty": (
+            "⚡️ <b>Новости PIT BET</b>\n"
+            "Сейчас новых публикаций нет. Проверяйте раздел позже."
         ),
+        "news_hint": "Последние публикации:",
+        "news_row": "Подробнее • {title}",
+        "news_details_title": "<b>📰 Новость PIT BET</b>",
+        "news_details_missing": "Не удалось открыть новость. Обновите раздел новостей.",
+        "news_date": "Дата",
+        "news_no_date": "без даты",
         "referrals_title": "👥 <b>Реферальная программа PIT BET</b>",
         "referrals_body": (
             "Приглашай друзей в PIT BET и получай бонусы за их активацию.\n\n"
@@ -263,10 +269,16 @@ TEXTS: dict[Language, dict[str, str]] = {
             "You can control Free / Premium / VIP categories, outcomes, and news."
         ),
         "news_title": "⚡️ <b>PIT BET News</b>",
-        "news_text": (
-            "Track product, tariff, and analytics updates from PIT BET.\n\n"
-            "Latest posts are available in the news section inside the app."
+        "news_empty": (
+            "⚡️ <b>PIT BET News</b>\n"
+            "No new publications right now. Check again soon."
         ),
+        "news_hint": "Latest posts:",
+        "news_row": "Details • {title}",
+        "news_details_title": "<b>📰 PIT BET News Post</b>",
+        "news_details_missing": "Unable to open the post. Refresh the news section.",
+        "news_date": "Date",
+        "news_no_date": "no date",
         "referrals_title": "👥 <b>PIT BET Referral Program</b>",
         "referrals_body": (
             "Invite friends to PIT BET and earn bonus access days after activation.\n\n"

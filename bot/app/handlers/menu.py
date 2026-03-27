@@ -20,6 +20,7 @@ router = Router()
 
 _FREE_CACHE: dict[int, list[dict[str, Any]]] = {}
 _FREE_CACHE_LIMIT = 300
+_NEWS_CACHE: dict[int, list[dict[str, Any]]] = {}
 
 
 def _is_admin(user_id: int | None) -> bool:
@@ -98,6 +99,40 @@ def _remember_free(user_id: int, items: list[dict[str, Any]]) -> None:
     oldest_key = next(iter(_FREE_CACHE), None)
     if oldest_key is not None:
         _FREE_CACHE.pop(oldest_key, None)
+
+
+def _remember_news(user_id: int, items: list[dict[str, Any]]) -> None:
+    _NEWS_CACHE[user_id] = items
+    if len(_NEWS_CACHE) <= _FREE_CACHE_LIMIT:
+        return
+    oldest_key = next(iter(_NEWS_CACHE), None)
+    if oldest_key is not None:
+        _NEWS_CACHE.pop(oldest_key, None)
+
+
+def _format_news_date(value: str | None, language: str) -> str:
+    if not value:
+        return t(language, "news_no_date")
+    raw = value.strip().replace("Z", "+00:00")
+    if not raw:
+        return t(language, "news_no_date")
+    try:
+        dt = datetime.fromisoformat(raw)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=UTC)
+        return dt.astimezone().strftime("%d.%m %H:%M")
+    except ValueError:
+        return t(language, "news_no_date")
+
+
+def _referral_link_for_bot(code: str | None, fallback: str) -> str:
+    clean_code = (code or "").strip()
+    if not clean_code or " " in clean_code or clean_code == "-":
+        return fallback
+    username = settings.bot_username.strip().lstrip("@")
+    if username and "your_" not in username:
+        return f"https://t.me/{username}?start=ref_{clean_code}"
+    return fallback
 
 
 async def _resolve_language(user_id: int | None, fallback: str | None) -> str:
@@ -233,12 +268,81 @@ async def _build_free_screen(language: str, user_id: int | None) -> tuple[str, I
     return ("\n".join(lines).strip(), InlineKeyboardMarkup(inline_keyboard=rows))
 
 
-async def _build_news_screen(language: str) -> tuple[str, InlineKeyboardMarkup]:
+async def _build_news_screen(language: str, user_id: int | None) -> tuple[str, InlineKeyboardMarkup]:
+    backend_client = get_backend_client()
+    items = await backend_client.get_latest_news(limit=3) if backend_client else []
+
+    if user_id is not None:
+        _remember_news(user_id, items)
+
+    if not items:
+        return (
+            t(language, "news_empty"),
+            section_nav_keyboard(
+                language=language,
+                back_callback="menu:main",
+                primary_button=(t(language, "open_news"), _mini_app_url("/news")),
+            ),
+        )
+
+    lines = [t(language, "news_title"), t(language, "news_hint"), ""]
+    rows: list[list[InlineKeyboardButton]] = []
+
+    for idx, item in enumerate(items, start=1):
+        title = str(item.get("title") or "-")
+        published = _format_news_date(cast(str | None, item.get("published_at")), language)
+        body = str(item.get("body") or "").strip()
+        preview = _trim_text(body.replace("\n", " "), max_len=120) if body else "-"
+        lines.append(f"<b>{idx}. {escape(title)}</b>")
+        lines.append(f"{t(language, 'news_date')}: {escape(published)}")
+        lines.append(escape(preview))
+        lines.append("")
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text=t(language, "news_row").format(title=_trim_text(title)),
+                    callback_data=f"menu:news:detail:{idx - 1}",
+                )
+            ]
+        )
+
+    nav_keyboard = section_nav_keyboard(
+        language=language,
+        back_callback="menu:main",
+        primary_button=(t(language, "open_news"), _mini_app_url("/news")),
+    )
+    rows.extend(nav_keyboard.inline_keyboard)
+    return ("\n".join(lines).strip(), InlineKeyboardMarkup(inline_keyboard=rows))
+
+
+async def _build_news_details_screen(language: str, user_id: int | None, detail_index: int) -> tuple[str, InlineKeyboardMarkup]:
+    items = _NEWS_CACHE.get(user_id or -1, [])
+    if detail_index < 0 or detail_index >= len(items):
+        return (
+            t(language, "news_details_missing"),
+            section_nav_keyboard(
+                language=language,
+                back_callback="menu:news",
+                primary_button=(t(language, "open_news"), _mini_app_url("/news")),
+            ),
+        )
+
+    item = items[detail_index]
+    title = escape(str(item.get("title") or "-"))
+    body = escape(str(item.get("body") or "").strip())
+    date = escape(_format_news_date(cast(str | None, item.get("published_at")), language))
+
+    text = (
+        f"{t(language, 'news_details_title')}\n"
+        f"<b>{title}</b>\n"
+        f"{t(language, 'news_date')}: {date}\n\n"
+        f"{body}"
+    )
     return (
-        f"{t(language, 'news_title')}\n\n{t(language, 'news_text')}",
+        text,
         section_nav_keyboard(
             language=language,
-            back_callback="menu:main",
+            back_callback="menu:news",
             primary_button=(t(language, "open_news"), _mini_app_url("/news")),
         ),
     )
@@ -357,8 +461,10 @@ async def _build_profile_screen(language: str, user_id: int | None, username: st
     status = str(subscription.get("status", "inactive")) if subscription else "inactive"
     ends_at = _format_datetime(cast(str | None, subscription.get("ends_at"))) if subscription else "-"
 
-    referral_code = str(referral.get("referral_code") or t(language, "profile_referral_missing")) if referral else t(language, "profile_referral_missing")
-    referral_link = str(referral.get("referral_link") or "") if referral else ""
+    referral_code_raw = str(referral.get("referral_code") or "") if referral else ""
+    referral_code = referral_code_raw or t(language, "profile_referral_missing")
+    referral_link_raw = str(referral.get("referral_link") or "") if referral else ""
+    referral_link = _referral_link_for_bot(referral_code_raw, referral_link_raw)
     invited = str(referral.get("invited") or 0) if referral else "0"
     activated = str(referral.get("activated") or 0) if referral else "0"
     bonus_days = str(referral.get("bonus_days") or 0) if referral else "0"
@@ -446,12 +552,14 @@ async def _build_referrals_screen(language: str, user_id: int | None) -> tuple[s
     backend_client = get_backend_client()
     referral = await backend_client.get_user_referral(user_id) if backend_client and user_id else None
 
-    code = str(referral.get("referral_code") or "-") if referral else "-"
-    link = str(referral.get("referral_link") or "") if referral else ""
+    code_raw = str(referral.get("referral_code") or "") if referral else ""
+    code = code_raw or "-"
+    link_raw = str(referral.get("referral_link") or "") if referral else ""
     invited = str(referral.get("invited") or 0) if referral else "0"
     activated = str(referral.get("activated") or 0) if referral else "0"
     bonus_days = str(referral.get("bonus_days") or 0) if referral else "0"
 
+    link = _referral_link_for_bot(code_raw, link_raw)
     text = (
         f"{t(language, 'referrals_title')}\n\n"
         f"{t(language, 'referrals_body')}\n\n"
@@ -537,7 +645,14 @@ async def _build_screen(
     if action == "menu:main":
         return await _build_menu_screen(language, user_id)
     if action == "menu:news":
-        return await _build_news_screen(language)
+        return await _build_news_screen(language, user_id)
+    if action.startswith("menu:news:detail:"):
+        index_raw = action.rsplit(":", maxsplit=1)[-1]
+        try:
+            detail_index = int(index_raw)
+        except ValueError:
+            detail_index = -1
+        return await _build_news_details_screen(language, user_id, detail_index)
     if action == "menu:free":
         return await _build_free_screen(language, user_id)
     if action.startswith("menu:free:detail:"):
