@@ -22,9 +22,10 @@ TEXTS: dict[Language, dict[str, str]] = {
             "<b>PIT BET — главное меню</b>\n"
             "Быстрый доступ к прогнозам, статистике, профилю, тарифам и сервисным разделам."
         ),
-        "nav_back": "◀ Назад",
-        "nav_menu": "☰ В меню",
+        "nav_back": "Назад",
+        "nav_menu": "В меню",
         "open_mini_app": "📱 Открыть PIT BET",
+        "open_news": "📱 Открыть PIT BET",
         "open_feed": "📱 Открыть PIT BET",
         "open_stats": "📈 Открыть статистику",
         "open_profile": "👤 Открыть профиль",
@@ -104,6 +105,11 @@ TEXTS: dict[Language, dict[str, str]] = {
             "Настройки уведомлений доступны в приложении: <b>Профиль → Уведомления</b>.\n\n"
             "Можно гибко управлять категориями Free / Premium / VIP, результатами и новостями."
         ),
+        "news_title": "⚡️ <b>Новости PIT BET</b>",
+        "news_text": (
+            "Следите за обновлениями продукта, тарифов и аналитических блоков PIT BET.\n\n"
+            "Свежие публикации доступны в разделе новостей внутри приложения."
+        ),
         "referrals_title": "👥 <b>Реферальная программа PIT BET</b>",
         "referrals_body": (
             "Приглашай друзей в PIT BET и получай бонусы за их активацию.\n\n"
@@ -173,9 +179,10 @@ TEXTS: dict[Language, dict[str, str]] = {
             "<b>PIT BET — Main Menu</b>\n"
             "Quick access to signals, stats, profile, tariffs, and service sections."
         ),
-        "nav_back": "◀ Back",
-        "nav_menu": "☰ Menu",
+        "nav_back": "Back",
+        "nav_menu": "Menu",
         "open_mini_app": "📱 Open PIT BET",
+        "open_news": "📱 Open PIT BET",
         "open_feed": "📱 Open PIT BET",
         "open_stats": "📈 Open stats",
         "open_profile": "👤 Open profile",
@@ -255,6 +262,11 @@ TEXTS: dict[Language, dict[str, str]] = {
             "Notification settings are available in the app: <b>Profile → Notifications</b>.\n\n"
             "You can control Free / Premium / VIP categories, outcomes, and news."
         ),
+        "news_title": "⚡️ <b>PIT BET News</b>",
+        "news_text": (
+            "Track product, tariff, and analytics updates from PIT BET.\n\n"
+            "Latest posts are available in the news section inside the app."
+        ),
         "referrals_title": "👥 <b>PIT BET Referral Program</b>",
         "referrals_body": (
             "Invite friends to PIT BET and earn bonus access days after activation.\n\n"
@@ -294,26 +306,28 @@ TEXTS: dict[Language, dict[str, str]] = {
 
 BUTTONS: dict[Language, dict[str, str]] = {
     "ru": {
+        "news": "⚡️ Новости PIT BET",
         "free": "⚽ Бесплатные прогнозы",
         "stats": "📊 Статистика",
-        "profile": "👤 Профиль",
+        "profile": "👨‍💻 Профиль",
         "tariffs": "💎 Тарифы",
-        "referrals": "👥 Рефералы",
+        "referrals": "💥 Рефералы",
         "notifications": "🔔 Уведомления",
-        "support": "🛟 Поддержка",
+        "support": "🦸‍♂️ Поддержка",
         "admin": "🛠 Админка",
-        "about": "ℹ О PIT BET",
+        "about": "ℹ Кто мы и как это работает ?",
     },
     "en": {
+        "news": "⚡️ PIT BET News",
         "free": "⚽ Free Signals",
         "stats": "📊 PIT BET Stats",
-        "profile": "👤 PIT BET Profile",
+        "profile": "👨‍💻 Profile",
         "tariffs": "💎 PIT BET Tariffs",
-        "referrals": "👥 Referrals",
+        "referrals": "💥 Referrals",
         "notifications": "🔔 Notifications",
-        "support": "🛟 Support",
+        "support": "🦸‍♂️ Support",
         "admin": "🛠 Admin",
-        "about": "ℹ About PIT BET",
+        "about": "ℹ Who we are and how it works?",
     },
 }
 

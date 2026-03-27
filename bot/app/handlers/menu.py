@@ -118,6 +118,8 @@ async def _resolve_language(user_id: int | None, fallback: str | None) -> str:
 
 def _legacy_action_map() -> dict[str, str]:
     return {
+        button("ru", "news"): "menu:news",
+        button("en", "news"): "menu:news",
         button("ru", "free"): "menu:free",
         button("en", "free"): "menu:free",
         button("ru", "stats"): "menu:stats",
@@ -229,6 +231,17 @@ async def _build_free_screen(language: str, user_id: int | None) -> tuple[str, I
     )
     rows.extend(nav_keyboard.inline_keyboard)
     return ("\n".join(lines).strip(), InlineKeyboardMarkup(inline_keyboard=rows))
+
+
+async def _build_news_screen(language: str) -> tuple[str, InlineKeyboardMarkup]:
+    return (
+        f"{t(language, 'news_title')}\n\n{t(language, 'news_text')}",
+        section_nav_keyboard(
+            language=language,
+            back_callback="menu:main",
+            primary_button=(t(language, "open_news"), _mini_app_url("/news")),
+        ),
+    )
 
 
 async def _build_free_details_screen(language: str, user_id: int | None, detail_index: int) -> tuple[str, InlineKeyboardMarkup]:
@@ -523,6 +536,8 @@ async def _build_screen(
 ) -> tuple[str, InlineKeyboardMarkup]:
     if action == "menu:main":
         return await _build_menu_screen(language, user_id)
+    if action == "menu:news":
+        return await _build_news_screen(language)
     if action == "menu:free":
         return await _build_free_screen(language, user_id)
     if action.startswith("menu:free:detail:"):

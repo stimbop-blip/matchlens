@@ -8,22 +8,21 @@ def main_menu_keyboard(language: str = "ru", is_admin: bool = False) -> InlineKe
     lang = normalize_language(language)
     rows: list[list[InlineKeyboardButton]] = [
         [InlineKeyboardButton(text=t(lang, "open_mini_app"), web_app=WebAppInfo(url=settings.mini_app_url))],
-        [
-            InlineKeyboardButton(text=button(lang, "free"), callback_data="menu:free"),
-            InlineKeyboardButton(text=button(lang, "stats"), callback_data="menu:stats"),
-        ],
+        [InlineKeyboardButton(text=button(lang, "news"), callback_data="menu:news")],
+        [InlineKeyboardButton(text=button(lang, "free"), callback_data="menu:free")],
         [
             InlineKeyboardButton(text=button(lang, "profile"), callback_data="menu:profile"),
             InlineKeyboardButton(text=button(lang, "tariffs"), callback_data="menu:tariffs"),
         ],
         [
             InlineKeyboardButton(text=button(lang, "referrals"), callback_data="menu:referrals"),
-            InlineKeyboardButton(text=button(lang, "notifications"), callback_data="menu:notifications"),
+            InlineKeyboardButton(text=button(lang, "stats"), callback_data="menu:stats"),
         ],
         [
+            InlineKeyboardButton(text=button(lang, "notifications"), callback_data="menu:notifications"),
             InlineKeyboardButton(text=button(lang, "support"), callback_data="menu:support"),
-            InlineKeyboardButton(text=button(lang, "about"), callback_data="menu:about"),
         ],
+        [InlineKeyboardButton(text=button(lang, "about"), callback_data="menu:about")],
     ]
 
     if is_admin:
