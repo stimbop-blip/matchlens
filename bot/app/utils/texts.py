@@ -32,8 +32,9 @@ TEXTS: dict[Language, dict[str, str]] = {
         "open_tariffs": "💎 Открыть тарифы",
         "open_notifications": "⚙ Настроить уведомления",
         "open_admin": "🛠 Открыть админку",
-        "open_referrals": "📱 Открыть профиль",
-        "open_referral_link": "🔗 Моя ссылка",
+        "open_referrals": "👤 Открыть профиль",
+        "open_referrals_show_link": "📋 Показать ссылку",
+        "open_referrals_share": "📤 Поделиться",
         "open_referral_tariffs": "💎 Смотреть тарифы",
         "free_title": "<b>⚽ Бесплатные прогнозы PIT BET</b>",
         "free_empty": (
@@ -118,21 +119,20 @@ TEXTS: dict[Language, dict[str, str]] = {
         "news_no_date": "без даты",
         "referrals_title": "👥 <b>Реферальная программа PIT BET</b>",
         "referrals_body": (
-            "Приглашай друзей в PIT BET и получай бонусы за их активацию.\n\n"
-            "Как это работает:\n"
-            "• ты делишься своей реферальной ссылкой\n"
-            "• новый пользователь заходит по ней в PIT BET\n"
-            "• после первой оплаты платного тарифа бонус начисляется тебе автоматически\n\n"
+            "Приглашай друзей в PIT BET и получай бонусные дни доступа за их активацию.\n\n"
             "Твои бонусы:\n"
             "• за Premium-покупку реферала — <b>+7 дней Premium</b>\n"
             "• за VIP-покупку реферала — <b>+14 дней Premium</b>\n\n"
             "Что получает друг:\n"
-            "• <b>скидку 10%</b> на первую покупку по реферальной ссылке\n\n"
-            "Твоя цель:\n"
-            "приглашай пользователей, отслеживай активации и увеличивай доступ к PIT BET за счёт бонусных дней.\n\n"
-            "Реферальная статистика и ссылка доступны в PIT BET внутри профиля."
+            "• <b>скидку 10%</b> на первую покупку по реферальной ссылке"
         ),
-        "referrals_stats": "Код: <code>{code}</code>\nПриглашено: <b>{invited}</b> • Активировано: <b>{activated}</b>\nБонусные дни: <b>{bonus_days}</b>",
+        "referrals_stats": "<b>Ваш код:</b> <code>{code}</code>\n<b>Приглашено:</b> <b>{invited}</b>\n<b>Активировано:</b> <b>{activated}</b>\n<b>Бонусные дни:</b> <b>{bonus_days}</b>",
+        "referrals_link_block": "<b>Ваша ссылка:</b>\n<code>{link}</code>",
+        "referrals_link_missing": "Ссылка пока недоступна. Попробуйте позже.",
+        "referrals_share_text": (
+            "PIT BET — сигналы, статистика и доступ к сильным игровым ситуациям.\n"
+            "Зайди по моей ссылке и получи скидку 10% на первую покупку:"
+        ),
         "support_title": "<b>🛟 Поддержка PIT BET</b>",
         "support_body": "Если нужна помощь по доступу, оплате или уведомлениям — напишите нам.",
         "support_button": "Написать в поддержку",
@@ -195,8 +195,9 @@ TEXTS: dict[Language, dict[str, str]] = {
         "open_tariffs": "💎 Open tariffs",
         "open_notifications": "⚙ Configure notifications",
         "open_admin": "🛠 Open admin",
-        "open_referrals": "📱 Open profile",
-        "open_referral_link": "🔗 My link",
+        "open_referrals": "👤 Open profile",
+        "open_referrals_show_link": "📋 Show link",
+        "open_referrals_share": "📤 Share",
         "open_referral_tariffs": "💎 View tariffs",
         "free_title": "<b>⚽ PIT BET Free Signals</b>",
         "free_empty": (
@@ -281,19 +282,20 @@ TEXTS: dict[Language, dict[str, str]] = {
         "news_no_date": "no date",
         "referrals_title": "👥 <b>PIT BET Referral Program</b>",
         "referrals_body": (
-            "Invite friends to PIT BET and earn bonus access days after activation.\n\n"
-            "How it works:\n"
-            "• you share your referral link\n"
-            "• a new user joins PIT BET via this link\n"
-            "• after the first paid tariff purchase your bonus is credited automatically\n\n"
+            "Invite friends to PIT BET and get bonus access days after activation.\n\n"
             "Your bonus:\n"
             "• Premium purchase by referral — <b>+7 Premium days</b>\n"
             "• VIP purchase by referral — <b>+14 Premium days</b>\n\n"
             "Friend benefit:\n"
-            "• <b>10% discount</b> on the first purchase via referral link\n\n"
-            "Referral stats and link are available in your PIT BET profile."
+            "• <b>10% discount</b> on the first purchase via referral link"
         ),
-        "referrals_stats": "Code: <code>{code}</code>\nInvited: <b>{invited}</b> • Activated: <b>{activated}</b>\nBonus days: <b>{bonus_days}</b>",
+        "referrals_stats": "<b>Your code:</b> <code>{code}</code>\n<b>Invited:</b> <b>{invited}</b>\n<b>Activated:</b> <b>{activated}</b>\n<b>Bonus days:</b> <b>{bonus_days}</b>",
+        "referrals_link_block": "<b>Your link:</b>\n<code>{link}</code>",
+        "referrals_link_missing": "Link is unavailable right now. Try again later.",
+        "referrals_share_text": (
+            "PIT BET — signals, stats, and access to strong game situations.\n"
+            "Join through my link and get a 10% discount on your first purchase:"
+        ),
         "support_title": "<b>🛟 PIT BET Support</b>",
         "support_body": "Need help with access, payment, or notifications? Contact us.",
         "support_button": "Contact support",

@@ -4,7 +4,7 @@ import contextlib
 from datetime import UTC, datetime
 from html import escape
 from typing import Any, cast
-from urllib.parse import urlsplit, urlunsplit
+from urllib.parse import urlencode, urlsplit, urlunsplit
 
 from aiogram import F, Router
 from aiogram.exceptions import TelegramBadRequest
@@ -133,6 +133,13 @@ def _referral_link_for_bot(code: str | None, fallback: str) -> str:
     if username and "your_" not in username:
         return f"https://t.me/{username}?start=ref_{clean_code}"
     return fallback
+
+
+def _referral_share_url(language: str, referral_link: str) -> str:
+    if not referral_link:
+        return ""
+    query = urlencode({"url": referral_link, "text": t(language, "referrals_share_text")})
+    return f"https://t.me/share/url?{query}"
 
 
 async def _resolve_language(user_id: int | None, fallback: str | None) -> str:
@@ -548,7 +555,7 @@ async def _build_notifications_screen(language: str) -> tuple[str, InlineKeyboar
     )
 
 
-async def _build_referrals_screen(language: str, user_id: int | None) -> tuple[str, InlineKeyboardMarkup]:
+async def _build_referrals_screen(language: str, user_id: int | None, *, show_link: bool = False) -> tuple[str, InlineKeyboardMarkup]:
     backend_client = get_backend_client()
     referral = await backend_client.get_user_referral(user_id) if backend_client and user_id else None
 
@@ -560,15 +567,23 @@ async def _build_referrals_screen(language: str, user_id: int | None) -> tuple[s
     bonus_days = str(referral.get("bonus_days") or 0) if referral else "0"
 
     link = _referral_link_for_bot(code_raw, link_raw)
+    share_url = _referral_share_url(language, link)
     text = (
         f"{t(language, 'referrals_title')}\n\n"
         f"{t(language, 'referrals_body')}\n\n"
         f"{t(language, 'referrals_stats').format(code=escape(code), invited=escape(invited), activated=escape(activated), bonus_days=escape(bonus_days))}"
     )
+    if show_link:
+        if link:
+            text = f"{text}\n\n{t(language, 'referrals_link_block').format(link=escape(link))}"
+        else:
+            text = f"{text}\n\n{t(language, 'referrals_link_missing')}"
 
-    rows: list[list[InlineKeyboardButton]] = []
-    if link:
-        rows.append([InlineKeyboardButton(text=t(language, "open_referral_link"), url=link)])
+    rows: list[list[InlineKeyboardButton]] = [
+        [InlineKeyboardButton(text=t(language, "open_referrals_show_link"), callback_data="menu:referrals:show_link")],
+    ]
+    if share_url:
+        rows.append([InlineKeyboardButton(text=t(language, "open_referrals_share"), url=share_url)])
     rows.append(
         [
             InlineKeyboardButton(text=t(language, "open_referrals"), web_app=WebAppInfo(url=_mini_app_url("/profile"))),
@@ -669,7 +684,9 @@ async def _build_screen(
     if action == "menu:tariffs":
         return await _build_tariffs_screen(language)
     if action == "menu:referrals":
-        return await _build_referrals_screen(language, user_id)
+        return await _build_referrals_screen(language, user_id, show_link=False)
+    if action == "menu:referrals:show_link":
+        return await _build_referrals_screen(language, user_id, show_link=True)
     if action == "menu:notifications":
         return await _build_notifications_screen(language)
     if action == "menu:support":
