@@ -37,25 +37,22 @@ export function NewsPage() {
   return (
     <Layout>
       <HeroCard
-        eyebrow="PIT BET"
-        title={isRu ? "Новости и обновления" : "News and updates"}
+        eyebrow="PIT BET Newsroom"
+        title={isRu ? "Продуктовые апдейты и рыночные события" : "Product updates and market events"}
         description={
           isRu
-            ? "Ключевые обновления продукта, тарифов и сервиса PIT BET."
-            : "Key updates about PIT BET product, tariffs, and service."
+            ? "Ключевые обновления платформы, тарифов и сервисных изменений PIT BET."
+            : "Key platform updates, tariff changes, and service-level updates from PIT BET."
         }
       />
 
       <AppShellSection>
-        <SectionHeader
-          title={isRu ? "Новости PIT BET" : "PIT BET News"}
-          subtitle={isRu ? "Обновления продукта и сервиса" : "Product and service updates"}
-        />
+        <SectionHeader title={isRu ? "Лента новостей" : "News stream"} subtitle={isRu ? "Официальные публикации" : "Official publications"} />
 
         {loading ? <p className="muted-line">{isRu ? "Загружаем новости..." : "Loading news..."}</p> : null}
         {!loading && items.length === 0 ? <p className="empty-state">{isRu ? "Пока нет публикаций." : "No posts yet."}</p> : null}
 
-        <div className="news-list">
+        <div className="news-list compact">
           {items.map((item) => (
             <NewsPreviewCard
               key={item.id}

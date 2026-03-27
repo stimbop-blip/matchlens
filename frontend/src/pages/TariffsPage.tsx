@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useLanguage } from "../app/language";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
-import { AccessBadge, AppShellSection, HeroCard, SectionHeader } from "../components/ui";
+import { AccessBadge, AppShellSection, HeroCard, SectionHeader, Sparkline } from "../components/ui";
 import { api, type PaymentCreateResult, type PaymentMethod, type PaymentQuote, type Tariff } from "../services/api";
 
 type PlanCode = "premium" | "vip";
@@ -33,9 +33,7 @@ export function TariffsPage() {
       .then(([tariffData, methodData]) => {
         setTariffs(tariffData);
         setMethods(methodData);
-        if (methodData.length > 0) {
-          setSelectedMethod(methodData[0].code);
-        }
+        if (methodData.length > 0) setSelectedMethod(methodData[0].code);
       })
       .catch(() => {
         setTariffs([]);
@@ -56,10 +54,7 @@ export function TariffsPage() {
   const freeTariff = tariffs.find((x) => x.code === "free");
   const selectedTariff = tariffs.find((x) => x.code === selectedPlan);
   const selectedMethodObj = methods.find((x) => x.code === selectedMethod) || null;
-  const selectedOptions = useMemo(
-    () => (selectedTariff?.options?.length ? selectedTariff.options : []),
-    [selectedTariff]
-  );
+  const selectedOptions = useMemo(() => (selectedTariff?.options?.length ? selectedTariff.options : []), [selectedTariff]);
 
   const createPayment = async () => {
     if (!selectedMethod) {
@@ -102,8 +97,8 @@ export function TariffsPage() {
         text:
           result.status === "pending_manual_review"
             ? isRu
-              ? "Платеж отправлен на ручную проверку. Статус обновится после подтверждения админом."
-              : "Payment sent for manual review. Status will update after admin confirmation."
+              ? "Платеж отправлен на ручную проверку."
+              : "Payment sent for manual review."
             : isRu
               ? "Статус платежа обновлен"
               : "Payment status updated",
@@ -116,37 +111,36 @@ export function TariffsPage() {
   return (
     <Layout>
       <HeroCard
-        eyebrow="PIT BET"
-        title={isRu ? "Подписки и доступ" : "Subscription access"}
+        eyebrow="PIT BET Membership"
+        title={isRu ? "Membership-доступ с разной глубиной сигналов" : "Membership access with different signal depth"}
         description={
           isRu
-            ? "Выберите уровень доступа, срок и способ оплаты. Premium — основной рабочий тариф, VIP — максимальный уровень сигналов и скорости."
-            : "Choose access level, duration, and payment method. Premium is the core workflow tier, VIP is the maximum signal and speed tier."
+            ? "Free для знакомства, Premium как основной рабочий уровень, VIP как elite-доступ с максимальной скоростью."
+            : "Free for onboarding, Premium as core workflow, VIP as elite access with maximum speed."
         }
-      />
+      >
+        <div className="market-ribbon">
+          <span>{isRu ? "Access momentum" : "Access momentum"}</span>
+          <Sparkline values={[74, 69, 64, 60, 54, 49, 43, 38, 34, 30]} />
+          <span className="live-pulse">VIP</span>
+        </div>
+      </HeroCard>
 
       <AppShellSection>
-        <SectionHeader
-          title={isRu ? "Тарифы PIT BET" : "PIT BET plans"}
-          subtitle={isRu ? "Free / Premium / VIP с периодами 7 / 30 / 90 дней" : "Free / Premium / VIP with 7 / 30 / 90 day periods"}
-        />
+        <SectionHeader title={isRu ? "Тарифные уровни" : "Membership tiers"} subtitle={isRu ? "Free / Premium / VIP" : "Free / Premium / VIP"} />
 
-        <div className="tariff-grid">
+        <div className="tariff-grid premium-membership-grid">
           {freeTariff ? (
             <article className="tariff-card free-tier">
               <div className="tariff-head">
                 <div>
                   <h3>Free</h3>
-                  <p className="tariff-chip">{isRu ? "Без оплаты" : "No payment"}</p>
+                  <p className="tariff-chip">{isRu ? "Входной уровень" : "Entry level"}</p>
                 </div>
                 <AccessBadge level="free" />
               </div>
               <p className="tariff-price">0 RUB</p>
-              <ul>
-                {(freeTariff.perks || []).map((perk) => (
-                  <li key={perk}>{perk}</li>
-                ))}
-              </ul>
+              <ul>{(freeTariff.perks || []).map((perk) => <li key={perk}>{perk}</li>)}</ul>
             </article>
           ) : null}
 
@@ -159,17 +153,13 @@ export function TariffsPage() {
                 <div className="tariff-head">
                   <div>
                     <h3>{plan === "premium" ? "Premium" : "VIP"}</h3>
-                    <p className="tariff-chip">{plan === "premium" ? (isRu ? "Лучший выбор" : "Best choice") : isRu ? "Максимум доступа" : "Maximum access"}</p>
+                    <p className="tariff-chip">{plan === "premium" ? (isRu ? "Best choice" : "Best choice") : isRu ? "Elite access" : "Elite access"}</p>
                   </div>
                   <AccessBadge level={plan} />
                 </div>
-                <ul>
-                  {(tariff.perks || []).map((perk) => (
-                    <li key={perk}>{perk}</li>
-                  ))}
-                </ul>
+                <ul>{(tariff.perks || []).map((perk) => <li key={perk}>{perk}</li>)}</ul>
                 <button type="button" className={`btn ${active ? "secondary" : "ghost"}`} onClick={() => setSelectedPlan(plan)}>
-                  {active ? (isRu ? "Выбрано" : "Selected") : isRu ? "Выбрать" : "Select"}
+                  {active ? (isRu ? "Выбран" : "Selected") : isRu ? "Выбрать" : "Select"}
                 </button>
               </article>
             );
@@ -178,7 +168,7 @@ export function TariffsPage() {
       </AppShellSection>
 
       <AppShellSection>
-        <SectionHeader title={isRu ? "Настройка подписки" : "Configure subscription"} subtitle={isRu ? "Период, способ оплаты и итоговая сумма" : "Period, payment method, and final amount"} />
+        <SectionHeader title={isRu ? "Настройка доступа" : "Configure access"} subtitle={isRu ? "Срок, метод оплаты и финальная цена" : "Duration, payment method, final price"} />
 
         <div className="period-switcher">
           {(selectedOptions.length ? selectedOptions : [{ duration_days: 7, price_rub: 0 }, { duration_days: 30, price_rub: 0 }, { duration_days: 90, price_rub: 0 }]).map((option) => {
@@ -196,12 +186,7 @@ export function TariffsPage() {
 
         <div className="payment-method-grid">
           {methods.map((method) => (
-            <button
-              key={method.code}
-              type="button"
-              className={`payment-method-card ${selectedMethod === method.code ? "active" : ""}`}
-              onClick={() => setSelectedMethod(method.code)}
-            >
+            <button key={method.code} type="button" className={`payment-method-card ${selectedMethod === method.code ? "active" : ""}`} onClick={() => setSelectedMethod(method.code)}>
               <strong>{method.name}</strong>
               <span>{method.method_type === "manual" ? (isRu ? "Ручная оплата" : "Manual") : isRu ? "Автоматическая оплата" : "Automatic"}</span>
               {method.instructions ? <small>{method.instructions}</small> : null}
@@ -210,42 +195,17 @@ export function TariffsPage() {
         </div>
 
         <div className="input-stack">
-          <input
-            value={promoCode}
-            onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-            placeholder={isRu ? "Промокод (опционально)" : "Promo code (optional)"}
-          />
+          <input value={promoCode} onChange={(e) => setPromoCode(e.target.value.toUpperCase())} placeholder={isRu ? "Промокод (опционально)" : "Promo code (optional)"} />
         </div>
 
         <div className="payment-summary-card">
-          <div className="info-row">
-            <span>{isRu ? "Тариф" : "Plan"}</span>
-            <strong>{selectedPlan === "premium" ? "Premium" : "VIP"}</strong>
-          </div>
-          <div className="info-row">
-            <span>{isRu ? "Период" : "Duration"}</span>
-            <strong>{selectedDuration} {isRu ? "дней" : "days"}</strong>
-          </div>
-          <div className="info-row">
-            <span>{isRu ? "Способ оплаты" : "Payment method"}</span>
-            <strong>{selectedMethodObj?.name || "—"}</strong>
-          </div>
-          <div className="info-row">
-            <span>{isRu ? "Базовая цена" : "Base amount"}</span>
-            <strong>{quote?.original_amount_rub ?? "—"} RUB</strong>
-          </div>
-          <div className="info-row">
-            <span>{isRu ? "Скидка" : "Discount"}</span>
-            <strong>
-              {quote ? `${quote.discount_rub} RUB` : "—"}
-              {quote?.applied_discount_source === "promo" ? ` • ${isRu ? "промокод" : "promo"}` : ""}
-              {quote?.applied_discount_source === "referral" ? ` • ${isRu ? "реферальная" : "referral"}` : ""}
-            </strong>
-          </div>
-          <div className="info-row total">
-            <span>{isRu ? "Итого к оплате" : "Final amount"}</span>
-            <strong>{quote?.final_amount_rub ?? "—"} RUB</strong>
-          </div>
+          <div className="info-row"><span>{isRu ? "Тариф" : "Plan"}</span><strong>{selectedPlan === "premium" ? "Premium" : "VIP"}</strong></div>
+          <div className="info-row"><span>{isRu ? "Период" : "Duration"}</span><strong>{selectedDuration} {isRu ? "дней" : "days"}</strong></div>
+          <div className="info-row"><span>{isRu ? "Способ оплаты" : "Payment method"}</span><strong>{selectedMethodObj?.name || "—"}</strong></div>
+          <div className="info-row"><span>{isRu ? "Базовая цена" : "Base amount"}</span><strong>{quote?.original_amount_rub ?? "—"} RUB</strong></div>
+          <div className="info-row"><span>{isRu ? "Скидка" : "Discount"}</span><strong>{quote ? `${quote.discount_rub} RUB` : "—"}</strong></div>
+          <div className="info-row total"><span>{isRu ? "Итого" : "Final"}</span><strong>{quote?.final_amount_rub ?? "—"} RUB</strong></div>
+          {loadingQuote ? <p className="muted-line">{isRu ? "Обновляем расчет..." : "Updating quote..."}</p> : null}
           {quote?.message ? <p className="muted-line">{quote.message}</p> : null}
         </div>
 
@@ -266,7 +226,7 @@ export function TariffsPage() {
         {paymentResult?.payment_method_type === "manual" ? (
           <div className="manual-payment-card">
             <h3>{isRu ? "Оплата переводом" : "Manual transfer"}</h3>
-            <p>{isRu ? "Сделайте перевод по реквизитам ниже, затем отправьте подтверждение." : "Complete transfer using details below, then submit confirmation."}</p>
+            <p>{isRu ? "Сделайте перевод по реквизитам ниже, затем отправьте подтверждение." : "Complete transfer and submit confirmation."}</p>
             <div className="stack-list compact">
               {paymentResult.card_number ? <div className="info-row"><span>{isRu ? "Номер карты" : "Card number"}</span><strong>{paymentResult.card_number}</strong></div> : null}
               {paymentResult.recipient_name ? <div className="info-row"><span>{isRu ? "Получатель" : "Recipient"}</span><strong>{paymentResult.recipient_name}</strong></div> : null}
@@ -274,12 +234,10 @@ export function TariffsPage() {
               <div className="info-row"><span>{isRu ? "Сумма" : "Amount"}</span><strong>{paymentResult.amount_rub} RUB</strong></div>
             </div>
             <div className="input-stack">
-              <input placeholder={isRu ? "ID перевода / комментарий к платежу" : "Transfer ID / payment comment"} value={manualMeta.transfer_reference} onChange={(e) => setManualMeta((prev) => ({ ...prev, transfer_reference: e.target.value }))} />
+              <input placeholder={isRu ? "ID перевода / комментарий" : "Transfer ID / comment"} value={manualMeta.transfer_reference} onChange={(e) => setManualMeta((prev) => ({ ...prev, transfer_reference: e.target.value }))} />
               <textarea rows={3} placeholder={isRu ? "Примечание (опционально)" : "Note (optional)"} value={manualMeta.note} onChange={(e) => setManualMeta((prev) => ({ ...prev, note: e.target.value }))} />
               <input placeholder={isRu ? "Ссылка на скриншот (опционально)" : "Screenshot URL (optional)"} value={manualMeta.proof} onChange={(e) => setManualMeta((prev) => ({ ...prev, proof: e.target.value }))} />
-              <button className="btn secondary" type="button" onClick={confirmManual}>
-                {isRu ? "Я оплатил" : "I paid"}
-              </button>
+              <button className="btn secondary" type="button" onClick={confirmManual}>{isRu ? "Я оплатил" : "I paid"}</button>
             </div>
           </div>
         ) : null}

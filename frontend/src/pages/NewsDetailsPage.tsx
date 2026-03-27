@@ -42,7 +42,7 @@ export function NewsDetailsPage() {
     <Layout>
       {post ? (
         <HeroCard
-          eyebrow="PIT BET"
+          eyebrow="PIT BET Newsroom"
           title={post.title}
           description={post.category || (isRu ? "Новости" : "News")}
           right={<span className="badge info">{formatDate(post.published_at, language)}</span>}
@@ -50,22 +50,16 @@ export function NewsDetailsPage() {
       ) : null}
 
       <AppShellSection>
-        <SectionHeader title={isRu ? "Пост новости" : "News post"} />
+        <SectionHeader title={isRu ? "Новостной материал" : "News material"} />
 
         {loading ? <p className="muted-line">{isRu ? "Загрузка поста..." : "Loading post..."}</p> : null}
-        {!loading && !post ? (
-          <p className="empty-state">{isRu ? "Пост не найден или скрыт." : "Post not found or unpublished."}</p>
-        ) : null}
+        {!loading && !post ? <p className="empty-state">{isRu ? "Пост не найден или скрыт." : "Post not found or unpublished."}</p> : null}
 
         {post ? <article className="news-body-card">{post.body}</article> : null}
 
         <SectionActions compact>
-          <Link className="btn secondary" to="/news">
-            {isRu ? "Назад к новостям" : "Back to news"}
-          </Link>
-          <Link className="btn ghost" to="/">
-            {isRu ? "На главную" : "Home"}
-          </Link>
+          <Link className="btn secondary" to="/news">{isRu ? "Назад к новостям" : "Back to news"}</Link>
+          <Link className="btn ghost" to="/">{isRu ? "На обзор" : "To overview"}</Link>
         </SectionActions>
       </AppShellSection>
 

@@ -46,6 +46,14 @@ function MenuIcon() {
   );
 }
 
+function HubIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M5 5h6v6H5zm8 0h6v6h-6zM5 13h6v6H5zm8 0h6v6h-6z" />
+    </svg>
+  );
+}
+
 export function Layout({ children }: PropsWithChildren) {
   const { language } = useLanguage();
   const [isAdmin, setIsAdmin] = useState(false);
@@ -106,39 +114,35 @@ export function Layout({ children }: PropsWithChildren) {
   const tabs = [
     {
       to: "/",
-      label: isRu ? "Главная" : "Home",
+      label: isRu ? "Обзор" : "Overview",
       icon: <HomeIcon />,
       active: location.pathname === "/",
     },
     {
       to: "/feed",
-      label: isRu ? "Лента" : "Feed",
+      label: isRu ? "Сигналы" : "Signals",
       icon: <FeedIcon />,
       active: location.pathname.startsWith("/feed"),
     },
     {
       to: "/stats",
-      label: isRu ? "Статистика" : "Stats",
+      label: isRu ? "Performance" : "Performance",
       icon: <StatsIcon />,
       active: location.pathname.startsWith("/stats"),
     },
     {
       to: "/profile",
-      label: isRu ? "Профиль" : "Profile",
+      label: isRu ? "Аккаунт" : "Account",
       icon: <ProfileIcon />,
       active: location.pathname.startsWith("/profile"),
     },
-    {
-      to: "/menu",
-      label: isRu ? "Меню" : "Menu",
-      icon: <MenuIcon />,
-      active:
-        location.pathname.startsWith("/menu") ||
-        location.pathname.startsWith("/tariffs") ||
-        location.pathname.startsWith("/news") ||
-        (isAdmin && location.pathname.startsWith("/admin")),
-    },
   ];
+
+  const hubActive =
+    location.pathname.startsWith("/menu") ||
+    location.pathname.startsWith("/tariffs") ||
+    location.pathname.startsWith("/news") ||
+    (isAdmin && location.pathname.startsWith("/admin"));
 
   return (
     <div className="app-shell">
@@ -153,10 +157,17 @@ export function Layout({ children }: PropsWithChildren) {
 
       <main className="app-content app-scroll">{children}</main>
 
-      <nav className="tabbar">
+      <nav className="command-dock" aria-label={isRu ? "Навигация" : "Navigation"}>
         {tabs.map((tab) => (
           <BottomNavItem key={tab.to} to={tab.to} icon={tab.icon} label={tab.label} active={tab.active} />
         ))}
+        <BottomNavItem
+          to="/menu"
+          icon={hubActive ? <HubIcon /> : <MenuIcon />}
+          label={isRu ? "Hub" : "Hub"}
+          active={hubActive}
+          accent
+        />
       </nav>
     </div>
   );

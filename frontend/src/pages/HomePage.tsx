@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { useLanguage } from "../app/language";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
-import { AccessBadge, AppShellSection, HeroCard, NewsPreviewCard, SectionActions, SectionHeader, StatCard } from "../components/ui";
+import { AccessBadge, AppShellSection, HeroCard, NewsPreviewCard, SectionActions, SectionHeader, Sparkline, StatCard } from "../components/ui";
 import { api, type Me, type NewsPost, type Prediction, type PublicStats, type ReferralStats } from "../services/api";
 
 function tariffCode(value: string | null | undefined): "free" | "premium" | "vip" {
@@ -111,7 +111,7 @@ export function HomePage() {
     <Layout>
       <HeroCard
         eyebrow="PIT BET"
-        title={isRu ? "Сильные сигналы. Понятная статистика. Контроль доступа." : "Strong signals. Clear stats. Full access control."}
+        title={isRu ? "Считывай рынок раньше. Действуй по сильным сигналам." : "Read market shifts earlier. Act on stronger signals."}
         description={
           isRu
             ? "PIT BET отслеживает движение линии, коэффициенты и игровые паттерны, чтобы выделять самые сильные игровые ситуации."
@@ -119,6 +119,11 @@ export function HomePage() {
         }
         right={<AccessBadge level={tariffCode(sub?.tariff)} label={tariffLabel(sub?.tariff)} />}
       >
+        <div className="market-ribbon">
+          <span>{isRu ? "Market motion" : "Market motion"}</span>
+          <Sparkline values={[72, 66, 69, 58, 61, 44, 48, 32, 38, 27]} />
+          <span className="live-pulse">LIVE</span>
+        </div>
         <div className="hero-mini-info">
           <span>{isRu ? "Тариф" : "Tariff"}: <b>{tariffLabel(sub?.tariff)}</b></span>
           <span>{isRu ? "Статус" : "Status"}: <b>{statusLabel(sub?.status, language)}</b></span>

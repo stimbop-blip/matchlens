@@ -25,6 +25,12 @@ function statusLabel(status: Prediction["status"], language: "ru" | "en") {
   return language === "ru" ? "В ожидании" : "Pending";
 }
 
+function signalMark(item: Prediction, language: "ru" | "en") {
+  if (item.mode === "live") return "Live";
+  if (item.access_level === "vip") return language === "ru" ? "Strong Setup" : "Strong Setup";
+  return language === "ru" ? "Prematch" : "Prematch";
+}
+
 export function PredictionDetailsPage() {
   const { language } = useLanguage();
   const isRu = language === "ru";
@@ -54,81 +60,56 @@ export function PredictionDetailsPage() {
     <Layout>
       {item ? (
         <HeroCard
-          eyebrow="PIT BET"
+          eyebrow="PIT BET Signal"
           title={item.match_name}
-          description={item.league || (isRu ? "Лига уточняется" : "League is being updated")}
+          description={item.league || (isRu ? "Лига уточняется" : "League pending")}
           right={<AccessBadge level={item.access_level} />}
         >
-          <div className="cta-row">
+          <div className="feed-meta-row top">
+            <span className="badge info">{signalMark(item, language)}</span>
             <span className={`badge ${item.status}`}>{statusLabel(item.status, language)}</span>
-            <span className="badge info">{item.mode === "live" ? "Live" : isRu ? "Прематч" : "Prematch"}</span>
+            <span className="mark-pill">{item.mode === "live" ? "Live" : "Prematch"}</span>
           </div>
         </HeroCard>
       ) : null}
 
       <AppShellSection>
-        <SectionHeader title={isRu ? "Детали прогноза" : "Prediction details"} />
+        <SectionHeader title={isRu ? "Signal breakdown" : "Signal breakdown"} />
 
         {loading ? <p className="muted-line">{isRu ? "Загружаем данные..." : "Loading details..."}</p> : null}
         {!loading && error ? <p className="error-msg">{error}</p> : null}
 
         {!loading && item ? (
           <>
-            <div className="stack-list">
-              <div className="info-row">
-                <span>{isRu ? "Вид спорта" : "Sport"}</span>
-                <strong>{item.sport_type}</strong>
-              </div>
-              <div className="info-row">
-                <span>{isRu ? "Старт" : "Kickoff"}</span>
-                <strong>{dateLabel(item.event_start_at, language)}</strong>
-              </div>
-              <div className="info-row">
-                <span>{isRu ? "Сигнал" : "Signal"}</span>
-                <strong>{item.signal_type}</strong>
-              </div>
-              <div className="info-row">
-                <span>{isRu ? "Коэффициент" : "Odds"}</span>
-                <strong>{item.odds}</strong>
-              </div>
-              <div className="info-row">
-                <span>{isRu ? "Риск" : "Risk"}</span>
-                <strong>{item.risk_level}</strong>
-              </div>
-              <div className="info-row">
-                <span>{isRu ? "Статус" : "Status"}</span>
-                <strong>{statusLabel(item.status, language)}</strong>
-              </div>
-              <div className="info-row">
-                <span>{isRu ? "Доступ" : "Access"}</span>
-                <strong>{item.access_level.toUpperCase()}</strong>
-              </div>
+            <div className="details-grid">
+              <div className="info-row"><span>{isRu ? "Вид спорта" : "Sport"}</span><strong>{item.sport_type}</strong></div>
+              <div className="info-row"><span>{isRu ? "Старт" : "Kickoff"}</span><strong>{dateLabel(item.event_start_at, language)}</strong></div>
+              <div className="info-row"><span>{isRu ? "Сигнал" : "Signal"}</span><strong>{item.signal_type}</strong></div>
+              <div className="info-row"><span>{isRu ? "Коэффициент" : "Odds"}</span><strong>{item.odds}</strong></div>
+              <div className="info-row"><span>{isRu ? "Риск" : "Risk"}</span><strong>{item.risk_level}</strong></div>
+              <div className="info-row"><span>{isRu ? "Доступ" : "Access"}</span><strong>{item.access_level.toUpperCase()}</strong></div>
             </div>
 
             <SectionHeader title={isRu ? "Контекст сигнала" : "Signal context"} />
             <div className="details-body">
               {isRu
-                ? `Формат: ${item.mode === "live" ? "Live" : "Прематч"}. Лига: ${item.league || "уточняется"}.`
-                : `Mode: ${item.mode === "live" ? "Live" : "Prematch"}. League: ${item.league || "to be updated"}.`}
+                ? `Режим: ${item.mode === "live" ? "Live" : "Prematch"}. Структура сигнала формируется на основе рыночного движения и игрового контекста.`
+                : `Mode: ${item.mode === "live" ? "Live" : "Prematch"}. Signal structure is based on market movement and game context.`}
             </div>
 
-            <SectionHeader title={isRu ? "Разбор" : "Analysis"} />
+            <SectionHeader title={isRu ? "Аналитический комментарий" : "Analyst commentary"} />
             <div className="details-body">
               {item.short_description ||
                 (isRu
-                  ? "Детальный комментарий будет опубликован вместе с обновлением сигнала."
-                  : "Detailed commentary will appear once the signal is updated.")}
+                  ? "Подробный аналитический комментарий будет опубликован вместе с обновлением сигнала."
+                  : "Detailed analyst commentary will be available after signal update.")}
             </div>
           </>
         ) : null}
 
         <SectionActions compact>
-          <Link className="btn secondary" to="/feed">
-            {isRu ? "Назад к ленте" : "Back to feed"}
-          </Link>
-          <Link className="btn ghost" to="/tariffs">
-            {isRu ? "Тарифы" : "Tariffs"}
-          </Link>
+          <Link className="btn secondary" to="/feed">{isRu ? "Назад к ленте" : "Back to feed"}</Link>
+          <Link className="btn ghost" to="/tariffs">{isRu ? "Смотреть тарифы" : "View tariffs"}</Link>
         </SectionActions>
       </AppShellSection>
 

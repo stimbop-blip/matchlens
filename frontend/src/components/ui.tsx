@@ -267,16 +267,33 @@ export function BottomNavItem({
   active,
   label,
   icon,
+  accent = false,
 }: {
   to: string;
   active: boolean;
   label: string;
   icon: ReactNode;
+  accent?: boolean;
 }) {
   return (
-    <Link to={to} className={active ? "tab-item active" : "tab-item"}>
+    <Link to={to} className={active ? `tab-item ${accent ? "accent" : ""} active` : `tab-item ${accent ? "accent" : ""}`}>
       <span className="tab-item-icon">{icon}</span>
       <span className="tab-item-label">{label}</span>
     </Link>
+  );
+}
+
+export function Sparkline({ values }: { values: number[] }) {
+  const points = values
+    .map((value, index) => {
+      const x = (index / Math.max(values.length - 1, 1)) * 100;
+      const y = 100 - value;
+      return `${x},${y}`;
+    })
+    .join(" ");
+  return (
+    <svg viewBox="0 0 100 100" className="sparkline" aria-hidden="true">
+      <polyline points={points} />
+    </svg>
   );
 }
