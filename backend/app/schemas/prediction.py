@@ -13,6 +13,7 @@ class PredictionOut(BaseModel):
     signal_type: str
     odds: float
     short_description: str | None
+    result_screenshot: str | None
     risk_level: str
     access_level: str
     status: str
@@ -29,6 +30,7 @@ class PredictionCreateIn(BaseModel):
     signal_type: str = Field(min_length=2, max_length=100)
     odds: float = Field(gt=1.0, le=100.0)
     short_description: str | None = None
+    result_screenshot: str | None = None
     risk_level: str = Field(default="medium")
     access_level: str = Field(default="free")
     mode: str = Field(default="prematch")
@@ -45,6 +47,7 @@ class PredictionUpdateIn(BaseModel):
     signal_type: str | None = None
     odds: float | None = Field(default=None, gt=1.0, le=100.0)
     short_description: str | None = None
+    result_screenshot: str | None = None
     risk_level: str | None = None
     access_level: str | None = None
     mode: str | None = None

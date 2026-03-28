@@ -76,6 +76,17 @@ def on_startup() -> None:
                 conn.execute(text("ALTER TABLE notifications ADD COLUMN cta_text VARCHAR(80)"))
             if "cta_url" not in notification_columns:
                 conn.execute(text("ALTER TABLE notifications ADD COLUMN cta_url VARCHAR(1024)"))
+            if "image_data" not in notification_columns:
+                conn.execute(text("ALTER TABLE notifications ADD COLUMN image_data TEXT"))
+
+        predictions_table_exists = conn.execute(text("SELECT to_regclass('public.predictions')")).scalar()
+        if predictions_table_exists:
+            prediction_columns = {
+                row[0]
+                for row in conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name = 'predictions'"))
+            }
+            if "result_screenshot" not in prediction_columns:
+                conn.execute(text("ALTER TABLE predictions ADD COLUMN result_screenshot TEXT"))
 
         payment_table_exists = conn.execute(text("SELECT to_regclass('public.payments')")).scalar()
         if payment_table_exists:

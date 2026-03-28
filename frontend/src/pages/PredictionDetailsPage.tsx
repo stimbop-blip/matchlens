@@ -212,6 +212,15 @@ export function PredictionDetailsPage() {
             </div>
           </AppShellSection>
 
+          {item.result_screenshot ? (
+            <AppShellSection>
+              <SectionHeader title={t("prediction.section.screenshot")} subtitle={t("prediction.section.screenshotSubtitle")} />
+              <div className="pb-prediction-screenshot">
+                <img src={item.result_screenshot} alt={t("prediction.screenshot.alt")} loading="lazy" />
+              </div>
+            </AppShellSection>
+          ) : null}
+
           <AppShellSection>
             <SectionHeader title={t("prediction.section.outcome")} />
             <p className="pb-article-text">{outcomeText(item.status, t)}</p>

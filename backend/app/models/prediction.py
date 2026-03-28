@@ -21,6 +21,7 @@ class Prediction(Base):
     signal_type: Mapped[str] = mapped_column(String(100), nullable=False)
     odds: Mapped[float] = mapped_column(Numeric(6, 2), nullable=False)
     short_description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    result_screenshot: Mapped[str | None] = mapped_column(Text, nullable=True)
     risk_level: Mapped[str] = mapped_column(String(20), nullable=False, default="medium")
     access_level: Mapped[AccessLevel] = mapped_column(Enum(AccessLevel), default=AccessLevel.free)
     status: Mapped[PredictionStatus] = mapped_column(Enum(PredictionStatus), default=PredictionStatus.pending, index=True)

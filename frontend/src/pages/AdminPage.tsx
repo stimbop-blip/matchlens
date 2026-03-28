@@ -61,6 +61,27 @@ function toDateTimeLocal(value: string | null | undefined): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+function toShortText(value: string, maxLength = 180): string {
+  const compact = value.replace(/\s+/g, " ").trim();
+  if (compact.length <= maxLength) return compact;
+  return `${compact.slice(0, Math.max(0, maxLength - 1)).trim()}…`;
+}
+
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        resolve(reader.result);
+        return;
+      }
+      reject(new Error("Invalid image payload"));
+    };
+    reader.onerror = () => reject(new Error("Failed to read image"));
+    reader.readAsDataURL(file);
+  });
+}
+
 export function AdminPage() {
   const { language } = useLanguage();
   const isRu = language === "ru";
@@ -104,6 +125,7 @@ export function AdminPage() {
     button_url?: string | null;
   } | null>(null);
   const [deliveryStats, setDeliveryStats] = useState<{ total: number; sent: number; failed: number; queued: number } | null>(null);
+  const [uploadingPredictionId, setUploadingPredictionId] = useState<string | null>(null);
 
   const notifyInfo = (text: string) => {
     setMessageTone("info");
@@ -193,6 +215,18 @@ export function AdminPage() {
     const matchName = String(formData.get("match_name") || "").trim();
     const signalType = String(formData.get("signal_type") || "").trim();
     try {
+      let resultScreenshot: string | null = null;
+      const screenshotCandidate = formData.get("result_screenshot");
+      if (screenshotCandidate instanceof File && screenshotCandidate.size > 0) {
+        if (!screenshotCandidate.type.startsWith("image/")) {
+          throw new Error(tx("Скрин должен быть изображением", "Screenshot must be an image"));
+        }
+        if (screenshotCandidate.size > 4 * 1024 * 1024) {
+          throw new Error(tx("Скрин слишком большой (максимум 4MB)", "Screenshot is too large (max 4MB)"));
+        }
+        resultScreenshot = await fileToDataUrl(screenshotCandidate);
+      }
+
       await api.adminCreatePrediction({
         title: String(formData.get("title") || `${matchName} • ${signalType}`).trim(),
         match_name: matchName,
@@ -206,6 +240,7 @@ export function AdminPage() {
         access_level: String(formData.get("access_level") || "free"),
         mode: String(formData.get("mode") || "prematch"),
         status: String(formData.get("status") || "pending").replace("win", "won").replace("lose", "lost"),
+        result_screenshot: resultScreenshot,
         publish_now: true,
       });
       notifySuccess(tx("Прогноз создан", "Prediction created"));
@@ -225,6 +260,40 @@ export function AdminPage() {
       await loadAll();
     } catch (e) {
       notifyError(textError(e, tx("Ошибка обновления прогноза", "Failed to update prediction")));
+    }
+  };
+
+  const onUploadPredictionScreenshot = async (predictionId: string, file: File) => {
+    if (!file.type.startsWith("image/")) {
+      notifyError(tx("Нужен файл изображения", "Please upload an image file"));
+      return;
+    }
+    const maxSizeMb = 4;
+    if (file.size > maxSizeMb * 1024 * 1024) {
+      notifyError(tx("Скрин слишком большой (максимум 4MB)", "Image is too large (max 4MB)"));
+      return;
+    }
+
+    setUploadingPredictionId(predictionId);
+    try {
+      const payload = await fileToDataUrl(file);
+      await api.adminUpdatePrediction(predictionId, { result_screenshot: payload });
+      notifySuccess(tx("Скрин прогноза сохранен", "Prediction screenshot saved"));
+      await loadAll();
+    } catch (e) {
+      notifyError(textError(e, tx("Не удалось загрузить скрин", "Failed to upload screenshot")));
+    } finally {
+      setUploadingPredictionId(null);
+    }
+  };
+
+  const onClearPredictionScreenshot = async (predictionId: string) => {
+    try {
+      await api.adminUpdatePrediction(predictionId, { result_screenshot: "" });
+      notifySuccess(tx("Скрин удален", "Screenshot removed"));
+      await loadAll();
+    } catch (e) {
+      notifyError(textError(e, tx("Не удалось удалить скрин", "Failed to remove screenshot")));
     }
   };
 
@@ -425,8 +494,8 @@ export function AdminPage() {
     if (!window.confirm(tx("Удалить промокод?", "Delete promo code?"))) return;
     try {
       await api.adminDeletePromoCode(id);
+      setPromoCodes((prev) => prev.filter((item) => item.id !== id));
       notifySuccess(tx("Промокод удален", "Promo code deleted"));
-      await loadAll();
     } catch (e) {
       notifyError(textError(e, tx("Не удалось удалить промокод", "Failed to delete promo code")));
     }
@@ -564,42 +633,53 @@ export function AdminPage() {
 
         {tab === "predictions" ? (
           <div className="admin-panel">
-            <h3>{tx("Прогнозы", "Predictions")}</h3>
-            <form className="admin-form" onSubmit={onCreatePrediction}>
-              <input name="title" placeholder={tx("Заголовок (необязательно)", "Title (optional)")} />
-              <input name="match_name" placeholder={tx("Матч", "Match")} required />
-              <input name="league" placeholder={tx("Лига", "League")} required />
-              <input name="sport_type" placeholder={tx("Вид спорта", "Sport type")} defaultValue="football" required />
-              <input name="event_start_at" type="datetime-local" required />
-              <input name="signal_type" placeholder={tx("Тип сигнала", "Signal type")} required />
-              <input name="odds" type="number" min="1.01" step="0.01" defaultValue="1.80" required />
-              <div className="admin-grid-3">
-                <select name="risk_level" defaultValue="medium">
-                  <option value="low">{tx("Риск: низкий", "Risk: low")}</option>
-                  <option value="medium">{tx("Риск: средний", "Risk: medium")}</option>
-                  <option value="high">{tx("Риск: высокий", "Risk: high")}</option>
+            <div className="admin-panel-head">
+              <h3>{tx("Прогнозы", "Predictions")}</h3>
+              <p className="muted">{tx("Публикация, результат и скрин ставки в одном потоке", "Publish, close, and attach screenshots in one flow")}</p>
+            </div>
+
+            <details className="admin-collapsible" open>
+              <summary>{tx("Добавить прогноз", "Create prediction")}</summary>
+              <form className="admin-form" onSubmit={onCreatePrediction}>
+                <input name="title" placeholder={tx("Заголовок (необязательно)", "Title (optional)")} />
+                <input name="match_name" placeholder={tx("Матч", "Match")} required />
+                <input name="league" placeholder={tx("Лига", "League")} required />
+                <input name="sport_type" placeholder={tx("Вид спорта", "Sport type")} defaultValue="football" required />
+                <input name="event_start_at" type="datetime-local" required />
+                <input name="signal_type" placeholder={tx("Тип сигнала", "Signal type")} required />
+                <input name="odds" type="number" min="1.01" step="0.01" defaultValue="1.80" required />
+                <div className="admin-grid-3">
+                  <select name="risk_level" defaultValue="medium">
+                    <option value="low">{tx("Риск: низкий", "Risk: low")}</option>
+                    <option value="medium">{tx("Риск: средний", "Risk: medium")}</option>
+                    <option value="high">{tx("Риск: высокий", "Risk: high")}</option>
+                  </select>
+                  <select name="access_level" defaultValue="free">
+                    <option value="free">{tx("Доступ: Бесплатный", "Access: Free")}</option>
+                    <option value="premium">{tx("Доступ: Премиум", "Access: Premium")}</option>
+                    <option value="vip">{tx("Доступ: VIP", "Access: VIP")}</option>
+                  </select>
+                  <select name="mode" defaultValue="prematch">
+                    <option value="prematch">{tx("Формат: Прематч", "Mode: Prematch")}</option>
+                    <option value="live">{tx("Формат: Лайв", "Mode: Live")}</option>
+                  </select>
+                </div>
+                <select name="status" defaultValue="pending">
+                  <option value="pending">{tx("Статус: в ожидании", "Status: pending")}</option>
+                  <option value="win">{tx("Статус: выигрыш", "Status: won")}</option>
+                  <option value="lose">{tx("Статус: проигрыш", "Status: lost")}</option>
+                  <option value="refund">{tx("Статус: возврат", "Status: refund")}</option>
                 </select>
-                <select name="access_level" defaultValue="free">
-                  <option value="free">{tx("Доступ: Бесплатный", "Access: Free")}</option>
-                  <option value="premium">{tx("Доступ: Премиум", "Access: Premium")}</option>
-                  <option value="vip">{tx("Доступ: VIP", "Access: VIP")}</option>
-                </select>
-                <select name="mode" defaultValue="prematch">
-                  <option value="prematch">{tx("Формат: Прематч", "Mode: Prematch")}</option>
-                  <option value="live">{tx("Формат: Лайв", "Mode: Live")}</option>
-                </select>
-              </div>
-              <select name="status" defaultValue="pending">
-                <option value="pending">{tx("Статус: в ожидании", "Status: pending")}</option>
-                <option value="win">{tx("Статус: выигрыш", "Status: won")}</option>
-                <option value="lose">{tx("Статус: проигрыш", "Status: lost")}</option>
-                <option value="refund">{tx("Статус: возврат", "Status: refund")}</option>
-              </select>
-              <textarea name="short_description" placeholder={tx("Краткое описание", "Short description")} rows={3} />
-              <button className="btn" type="submit">
-                {tx("Добавить прогноз", "Create prediction")}
-              </button>
-            </form>
+                <textarea name="short_description" placeholder={tx("Краткое описание", "Short description")} rows={3} />
+                <label className="admin-file-field">
+                  <span>{tx("Скрин ставки/результата (опционально)", "Bet/result screenshot (optional)")}</span>
+                  <input name="result_screenshot" type="file" accept="image/*" />
+                </label>
+                <button className="btn" type="submit">
+                  {tx("Добавить прогноз", "Create prediction")}
+                </button>
+              </form>
+            </details>
 
             <input value={predQuery} onChange={(e) => setPredQuery(e.target.value)} placeholder={tx("Поиск по матчу / сигналу", "Search by match / signal")} />
             <div className="admin-list">
@@ -610,6 +690,13 @@ export function AdminPage() {
                     <span className={`access-pill ${item.access_level}`}>{accessLabel(item.access_level, language)}</span>
                   </div>
                   <p className="muted">{item.signal_type} • {tx("кф", "odds")} {item.odds} • {item.mode === "live" ? tx("Лайв", "Live") : tx("Прематч", "Prematch")}</p>
+                  {item.result_screenshot ? (
+                    <div className="admin-image-preview">
+                      <img src={item.result_screenshot} alt={tx("Скрин результата", "Result screenshot")} loading="lazy" />
+                    </div>
+                  ) : (
+                    <p className="muted">{tx("Скрин пока не загружен", "No screenshot uploaded yet")}</p>
+                  )}
                   <div className="admin-grid-3">
                     <select defaultValue={item.status} onChange={(e) => onUpdatePrediction(item.id, { status: e.target.value })}>
                       <option value="pending">{tx("В ожидании", "Pending")}</option>
@@ -624,6 +711,29 @@ export function AdminPage() {
                     </select>
                     <input type="number" step="0.01" min="1.01" defaultValue={item.odds} onBlur={(e) => onUpdatePrediction(item.id, { odds: Number(e.target.value) })} />
                   </div>
+                  <div className="admin-grid-2">
+                    <label className="admin-file-field compact">
+                      <span>
+                        {uploadingPredictionId === item.id
+                          ? tx("Загружаем скрин...", "Uploading screenshot...")
+                          : tx("Загрузить скрин", "Upload screenshot")}
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.currentTarget.files?.[0];
+                          if (!file) return;
+                          void onUploadPredictionScreenshot(item.id, file);
+                          e.currentTarget.value = "";
+                        }}
+                        disabled={uploadingPredictionId === item.id}
+                      />
+                    </label>
+                    <button className="btn ghost" type="button" disabled={!item.result_screenshot} onClick={() => onClearPredictionScreenshot(item.id)}>
+                      {tx("Удалить скрин", "Remove screenshot")}
+                    </button>
+                  </div>
                   <div className="cta-row">
                     <button className="btn ghost" type="button" onClick={() => setEditingPredictionId(item.id)}>
                       {tx("Редактировать", "Edit")}
@@ -633,26 +743,29 @@ export function AdminPage() {
                     </button>
                   </div>
                   {editingPredictionId === item.id ? (
-                    <form
-                      className="admin-form"
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        const fd = new FormData(e.currentTarget);
-                        void onUpdatePrediction(item.id, {
-                          title: String(fd.get("title") || ""),
-                          league: String(fd.get("league") || ""),
-                          short_description: String(fd.get("short_description") || ""),
-                        });
-                        setEditingPredictionId(null);
-                      }}
-                    >
-                      <input name="title" defaultValue={item.title} placeholder={tx("Заголовок", "Title")} />
-                      <input name="league" defaultValue={item.league || ""} placeholder={tx("Лига", "League")} />
-                      <textarea name="short_description" defaultValue={item.short_description || ""} rows={3} />
-                      <button className="btn" type="submit">
-                        {tx("Сохранить изменения", "Save changes")}
-                      </button>
-                    </form>
+                    <details className="admin-collapsible inline" open>
+                      <summary>{tx("Редактирование прогноза", "Prediction edit")}</summary>
+                      <form
+                        className="admin-form"
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          const fd = new FormData(e.currentTarget);
+                          void onUpdatePrediction(item.id, {
+                            title: String(fd.get("title") || ""),
+                            league: String(fd.get("league") || ""),
+                            short_description: String(fd.get("short_description") || ""),
+                          });
+                          setEditingPredictionId(null);
+                        }}
+                      >
+                        <input name="title" defaultValue={item.title} placeholder={tx("Заголовок", "Title")} />
+                        <input name="league" defaultValue={item.league || ""} placeholder={tx("Лига", "League")} />
+                        <textarea name="short_description" defaultValue={item.short_description || ""} rows={3} />
+                        <button className="btn" type="submit">
+                          {tx("Сохранить изменения", "Save changes")}
+                        </button>
+                      </form>
+                    </details>
                   ) : null}
                 </article>
               ))}
@@ -685,46 +798,51 @@ export function AdminPage() {
                     <p className="muted">
                       {tx("Рефкод", "Referral code")}: {user.referral_code || "—"} • {tx("приглашено", "invited")}: {user.referrals_invited ?? 0} • {tx("активировано", "activated")}: {user.referrals_activated ?? 0} • {tx("бонусных дней", "bonus days")}: {user.referral_bonus_days ?? 0}
                     </p>
-                    <div className="cta-row wrap">
-                      {user.role === "admin" ? (
-                        <button className="btn ghost" onClick={() => onUpdateRole(user.id, "user")}>{tx("Снять админку", "Revoke admin")}</button>
-                      ) : (
-                        <button className="btn" onClick={() => onUpdateRole(user.id, "admin")}>{tx("Выдать админку", "Grant admin")}</button>
-                      )}
-                      <button
-                        className="btn ghost"
-                        onClick={() =>
-                          onSubAction(
-                            () => api.adminGrantSubscription({ user_id: user.id, tariff_code: "premium", duration_days: 30 }),
-                            tx("Премиум выдан на 30 дней", "Premium granted for 30 days"),
-                            tx("Не удалось выдать Премиум", "Failed to grant Premium")
-                          )
-                        }
-                      >
-                        {tx("Выдать Премиум", "Grant Premium")}
-                      </button>
-                      <button
-                        className="btn ghost"
-                        onClick={() =>
-                          onSubAction(
-                            () => api.adminGrantSubscription({ user_id: user.id, tariff_code: "vip", duration_days: 30 }),
-                            tx("VIP выдан на 30 дней", "VIP granted for 30 days"),
-                            tx("Не удалось выдать VIP", "Failed to grant VIP")
-                          )
-                        }
-                      >
-                        {tx("Выдать VIP", "Grant VIP")}
-                      </button>
-                      {latestSub ? (
-                        <>
-                          <button className="btn" onClick={() => onSubAction(() => api.adminExtendSubscription(latestSub.id, 30), tx("Подписка продлена на 30 дней", "Subscription extended by 30 days"), tx("Не удалось продлить", "Failed to extend"))}>{tx("Продлить +30", "Extend +30")}</button>
-                          <button className="btn" onClick={() => onSubAction(() => api.adminChangeSubscriptionTariff(latestSub.id, { tariff_code: "free" }), tx("Тариф переведен на бесплатный", "Tariff switched to Free"), tx("Не удалось сменить тариф", "Failed to switch tariff"))}>{tx("На бесплатный", "Switch to Free")}</button>
-                          <button className="btn danger" onClick={() => onSubAction(() => api.adminCancelSubscription(latestSub.id), tx("Подписка отменена", "Subscription canceled"), tx("Не удалось отменить", "Failed to cancel"))}>{tx("Отменить подписку", "Cancel subscription")}</button>
-                        </>
-                      ) : null}
-                      <button className="btn danger" onClick={() => onDeleteUser(user.id)}>{tx("Удалить", "Delete")}</button>
-                      <button className="btn" onClick={() => onDirectMessageUser(user)}>{tx("Сообщение", "Message")}</button>
-                    </div>
+                    <details className="admin-actions-fold">
+                      <summary>{tx("Действия с пользователем", "User actions")}</summary>
+                      <div className="cta-row wrap">
+                        {user.role === "admin" ? (
+                          <button className="btn ghost" type="button" onClick={() => onUpdateRole(user.id, "user")}>{tx("Снять админку", "Revoke admin")}</button>
+                        ) : (
+                          <button className="btn" type="button" onClick={() => onUpdateRole(user.id, "admin")}>{tx("Выдать админку", "Grant admin")}</button>
+                        )}
+                        <button
+                          className="btn ghost"
+                          type="button"
+                          onClick={() =>
+                            onSubAction(
+                              () => api.adminGrantSubscription({ user_id: user.id, tariff_code: "premium", duration_days: 30 }),
+                              tx("Премиум выдан на 30 дней", "Premium granted for 30 days"),
+                              tx("Не удалось выдать Премиум", "Failed to grant Premium")
+                            )
+                          }
+                        >
+                          {tx("Выдать Премиум", "Grant Premium")}
+                        </button>
+                        <button
+                          className="btn ghost"
+                          type="button"
+                          onClick={() =>
+                            onSubAction(
+                              () => api.adminGrantSubscription({ user_id: user.id, tariff_code: "vip", duration_days: 30 }),
+                              tx("VIP выдан на 30 дней", "VIP granted for 30 days"),
+                              tx("Не удалось выдать VIP", "Failed to grant VIP")
+                            )
+                          }
+                        >
+                          {tx("Выдать VIP", "Grant VIP")}
+                        </button>
+                        {latestSub ? (
+                          <>
+                            <button className="btn" type="button" onClick={() => onSubAction(() => api.adminExtendSubscription(latestSub.id, 30), tx("Подписка продлена на 30 дней", "Subscription extended by 30 days"), tx("Не удалось продлить", "Failed to extend"))}>{tx("Продлить +30", "Extend +30")}</button>
+                            <button className="btn" type="button" onClick={() => onSubAction(() => api.adminChangeSubscriptionTariff(latestSub.id, { tariff_code: "free" }), tx("Тариф переведен на бесплатный", "Tariff switched to Free"), tx("Не удалось сменить тариф", "Failed to switch tariff"))}>{tx("На бесплатный", "Switch to Free")}</button>
+                            <button className="btn danger" type="button" onClick={() => onSubAction(() => api.adminCancelSubscription(latestSub.id), tx("Подписка отменена", "Subscription canceled"), tx("Не удалось отменить", "Failed to cancel"))}>{tx("Отменить подписку", "Cancel subscription")}</button>
+                          </>
+                        ) : null}
+                        <button className="btn danger" type="button" onClick={() => onDeleteUser(user.id)}>{tx("Удалить", "Delete")}</button>
+                        <button className="btn" type="button" onClick={() => onDirectMessageUser(user)}>{tx("Сообщение", "Message")}</button>
+                      </div>
+                    </details>
                   </article>
                 );
               })}
@@ -735,21 +853,24 @@ export function AdminPage() {
         {tab === "subscriptions" ? (
           <div className="admin-panel">
             <h3>{tx("Подписки", "Subscriptions")}</h3>
-            <form className="admin-form" onSubmit={onGrantSubscription}>
-              <div className="admin-grid-2">
-                <input name="user_id" placeholder={tx("user_id (или оставьте пустым)", "user_id (or leave empty)")} />
-                <input name="telegram_id" placeholder="telegram_id" />
-              </div>
-              <div className="admin-grid-3">
-                <select name="tariff_code" defaultValue="premium">
-                  <option value="free">{tx("Бесплатный", "Free")}</option>
-                  <option value="premium">{tx("Премиум", "Premium")}</option>
-                  <option value="vip">VIP</option>
-                </select>
-                <input name="duration_days" type="number" min="1" defaultValue="30" />
-                <button className="btn" type="submit">{tx("Выдать подписку", "Grant subscription")}</button>
-              </div>
-            </form>
+            <details className="admin-collapsible" open>
+              <summary>{tx("Выдать подписку вручную", "Grant subscription manually")}</summary>
+              <form className="admin-form" onSubmit={onGrantSubscription}>
+                <div className="admin-grid-2">
+                  <input name="user_id" placeholder={tx("user_id (или оставьте пустым)", "user_id (or leave empty)")} />
+                  <input name="telegram_id" placeholder="telegram_id" />
+                </div>
+                <div className="admin-grid-3">
+                  <select name="tariff_code" defaultValue="premium">
+                    <option value="free">{tx("Бесплатный", "Free")}</option>
+                    <option value="premium">{tx("Премиум", "Premium")}</option>
+                    <option value="vip">VIP</option>
+                  </select>
+                  <input name="duration_days" type="number" min="1" defaultValue="30" />
+                  <button className="btn" type="submit">{tx("Выдать подписку", "Grant subscription")}</button>
+                </div>
+              </form>
+            </details>
 
             <div className="filter-row">
               <input value={subQuery} onChange={(e) => setSubQuery(e.target.value)} placeholder={tx("Поиск по пользователю", "Search by user")} />
@@ -769,13 +890,16 @@ export function AdminPage() {
                     <span className={`access-pill ${sub.tariff_code}`}>{accessLabel(sub.tariff_code, language)}</span>
                   </div>
                   <p className="muted">{statusLabel(sub.status, language)} • {tx("до", "until")} {new Date(sub.ends_at).toLocaleDateString(isRu ? "ru-RU" : "en-US")}</p>
-                  <div className="cta-row wrap">
-                    <button className="btn ghost" onClick={() => onSubAction(() => api.adminExtendSubscription(sub.id, 7), tx("Подписка продлена на 7 дней", "Subscription extended by 7 days"), tx("Не удалось продлить", "Failed to extend"))}>{tx("+7 дней", "+7 days")}</button>
-                    <button className="btn ghost" onClick={() => onSubAction(() => api.adminExtendSubscription(sub.id, 30), tx("Подписка продлена на 30 дней", "Subscription extended by 30 days"), tx("Не удалось продлить", "Failed to extend"))}>{tx("+30 дней", "+30 days")}</button>
-                    <button className="btn" onClick={() => onSubAction(() => api.adminChangeSubscriptionTariff(sub.id, { tariff_code: "premium" }), tx("Тариф обновлен", "Tariff updated"), tx("Не удалось сменить тариф", "Failed to switch tariff"))}>{tx("На Премиум", "Switch to Premium")}</button>
-                    <button className="btn" onClick={() => onSubAction(() => api.adminChangeSubscriptionTariff(sub.id, { tariff_code: "vip" }), tx("Тариф обновлен", "Tariff updated"), tx("Не удалось сменить тариф", "Failed to switch tariff"))}>{tx("На VIP", "Switch to VIP")}</button>
-                    <button className="btn danger" onClick={() => onSubAction(() => api.adminCancelSubscription(sub.id), tx("Подписка отменена", "Subscription canceled"), tx("Не удалось отменить подписку", "Failed to cancel subscription"))}>{tx("Отменить", "Cancel")}</button>
-                  </div>
+                  <details className="admin-actions-fold">
+                    <summary>{tx("Действия с подпиской", "Subscription actions")}</summary>
+                    <div className="cta-row wrap">
+                      <button className="btn ghost" type="button" onClick={() => onSubAction(() => api.adminExtendSubscription(sub.id, 7), tx("Подписка продлена на 7 дней", "Subscription extended by 7 days"), tx("Не удалось продлить", "Failed to extend"))}>{tx("+7 дней", "+7 days")}</button>
+                      <button className="btn ghost" type="button" onClick={() => onSubAction(() => api.adminExtendSubscription(sub.id, 30), tx("Подписка продлена на 30 дней", "Subscription extended by 30 days"), tx("Не удалось продлить", "Failed to extend"))}>{tx("+30 дней", "+30 days")}</button>
+                      <button className="btn" type="button" onClick={() => onSubAction(() => api.adminChangeSubscriptionTariff(sub.id, { tariff_code: "premium" }), tx("Тариф обновлен", "Tariff updated"), tx("Не удалось сменить тариф", "Failed to switch tariff"))}>{tx("На Премиум", "Switch to Premium")}</button>
+                      <button className="btn" type="button" onClick={() => onSubAction(() => api.adminChangeSubscriptionTariff(sub.id, { tariff_code: "vip" }), tx("Тариф обновлен", "Tariff updated"), tx("Не удалось сменить тариф", "Failed to switch tariff"))}>{tx("На VIP", "Switch to VIP")}</button>
+                      <button className="btn danger" type="button" onClick={() => onSubAction(() => api.adminCancelSubscription(sub.id), tx("Подписка отменена", "Subscription canceled"), tx("Не удалось отменить подписку", "Failed to cancel subscription"))}>{tx("Отменить", "Cancel")}</button>
+                    </div>
+                  </details>
                 </article>
               ))}
             </div>
@@ -810,27 +934,32 @@ export function AdminPage() {
                   {payment.manual_note ? <p className="muted">{tx("Комментарий", "Comment")}: {payment.manual_note}</p> : null}
                   {payment.manual_proof ? <p className="muted">{tx("Подтверждение", "Proof")}: {payment.manual_proof}</p> : null}
                   {payment.review_comment ? <p className="muted">{tx("Комментарий админа", "Admin comment")}: {payment.review_comment}</p> : null}
-                  <div className="admin-grid-2">
-                    <button className="btn" onClick={() => onPaymentStatus(payment.id, "succeeded")}>{tx("Пометить успешным", "Mark succeeded")}</button>
-                    <button
-                      className="btn ghost"
-                      onClick={() => {
-                        const comment = window.prompt(tx("Что нужно уточнить у пользователя?", "What should be clarified with user?")) || "";
-                        void onPaymentStatus(payment.id, "requires_clarification", comment);
-                      }}
-                    >
-                      {tx("Запросить уточнение", "Request clarification")}
-                    </button>
-                    <button
-                      className="btn danger"
-                      onClick={() => {
-                        const comment = window.prompt(tx("Причина отклонения", "Rejection reason")) || "";
-                        void onPaymentStatus(payment.id, "failed", comment);
-                      }}
-                    >
-                      {tx("Отклонить", "Reject")}
-                    </button>
-                  </div>
+                  <details className="admin-actions-fold">
+                    <summary>{tx("Действия с платежом", "Payment actions")}</summary>
+                    <div className="admin-grid-2">
+                      <button className="btn" type="button" onClick={() => onPaymentStatus(payment.id, "succeeded")}>{tx("Пометить успешным", "Mark succeeded")}</button>
+                      <button
+                        className="btn ghost"
+                        type="button"
+                        onClick={() => {
+                          const comment = window.prompt(tx("Что нужно уточнить у пользователя?", "What should be clarified with user?")) || "";
+                          void onPaymentStatus(payment.id, "requires_clarification", comment);
+                        }}
+                      >
+                        {tx("Запросить уточнение", "Request clarification")}
+                      </button>
+                      <button
+                        className="btn danger"
+                        type="button"
+                        onClick={() => {
+                          const comment = window.prompt(tx("Причина отклонения", "Rejection reason")) || "";
+                          void onPaymentStatus(payment.id, "failed", comment);
+                        }}
+                      >
+                        {tx("Отклонить", "Reject")}
+                      </button>
+                    </div>
+                  </details>
                 </article>
               ))}
             </div>
@@ -840,28 +969,31 @@ export function AdminPage() {
         {tab === "payment_methods" ? (
           <div className="admin-panel">
             <h3>{tx("Способы оплаты", "Payment methods")}</h3>
-            <form className="admin-form" onSubmit={onCreatePaymentMethod}>
-              <div className="admin-grid-3">
-                <input name="code" placeholder={tx("Код метода", "Method code")} required />
-                <input name="name" placeholder={tx("Название", "Name")} required />
-                <select name="method_type" defaultValue="manual">
-                  <option value="auto">{tx("Авто", "Auto")}</option>
-                  <option value="manual">{tx("Ручной", "Manual")}</option>
-                </select>
-              </div>
-              <div className="admin-grid-3">
-                <input name="sort_order" type="number" defaultValue="100" placeholder={tx("Порядок", "Sort order")} />
-                <input name="card_number" placeholder={tx("Номер карты", "Card number")} />
-                <input name="recipient_name" placeholder={tx("Получатель", "Recipient")} />
-              </div>
-              <input name="payment_details" placeholder={tx("Реквизиты / детали", "Payment details")} />
-              <textarea name="instructions" rows={2} placeholder={tx("Инструкция для пользователя", "User instructions")} />
-              <label className="switch-row" style={{ padding: "0 4px" }}>
-                <span>{tx("Активен", "Active")}</span>
-                <input name="is_active" type="checkbox" defaultChecked />
-              </label>
-              <button className="btn" type="submit">{tx("Добавить метод", "Create method")}</button>
-            </form>
+            <details className="admin-collapsible" open>
+              <summary>{tx("Добавить способ оплаты", "Create payment method")}</summary>
+              <form className="admin-form" onSubmit={onCreatePaymentMethod}>
+                <div className="admin-grid-3">
+                  <input name="code" placeholder={tx("Код метода", "Method code")} required />
+                  <input name="name" placeholder={tx("Название", "Name")} required />
+                  <select name="method_type" defaultValue="manual">
+                    <option value="auto">{tx("Авто", "Auto")}</option>
+                    <option value="manual">{tx("Ручной", "Manual")}</option>
+                  </select>
+                </div>
+                <div className="admin-grid-3">
+                  <input name="sort_order" type="number" defaultValue="100" placeholder={tx("Порядок", "Sort order")} />
+                  <input name="card_number" placeholder={tx("Номер карты", "Card number")} />
+                  <input name="recipient_name" placeholder={tx("Получатель", "Recipient")} />
+                </div>
+                <input name="payment_details" placeholder={tx("Реквизиты / детали", "Payment details")} />
+                <textarea name="instructions" rows={2} placeholder={tx("Инструкция для пользователя", "User instructions")} />
+                <label className="switch-row" style={{ padding: "0 4px" }}>
+                  <span>{tx("Активен", "Active")}</span>
+                  <input name="is_active" type="checkbox" defaultChecked />
+                </label>
+                <button className="btn" type="submit">{tx("Добавить метод", "Create method")}</button>
+              </form>
+            </details>
 
             <div className="admin-list">
               {paymentMethods.map((method) => (
@@ -877,11 +1009,12 @@ export function AdminPage() {
                   {method.card_number ? <p className="muted">{tx("Карта", "Card")}: {method.card_number}</p> : null}
                   {method.recipient_name ? <p className="muted">{tx("Получатель", "Recipient")}: {method.recipient_name}</p> : null}
                   <div className="cta-row wrap">
-                    <button className="btn ghost" onClick={() => onPatchPaymentMethod(method.code, { is_active: !method.is_active })}>
+                    <button className="btn ghost" type="button" onClick={() => onPatchPaymentMethod(method.code, { is_active: !method.is_active })}>
                       {method.is_active ? tx("Выключить", "Disable") : tx("Включить", "Enable")}
                     </button>
                     <button
                       className="btn"
+                      type="button"
                       onClick={() => {
                         const details = window.prompt(tx("Новые реквизиты", "New payment details"), method.payment_details || "") || "";
                         const instructions = window.prompt(tx("Новая инструкция", "New instructions"), method.instructions || "") || "";
@@ -900,20 +1033,23 @@ export function AdminPage() {
         {tab === "news" ? (
           <div className="admin-panel">
             <h3>{tx("Новости PIT BET", "PIT BET News")}</h3>
-            <form className="admin-form" onSubmit={onCreateNews}>
-              <input name="title" placeholder={tx("Заголовок", "Title")} required />
-              <textarea name="body" placeholder={tx("Текст новости", "News text")} rows={4} required />
-              <div className="admin-grid-3">
-                <input name="category" placeholder={tx("Категория", "Category")} defaultValue="news" />
-                <label className="switch-row" style={{ padding: "0 4px" }}>
-                  <span>{tx("Опубликовать сразу", "Publish immediately")}</span>
-                  <input name="is_published" type="checkbox" defaultChecked />
-                </label>
-                <button className="btn" type="submit">
-                  {tx("Добавить новость", "Create news")}
-                </button>
-              </div>
-            </form>
+            <details className="admin-collapsible" open>
+              <summary>{tx("Добавить новость", "Create news")}</summary>
+              <form className="admin-form" onSubmit={onCreateNews}>
+                <input name="title" placeholder={tx("Заголовок", "Title")} required />
+                <textarea name="body" placeholder={tx("Текст новости", "News text")} rows={4} required />
+                <div className="admin-grid-3">
+                  <input name="category" placeholder={tx("Категория", "Category")} defaultValue="news" />
+                  <label className="switch-row" style={{ padding: "0 4px" }}>
+                    <span>{tx("Опубликовать сразу", "Publish immediately")}</span>
+                    <input name="is_published" type="checkbox" defaultChecked />
+                  </label>
+                  <button className="btn" type="submit">
+                    {tx("Добавить новость", "Create news")}
+                  </button>
+                </div>
+              </form>
+            </details>
 
             <div className="admin-list">
               {news.map((item) => (
@@ -923,12 +1059,12 @@ export function AdminPage() {
                     <span className={`badge ${item.is_published ? "success" : "pending"}`}>{item.is_published ? tx("Опубликовано", "Published") : tx("Черновик", "Draft")}</span>
                   </div>
                   <p className="muted">{tx("Категория", "Category")}: {item.category} • {item.published_at ? new Date(item.published_at).toLocaleString(isRu ? "ru-RU" : "en-US") : tx("без даты публикации", "no publish date")}</p>
-                  <p className="stacked">{item.body}</p>
+                  <p className="stacked">{toShortText(item.body)}</p>
                   <div className="cta-row wrap">
-                    <button className="btn ghost" onClick={() => onToggleNews(item)}>
+                    <button className="btn ghost" type="button" onClick={() => onToggleNews(item)}>
                       {item.is_published ? tx("Снять с публикации", "Unpublish") : tx("Опубликовать", "Publish")}
                     </button>
-                    <button className="btn danger" onClick={() => onDeleteNews(item.id)}>
+                    <button className="btn danger" type="button" onClick={() => onDeleteNews(item.id)}>
                       {tx("Удалить", "Delete")}
                     </button>
                   </div>
@@ -941,37 +1077,40 @@ export function AdminPage() {
         {tab === "promocodes" ? (
           <div className="admin-panel">
             <h3>{tx("Промокоды", "Promo codes")}</h3>
-            <form className="admin-form" onSubmit={onCreatePromo}>
-              <input name="code" placeholder={tx("Код (например PIT20)", "Code (e.g. PIT20)")} required />
-              <input name="title" placeholder={tx("Название для админки", "Admin title")} required />
-              <textarea name="description" placeholder={tx("Комментарий", "Comment")} rows={2} />
-              <div className="admin-grid-3">
-                <select name="kind" defaultValue="percent_discount">
-                  <option value="percent_discount">{tx("Скидка в процентах", "Percent discount")}</option>
-                  <option value="fixed_discount">{tx("Фиксированная скидка", "Fixed discount")}</option>
-                  <option value="extra_days">{tx("Бонусные дни", "Bonus days")}</option>
-                  <option value="free_access">{tx("Бесплатный доступ", "Free access")}</option>
-                </select>
-                <input name="value" type="number" min="0" defaultValue="20" placeholder={tx("Значение", "Value")} required />
-                <select name="tariff_code" defaultValue="premium">
-                  <option value="">{tx("Любой тариф", "Any tariff")}</option>
-                  <option value="free">Free</option>
-                  <option value="premium">Premium</option>
-                  <option value="vip">VIP</option>
-                </select>
-              </div>
-              <div className="admin-grid-3">
-                <input name="max_activations" type="number" min="1" placeholder={tx("Лимит активаций", "Activation limit")} />
-                <input name="expires_at" type="datetime-local" placeholder={tx("Срок действия", "Expires at")} />
-                <label className="switch-row" style={{ padding: "0 4px" }}>
-                  <span>{tx("Активен", "Active")}</span>
-                  <input name="is_active" type="checkbox" defaultChecked />
-                </label>
-              </div>
-              <button className="btn" type="submit">
-                {tx("Создать промокод", "Create promo code")}
-              </button>
-            </form>
+            <details className="admin-collapsible" open>
+              <summary>{tx("Создать промокод", "Create promo code")}</summary>
+              <form className="admin-form" onSubmit={onCreatePromo}>
+                <input name="code" placeholder={tx("Код (например PIT20)", "Code (e.g. PIT20)")} required />
+                <input name="title" placeholder={tx("Название для админки", "Admin title")} required />
+                <textarea name="description" placeholder={tx("Комментарий", "Comment")} rows={2} />
+                <div className="admin-grid-3">
+                  <select name="kind" defaultValue="percent_discount">
+                    <option value="percent_discount">{tx("Скидка в процентах", "Percent discount")}</option>
+                    <option value="fixed_discount">{tx("Фиксированная скидка", "Fixed discount")}</option>
+                    <option value="extra_days">{tx("Бонусные дни", "Bonus days")}</option>
+                    <option value="free_access">{tx("Бесплатный доступ", "Free access")}</option>
+                  </select>
+                  <input name="value" type="number" min="0" defaultValue="20" placeholder={tx("Значение", "Value")} required />
+                  <select name="tariff_code" defaultValue="premium">
+                    <option value="">{tx("Любой тариф", "Any tariff")}</option>
+                    <option value="free">Free</option>
+                    <option value="premium">Premium</option>
+                    <option value="vip">VIP</option>
+                  </select>
+                </div>
+                <div className="admin-grid-3">
+                  <input name="max_activations" type="number" min="1" placeholder={tx("Лимит активаций", "Activation limit")} />
+                  <input name="expires_at" type="datetime-local" placeholder={tx("Срок действия", "Expires at")} />
+                  <label className="switch-row" style={{ padding: "0 4px" }}>
+                    <span>{tx("Активен", "Active")}</span>
+                    <input name="is_active" type="checkbox" defaultChecked />
+                  </label>
+                </div>
+                <button className="btn" type="submit">
+                  {tx("Создать промокод", "Create promo code")}
+                </button>
+              </form>
+            </details>
 
             <div className="admin-list">
               {promoCodes.map((promo) => (
@@ -1042,10 +1181,10 @@ export function AdminPage() {
                     />
                   </div>
                   <div className="cta-row wrap">
-                    <button className="btn ghost" onClick={() => onTogglePromo(promo)}>
+                    <button className="btn ghost" type="button" onClick={() => onTogglePromo(promo)}>
                       {promo.is_active ? tx("Отключить", "Disable") : tx("Активировать", "Enable")}
                     </button>
-                    <button className="btn danger" onClick={() => onDeletePromo(promo.id)}>
+                    <button className="btn danger" type="button" onClick={() => onDeletePromo(promo.id)}>
                       {tx("Удалить", "Delete")}
                     </button>
                   </div>
@@ -1059,37 +1198,47 @@ export function AdminPage() {
           <div className="admin-panel">
             <h3>{tx("Рассылки", "Campaigns")}</h3>
             <p className="muted">{tx("Массовые и сегментные уведомления пользователям.", "Mass and segmented user notifications.")}</p>
-            <div className="admin-form">
-              <input value={campaignTitle} onChange={(e) => setCampaignTitle(e.target.value)} placeholder={tx("Заголовок рассылки", "Campaign title")} />
-              <textarea value={campaignMessage} onChange={(e) => setCampaignMessage(e.target.value)} rows={4} placeholder={tx("Текст сообщения", "Message text")} />
-              <div className="admin-grid-2">
-                <input value={campaignButtonText} onChange={(e) => setCampaignButtonText(e.target.value)} placeholder={tx("Текст кнопки (опционально)", "Button text (optional)")} />
-                <input value={campaignButtonUrl} onChange={(e) => setCampaignButtonUrl(e.target.value)} placeholder={tx("Ссылка кнопки https://...", "Button URL https://...")} />
+            <div className="admin-form admin-broadcast-form">
+              <div className="admin-form-section">
+                <input value={campaignTitle} onChange={(e) => setCampaignTitle(e.target.value)} placeholder={tx("Заголовок рассылки", "Campaign title")} />
+                <textarea value={campaignMessage} onChange={(e) => setCampaignMessage(e.target.value)} rows={4} placeholder={tx("Текст сообщения", "Message text")} />
               </div>
-              <div className="admin-grid-3">
-                <select value={campaignSegment} onChange={(e) => setCampaignSegment(e.target.value)}>
-                  <option value="all">{tx("Все пользователи", "All users")}</option>
-                  <option value="free">{tx("Только бесплатные", "Free only")}</option>
-                  <option value="premium">{tx("Только Премиум", "Premium only")}</option>
-                  <option value="vip">{tx("Только VIP", "VIP only")}</option>
-                  <option value="active_subscription">{tx("С активной подпиской", "With active subscription")}</option>
-                  <option value="admin">{tx("Только админы", "Admins only")}</option>
-                  <option value="notifications_enabled">{tx("Только с включенными уведомлениями", "Notifications enabled only")}</option>
-                </select>
-                <select value={campaignAccess} onChange={(e) => setCampaignAccess(e.target.value)}>
-                  <option value="all">{tx("Любой доступ", "Any access")}</option>
-                  <option value="free">Free</option>
-                  <option value="premium">{tx("Премиум+", "Premium+")}</option>
-                  <option value="vip">VIP</option>
-                </select>
-                <label className="switch-row" style={{ padding: "0 4px" }}>
-                  <span>{tx("Только с включенными уведомлениями", "Notifications enabled only")}</span>
-                  <input type="checkbox" checked={campaignNotifOnly} onChange={(e) => setCampaignNotifOnly(e.target.checked)} />
-                </label>
+
+              <details className="admin-collapsible inline">
+                <summary>{tx("Кнопка в сообщении (опционально)", "Message button (optional)")}</summary>
+                <div className="admin-grid-2">
+                  <input value={campaignButtonText} onChange={(e) => setCampaignButtonText(e.target.value)} placeholder={tx("Текст кнопки", "Button text")} />
+                  <input value={campaignButtonUrl} onChange={(e) => setCampaignButtonUrl(e.target.value)} placeholder={tx("Ссылка кнопки https://...", "Button URL https://...")} />
+                </div>
+              </details>
+
+              <div className="admin-form-section">
+                <div className="admin-grid-3">
+                  <select value={campaignSegment} onChange={(e) => setCampaignSegment(e.target.value)}>
+                    <option value="all">{tx("Все пользователи", "All users")}</option>
+                    <option value="free">{tx("Только бесплатные", "Free only")}</option>
+                    <option value="premium">{tx("Только Премиум", "Premium only")}</option>
+                    <option value="vip">{tx("Только VIP", "VIP only")}</option>
+                    <option value="active_subscription">{tx("С активной подпиской", "With active subscription")}</option>
+                    <option value="admin">{tx("Только админы", "Admins only")}</option>
+                    <option value="notifications_enabled">{tx("Только с включенными уведомлениями", "Notifications enabled only")}</option>
+                  </select>
+                  <select value={campaignAccess} onChange={(e) => setCampaignAccess(e.target.value)}>
+                    <option value="all">{tx("Любой доступ", "Any access")}</option>
+                    <option value="free">Free</option>
+                    <option value="premium">{tx("Премиум+", "Premium+")}</option>
+                    <option value="vip">VIP</option>
+                  </select>
+                  <label className="switch-row" style={{ padding: "0 4px" }}>
+                    <span>{tx("Только с включенными уведомлениями", "Notifications enabled only")}</span>
+                    <input type="checkbox" checked={campaignNotifOnly} onChange={(e) => setCampaignNotifOnly(e.target.checked)} />
+                  </label>
+                </div>
               </div>
+
               <div className="cta-row">
-                <button className="btn ghost" onClick={onCampaignPreview}>{tx("Превью аудитории", "Audience preview")}</button>
-                <button className="btn" onClick={onCampaignSend}>{tx("Отправить рассылку", "Send campaign")}</button>
+                <button className="btn ghost" type="button" onClick={onCampaignPreview}>{tx("Превью аудитории", "Audience preview")}</button>
+                <button className="btn" type="button" onClick={onCampaignSend}>{tx("Отправить рассылку", "Send campaign")}</button>
               </div>
               {campaignPreviewCount !== null ? <p className="muted">{tx("Оценка получателей", "Estimated recipients")}: {campaignPreviewCount}</p> : null}
               {campaignPreviewPayload ? (

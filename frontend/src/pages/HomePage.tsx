@@ -12,7 +12,6 @@ import {
   AppShellSection,
   CTACluster,
   MarketPulse,
-  NewsRibbon,
   RocketLoader,
   SectionHeader,
   SkeletonBlock,
@@ -119,6 +118,18 @@ function accessNowLabel(tariff: "free" | "premium" | "vip", t: (key: string) => 
   return t("home.access.openFree");
 }
 
+function buildAccessProgress(tariff: "free" | "premium" | "vip", isActive: boolean): number {
+  const base = tariff === "vip" ? 100 : tariff === "premium" ? 68 : 36;
+  if (isActive) return base;
+  return Math.max(12, base - 22);
+}
+
+function buildNewsPreview(body: string, maxLength = 170): string {
+  const compact = body.replace(/\s+/g, " ").trim();
+  if (compact.length <= maxLength) return compact;
+  return `${compact.slice(0, Math.max(0, maxLength - 1)).trim()}…`;
+}
+
 export function HomePage() {
   const { t, language } = useI18n();
 
@@ -190,7 +201,7 @@ export function HomePage() {
     return buildTodaySummaryFallback(stats);
   }, [predictions, stats]);
 
-  const previewNews = news.slice(0, 2);
+  const previewNews = news.slice(0, 3);
   const pulseValues = useMemo(() => {
     const roi = stats?.roi ?? 0;
     const pending = stats?.pending ?? 0;
@@ -210,6 +221,10 @@ export function HomePage() {
       return Math.round((progress / total) * 100);
     });
   }, [stats]);
+  const accessProgress = buildAccessProgress(sub.tariff, sub.is_active);
+  const accessRingStyle = {
+    background: `conic-gradient(var(--accent-primary) ${accessProgress}%, color-mix(in srgb, var(--surface-1) 82%, transparent) ${accessProgress}% 100%)`,
+  };
 
   return (
     <Layout>
@@ -326,6 +341,19 @@ export function HomePage() {
       <div className="pb-home-split">
         <AppShellSection>
           <SectionHeader title={t("home.access.title")} subtitle={t("home.access.subtitle")} />
+          <div className="pb-access-level-panel">
+            <div className="pb-access-ring" style={accessRingStyle}>
+              <div>
+                <small>{t("home.access.openNow")}</small>
+                <strong>{accessProgress}%</strong>
+              </div>
+            </div>
+            <div className="pb-access-cluster">
+              <span className={sub.tariff === "free" ? "active" : ""}>{t("common.free")}</span>
+              <span className={sub.tariff === "premium" || sub.tariff === "vip" ? "active" : ""}>{t("common.premium")}</span>
+              <span className={sub.tariff === "vip" ? "active" : ""}>{t("common.vip")}</span>
+            </div>
+          </div>
           <div className="pb-info-list">
             <div>
               <span>{t("home.access.tariff")}</span>
@@ -344,12 +372,12 @@ export function HomePage() {
               <strong>{referral?.bonus_days ?? 0}</strong>
             </div>
             <div>
-              <span>{t("home.access.pending")}</span>
-              <strong>{pendingPayments}</strong>
-            </div>
-            <div>
               <span>{t("home.access.openNow")}</span>
               <strong>{accessNowLabel(sub.tariff, t)}</strong>
+            </div>
+            <div>
+              <span>{t("home.access.pending")}</span>
+              <strong>{pendingPayments}</strong>
             </div>
           </div>
           <CTACluster>
@@ -391,7 +419,23 @@ export function HomePage() {
       </div>
 
       <AppShellSection>
-        <SectionHeader title={t("home.news.title")} action={<Link className="pb-link-inline" to="/news">{t("home.news.all")}</Link>} />
+        <SectionHeader title={t("home.ref.title")} subtitle={t("home.ref.subtitle")} />
+        <ActivityBand
+          items={[
+            { label: t("home.ref.invited"), value: referral?.invited ?? 0 },
+            { label: t("home.ref.activated"), value: referral?.activated ?? 0, tone: "accent" },
+            { label: t("home.ref.bonus"), value: referral?.bonus_days ?? 0, tone: "success" },
+          ]}
+        />
+        <CTACluster>
+          <Link className="pb-btn pb-btn-ghost" to="/profile#referral">
+            {t("home.ref.action")}
+          </Link>
+        </CTACluster>
+      </AppShellSection>
+
+      <AppShellSection>
+        <SectionHeader title={t("home.news.title")} subtitle={t("home.news.subtitle")} />
 
         {loading ? (
           <div className="pb-news-grid" aria-hidden="true">
@@ -405,39 +449,31 @@ export function HomePage() {
               <SkeletonBlock className="w-90 h-66" />
               <SkeletonBlock className="w-30" />
             </article>
+            <article className="pb-news-card pb-skeleton-card">
+              <SkeletonBlock className="w-55" />
+              <SkeletonBlock className="w-94 h-66" />
+              <SkeletonBlock className="w-33" />
+            </article>
           </div>
         ) : null}
 
         {!loading && previewNews.length === 0 ? <p className="pb-empty-state">{t("home.news.empty")}</p> : null}
 
         {previewNews.length > 0 ? (
-          <div className="pb-news-grid">
+          <div className="pb-home-news-preview">
             {previewNews.map((item) => (
-              <NewsRibbon
-                key={item.id}
-                title={item.title}
-                body={item.body}
-                category={item.category}
-                meta={formatDate(item.published_at, language, t("common.noDate"))}
-                to={`/news/${item.id}`}
-              />
+              <Link key={item.id} className="pb-home-news-item" to={`/news/${item.id}`}>
+                <h3>{item.title}</h3>
+                <p>{buildNewsPreview(item.body)}</p>
+                <small>{formatDate(item.published_at, language, t("common.noDate"))}</small>
+              </Link>
             ))}
           </div>
         ) : null}
-      </AppShellSection>
 
-      <AppShellSection>
-        <SectionHeader title={t("home.ref.title")} subtitle={t("home.ref.subtitle")} />
-        <ActivityBand
-          items={[
-            { label: t("home.ref.invited"), value: referral?.invited ?? 0 },
-            { label: t("home.ref.activated"), value: referral?.activated ?? 0, tone: "accent" },
-            { label: t("home.ref.bonus"), value: referral?.bonus_days ?? 0, tone: "success" },
-          ]}
-        />
         <CTACluster>
-          <Link className="pb-btn pb-btn-ghost" to="/profile#referral">
-            {t("home.ref.action")}
+          <Link className="pb-btn pb-btn-ghost" to="/news">
+            {t("home.news.openAll")}
           </Link>
         </CTACluster>
       </AppShellSection>

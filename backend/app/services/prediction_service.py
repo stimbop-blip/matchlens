@@ -8,6 +8,23 @@ from sqlalchemy.orm import Session
 from app.models.enums import AccessLevel, PredictionStatus
 from app.models.prediction import Prediction
 
+MAX_RESULT_SCREENSHOT_CHARS = 5_000_000
+
+
+def _normalize_result_screenshot(value: object | None) -> str | None:
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        return None
+    cleaned = value.strip()
+    if not cleaned:
+        return None
+    if len(cleaned) > MAX_RESULT_SCREENSHOT_CHARS:
+        return None
+    if not cleaned.startswith("data:image/"):
+        return None
+    return cleaned
+
 
 def _apply_prediction_filters(
     stmt: Select,
@@ -61,6 +78,7 @@ def create_prediction(db: Session, payload: dict, created_by: str | None) -> Pre
         signal_type=payload["signal_type"],
         odds=payload["odds"],
         short_description=payload.get("short_description"),
+        result_screenshot=_normalize_result_screenshot(payload.get("result_screenshot")),
         risk_level=payload.get("risk_level", "medium"),
         access_level=AccessLevel(payload.get("access_level", "free")),
         status=PredictionStatus(payload.get("status", "pending")),
@@ -77,6 +95,9 @@ def create_prediction(db: Session, payload: dict, created_by: str | None) -> Pre
 def update_prediction(db: Session, prediction: Prediction, payload: dict) -> Prediction:
     for key, value in payload.items():
         if value is None:
+            continue
+        if key == "result_screenshot" and isinstance(value, str):
+            setattr(prediction, key, _normalize_result_screenshot(value))
             continue
         if key == "access_level":
             setattr(prediction, key, AccessLevel(value))

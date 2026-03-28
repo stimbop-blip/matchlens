@@ -4779,3 +4779,361 @@ a:focus {
     top: 64px;
   }
 }
+
+/* PIT BET product fixes: admin mobile UX */
+
+.admin-panel-head {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.admin-panel-head h3 {
+  margin: 0;
+}
+
+.admin-panel-head p {
+  font-size: 12px;
+}
+
+.admin-collapsible {
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface-3) 56%, transparent);
+  padding: 6px 8px;
+  margin-bottom: 10px;
+}
+
+.admin-collapsible.inline {
+  margin-top: 8px;
+  margin-bottom: 0;
+}
+
+.admin-collapsible > summary {
+  cursor: pointer;
+  list-style: none;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+  padding: 6px 4px;
+}
+
+.admin-collapsible > summary::-webkit-details-marker {
+  display: none;
+}
+
+.admin-collapsible > summary::after {
+  content: "+";
+  float: right;
+  color: var(--accent-primary);
+}
+
+.admin-collapsible[open] > summary::after {
+  content: "-";
+}
+
+.admin-file-field {
+  border: 1px dashed color-mix(in srgb, var(--accent-primary) 35%, var(--border-soft));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface-1) 78%, transparent);
+  padding: 9px 10px;
+  display: grid;
+  gap: 6px;
+}
+
+.admin-file-field span {
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.admin-file-field.compact {
+  min-height: 38px;
+}
+
+.admin-file-field input[type="file"] {
+  font-size: 12px;
+}
+
+.admin-image-preview {
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface-1) 82%, transparent);
+  padding: 8px;
+}
+
+.admin-image-preview img {
+  display: block;
+  width: 100%;
+  max-height: 220px;
+  object-fit: contain;
+  border-radius: 10px;
+}
+
+.admin-actions-fold {
+  margin-top: 8px;
+  border: 1px dashed color-mix(in srgb, var(--border-soft) 90%, transparent);
+  border-radius: 12px;
+  padding: 6px;
+  background: color-mix(in srgb, var(--surface-1) 82%, transparent);
+}
+
+.admin-actions-fold > summary {
+  cursor: pointer;
+  list-style: none;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  padding: 4px 6px;
+}
+
+.admin-actions-fold > summary::-webkit-details-marker {
+  display: none;
+}
+
+.admin-actions-fold > summary::after {
+  content: ">";
+  float: right;
+  color: var(--accent-primary);
+}
+
+.admin-actions-fold[open] > summary::after {
+  content: "v";
+}
+
+.admin-actions-fold .cta-row,
+.pb-admin-shell .cta-row {
+  margin-top: 6px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.pb-admin-shell .cta-row .btn,
+.admin-actions-fold .cta-row .btn {
+  width: 100%;
+}
+
+.admin-form-section {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-broadcast-form {
+  gap: 10px;
+}
+
+@media (max-width: 920px) {
+  .pb-admin-shell .filter-row,
+  .pb-admin-shell .admin-grid-2,
+  .pb-admin-shell .admin-grid-3,
+  .pb-admin-shell .admin-grid-4 {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .pb-admin-shell {
+    padding: 12px;
+  }
+
+  .admin-tabs-wrap {
+    margin: 8px 0;
+    padding: 5px;
+    border-radius: 12px;
+  }
+
+  .admin-tabs .tab {
+    padding: 8px 10px;
+    font-size: 10px;
+  }
+
+  .pb-admin-shell .cta-row,
+  .admin-actions-fold .cta-row {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-image-preview img {
+    max-height: 180px;
+  }
+}
+
+/* PIT BET product fixes: home access + news preview */
+
+.pb-access-level-panel {
+  margin-top: 10px;
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 34%, var(--border-soft));
+  border-radius: 16px;
+  background: linear-gradient(165deg, color-mix(in srgb, var(--accent-soft) 34%, transparent), color-mix(in srgb, var(--surface-3) 72%, transparent));
+  padding: 12px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: center;
+}
+
+.pb-access-ring {
+  width: 92px;
+  height: 92px;
+  border-radius: 999px;
+  padding: 7px;
+  display: grid;
+  place-items: center;
+}
+
+.pb-access-ring > div {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--surface-1) 92%, transparent);
+  display: grid;
+  place-items: center;
+  text-align: center;
+  gap: 2px;
+}
+
+.pb-access-ring small {
+  color: var(--text-secondary);
+  font-size: 10px;
+}
+
+.pb-access-ring strong {
+  font-size: 18px;
+}
+
+.pb-access-cluster {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pb-access-cluster span {
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  padding: 6px 10px;
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--surface-1) 84%, transparent);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.pb-access-cluster span.active {
+  border-color: color-mix(in srgb, var(--accent-primary) 42%, transparent);
+  color: color-mix(in srgb, var(--accent-primary) 84%, var(--text-primary));
+  background: color-mix(in srgb, var(--accent-soft) 72%, transparent);
+}
+
+.pb-home-news-preview {
+  margin-top: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.pb-home-news-item {
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface-3) 58%, transparent);
+  padding: 11px;
+  display: grid;
+  gap: 6px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.pb-home-news-item h3 {
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.pb-home-news-item p {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.pb-home-news-item small {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.pb-prediction-screenshot {
+  margin-top: 8px;
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface-3) 58%, transparent);
+  padding: 10px;
+}
+
+.pb-prediction-screenshot img {
+  display: block;
+  width: 100%;
+  max-height: min(60vh, 420px);
+  object-fit: contain;
+  border-radius: 10px;
+}
+
+/* PIT BET product fixes: stats overlap */
+
+.pb-stats-section .pb-metric-grid,
+.pb-stats-section .pb-activity-band,
+.pb-stats-section .pb-insight-grid,
+.pb-stats-section .pb-progress-list,
+.pb-stats-section .pb-ring-stat {
+  min-width: 0;
+}
+
+.pb-stats-kpi-grid,
+.pb-stats-band-wrap .pb-activity-band {
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+}
+
+.pb-stats-section .pb-metric-grid article,
+.pb-stats-section .pb-activity-item,
+.pb-stats-section .pb-insight-card,
+.pb-stats-section .pb-progress-meter,
+.pb-stats-section .pb-ring-legend > div {
+  min-width: 0;
+}
+
+.pb-stats-section .pb-activity-item strong {
+  font-size: clamp(16px, 4.4vw, 20px);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.pb-stats-section .pb-progress-meter > div:first-child {
+  flex-wrap: wrap;
+  row-gap: 2px;
+}
+
+.pb-stats-section .pb-ring {
+  width: 112px;
+  height: 112px;
+}
+
+.pb-stats-section .pb-ring > div {
+  width: 76px;
+  height: 76px;
+}
+
+.pb-stats-section .pb-ring-legend > div p {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 760px) {
+  .pb-access-level-panel {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+  }
+
+  .pb-access-cluster {
+    justify-content: center;
+  }
+
+  .pb-stats-section .pb-stats-kpi-grid,
+  .pb-stats-section .pb-activity-band,
+  .pb-stats-section .pb-insight-grid {
+    grid-template-columns: 1fr;
+  }
+}

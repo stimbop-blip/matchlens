@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 _LEVEL_PRIORITY = {"free": 0, "premium": 1, "vip": 2}
 _SUPPORTED_LANGUAGES = {"ru", "en"}
 _SUPPORTED_THEMES = {"dark", "light"}
+_MAX_IMAGE_DATA_LEN = 5_000_000
 
 
 def _allowed_levels(access_level: str) -> set[str]:
@@ -143,6 +144,17 @@ def _news_preview(body: str) -> str:
     if len(compact) <= 220:
         return compact
     return f"{compact[:217].rstrip()}..."
+
+
+def _normalize_image_data(value: str | None) -> str | None:
+    cleaned = (value or "").strip()
+    if not cleaned:
+        return None
+    if len(cleaned) > _MAX_IMAGE_DATA_LEN:
+        return None
+    if not cleaned.startswith("data:image/"):
+        return None
+    return cleaned
 
 
 def _normalize_language(value: str | None) -> str:
@@ -417,6 +429,7 @@ def queue_prediction_result_notification(db: Session, prediction: Prediction) ->
         return 0
 
     title, message = payload
+    image_data = _normalize_image_data(prediction.result_screenshot)
     users = db.scalars(select(User)).all()
     level_map = _active_level_map(db)
     settings_map = _user_settings_map(db)
@@ -450,7 +463,16 @@ def queue_prediction_result_notification(db: Session, prediction: Prediction) ->
             counters["skip_access_pref"] += 1
             continue
 
-        db.add(Notification(user_id=user.id, type="prediction_result", title=title, message=message, status="queued"))
+        db.add(
+            Notification(
+                user_id=user.id,
+                type="prediction_result",
+                title=title,
+                message=message,
+                image_data=image_data,
+                status="queued",
+            )
+        )
         counters["queued"] += 1
 
     db.commit()

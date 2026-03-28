@@ -53,5 +53,6 @@ class BotNotificationOut(BaseModel):
     telegram_id: int
     title: str
     message: str
+    image_data: str | None = None
     button_text: str | None = None
     button_url: str | None = None

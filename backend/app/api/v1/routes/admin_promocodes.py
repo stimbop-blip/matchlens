@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import require_admin
@@ -99,6 +99,7 @@ def admin_delete_promocode(
     item = db.get(PromoCode, promo_id)
     if not item:
         raise HTTPException(status_code=404, detail="Промокод не найден")
+    db.execute(delete(PromoCodeActivation).where(PromoCodeActivation.promo_code_id == item.id))
     db.delete(item)
     db.commit()
     return {"ok": True}

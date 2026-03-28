@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 import logging
 from html import escape
 
 from aiogram import Bot
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.types import BufferedInputFile, InlineKeyboardButton, InlineKeyboardMarkup
 
 from app.config import settings
 from app.services.backend_client import BackendClient
@@ -23,6 +24,38 @@ def _render_message(title: str, message: str) -> str:
     if body_text:
         return f"<b>{title_text}</b>\n\n{body_text}"
     return f"<b>{title_text}</b>"
+
+
+def _render_photo_caption(title: str, message: str, max_length: int = 1024) -> str:
+    title_text = (title or "Обновление PIT BET").strip()
+    body_text = (message or "").strip()
+    base = f"{title_text}\n\n{body_text}" if body_text else title_text
+    if len(base) <= max_length:
+        return base
+    return f"{base[: max_length - 1].rstrip()}…"
+
+
+def _photo_from_data_url(image_data: str) -> BufferedInputFile | None:
+    if not image_data.startswith("data:image/"):
+        return None
+    if "," not in image_data:
+        return None
+
+    header, payload = image_data.split(",", 1)
+    ext = "jpg"
+    try:
+        mime = header.split(";", 1)[0]
+        if "/" in mime:
+            ext_candidate = mime.split("/", 1)[1].strip().lower()
+            if ext_candidate:
+                ext = "jpg" if ext_candidate == "jpeg" else ext_candidate
+        raw = base64.b64decode(payload, validate=True)
+    except Exception:
+        return None
+
+    if not raw:
+        return None
+    return BufferedInputFile(raw, filename=f"pit-bet-result.{ext}")
 
 
 async def run_notification_worker(bot: Bot, backend_client: BackendClient) -> None:
@@ -47,6 +80,7 @@ async def run_notification_worker(bot: Bot, backend_client: BackendClient) -> No
                 telegram_id = item.get("telegram_id")
                 title = str(item.get("title") or "Обновление PIT BET")
                 message = str(item.get("message") or "")
+                image_data = str(item.get("image_data") or "").strip()
                 button_text = str(item.get("button_text") or "").strip()
                 button_url = str(item.get("button_url") or "").strip()
 
@@ -77,12 +111,22 @@ async def run_notification_worker(bot: Bot, backend_client: BackendClient) -> No
                             inline_keyboard=[[InlineKeyboardButton(text=button_text, url=button_url)]]
                         )
 
-                    await bot.send_message(
-                        chat_id=int(telegram_id),
-                        text=_render_message(title, message),
-                        disable_web_page_preview=True,
-                        reply_markup=reply_markup,
-                    )
+                    photo = _photo_from_data_url(image_data) if image_data else None
+                    if photo is not None:
+                        await bot.send_photo(
+                            chat_id=int(telegram_id),
+                            photo=photo,
+                            caption=_render_photo_caption(title, message),
+                            reply_markup=reply_markup,
+                            parse_mode=None,
+                        )
+                    else:
+                        await bot.send_message(
+                            chat_id=int(telegram_id),
+                            text=_render_message(title, message),
+                            disable_web_page_preview=True,
+                            reply_markup=reply_markup,
+                        )
                     ack_sent = await backend_client.mark_notification_sent(notification_id)
                     if not ack_sent:
                         logger.warning("notification_worker failed_to_ack_sent id=%s", notification_id)

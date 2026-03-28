@@ -75,6 +75,7 @@ export type Prediction = {
   signal_type: string;
   odds: number;
   short_description: string | null;
+  result_screenshot: string | null;
   risk_level: string;
   access_level: "free" | "premium" | "vip";
   status: "pending" | "won" | "lost" | "refund";

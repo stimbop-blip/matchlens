@@ -16,6 +16,7 @@ class Notification(Base):
     type: Mapped[str] = mapped_column(String(50), nullable=False, default="manual")
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     message: Mapped[str] = mapped_column(Text, nullable=False)
+    image_data: Mapped[str | None] = mapped_column(Text, nullable=True)
     cta_text: Mapped[str | None] = mapped_column(String(80), nullable=True)
     cta_url: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="queued", index=True)

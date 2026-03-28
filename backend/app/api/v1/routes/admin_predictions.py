@@ -13,31 +13,33 @@ from app.services.prediction_service import create_prediction, delete_prediction
 router = APIRouter(prefix="/admin/predictions", tags=["admin"])
 
 
+def _prediction_out(item: Prediction) -> PredictionOut:
+    return PredictionOut(
+        id=str(item.id),
+        title=item.title,
+        match_name=item.match_name,
+        league=item.league,
+        sport_type=item.sport_type,
+        event_start_at=item.event_start_at,
+        signal_type=item.signal_type,
+        odds=float(item.odds),
+        short_description=item.short_description,
+        result_screenshot=item.result_screenshot,
+        risk_level=item.risk_level,
+        access_level=item.access_level.value,
+        status=item.status.value,
+        mode=item.mode,
+        published_at=item.published_at,
+    )
+
+
 @router.get("", response_model=list[PredictionOut])
 def admin_list_predictions(
     db: Session = Depends(get_db),
     _: User = Depends(require_admin),
 ) -> list[PredictionOut]:
     rows = db.scalars(select(Prediction).order_by(desc(Prediction.created_at)).limit(200)).all()
-    return [
-        PredictionOut(
-            id=str(item.id),
-            title=item.title,
-            match_name=item.match_name,
-            league=item.league,
-            sport_type=item.sport_type,
-            event_start_at=item.event_start_at,
-            signal_type=item.signal_type,
-            odds=float(item.odds),
-            short_description=item.short_description,
-            risk_level=item.risk_level,
-            access_level=item.access_level.value,
-            status=item.status.value,
-            mode=item.mode,
-            published_at=item.published_at,
-        )
-        for item in rows
-    ]
+    return [_prediction_out(item) for item in rows]
 
 
 @router.post("", response_model=PredictionOut)
@@ -49,22 +51,7 @@ def admin_create_prediction(
     item = create_prediction(db, payload.model_dump(), str(current_admin.id))
     if item.published_at is not None:
         queue_prediction_created_notification(db, item)
-    return PredictionOut(
-        id=str(item.id),
-        title=item.title,
-        match_name=item.match_name,
-        league=item.league,
-        sport_type=item.sport_type,
-        event_start_at=item.event_start_at,
-        signal_type=item.signal_type,
-        odds=float(item.odds),
-        short_description=item.short_description,
-        risk_level=item.risk_level,
-        access_level=item.access_level.value,
-        status=item.status.value,
-        mode=item.mode,
-        published_at=item.published_at,
-    )
+    return _prediction_out(item)
 
 
 @router.put("/{prediction_id}", response_model=PredictionOut)
@@ -86,22 +73,7 @@ def admin_update_prediction(
     result_statuses = {"won", "lost", "refund"}
     if item.status.value in result_statuses and previous_status != item.status.value:
         queue_prediction_result_notification(db, item)
-    return PredictionOut(
-        id=str(item.id),
-        title=item.title,
-        match_name=item.match_name,
-        league=item.league,
-        sport_type=item.sport_type,
-        event_start_at=item.event_start_at,
-        signal_type=item.signal_type,
-        odds=float(item.odds),
-        short_description=item.short_description,
-        risk_level=item.risk_level,
-        access_level=item.access_level.value,
-        status=item.status.value,
-        mode=item.mode,
-        published_at=item.published_at,
-    )
+    return _prediction_out(item)
 
 
 @router.delete("/{prediction_id}")

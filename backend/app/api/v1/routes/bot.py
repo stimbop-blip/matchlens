@@ -185,6 +185,7 @@ def bot_pull_notifications(limit: int = 20, db: Session = Depends(get_db)) -> li
             telegram_id=user.telegram_id,
             title=item.title,
             message=item.message,
+            image_data=item.image_data,
             button_text=item.cta_text,
             button_url=item.cta_url,
         )

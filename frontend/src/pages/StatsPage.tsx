@@ -96,7 +96,7 @@ export function StatsPage() {
 
         <MarketPulse label={t("stats.visual.title")} values={trendValues.length ? trendValues : [0, 0, 0, 0]} tag={t("common.roi")} />
 
-        <div className="pb-metric-grid tight">
+        <div className="pb-metric-grid tight pb-stats-kpi-grid">
           <article>
             <span>{t("common.roi")}</span>
             <AnimatedNumber value={stats?.roi ?? 0} suffix="%" decimals={1} />
@@ -116,17 +116,19 @@ export function StatsPage() {
         </div>
       </section>
 
-      <AppShellSection>
+      <AppShellSection className="pb-stats-section">
         <SectionHeader title={t("stats.kpi.title")} />
-        <ActivityBand
-          items={[
-            { label: t("stats.kpi.wins"), value: wins, tone: "success" },
-            { label: t("stats.kpi.loses"), value: loses, tone: "warning" },
-            { label: t("stats.kpi.refunds"), value: refunds },
-            { label: t("stats.kpi.pending"), value: pending },
-            { label: t("stats.kpi.total"), value: stats?.total ?? 0, tone: "accent" },
-          ]}
-        />
+        <div className="pb-stats-band-wrap">
+          <ActivityBand
+            items={[
+              { label: t("stats.kpi.wins"), value: wins, tone: "success" },
+              { label: t("stats.kpi.loses"), value: loses, tone: "warning" },
+              { label: t("stats.kpi.refunds"), value: refunds },
+              { label: t("stats.kpi.pending"), value: pending },
+              { label: t("stats.kpi.total"), value: stats?.total ?? 0, tone: "accent" },
+            ]}
+          />
+        </div>
       </AppShellSection>
 
       {loading ? (
@@ -164,12 +166,12 @@ export function StatsPage() {
 
       {stats && !loading ? (
         <>
-          <AppShellSection>
+          <AppShellSection className="pb-stats-section">
             <SectionHeader title={t("stats.breakdown.title")} subtitle={t("stats.breakdown.subtitle")} />
             <RingStat title={t("stats.breakdown.title")} subtitle={t("stats.kpi.total")} items={ringItems} />
           </AppShellSection>
 
-          <AppShellSection>
+          <AppShellSection className="pb-stats-section">
             <SectionHeader title={t("stats.visual.title")} subtitle={t("stats.visual.subtitle")} />
             <Sparkline values={trendValues} className="pb-sparkline-band" />
             <div className="pb-progress-list">
@@ -180,9 +182,9 @@ export function StatsPage() {
             </div>
           </AppShellSection>
 
-          <AppShellSection>
+          <AppShellSection className="pb-stats-section">
             <SectionHeader title={t("stats.insights.title")} />
-            <div className="pb-insight-grid">
+            <div className="pb-insight-grid pb-stats-insight-grid">
               <InsightCard title={t("common.roi")} text={t("stats.insight.one", { hit: `${stats.hit_rate}%`, roi: `${stats.roi}%` })} tone="accent" />
               <InsightCard title={t("stats.breakdown.title")} text={t("stats.insight.two")} />
             </div>

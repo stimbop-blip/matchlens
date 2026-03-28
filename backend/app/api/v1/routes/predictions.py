@@ -13,6 +13,26 @@ from app.services.subscription_service import get_current_subscription_by_telegr
 router = APIRouter(prefix="/predictions", tags=["predictions"])
 
 
+def _prediction_out(item) -> PredictionOut:
+    return PredictionOut(
+        id=str(item.id),
+        title=item.title,
+        match_name=item.match_name,
+        league=item.league,
+        sport_type=item.sport_type,
+        event_start_at=item.event_start_at,
+        signal_type=item.signal_type,
+        odds=float(item.odds),
+        short_description=item.short_description,
+        result_screenshot=item.result_screenshot,
+        risk_level=item.risk_level,
+        access_level=item.access_level.value,
+        status=item.status.value,
+        mode=item.mode,
+        published_at=item.published_at,
+    )
+
+
 @router.get("", response_model=list[PredictionOut])
 def list_predictions(
     limit: int = Query(default=20, ge=1, le=100),
@@ -33,24 +53,7 @@ def list_predictions(
     for item in predictions:
         if not has_access(user_level, item.access_level.value):
             continue
-        visible.append(
-            PredictionOut(
-                id=str(item.id),
-                title=item.title,
-                match_name=item.match_name,
-                league=item.league,
-                sport_type=item.sport_type,
-                event_start_at=item.event_start_at,
-                signal_type=item.signal_type,
-                odds=float(item.odds),
-                short_description=item.short_description,
-                risk_level=item.risk_level,
-                access_level=item.access_level.value,
-                status=item.status.value,
-                mode=item.mode,
-                published_at=item.published_at,
-            )
-        )
+        visible.append(_prediction_out(item))
     return visible
 
 
@@ -69,19 +72,4 @@ def get_prediction(
     if not has_access(user_level, item.access_level.value):
         raise HTTPException(status_code=403, detail="Upgrade required")
 
-    return PredictionOut(
-        id=str(item.id),
-        title=item.title,
-        match_name=item.match_name,
-        league=item.league,
-        sport_type=item.sport_type,
-        event_start_at=item.event_start_at,
-        signal_type=item.signal_type,
-        odds=float(item.odds),
-        short_description=item.short_description,
-        risk_level=item.risk_level,
-        access_level=item.access_level.value,
-        status=item.status.value,
-        mode=item.mode,
-        published_at=item.published_at,
-    )
+    return _prediction_out(item)
