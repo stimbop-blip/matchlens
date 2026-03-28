@@ -40,5 +40,18 @@
 ## 4) Telegram Mini App env mapping
 
 - `MINI_APP_URL=https://<frontend-domain>`
+- `MINI_APP_MENU_BUTTON_TEXT=Открыть`
+- `BOT_USERNAME=<your_bot_username>`
+- `MINI_APP_SHORT_NAME=<botfather-mini-app-short-name>`
 - `VITE_API_URL=https://<backend-domain>/api/v1`
 - `YOOMONEY_RETURN_URL=https://t.me/<your_bot_username>`
+
+## 5) Telegram-side setup (BotFather)
+
+These items are configured in Telegram/BotFather, not by app code:
+
+- Set Main Mini App (`/myapps`) and point it to the same production `MINI_APP_URL`.
+- Enable attachment menu entry for the Mini App (`/setattach`).
+- If you use a direct app link format, use `https://t.me/<bot_username>/<mini_app_short_name>`.
+
+The bot code can configure menu button and command list, but Telegram client UI (including how the `Open` button looks in dialog lists) is controlled by Telegram.

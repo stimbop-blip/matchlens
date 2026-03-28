@@ -825,6 +825,43 @@ async def open_menu_command(message: Message) -> None:
     await _send_clean_menu(message, language, user.id if user else None)
 
 
+async def _open_menu_action_from_command(message: Message, action: str) -> None:
+    user = message.from_user
+    language = await _resolve_language(user.id if user else None, user.language_code if user else None)
+    text, markup = await _build_screen(
+        action,
+        language=language,
+        user_id=user.id if user else None,
+        username=user.username if user else None,
+    )
+    await _send_screen(message, text, markup)
+
+
+@router.message(Command("free"))
+async def open_free_command(message: Message) -> None:
+    await _open_menu_action_from_command(message, "menu:free")
+
+
+@router.message(Command("tariffs"))
+async def open_tariffs_command(message: Message) -> None:
+    await _open_menu_action_from_command(message, "menu:tariffs")
+
+
+@router.message(Command("support"))
+async def open_support_command(message: Message) -> None:
+    await _open_menu_action_from_command(message, "menu:support")
+
+
+@router.message(Command("about"))
+async def open_about_command(message: Message) -> None:
+    await _open_menu_action_from_command(message, "menu:about")
+
+
+@router.message(Command("admin"))
+async def open_admin_command(message: Message) -> None:
+    await _open_menu_action_from_command(message, "menu:admin")
+
+
 @router.message(Command("debug_menu"))
 async def open_debug_menu_command(message: Message) -> None:
     user = message.from_user
