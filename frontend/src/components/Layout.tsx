@@ -1,5 +1,5 @@
 import { type PropsWithChildren, useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { useI18n } from "../app/i18n";
 import { api } from "../services/api";
@@ -7,10 +7,7 @@ import {
   configureTelegramBackButton,
   configureTelegramMainButton,
   configureTelegramSettingsButton,
-  waitForTelegramInitData,
 } from "../services/telegram";
-import { CommandHub } from "./CommandHub";
-import { HubLauncher } from "./HubLauncher";
 
 type PageMeta = {
   titleKey: string;
@@ -20,13 +17,9 @@ type PageMeta = {
 type MainAction =
   | {
       labelKey: string;
-      mode: "route";
       target: string;
     }
-  | {
-      labelKey: string;
-      mode: "hub";
-    };
+  | null;
 
 function pageMeta(pathname: string): PageMeta {
   if (pathname.startsWith("/feed/")) return { titleKey: "layout.title.signal", subtitleKey: "layout.subtitle.signal" };
@@ -45,15 +38,19 @@ function pageMeta(pathname: string): PageMeta {
   return { titleKey: "layout.title.home", subtitleKey: "layout.subtitle.home" };
 }
 
-function mainAction(pathname: string): MainAction | null {
-  if (pathname === "/") return { labelKey: "layout.main.openSignals", mode: "route", target: "/feed" };
-  if (pathname.startsWith("/feed")) return { labelKey: "layout.main.openHub", mode: "hub" };
-  if (pathname.startsWith("/stats")) return { labelKey: "layout.main.openSignals", mode: "route", target: "/feed" };
-  if (pathname.startsWith("/profile")) return { labelKey: "layout.main.openTariffs", mode: "route", target: "/tariffs" };
-  if (pathname.startsWith("/tariffs")) return { labelKey: "layout.main.openProfile", mode: "route", target: "/profile" };
-  if (pathname.startsWith("/news")) return { labelKey: "layout.main.openSignals", mode: "route", target: "/feed" };
-  if (pathname.startsWith("/menu") || pathname.startsWith("/admin")) return { labelKey: "layout.main.openHome", mode: "route", target: "/" };
+function mainAction(pathname: string): MainAction {
+  if (pathname === "/") return { labelKey: "layout.main.openSignals", target: "/feed" };
+  if (pathname.startsWith("/feed")) return { labelKey: "layout.main.openStats", target: "/stats" };
+  if (pathname.startsWith("/stats")) return { labelKey: "layout.main.openProfile", target: "/profile" };
+  if (pathname.startsWith("/profile")) return { labelKey: "layout.main.openMore", target: "/menu" };
+  if (pathname.startsWith("/menu") || pathname.startsWith("/news") || pathname.startsWith("/tariffs") || pathname.startsWith("/admin")) {
+    return { labelKey: "layout.main.openHome", target: "/" };
+  }
   return null;
+}
+
+function isMorePath(pathname: string): boolean {
+  return pathname.startsWith("/menu") || pathname.startsWith("/news") || pathname.startsWith("/tariffs") || pathname.startsWith("/admin");
 }
 
 export function Layout({ children }: PropsWithChildren) {
@@ -62,13 +59,10 @@ export function Layout({ children }: PropsWithChildren) {
   const location = useLocation();
 
   const [isAdmin, setIsAdmin] = useState(false);
-  const [hubOpen, setHubOpen] = useState(false);
 
   useEffect(() => {
     let alive = true;
     const loadRole = async () => {
-      const initData = await waitForTelegramInitData();
-      if (!alive || !initData) return;
       try {
         const me = await api.me();
         if (!alive) return;
@@ -84,20 +78,12 @@ export function Layout({ children }: PropsWithChildren) {
     };
   }, []);
 
-  useEffect(() => {
-    setHubOpen(false);
-  }, [location.pathname]);
-
   const meta = useMemo(() => pageMeta(location.pathname), [location.pathname]);
   const action = useMemo(() => mainAction(location.pathname), [location.pathname]);
 
   useEffect(() => {
     const atHome = location.pathname === "/";
-    const cleanupBack = configureTelegramBackButton(hubOpen || !atHome, () => {
-      if (hubOpen) {
-        setHubOpen(false);
-        return;
-      }
+    const cleanupBack = configureTelegramBackButton(!atHome, () => {
       if (window.history.length > 1) {
         navigate(-1);
       } else {
@@ -105,14 +91,10 @@ export function Layout({ children }: PropsWithChildren) {
       }
     });
 
-    const cleanupSettings = configureTelegramSettingsButton(true, () => setHubOpen(true));
+    const cleanupSettings = configureTelegramSettingsButton(true, () => navigate("/menu"));
 
-    const cleanupMain = configureTelegramMainButton(Boolean(action && !hubOpen), action ? t(action.labelKey) : "", () => {
+    const cleanupMain = configureTelegramMainButton(Boolean(action), action ? t(action.labelKey) : "", () => {
       if (!action) return;
-      if (action.mode === "hub") {
-        setHubOpen(true);
-        return;
-      }
       navigate(action.target);
     });
 
@@ -121,7 +103,7 @@ export function Layout({ children }: PropsWithChildren) {
       cleanupSettings();
       cleanupMain();
     };
-  }, [action, hubOpen, location.pathname, navigate, t]);
+  }, [action, location.pathname, navigate, t]);
 
   return (
     <div className="pb-app-shell">
@@ -140,8 +122,23 @@ export function Layout({ children }: PropsWithChildren) {
         {children}
       </main>
 
-      <HubLauncher onOpen={() => setHubOpen(true)} hidden={hubOpen} />
-      <CommandHub open={hubOpen} onClose={() => setHubOpen(false)} isAdmin={isAdmin} />
+      <nav className="pb-bottom-nav" aria-label={t("layout.nav.aria")}>
+        <Link className={location.pathname === "/" ? "active" : ""} to="/">
+          {t("layout.nav.home")}
+        </Link>
+        <Link className={location.pathname.startsWith("/feed") ? "active" : ""} to="/feed">
+          {t("layout.nav.feed")}
+        </Link>
+        <Link className={location.pathname.startsWith("/stats") ? "active" : ""} to="/stats">
+          {t("layout.nav.stats")}
+        </Link>
+        <Link className={location.pathname.startsWith("/profile") ? "active" : ""} to="/profile">
+          {t("layout.nav.profile")}
+        </Link>
+        <Link className={isMorePath(location.pathname) ? "active" : ""} to="/menu">
+          {t("layout.nav.more")}
+        </Link>
+      </nav>
     </div>
   );
 }

@@ -2085,7 +2085,7 @@ a:focus {
   width: min(760px, 100%);
   margin: 0 auto;
   min-height: 100vh;
-  padding: 10px 12px calc(122px + env(safe-area-inset-bottom));
+  padding: 10px 12px calc(96px + env(safe-area-inset-bottom));
 }
 
 .pb-backdrop-glow {
@@ -2631,16 +2631,49 @@ a:focus {
 
 .pb-filterbar {
   margin-top: 10px;
-  position: sticky;
-  top: 102px;
-  z-index: 9;
   border: 1px solid color-mix(in srgb, var(--border-subtle) 78%, transparent);
-  border-radius: 16px;
+  border-radius: 14px;
   background: color-mix(in srgb, var(--surface-1) 88%, transparent);
-  backdrop-filter: blur(20px);
   padding: 9px;
   display: grid;
   gap: 8px;
+}
+
+.pb-bottom-nav {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(10px + env(safe-area-inset-bottom));
+  z-index: 40;
+  width: min(760px, calc(100vw - 20px));
+  border: 1px solid color-mix(in srgb, var(--border-soft) 84%, transparent);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--surface-1) 92%, transparent);
+  backdrop-filter: blur(22px);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.28);
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  padding: 6px;
+}
+
+.pb-bottom-nav a {
+  border-radius: 10px;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  min-height: 40px;
+  display: grid;
+  place-items: center;
+  padding: 8px 6px;
+}
+
+.pb-bottom-nav a.active {
+  border-color: color-mix(in srgb, var(--accent-primary) 40%, transparent);
+  background: color-mix(in srgb, var(--accent-soft) 58%, transparent);
+  color: color-mix(in srgb, var(--accent-primary) 82%, var(--text-primary));
 }
 
 .pb-filterbar > div {
@@ -3645,7 +3678,7 @@ a:focus {
 
 @media (max-width: 560px) {
   .pb-app-shell {
-    padding: 8px 9px calc(124px + env(safe-area-inset-bottom));
+    padding: 8px 9px calc(100px + env(safe-area-inset-bottom));
   }
 
   .pb-app-header h1 {
@@ -3680,8 +3713,16 @@ a:focus {
     grid-template-columns: 1fr;
   }
 
-  .pb-filterbar {
-    top: 94px;
+  .pb-bottom-nav {
+    width: calc(100vw - 12px);
+    gap: 4px;
+    padding: 5px;
+  }
+
+  .pb-bottom-nav a {
+    font-size: 11px;
+    min-height: 38px;
+    padding: 7px 4px;
   }
 
   .pb-command-dock {

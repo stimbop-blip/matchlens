@@ -7,6 +7,11 @@ import { Layout } from "../components/Layout";
 import { AccessBadge, ActivityBand, AppShellSection, CTACluster, MarketPulse, SectionHeader } from "../components/ui";
 import { api, type Prediction } from "../services/api";
 
+function parseErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message.trim()) return error.message;
+  return fallback;
+}
+
 function formatDate(value: string, language: "ru" | "en") {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
@@ -54,7 +59,7 @@ export function PredictionDetailsPage() {
 
   useEffect(() => {
     if (!predictionId) {
-      setError(t("prediction.error"));
+      setError("missing");
       setLoading(false);
       return;
     }
@@ -64,9 +69,9 @@ export function PredictionDetailsPage() {
     api
       .prediction(predictionId)
       .then(setItem)
-      .catch((e: Error) => setError(e.message || t("prediction.error")))
+      .catch((e: unknown) => setError(parseErrorMessage(e, "")))
       .finally(() => setLoading(false));
-  }, [predictionId, t]);
+  }, [predictionId]);
 
   return (
     <Layout>
@@ -96,7 +101,7 @@ export function PredictionDetailsPage() {
       <AppShellSection>
         <SectionHeader title={t("prediction.section.snapshot")} />
         {loading ? <p className="pb-empty-state">{t("prediction.loading")}</p> : null}
-        {!loading && error ? <p className="pb-error-state">{error}</p> : null}
+        {!loading && error ? <p className="pb-error-state">{error === "missing" ? t("prediction.error") : error || t("prediction.error")}</p> : null}
 
         {!loading && item ? (
           <div className="pb-info-list">

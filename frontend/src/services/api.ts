@@ -1,11 +1,55 @@
-import { waitForTelegramInitData } from "./telegram";
+import { getTelegramInitData, waitForTelegramInitData } from "./telegram";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
+const REQUEST_INITDATA_TIMEOUT_MS = 1200;
+
+let initDataWaitPromise: Promise<string> | null = null;
+
+async function resolveInitData(): Promise<string> {
+  const existing = getTelegramInitData();
+  if (existing) return existing;
+
+  if (!initDataWaitPromise) {
+    initDataWaitPromise = waitForTelegramInitData(REQUEST_INITDATA_TIMEOUT_MS).finally(() => {
+      initDataWaitPromise = null;
+    });
+  }
+  return initDataWaitPromise;
+}
+
+async function parseErrorMessage(response: Response): Promise<string> {
+  const raw = await response.text();
+  if (!raw) return "API error";
+
+  try {
+    const parsed = JSON.parse(raw) as { detail?: unknown };
+    const detail = parsed.detail;
+    if (typeof detail === "string" && detail.trim()) return detail;
+
+    if (Array.isArray(detail)) {
+      const joined = detail
+        .map((entry) => {
+          if (typeof entry === "string") return entry;
+          if (entry && typeof entry === "object" && "msg" in entry) {
+            return String((entry as { msg?: unknown }).msg ?? "");
+          }
+          return "";
+        })
+        .filter(Boolean)
+        .join("; ");
+      if (joined) return joined;
+    }
+  } catch {
+    // ignore JSON parsing errors and return raw payload below
+  }
+
+  return raw;
+}
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const headers = new Headers(options?.headers || {});
   headers.set("Content-Type", "application/json");
-  const initData = await waitForTelegramInitData();
+  const initData = await resolveInitData();
   if (initData) {
     headers.set("X-Telegram-Init-Data", initData);
   }
@@ -16,8 +60,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   });
 
   if (!response.ok) {
-    const text = await response.text();
-    throw new Error(text || "API error");
+    throw new Error(await parseErrorMessage(response));
   }
   return response.json() as Promise<T>;
 }
@@ -277,7 +320,10 @@ export const api = {
     if (params?.status) search.set("status", params.status);
     if (params?.access_level) search.set("access_level", params.access_level);
     if (params?.risk_level) search.set("risk_level", params.risk_level);
-    if (typeof params?.limit === "number") search.set("limit", String(params.limit));
+    if (typeof params?.limit === "number") {
+      const normalizedLimit = Math.max(1, Math.min(100, Math.trunc(params.limit)));
+      search.set("limit", String(normalizedLimit));
+    }
     if (typeof params?.offset === "number") search.set("offset", String(params.offset));
     const suffix = search.toString() ? `?${search.toString()}` : "";
     return request<Prediction[]>(`/predictions${suffix}`);

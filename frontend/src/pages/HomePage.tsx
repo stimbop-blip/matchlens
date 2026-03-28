@@ -5,18 +5,22 @@ import { useI18n } from "../app/i18n";
 import { countPendingPayments, resolveSubscriptionSnapshot } from "../app/subscription";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
-import {
-  AccessBadge,
-  ActivityBand,
-  AnimatedNumber,
-  AppShellSection,
-  CTACluster,
-  MarketPulse,
-  NewsRibbon,
-  SectionHeader,
-  Sparkline,
-} from "../components/ui";
-import { api, type Me, type MyPayment, type NewsPost, type Prediction, type PublicStats, type ReferralStats } from "../services/api";
+import { AccessBadge, ActivityBand, AnimatedNumber, AppShellSection, CTACluster, NewsRibbon, SectionHeader } from "../components/ui";
+import { api, type MyPayment, type NewsPost, type Prediction, type PublicStats, type ReferralStats } from "../services/api";
+
+type TodaySummary = {
+  activeSignals: number;
+  liveNow: number;
+  freeCount: number;
+  premiumCount: number;
+  vipCount: number;
+  settledToday: number;
+};
+
+function parseErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message.trim()) return error.message;
+  return fallback;
+}
 
 function formatDate(value: string | null | undefined, language: "ru" | "en", fallback: string) {
   if (!value) return fallback;
@@ -32,6 +36,36 @@ function formatDate(value: string | null | undefined, language: "ru" | "en", fal
 
 function isSameDay(a: Date, b: Date) {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}
+
+function buildTodaySummary(items: Prediction[]): TodaySummary {
+  const today = new Date();
+  const summary: TodaySummary = {
+    activeSignals: 0,
+    liveNow: 0,
+    freeCount: 0,
+    premiumCount: 0,
+    vipCount: 0,
+    settledToday: 0,
+  };
+
+  items.forEach((item) => {
+    if (item.status === "pending") {
+      summary.activeSignals += 1;
+      if (item.mode === "live") summary.liveNow += 1;
+      if (item.access_level === "premium") summary.premiumCount += 1;
+      else if (item.access_level === "vip") summary.vipCount += 1;
+      else summary.freeCount += 1;
+      return;
+    }
+
+    const settledAt = new Date(item.event_start_at);
+    if (!Number.isNaN(settledAt.getTime()) && isSameDay(settledAt, today)) {
+      summary.settledToday += 1;
+    }
+  });
+
+  return summary;
 }
 
 function tariffLabel(level: "free" | "premium" | "vip", t: (key: string) => string) {
@@ -51,37 +85,31 @@ function statusLabel(status: "active" | "expired" | "canceled" | "inactive" | "u
 export function HomePage() {
   const { t, language } = useI18n();
 
-  const [me, setMe] = useState<Me | null>(null);
   const [stats, setStats] = useState<PublicStats | null>(null);
   const [subscriptionRaw, setSubscriptionRaw] = useState<{ tariff: string; status: string; ends_at: string | null } | null>(null);
   const [referral, setReferral] = useState<ReferralStats | null>(null);
   const [news, setNews] = useState<NewsPost[]>([]);
-  const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [payments, setPayments] = useState<MyPayment[]>([]);
+
+  const [predictions, setPredictions] = useState<Prediction[]>([]);
+  const [summaryLoading, setSummaryLoading] = useState(true);
+  const [summaryError, setSummaryError] = useState("");
+  const [summaryReloadKey, setSummaryReloadKey] = useState(0);
+
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let alive = true;
     const load = async () => {
       setLoading(true);
-      const results = await Promise.allSettled([
-        api.me(),
-        api.stats(),
-        api.mySubscription(),
-        api.myReferral(),
-        api.news(),
-        api.predictions({ limit: 180 }),
-        api.myPayments(),
-      ]);
+      const results = await Promise.allSettled([api.stats(), api.mySubscription(), api.myReferral(), api.news(), api.myPayments()]);
       if (!alive) return;
 
-      const [meRes, statsRes, subRes, refRes, newsRes, predRes, payRes] = results;
-      setMe(meRes.status === "fulfilled" ? meRes.value : null);
+      const [statsRes, subRes, refRes, newsRes, payRes] = results;
       setStats(statsRes.status === "fulfilled" ? statsRes.value : null);
       setSubscriptionRaw(subRes.status === "fulfilled" ? subRes.value : null);
       setReferral(refRes.status === "fulfilled" ? refRes.value : null);
       setNews(newsRes.status === "fulfilled" ? newsRes.value : []);
-      setPredictions(predRes.status === "fulfilled" ? predRes.value : []);
       setPayments(payRes.status === "fulfilled" ? payRes.value : []);
       setLoading(false);
     };
@@ -92,25 +120,35 @@ export function HomePage() {
     };
   }, []);
 
+  useEffect(() => {
+    let alive = true;
+    setSummaryLoading(true);
+    setSummaryError("");
+
+    api
+      .predictions({ limit: 100 })
+      .then((list) => {
+        if (!alive) return;
+        setPredictions(list);
+      })
+      .catch((error: unknown) => {
+        if (!alive) return;
+        setPredictions([]);
+        setSummaryError(parseErrorMessage(error, ""));
+      })
+      .finally(() => {
+        if (!alive) return;
+        setSummaryLoading(false);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [summaryReloadKey]);
+
   const sub = resolveSubscriptionSnapshot(subscriptionRaw);
   const pendingPayments = countPendingPayments(payments);
-
-  const pendingSignals = predictions.filter((item) => item.status === "pending");
-  const liveNow = pendingSignals.filter((item) => item.mode === "live").length;
-  const freeCount = pendingSignals.filter((item) => item.access_level === "free").length;
-  const premiumCount = pendingSignals.filter((item) => item.access_level === "premium").length;
-  const vipCount = pendingSignals.filter((item) => item.access_level === "vip").length;
-
-  const settledToday = useMemo(() => {
-    const today = new Date();
-    return predictions.filter((item) => {
-      if (item.status === "pending") return false;
-      const base = item.published_at ? new Date(item.published_at) : new Date(item.event_start_at);
-      if (Number.isNaN(base.getTime())) return false;
-      return isSameDay(base, today);
-    }).length;
-  }, [predictions]);
-
+  const today = useMemo(() => buildTodaySummary(predictions), [predictions]);
   const previewNews = news.slice(0, 2);
 
   return (
@@ -124,8 +162,6 @@ export function HomePage() {
         <h2>{t("home.hero.headline")}</h2>
         <p>{t("home.hero.subheadline")}</p>
 
-        <MarketPulse label={t("stats.hero.pulse")} values={[76, 72, 69, 61, 66, 58, 52, 47, 41, 44, 37]} tag={t("common.live")} />
-
         <ActivityBand
           items={[
             { label: t("home.hero.status"), value: statusLabel(sub.status, t), tone: sub.is_active ? "success" : "warning" },
@@ -138,7 +174,10 @@ export function HomePage() {
           <Link className="pb-btn pb-btn-primary" to="/feed">
             {t("home.hero.ctaSignals")}
           </Link>
-          <Link className="pb-btn pb-btn-secondary" to="/profile">
+          <Link className="pb-btn pb-btn-secondary" to="/stats">
+            {t("home.performance.action")}
+          </Link>
+          <Link className="pb-btn pb-btn-ghost" to="/profile">
             {t("home.hero.ctaAccess")}
           </Link>
           <Link className="pb-btn pb-btn-ghost" to="/menu">
@@ -148,58 +187,56 @@ export function HomePage() {
       </section>
 
       <AppShellSection className="pb-today-panel">
-        <SectionHeader title={t("home.today.title")} subtitle={t("home.today.subtitle")} />
-        <div className="pb-today-grid">
-          <article className="pb-today-main">
-            <span>{t("home.today.active")}</span>
-            <AnimatedNumber value={pendingSignals.length} />
-          </article>
+        <SectionHeader title={t("home.today.title")} subtitle={t("home.today.subtitle")} action={<span className="pb-hint-chip">{predictions.length}</span>} />
 
-          <div className="pb-today-stack">
-            <article>
-              <span>{t("home.today.liveNow")}</span>
-              <AnimatedNumber value={liveNow} />
-            </article>
-            <article>
-              <span>{t("home.today.free")}</span>
-              <AnimatedNumber value={freeCount} />
-            </article>
-            <article>
-              <span>{t("home.today.premium")}</span>
-              <AnimatedNumber value={premiumCount} />
-            </article>
-            <article>
-              <span>{t("home.today.vip")}</span>
-              <AnimatedNumber value={vipCount} />
-            </article>
-            <article>
-              <span>{t("home.today.settled")}</span>
-              <AnimatedNumber value={settledToday} />
-            </article>
+        {summaryLoading ? <p className="pb-empty-state">{t("common.loading")}</p> : null}
+
+        {!summaryLoading && summaryError ? (
+          <div className="pb-error-state">
+            <p>{summaryError || t("home.today.error")}</p>
+            <CTACluster>
+              <button className="pb-btn pb-btn-ghost" type="button" onClick={() => setSummaryReloadKey((prev) => prev + 1)}>
+                {t("common.retry")}
+              </button>
+            </CTACluster>
           </div>
-        </div>
-      </AppShellSection>
+        ) : null}
 
-      <AppShellSection className="pb-story-panel">
-        <SectionHeader title={t("home.story.title")} subtitle={t("home.story.subtitle")} />
-        <div className="pb-story-grid">
-          <article>
-            <h3>{t("home.story.p1.title")}</h3>
-            <p>{t("home.story.p1.text")}</p>
-          </article>
-          <article>
-            <h3>{t("home.story.p2.title")}</h3>
-            <p>{t("home.story.p2.text")}</p>
-          </article>
-          <article>
-            <h3>{t("home.story.p3.title")}</h3>
-            <p>{t("home.story.p3.text")}</p>
-          </article>
-          <article>
-            <h3>{t("home.story.p4.title")}</h3>
-            <p>{t("home.story.p4.text")}</p>
-          </article>
-        </div>
+        {!summaryLoading && !summaryError && predictions.length === 0 ? <p className="pb-empty-state">{t("home.today.empty")}</p> : null}
+
+        {!summaryLoading && !summaryError && predictions.length > 0 ? (
+          <>
+            <div className="pb-today-grid">
+              <article className="pb-today-main">
+                <span>{t("home.today.active")}</span>
+                <AnimatedNumber value={today.activeSignals} />
+              </article>
+
+              <div className="pb-today-stack">
+                <article>
+                  <span>{t("home.today.liveNow")}</span>
+                  <AnimatedNumber value={today.liveNow} />
+                </article>
+                <article>
+                  <span>{t("home.today.free")}</span>
+                  <AnimatedNumber value={today.freeCount} />
+                </article>
+                <article>
+                  <span>{t("home.today.premium")}</span>
+                  <AnimatedNumber value={today.premiumCount} />
+                </article>
+                <article>
+                  <span>{t("home.today.vip")}</span>
+                  <AnimatedNumber value={today.vipCount} />
+                </article>
+                <article>
+                  <span>{t("home.today.settled")}</span>
+                  <AnimatedNumber value={today.settledToday} />
+                </article>
+              </div>
+            </div>
+          </>
+        ) : null}
       </AppShellSection>
 
       <div className="pb-home-split">
@@ -254,12 +291,6 @@ export function HomePage() {
               <strong>{`${stats?.wins ?? 0}/${stats?.loses ?? 0}/${stats?.refunds ?? 0}`}</strong>
             </article>
           </div>
-          <Sparkline values={[46, 53, 49, 58, 54, 66, 60, 71, 65, 74]} className="pb-sparkline-band" />
-          <CTACluster>
-            <Link className="pb-btn pb-btn-ghost" to="/stats">
-              {t("home.performance.action")}
-            </Link>
-          </CTACluster>
         </AppShellSection>
       </div>
 
@@ -267,7 +298,6 @@ export function HomePage() {
         <SectionHeader title={t("home.news.title")} action={<Link className="pb-link-inline" to="/news">{t("home.news.all")}</Link>} />
 
         {loading ? <p className="pb-empty-state">{t("common.loading")}</p> : null}
-
         {!loading && previewNews.length === 0 ? <p className="pb-empty-state">{t("home.news.empty")}</p> : null}
 
         {previewNews.length > 0 ? (
