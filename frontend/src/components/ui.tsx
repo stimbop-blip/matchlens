@@ -357,7 +357,7 @@ function SettingsRowBody({ icon, title, subtitle, value, right }: Omit<SettingsR
       </div>
       <div className="pb-settings-side">
         {value ? <span>{value}</span> : null}
-        {right || <em>></em>}
+        {right || <em>&gt;</em>}
       </div>
     </>
   );
