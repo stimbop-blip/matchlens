@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useI18n } from "../app/i18n";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
-import { AppShellSection, SectionHeader, SettingsRow, SettingsSection } from "../components/ui";
+import { ActivityBand, AppShellSection, SectionHeader, SettingsRow, SettingsSection } from "../components/ui";
 import { api, type Me, type NotificationSettings, type ReferralStats } from "../services/api";
 
 const SUPPORT_URL = import.meta.env.VITE_SUPPORT_URL || "https://t.me/your_support";
@@ -36,6 +36,22 @@ export function MenuPage() {
 
   return (
     <Layout>
+      <section className="pb-hero-panel pb-reveal">
+        <div className="pb-hero-top">
+          <span className="pb-eyebrow">PIT BET</span>
+          {me?.is_admin || me?.role === "admin" ? <span className="pb-live-pill">{t("layout.role.admin")}</span> : null}
+        </div>
+        <h2>{t("menu.heroTitle")}</h2>
+        <p>{t("menu.heroSubtitle")}</p>
+        <ActivityBand
+          items={[
+            { label: t("menu.metric.notifications"), value: notify?.notifications_enabled ? t("common.status.active") : t("common.status.inactive") },
+            { label: t("menu.metric.referral"), value: `${referral?.invited ?? 0}/${referral?.activated ?? 0}`, tone: "accent" },
+            { label: t("menu.metric.access"), value: me?.is_admin || me?.role === "admin" ? t("layout.role.admin") : t("common.status.active") },
+          ]}
+        />
+      </section>
+
       <AppShellSection>
         <SectionHeader title={t("menu.title")} subtitle={t("menu.subtitle")} />
 

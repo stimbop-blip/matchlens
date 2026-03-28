@@ -5,7 +5,7 @@ import { useI18n } from "../app/i18n";
 import { countPendingPayments, paymentStatusTone, resolveSubscriptionSnapshot } from "../app/subscription";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
-import { AccessBadge, ActivityBand, AppShellSection, CTACluster, SectionHeader, ToggleRow } from "../components/ui";
+import { AccessBadge, ActivityBand, AppShellSection, CTACluster, RocketLoader, SectionHeader, SkeletonBlock, ToggleRow } from "../components/ui";
 import { api, type Me, type MyPayment, type NotificationSettings, type PromoApplyResult, type ReferralStats } from "../services/api";
 import { waitForTelegramInitData } from "../services/telegram";
 
@@ -89,6 +89,22 @@ export function ProfilePage() {
 
   const sub = resolveSubscriptionSnapshot(subscriptionRaw);
   const pendingPayments = countPendingPayments(payments);
+
+  if (loading) {
+    return (
+      <Layout>
+        <AppShellSection>
+          <RocketLoader title={t("profile.loadingTitle")} subtitle={t("profile.loadingSubtitle")} />
+          <div className="pb-profile-skeleton" aria-hidden="true">
+            <SkeletonBlock className="w-55 h-56" />
+            <SkeletonBlock className="w-44 h-56" />
+            <SkeletonBlock className="w-90 h-64" />
+          </div>
+        </AppShellSection>
+        <AppDisclaimer />
+      </Layout>
+    );
+  }
 
   const updateNotify = async (payload: Partial<NotificationSettings>) => {
     try {
@@ -200,7 +216,6 @@ export function ProfilePage() {
       <AppShellSection id="subscription">
         <SectionHeader title={t("profile.subscription.title")} subtitle={t("profile.subscription.subtitle")} />
 
-        {loading ? <p className="pb-empty-state">{t("common.loading")}</p> : null}
         {!loading && !me ? <p className="pb-empty-state">{t("profile.unavailable")}</p> : null}
         {!loading && payments.length === 0 ? <p className="pb-empty-state">{t("profile.subscription.historyEmpty")}</p> : null}
 

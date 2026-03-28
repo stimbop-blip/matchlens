@@ -3,7 +3,16 @@ import { useEffect, useMemo, useState } from "react";
 import { useI18n } from "../app/i18n";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
-import { AccessBadge, AppShellSection, CTACluster, SectionHeader, SegmentedTabs, SignalCardV3 } from "../components/ui";
+import {
+  AccessBadge,
+  AppShellSection,
+  CTACluster,
+  RocketLoader,
+  SectionHeader,
+  SegmentedTabs,
+  SignalCardSkeleton,
+  SignalCardV3,
+} from "../components/ui";
 import { api, type Prediction } from "../services/api";
 
 type AccessFilter = "all" | "free" | "premium" | "vip";
@@ -210,7 +219,17 @@ export function FeedPage() {
           </div>
         </div>
 
-        {loading ? <p className="pb-empty-state">{t("feed.loading")}</p> : null}
+        {loading ? (
+          <>
+            <RocketLoader title={t("feed.loadingTitle")} subtitle={t("feed.loadingSubtitle")} compact />
+            <div className="pb-feed-grid">
+              <SignalCardSkeleton />
+              <SignalCardSkeleton />
+              <SignalCardSkeleton />
+            </div>
+          </>
+        ) : null}
+
         {!loading && error ? (
           <div className="pb-error-state">
             <p>{error || t("feed.error")}</p>
@@ -221,43 +240,49 @@ export function FeedPage() {
             </CTACluster>
           </div>
         ) : null}
+
         {!loading && !error && items.length === 0 ? <p className="pb-empty-state">{t("feed.empty")}</p> : null}
 
-        <div className="pb-feed-groups">
-          {groups.map((group) => (
-            <section key={group.key}>
-              <h3 className="pb-day-title">{dayHeading(group.key, language, t)}</h3>
-              <div className="pb-feed-grid">
-                {group.list.map((item, index) => {
-                  const tags = [item.mode === "live" ? t("common.live") : t("common.prematch")];
-                  if (item.status === "pending" && item.access_level === "vip") tags.push(t("feed.tag.strong"));
-                  if (item.status === "pending" && item.odds >= 2.2) tags.push(t("feed.tag.hot"));
-                  if (item.status === "pending" && index === 0) tags.push(t("feed.tag.pick"));
+        {!loading && !error ? (
+          <div className="pb-feed-groups">
+            {groups.map((group) => (
+              <section key={group.key}>
+                <h3 className="pb-day-title">{dayHeading(group.key, language, t)}</h3>
+                <div className="pb-feed-grid">
+                  {group.list.map((item, index) => {
+                    const tags = [item.mode === "live" ? t("common.live") : t("common.prematch")];
+                    if (item.status === "pending" && item.access_level === "vip") tags.push(t("feed.tag.strong"));
+                    if (item.status === "pending" && item.odds >= 2.2) tags.push(t("feed.tag.hot"));
+                    if (item.status === "pending" && index === 0) tags.push(t("feed.tag.pick"));
 
-                  return (
-                    <SignalCardV3
-                      key={item.id}
-                      to={`/feed/${item.id}`}
-                      match={item.match_name}
-                      league={item.league || t("feed.noLeague")}
-                      sport={item.sport_type}
-                      mode={item.mode === "live" ? t("common.live") : t("common.prematch")}
-                      access={<AccessBadge level={item.access_level} label={accessLabel(item.access_level, t)} />}
-                      status={statusLabel(item.status, t)}
-                      kickoff={formatDate(item.event_start_at, language)}
-                      odds={item.odds}
-                      risk={riskLabel(item.risk_level, t)}
-                      signal={item.signal_type}
-                      teaser={teaser(item.short_description, t("feed.teaserFallback"))}
-                      tags={tags}
-                      hint={t("feed.detailsHint")}
-                    />
-                  );
-                })}
-              </div>
-            </section>
-          ))}
-        </div>
+                    return (
+                      <SignalCardV3
+                        key={item.id}
+                        to={`/feed/${item.id}`}
+                        match={item.match_name}
+                        league={item.league || t("feed.noLeague")}
+                        sport={item.sport_type}
+                        accessLevel={item.access_level}
+                        mode={item.mode === "live" ? t("common.live") : t("common.prematch")}
+                        modeKey={item.mode}
+                        access={<AccessBadge level={item.access_level} label={accessLabel(item.access_level, t)} />}
+                        status={statusLabel(item.status, t)}
+                        statusKey={item.status}
+                        kickoff={formatDate(item.event_start_at, language)}
+                        odds={item.odds}
+                        risk={riskLabel(item.risk_level, t)}
+                        signal={item.signal_type}
+                        teaser={teaser(item.short_description, t("feed.teaserFallback"))}
+                        tags={tags}
+                        hint={t("feed.detailsHint")}
+                      />
+                    );
+                  })}
+                </div>
+              </section>
+            ))}
+          </div>
+        ) : null}
       </AppShellSection>
 
       <AppDisclaimer />

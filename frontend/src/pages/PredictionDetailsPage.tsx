@@ -4,7 +4,7 @@ import { Link, useParams } from "react-router-dom";
 import { useI18n } from "../app/i18n";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
-import { AccessBadge, ActivityBand, AppShellSection, CTACluster, MarketPulse, SectionHeader } from "../components/ui";
+import { AccessBadge, ActivityBand, AppShellSection, CTACluster, MarketPulse, RocketLoader, SectionHeader, SkeletonBlock, SportIcon } from "../components/ui";
 import { api, type Prediction } from "../services/api";
 
 function parseErrorMessage(error: unknown, fallback: string): string {
@@ -56,6 +56,7 @@ export function PredictionDetailsPage() {
   const [item, setItem] = useState<Prediction | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     if (!predictionId) {
@@ -71,7 +72,7 @@ export function PredictionDetailsPage() {
       .then(setItem)
       .catch((e: unknown) => setError(parseErrorMessage(e, "")))
       .finally(() => setLoading(false));
-  }, [predictionId]);
+  }, [predictionId, reloadKey]);
 
   return (
     <Layout>
@@ -100,14 +101,35 @@ export function PredictionDetailsPage() {
 
       <AppShellSection>
         <SectionHeader title={t("prediction.section.snapshot")} />
-        {loading ? <p className="pb-empty-state">{t("prediction.loading")}</p> : null}
-        {!loading && error ? <p className="pb-error-state">{error === "missing" ? t("prediction.error") : error || t("prediction.error")}</p> : null}
+        {loading ? (
+          <>
+            <RocketLoader title={t("prediction.loadingTitle")} subtitle={t("prediction.loadingSubtitle")} compact />
+            <article className="pb-panel pb-skeleton-card" aria-hidden="true">
+              <SkeletonBlock className="w-45" />
+              <SkeletonBlock className="w-95 h-74" />
+            </article>
+          </>
+        ) : null}
+
+        {!loading && error ? (
+          <div className="pb-error-state">
+            <p>{error === "missing" ? t("prediction.error") : error || t("prediction.error")}</p>
+            <CTACluster>
+              <button className="pb-btn pb-btn-ghost" type="button" onClick={() => setReloadKey((prev) => prev + 1)}>
+                {t("common.retry")}
+              </button>
+            </CTACluster>
+          </div>
+        ) : null}
 
         {!loading && item ? (
           <div className="pb-info-list">
             <div>
               <span>{t("prediction.field.sport")}</span>
-              <strong>{item.sport_type}</strong>
+              <strong className="pb-sport-value">
+                <SportIcon sport={item.sport_type} />
+                <span>{item.sport_type}</span>
+              </strong>
             </div>
             <div>
               <span>{t("prediction.field.kickoff")}</span>

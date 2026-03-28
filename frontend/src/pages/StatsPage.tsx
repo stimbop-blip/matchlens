@@ -4,23 +4,59 @@ import { Link } from "react-router-dom";
 import { useI18n } from "../app/i18n";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
-import { ActivityBand, AnimatedNumber, AppShellSection, CTACluster, InsightCard, MarketPulse, RingStat, SectionHeader, Sparkline } from "../components/ui";
+import {
+  ActivityBand,
+  AnimatedNumber,
+  AppShellSection,
+  CTACluster,
+  InsightCard,
+  MarketPulse,
+  RingStat,
+  RocketLoader,
+  SectionHeader,
+  SkeletonBlock,
+  Sparkline,
+} from "../components/ui";
 import { api, type PublicStats } from "../services/api";
+
+function parseErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message.trim()) return error.message;
+  return fallback;
+}
 
 export function StatsPage() {
   const { t } = useI18n();
 
   const [stats, setStats] = useState<PublicStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
+    let alive = true;
     setLoading(true);
+    setError("");
+
     api
       .stats()
-      .then(setStats)
-      .catch(() => setStats(null))
-      .finally(() => setLoading(false));
-  }, []);
+      .then((payload) => {
+        if (!alive) return;
+        setStats(payload);
+      })
+      .catch((e: unknown) => {
+        if (!alive) return;
+        setStats(null);
+        setError(parseErrorMessage(e, ""));
+      })
+      .finally(() => {
+        if (!alive) return;
+        setLoading(false);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [reloadKey]);
 
   const ringItems = useMemo(
     () => [
@@ -77,15 +113,40 @@ export function StatsPage() {
         />
       </AppShellSection>
 
-      {loading ? <p className="pb-empty-state">{t("common.loading")}</p> : null}
+      {loading ? (
+        <AppShellSection>
+          <RocketLoader title={t("stats.loadingTitle")} subtitle={t("stats.loadingSubtitle")} compact />
+          <div className="pb-insight-grid" aria-hidden="true">
+            <article className="pb-insight-card pb-skeleton-card">
+              <SkeletonBlock className="w-55" />
+              <SkeletonBlock className="w-96 h-56" />
+            </article>
+            <article className="pb-insight-card pb-skeleton-card">
+              <SkeletonBlock className="w-45" />
+              <SkeletonBlock className="w-90 h-56" />
+            </article>
+          </div>
+        </AppShellSection>
+      ) : null}
 
-      {!loading && !stats ? (
+      {!loading && error ? (
+        <AppShellSection>
+          <p className="pb-error-state">{error || t("stats.error")}</p>
+          <CTACluster>
+            <button className="pb-btn pb-btn-ghost" type="button" onClick={() => setReloadKey((prev) => prev + 1)}>
+              {t("common.retry")}
+            </button>
+          </CTACluster>
+        </AppShellSection>
+      ) : null}
+
+      {!loading && !stats && !error ? (
         <AppShellSection>
           <SectionHeader title={t("stats.empty.title")} subtitle={t("stats.empty.subtitle")} />
         </AppShellSection>
       ) : null}
 
-      {stats ? (
+      {stats && !loading ? (
         <>
           <AppShellSection>
             <SectionHeader title={t("stats.breakdown.title")} subtitle={t("stats.breakdown.subtitle")} />

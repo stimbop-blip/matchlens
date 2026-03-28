@@ -5,7 +5,18 @@ import { useI18n } from "../app/i18n";
 import { countPendingPayments, resolveSubscriptionSnapshot } from "../app/subscription";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
-import { AccessBadge, ActivityBand, AnimatedNumber, AppShellSection, CTACluster, NewsRibbon, SectionHeader } from "../components/ui";
+import {
+  AccessBadge,
+  ActivityBand,
+  AnimatedNumber,
+  AppShellSection,
+  CTACluster,
+  MarketPulse,
+  NewsRibbon,
+  RocketLoader,
+  SectionHeader,
+  SkeletonBlock,
+} from "../components/ui";
 import { api, type MyPayment, type NewsPost, type Prediction, type PublicStats, type ReferralStats } from "../services/api";
 
 type TodaySummary = {
@@ -150,6 +161,11 @@ export function HomePage() {
   const pendingPayments = countPendingPayments(payments);
   const today = useMemo(() => buildTodaySummary(predictions), [predictions]);
   const previewNews = news.slice(0, 2);
+  const pulseValues = useMemo(() => {
+    const roi = stats?.roi ?? 0;
+    const base = [62, 58, 64, 60, 67, 63, 70, 66, 72, 68];
+    return base.map((value, idx) => value + Math.round(roi / 12) + (idx % 2 === 0 ? 1 : -1));
+  }, [stats?.roi]);
 
   return (
     <Layout>
@@ -161,6 +177,8 @@ export function HomePage() {
 
         <h2>{t("home.hero.headline")}</h2>
         <p>{t("home.hero.subheadline")}</p>
+
+        <MarketPulse label={t("home.hero.marketPulse")} values={pulseValues} tag={t("home.hero.marketTag")} />
 
         <ActivityBand
           items={[
@@ -189,7 +207,16 @@ export function HomePage() {
       <AppShellSection className="pb-today-panel">
         <SectionHeader title={t("home.today.title")} subtitle={t("home.today.subtitle")} action={<span className="pb-hint-chip">{predictions.length}</span>} />
 
-        {summaryLoading ? <p className="pb-empty-state">{t("common.loading")}</p> : null}
+        {summaryLoading ? (
+          <>
+            <RocketLoader title={t("home.loadingTitle")} subtitle={t("home.loadingSubtitle")} compact />
+            <div className="pb-today-skeleton" aria-hidden="true">
+              <SkeletonBlock className="h-86" />
+              <SkeletonBlock className="h-86" />
+              <SkeletonBlock className="h-86" />
+            </div>
+          </>
+        ) : null}
 
         {!summaryLoading && summaryError ? (
           <div className="pb-error-state">
@@ -297,7 +324,20 @@ export function HomePage() {
       <AppShellSection>
         <SectionHeader title={t("home.news.title")} action={<Link className="pb-link-inline" to="/news">{t("home.news.all")}</Link>} />
 
-        {loading ? <p className="pb-empty-state">{t("common.loading")}</p> : null}
+        {loading ? (
+          <div className="pb-news-grid" aria-hidden="true">
+            <article className="pb-news-card pb-skeleton-card">
+              <SkeletonBlock className="w-60" />
+              <SkeletonBlock className="w-96 h-66" />
+              <SkeletonBlock className="w-35" />
+            </article>
+            <article className="pb-news-card pb-skeleton-card">
+              <SkeletonBlock className="w-50" />
+              <SkeletonBlock className="w-90 h-66" />
+              <SkeletonBlock className="w-30" />
+            </article>
+          </div>
+        ) : null}
         {!loading && previewNews.length === 0 ? <p className="pb-empty-state">{t("home.news.empty")}</p> : null}
 
         {previewNews.length > 0 ? (

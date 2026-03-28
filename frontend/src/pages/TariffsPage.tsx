@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useI18n } from "../app/i18n";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
-import { AppShellSection, CTACluster, MarketPulse, MembershipCard, SectionHeader } from "../components/ui";
+import { AppShellSection, CTACluster, MarketPulse, MembershipCard, RocketLoader, SectionHeader, SkeletonBlock } from "../components/ui";
 import { api, type PaymentCreateResult, type PaymentMethod, type PaymentQuote, type Tariff } from "../services/api";
 
 type PlanCode = "premium" | "vip";
@@ -14,6 +14,11 @@ const DEFAULT_OPTIONS: Array<{ duration_days: Duration; price_rub: number }> = [
   { duration_days: 30, price_rub: 0 },
   { duration_days: 90, price_rub: 0 },
 ];
+
+function parseErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message.trim()) return error.message;
+  return fallback;
+}
 
 export function TariffsPage() {
   const { t } = useI18n();
@@ -32,19 +37,43 @@ export function TariffsPage() {
 
   const [loadingQuote, setLoadingQuote] = useState(false);
   const [loadingPay, setLoadingPay] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
   const [message, setMessage] = useState<{ tone: "success" | "error" | "info"; text: string } | null>(null);
 
   useEffect(() => {
+    let alive = true;
     const load = async () => {
+      setInitialLoading(true);
+      setLoadError("");
+
       const results = await Promise.allSettled([api.tariffs(), api.paymentMethods()]);
+      if (!alive) return;
+
       const [tariffRes, methodRes] = results;
-      setTariffs(tariffRes.status === "fulfilled" ? tariffRes.value : []);
+      const nextTariffs = tariffRes.status === "fulfilled" ? tariffRes.value : [];
+      setTariffs(nextTariffs);
+
       const nextMethods = methodRes.status === "fulfilled" ? methodRes.value : [];
       setMethods(nextMethods);
       if (nextMethods.length > 0) setSelectedMethod(nextMethods[0].code);
+
+      if (tariffRes.status === "rejected") {
+        setLoadError(parseErrorMessage(tariffRes.reason, ""));
+      } else if (nextTariffs.length === 0) {
+        setLoadError("empty");
+      }
+
+      setInitialLoading(false);
     };
+
     void load();
-  }, []);
+
+    return () => {
+      alive = false;
+    };
+  }, [reloadKey]);
 
   useEffect(() => {
     setLoadingQuote(true);
@@ -58,6 +87,11 @@ export function TariffsPage() {
   const freePlan = tariffs.find((item) => item.code === "free");
   const selectedTariff = tariffs.find((item) => item.code === selectedPlan);
   const selectedMethodMeta = methods.find((method) => method.code === selectedMethod) || null;
+  const durationBadges: Record<Duration, string> = {
+    7: t("tariffs.duration.badge7"),
+    30: t("tariffs.duration.badge30"),
+    90: t("tariffs.duration.badge90"),
+  };
 
   const durationOptions = useMemo(() => {
     if (!selectedTariff?.options?.length) return DEFAULT_OPTIONS;
@@ -109,6 +143,34 @@ export function TariffsPage() {
     }
   };
 
+  if (initialLoading) {
+    return (
+      <Layout>
+        <AppShellSection>
+          <RocketLoader title={t("tariffs.loadingTitle")} subtitle={t("tariffs.loadingSubtitle")} />
+          <div className="pb-membership-grid" aria-hidden="true">
+            <article className="pb-membership-card pb-skeleton-card">
+              <SkeletonBlock className="w-44" />
+              <SkeletonBlock className="w-88 h-84" />
+              <SkeletonBlock className="w-35" />
+            </article>
+            <article className="pb-membership-card pb-skeleton-card">
+              <SkeletonBlock className="w-55" />
+              <SkeletonBlock className="w-90 h-84" />
+              <SkeletonBlock className="w-45" />
+            </article>
+            <article className="pb-membership-card pb-skeleton-card">
+              <SkeletonBlock className="w-52" />
+              <SkeletonBlock className="w-92 h-84" />
+              <SkeletonBlock className="w-40" />
+            </article>
+          </div>
+        </AppShellSection>
+        <AppDisclaimer />
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
       <section className="pb-hero-panel pb-reveal">
@@ -125,6 +187,17 @@ export function TariffsPage() {
 
       <AppShellSection>
         <SectionHeader title={t("tariffs.tiers.title")} subtitle={t("tariffs.tiers.subtitle")} />
+
+        {loadError ? (
+          <div className="pb-error-state">
+            <p>{loadError === "empty" ? t("tariffs.loadEmpty") : loadError}</p>
+            <CTACluster>
+              <button className="pb-btn pb-btn-ghost" type="button" onClick={() => setReloadKey((prev) => prev + 1)}>
+                {t("common.retry")}
+              </button>
+            </CTACluster>
+          </div>
+        ) : null}
 
         <div className="pb-membership-grid">
           {freePlan ? (
@@ -174,7 +247,7 @@ export function TariffsPage() {
                   {option.duration_days} {t("common.days")}
                 </strong>
                 <span>{option.price_rub} RUB</span>
-                {"badge" in option && option.badge ? <small>{option.badge}</small> : null}
+                <small>{("badge" in option && option.badge) || durationBadges[option.duration_days]}</small>
               </button>
             );
           })}

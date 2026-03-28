@@ -2,9 +2,86 @@ import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { useI18n } from "../app/i18n";
+import { resolveSportKind, type SportKind } from "../app/sport";
 
 function cx(...items: Array<string | false | null | undefined>) {
   return items.filter(Boolean).join(" ");
+}
+
+const SPORT_GLYPH: Record<SportKind, string> = {
+  football: "⚽",
+  hockey: "🏒",
+  tennis: "🎾",
+  table_tennis: "🏓",
+  basketball: "🏀",
+  volleyball: "🏐",
+  esports: "🎮",
+  darts: "🎯",
+  mma: "🥊",
+  baseball: "⚾",
+  generic: "🏅",
+};
+
+export function SportIcon({ sport, className }: { sport: string; className?: string }) {
+  const kind = resolveSportKind(sport);
+  return (
+    <span className={cx("pb-sport-icon", `kind-${kind}`, className)} aria-hidden="true">
+      {SPORT_GLYPH[kind]}
+    </span>
+  );
+}
+
+export function RocketLoader({
+  title,
+  subtitle,
+  className,
+  compact = false,
+}: {
+  title: string;
+  subtitle?: string;
+  className?: string;
+  compact?: boolean;
+}) {
+  return (
+    <div className={cx("pb-rocket-loader", compact && "compact", className)} role="status" aria-live="polite">
+      <div className="pb-rocket-visual" aria-hidden="true">
+        <span className="pb-rocket-tail" />
+        <span className="pb-rocket-mark">🚀</span>
+        <span className="pb-rocket-glow" />
+      </div>
+      <div className="pb-rocket-copy">
+        <strong>{title}</strong>
+        {subtitle ? <p>{subtitle}</p> : null}
+      </div>
+      <div className="pb-loader-shimmer" aria-hidden="true">
+        <span />
+        <span />
+        <span />
+      </div>
+    </div>
+  );
+}
+
+export function SkeletonBlock({ className }: { className?: string }) {
+  return <span className={cx("pb-skeleton-block", className)} aria-hidden="true" />;
+}
+
+export function SignalCardSkeleton() {
+  return (
+    <article className="pb-signal-card pb-skeleton-card" aria-hidden="true">
+      <div className="pb-skeleton-row">
+        <SkeletonBlock className="w-55" />
+        <SkeletonBlock className="w-24" />
+      </div>
+      <SkeletonBlock className="w-40" />
+      <div className="pb-skeleton-grid-two">
+        <SkeletonBlock className="h-42" />
+        <SkeletonBlock className="h-42" />
+      </div>
+      <SkeletonBlock className="w-90" />
+      <SkeletonBlock className="w-65" />
+    </article>
+  );
 }
 
 export function AppShellSection({
@@ -247,9 +324,12 @@ export function SignalCardV3({
   match,
   league,
   sport,
+  accessLevel,
   mode,
+  modeKey,
   access,
   status,
+  statusKey,
   kickoff,
   odds,
   risk,
@@ -262,9 +342,12 @@ export function SignalCardV3({
   match: string;
   league: string;
   sport: string;
+  accessLevel: "free" | "premium" | "vip";
   mode: string;
+  modeKey: "prematch" | "live";
   access: ReactNode;
   status: string;
+  statusKey: "pending" | "won" | "lost" | "refund";
   kickoff: string;
   odds: string | number;
   risk: string;
@@ -276,7 +359,7 @@ export function SignalCardV3({
   const { t } = useI18n();
 
   return (
-    <Link to={to} className="pb-signal-card pb-reveal">
+    <Link to={to} className={cx("pb-signal-card pb-reveal", accessLevel)}>
       <div className="pb-signal-head">
         <div>
           <h3>{match}</h3>
@@ -286,9 +369,9 @@ export function SignalCardV3({
       </div>
 
       <div className="pb-signal-meta">
-        <span>{mode}</span>
-        <span>{status}</span>
-        <span>{kickoff}</span>
+        <span className={cx("pb-meta-pill", modeKey)}>{mode}</span>
+        <span className={cx("pb-meta-pill", "status", statusKey)}>{status}</span>
+        <span className="pb-meta-pill kickoff">{kickoff}</span>
       </div>
 
       <div className="pb-signal-grid">
@@ -306,7 +389,10 @@ export function SignalCardV3({
         </div>
         <div>
           <small>{t("feed.label.sport")}</small>
-          <strong>{sport}</strong>
+          <strong className="pb-sport-value">
+            <SportIcon sport={sport} />
+            <span>{sport}</span>
+          </strong>
         </div>
       </div>
 
@@ -318,7 +404,10 @@ export function SignalCardV3({
             <span key={tag}>{tag}</span>
           ))}
         </div>
-        <em>{hint}</em>
+        <div className="pb-signal-action">
+          <span>{hint}</span>
+          <em>&gt;</em>
+        </div>
       </div>
     </Link>
   );
