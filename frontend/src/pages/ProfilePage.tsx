@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { useI18n } from "../app/i18n";
@@ -10,9 +10,9 @@ import { api, type Me, type MyPayment, type NotificationSettings, type PromoAppl
 import { waitForTelegramInitData } from "../services/telegram";
 
 function formatDate(value: string | null | undefined, language: "ru" | "en") {
-  if (!value) return "—";
+  if (!value) return "-";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
+  if (Number.isNaN(date.getTime())) return "-";
   return date.toLocaleString(language === "ru" ? "ru-RU" : "en-US");
 }
 
@@ -44,6 +44,27 @@ function paymentStatusLabel(status: string, t: (key: string) => string) {
   if (status === "canceled") return t("common.payment.canceled");
   return t("common.payment.pending");
 }
+
+const TARIFF_WEIGHT: Record<"free" | "premium" | "vip", number> = {
+  free: 0,
+  premium: 1,
+  vip: 2,
+};
+
+type NotificationControl = {
+  key: keyof NotificationSettings;
+  labelKey: string;
+  minTariff: "free" | "premium" | "vip";
+};
+
+const NOTIFICATION_CONTROLS: NotificationControl[] = [
+  { key: "notifications_enabled", labelKey: "profile.notifications.enable", minTariff: "free" },
+  { key: "notify_free", labelKey: "profile.notifications.free", minTariff: "free" },
+  { key: "notify_results", labelKey: "profile.notifications.results", minTariff: "free" },
+  { key: "notify_news", labelKey: "profile.notifications.news", minTariff: "free" },
+  { key: "notify_premium", labelKey: "profile.notifications.premium", minTariff: "premium" },
+  { key: "notify_vip", labelKey: "profile.notifications.vip", minTariff: "vip" },
+];
 
 export function ProfilePage() {
   const { t, language } = useI18n();
@@ -89,6 +110,21 @@ export function ProfilePage() {
 
   const sub = resolveSubscriptionSnapshot(subscriptionRaw);
   const pendingPayments = countPendingPayments(payments);
+  const referralStatus = `${referral?.invited ?? 0}/${referral?.activated ?? 0}`;
+
+  const availableNotificationControls = useMemo(() => {
+    const currentWeight = TARIFF_WEIGHT[sub.tariff];
+    return NOTIFICATION_CONTROLS.map((item) => ({
+      ...item,
+      unlocked: currentWeight >= TARIFF_WEIGHT[item.minTariff],
+    }));
+  }, [sub.tariff]);
+
+  const lockText = (minTariff: "free" | "premium" | "vip") => {
+    if (minTariff === "vip") return t("profile.notifications.lockVip");
+    if (minTariff === "premium") return t("profile.notifications.lockPremium");
+    return t("profile.notifications.lockFree");
+  };
 
   if (loading) {
     return (
@@ -209,6 +245,8 @@ export function ProfilePage() {
             { label: t("profile.snapshot.status"), value: statusLabel(sub.status, t), tone: sub.is_active ? "success" : "warning" },
             { label: t("profile.snapshot.bonus"), value: referral?.bonus_days ?? 0 },
             { label: t("profile.snapshot.pending"), value: pendingPayments, tone: pendingPayments > 0 ? "warning" : "default" },
+            { label: t("profile.snapshot.referral"), value: referralStatus },
+            { label: t("profile.snapshot.promo"), value: promoResult?.ok ? t("common.status.active") : t("common.status.inactive") },
           ]}
         />
       </AppShellSection>
@@ -281,7 +319,7 @@ export function ProfilePage() {
         <SectionHeader title={t("profile.promo.title")} subtitle={t("profile.promo.subtitle")} />
         <div className="pb-input-stack">
           <input value={promoCode} onChange={(e) => setPromoCode(e.target.value.toUpperCase())} placeholder={t("profile.promo.placeholder")} />
-          <select value={promoTariff} onChange={(e) => setPromoTariff(e.target.value as "free" | "premium" | "vip")}> 
+          <select value={promoTariff} onChange={(e) => setPromoTariff(e.target.value as "free" | "premium" | "vip")}>
             <option value="free">{t("common.free")}</option>
             <option value="premium">{t("common.premium")}</option>
             <option value="vip">{t("common.vip")}</option>
@@ -296,9 +334,7 @@ export function ProfilePage() {
           {promoResult ? (
             <p className={promoResult.ok ? "pb-notice success" : "pb-notice error"}>
               {promoResult.message}
-              {promoResult.final_price_rub !== undefined && promoResult.final_price_rub !== null
-                ? ` ${t("profile.promo.final")}: ${promoResult.final_price_rub} RUB.`
-                : ""}
+              {promoResult.final_price_rub !== undefined && promoResult.final_price_rub !== null ? ` ${t("profile.promo.final")}: ${promoResult.final_price_rub} RUB.` : ""}
             </p>
           ) : null}
         </div>
@@ -311,12 +347,27 @@ export function ProfilePage() {
 
         {notify ? (
           <div className="pb-toggle-list">
-            <ToggleRow label={t("profile.notifications.enable")} checked={notify.notifications_enabled} onChange={(next) => void updateNotify({ notifications_enabled: next })} />
-            <ToggleRow label={t("profile.notifications.free")} checked={notify.notify_free} onChange={(next) => void updateNotify({ notify_free: next })} />
-            <ToggleRow label={t("profile.notifications.premium")} checked={notify.notify_premium} onChange={(next) => void updateNotify({ notify_premium: next })} />
-            <ToggleRow label={t("profile.notifications.vip")} checked={notify.notify_vip} onChange={(next) => void updateNotify({ notify_vip: next })} />
-            <ToggleRow label={t("profile.notifications.results")} checked={notify.notify_results} onChange={(next) => void updateNotify({ notify_results: next })} />
-            <ToggleRow label={t("profile.notifications.news")} checked={notify.notify_news} onChange={(next) => void updateNotify({ notify_news: next })} />
+            {availableNotificationControls.map((control) => {
+              if (!control.unlocked) {
+                return (
+                  <div key={control.key} className="pb-toggle-row locked">
+                    <span>
+                      <strong>{t(control.labelKey)}</strong>
+                      <small>{lockText(control.minTariff)}</small>
+                    </span>
+                    <input type="checkbox" checked={false} disabled readOnly />
+                  </div>
+                );
+              }
+              return (
+                <ToggleRow
+                  key={control.key}
+                  label={t(control.labelKey)}
+                  checked={Boolean(notify[control.key])}
+                  onChange={(next) => void updateNotify({ [control.key]: next } as Partial<NotificationSettings>)}
+                />
+              );
+            })}
           </div>
         ) : null}
 

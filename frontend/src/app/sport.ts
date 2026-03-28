@@ -11,6 +11,8 @@ export type SportKind =
   | "baseball"
   | "generic";
 
+export type SportLanguage = "ru" | "en";
+
 function normalizeSportType(input: string | null | undefined): string {
   return (input || "")
     .toLowerCase()
@@ -74,6 +76,20 @@ const SPORT_RULES: Array<{ kind: SportKind; checks: RegExp[] }> = [
   },
 ];
 
+const SPORT_LABELS: Record<SportKind, Record<SportLanguage, string>> = {
+  football: { ru: "Футбол", en: "Football" },
+  hockey: { ru: "Хоккей", en: "Hockey" },
+  tennis: { ru: "Теннис", en: "Tennis" },
+  table_tennis: { ru: "Настольный теннис", en: "Table Tennis" },
+  basketball: { ru: "Баскетбол", en: "Basketball" },
+  volleyball: { ru: "Волейбол", en: "Volleyball" },
+  esports: { ru: "Киберспорт", en: "Esports" },
+  darts: { ru: "Дартс", en: "Darts" },
+  mma: { ru: "Единоборства", en: "MMA" },
+  baseball: { ru: "Бейсбол", en: "Baseball" },
+  generic: { ru: "Спорт", en: "Sport" },
+};
+
 export function resolveSportKind(input: string | null | undefined): SportKind {
   const value = normalizeSportType(input);
   if (!value) return "generic";
@@ -85,4 +101,13 @@ export function resolveSportKind(input: string | null | undefined): SportKind {
   }
 
   return "generic";
+}
+
+export function sportLabel(kind: SportKind, language: SportLanguage): string {
+  return SPORT_LABELS[kind][language];
+}
+
+export function resolveSportLabel(input: string | null | undefined, language: SportLanguage): string {
+  const kind = resolveSportKind(input);
+  return sportLabel(kind, language);
 }

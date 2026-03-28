@@ -11,6 +11,7 @@ import {
   CTACluster,
   InsightCard,
   MarketPulse,
+  ProgressMeter,
   RingStat,
   RocketLoader,
   SectionHeader,
@@ -58,14 +59,29 @@ export function StatsPage() {
     };
   }, [reloadKey]);
 
+  const total = Math.max(1, stats?.total ?? 1);
+  const wins = stats?.wins ?? 0;
+  const loses = stats?.loses ?? 0;
+  const refunds = stats?.refunds ?? 0;
+  const pending = stats?.pending ?? 0;
+
   const ringItems = useMemo(
     () => [
-      { label: t("common.free"), value: stats?.by_access?.free ?? 0, color: "#57a3ff" },
-      { label: t("common.premium"), value: stats?.by_access?.premium ?? 0, color: "#1dd7c2" },
-      { label: t("common.vip"), value: stats?.by_access?.vip ?? 0, color: "#f9be6f" },
+      { label: t("common.free"), value: Number(stats?.by_access?.free ?? 0), color: "#57a3ff" },
+      { label: t("common.premium"), value: Number(stats?.by_access?.premium ?? 0), color: "#1dd7c2" },
+      { label: t("common.vip"), value: Number(stats?.by_access?.vip ?? 0), color: "#f9be6f" },
     ],
     [stats, t]
   );
+
+  const trendValues = useMemo(() => {
+    const slices = [pending, refunds, loses, wins];
+    let running = 0;
+    return slices.map((value) => {
+      running += value;
+      return Math.round((running / total) * 100);
+    });
+  }, [pending, refunds, loses, wins, total]);
 
   return (
     <Layout>
@@ -78,7 +94,7 @@ export function StatsPage() {
         <h2>{t("stats.hero.title")}</h2>
         <p>{t("stats.hero.subtitle")}</p>
 
-        <MarketPulse label={t("stats.visual.title")} values={[40, 47, 44, 53, 58, 63, 57, 64, 68, 72]} tag={t("common.roi")} />
+        <MarketPulse label={t("stats.visual.title")} values={trendValues.length ? trendValues : [0, 0, 0, 0]} tag={t("common.roi")} />
 
         <div className="pb-metric-grid tight">
           <article>
@@ -104,10 +120,10 @@ export function StatsPage() {
         <SectionHeader title={t("stats.kpi.title")} />
         <ActivityBand
           items={[
-            { label: t("stats.kpi.wins"), value: stats?.wins ?? 0, tone: "success" },
-            { label: t("stats.kpi.loses"), value: stats?.loses ?? 0, tone: "warning" },
-            { label: t("stats.kpi.refunds"), value: stats?.refunds ?? 0 },
-            { label: t("stats.kpi.pending"), value: stats?.pending ?? 0 },
+            { label: t("stats.kpi.wins"), value: wins, tone: "success" },
+            { label: t("stats.kpi.loses"), value: loses, tone: "warning" },
+            { label: t("stats.kpi.refunds"), value: refunds },
+            { label: t("stats.kpi.pending"), value: pending },
             { label: t("stats.kpi.total"), value: stats?.total ?? 0, tone: "accent" },
           ]}
         />
@@ -155,7 +171,13 @@ export function StatsPage() {
 
           <AppShellSection>
             <SectionHeader title={t("stats.visual.title")} subtitle={t("stats.visual.subtitle")} />
-            <Sparkline values={[31, 34, 39, 37, 45, 49, 52, 55, 51, 58, 63, 66]} className="pb-sparkline-band" />
+            <Sparkline values={trendValues} className="pb-sparkline-band" />
+            <div className="pb-progress-list">
+              <ProgressMeter label={t("stats.kpi.wins")} value={wins} total={total} tone="success" />
+              <ProgressMeter label={t("stats.kpi.loses")} value={loses} total={total} tone="danger" />
+              <ProgressMeter label={t("stats.kpi.refunds")} value={refunds} total={total} tone="warning" />
+              <ProgressMeter label={t("stats.kpi.pending")} value={pending} total={total} tone="accent" />
+            </div>
           </AppShellSection>
 
           <AppShellSection>

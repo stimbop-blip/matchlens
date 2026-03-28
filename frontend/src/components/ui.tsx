@@ -2,7 +2,7 @@ import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { useI18n } from "../app/i18n";
-import { resolveSportKind, type SportKind } from "../app/sport";
+import { resolveSportKind, resolveSportLabel, type SportKind } from "../app/sport";
 
 function cx(...items: Array<string | false | null | undefined>) {
   return items.filter(Boolean).join(" ");
@@ -356,7 +356,7 @@ export function SignalCardV3({
   tags: string[];
   hint: string;
 }) {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
 
   return (
     <Link to={to} className={cx("pb-signal-card pb-reveal", accessLevel)}>
@@ -391,7 +391,7 @@ export function SignalCardV3({
           <small>{t("feed.label.sport")}</small>
           <strong className="pb-sport-value">
             <SportIcon sport={sport} />
-            <span>{sport}</span>
+            <span>{resolveSportLabel(sport, language)}</span>
           </strong>
         </div>
       </div>
@@ -554,4 +554,40 @@ export function ToggleRow({
 
 export function PremiumFooterNote({ children }: { children: ReactNode }) {
   return <footer className="pb-footer-note">{children}</footer>;
+}
+
+export function StatusPill({
+  label,
+  tone = "default",
+}: {
+  label: string;
+  tone?: "default" | "success" | "warning" | "danger" | "accent";
+}) {
+  return <span className={cx("pb-status-pill", tone)}>{label}</span>;
+}
+
+export function ProgressMeter({
+  label,
+  value,
+  total,
+  tone = "accent",
+}: {
+  label: string;
+  value: number;
+  total: number;
+  tone?: "accent" | "success" | "warning" | "danger";
+}) {
+  const safeTotal = Math.max(1, total);
+  const width = Math.max(0, Math.min(100, Math.round((value / safeTotal) * 100)));
+  return (
+    <div className="pb-progress-meter">
+      <div>
+        <span>{label}</span>
+        <strong>{value}</strong>
+      </div>
+      <div className="pb-progress-track" role="presentation">
+        <span className={cx("pb-progress-fill", tone)} style={{ width: `${width}%` }} />
+      </div>
+    </div>
+  );
 }

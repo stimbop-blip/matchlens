@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { useI18n } from "../app/i18n";
+import { resolveSubscriptionSnapshot } from "../app/subscription";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
-import { AppShellSection, CTACluster, MarketPulse, MembershipCard, RocketLoader, SectionHeader, SkeletonBlock } from "../components/ui";
+import { AppShellSection, CTACluster, MarketPulse, MembershipCard, RocketLoader, SectionHeader, SkeletonBlock, StatusPill } from "../components/ui";
 import { api, type PaymentCreateResult, type PaymentMethod, type PaymentQuote, type Tariff } from "../services/api";
 
 type PlanCode = "premium" | "vip";
@@ -25,6 +26,7 @@ export function TariffsPage() {
 
   const [tariffs, setTariffs] = useState<Tariff[]>([]);
   const [methods, setMethods] = useState<PaymentMethod[]>([]);
+  const [subscriptionRaw, setSubscriptionRaw] = useState<{ tariff: string; status: string; ends_at: string | null } | null>(null);
 
   const [selectedPlan, setSelectedPlan] = useState<PlanCode>("premium");
   const [selectedDuration, setSelectedDuration] = useState<Duration>(30);
@@ -48,16 +50,22 @@ export function TariffsPage() {
       setInitialLoading(true);
       setLoadError("");
 
-      const results = await Promise.allSettled([api.tariffs(), api.paymentMethods()]);
+      const results = await Promise.allSettled([api.tariffs(), api.paymentMethods(), api.mySubscription()]);
       if (!alive) return;
 
-      const [tariffRes, methodRes] = results;
+      const [tariffRes, methodRes, subRes] = results;
       const nextTariffs = tariffRes.status === "fulfilled" ? tariffRes.value : [];
       setTariffs(nextTariffs);
 
       const nextMethods = methodRes.status === "fulfilled" ? methodRes.value : [];
       setMethods(nextMethods);
       if (nextMethods.length > 0) setSelectedMethod(nextMethods[0].code);
+
+      const nextSub = subRes.status === "fulfilled" ? subRes.value : null;
+      setSubscriptionRaw(nextSub);
+      if (nextSub?.tariff === "vip" || nextSub?.tariff === "premium") {
+        setSelectedPlan(nextSub.tariff);
+      }
 
       if (tariffRes.status === "rejected") {
         setLoadError(parseErrorMessage(tariffRes.reason, ""));
@@ -84,9 +92,11 @@ export function TariffsPage() {
       .finally(() => setLoadingQuote(false));
   }, [selectedDuration, selectedPlan, promoCode]);
 
+  const subscription = resolveSubscriptionSnapshot(subscriptionRaw);
   const freePlan = tariffs.find((item) => item.code === "free");
   const selectedTariff = tariffs.find((item) => item.code === selectedPlan);
   const selectedMethodMeta = methods.find((method) => method.code === selectedMethod) || null;
+
   const durationBadges: Record<Duration, string> = {
     7: t("tariffs.duration.badge7"),
     30: t("tariffs.duration.badge30"),
@@ -103,6 +113,12 @@ export function TariffsPage() {
       }))
       .filter((option) => option.duration_days === 7 || option.duration_days === 30 || option.duration_days === 90);
   }, [selectedTariff]);
+
+  const features = {
+    free: [t("tariffs.feature.free1"), t("tariffs.feature.free2"), t("tariffs.feature.free3")],
+    premium: [t("tariffs.feature.premium1"), t("tariffs.feature.premium2"), t("tariffs.feature.premium3"), t("tariffs.feature.premium4")],
+    vip: [t("tariffs.feature.vip1"), t("tariffs.feature.vip2"), t("tariffs.feature.vip3"), t("tariffs.feature.vip4")],
+  };
 
   const createPayment = async () => {
     if (!selectedMethod) {
@@ -176,7 +192,16 @@ export function TariffsPage() {
       <section className="pb-hero-panel pb-reveal">
         <div className="pb-hero-top">
           <span className="pb-eyebrow">PIT BET</span>
-          <span className="pb-live-pill">{t("layout.title.tariffs")}</span>
+          <StatusPill
+            label={
+              subscription.tariff === "vip"
+                ? t("common.vip")
+                : subscription.tariff === "premium"
+                  ? t("common.premium")
+                  : t("common.free")
+            }
+            tone="accent"
+          />
         </div>
 
         <h2>{t("tariffs.hero.title")}</h2>
@@ -205,8 +230,8 @@ export function TariffsPage() {
               title={t("common.free")}
               description={t("tariffs.free.entry")}
               price="0 RUB"
-              features={freePlan.perks || []}
-              active={false}
+              features={features.free}
+              active={subscription.tariff === "free"}
               action={<span className="pb-btn pb-btn-ghost disabled">{t("tariffs.selected")}</span>}
             />
           ) : null}
@@ -215,6 +240,7 @@ export function TariffsPage() {
             const tariff = tariffs.find((item) => item.code === plan);
             if (!tariff) return null;
             const active = selectedPlan === plan;
+            const current = subscription.tariff === plan;
             return (
               <MembershipCard
                 key={plan}
@@ -222,12 +248,15 @@ export function TariffsPage() {
                 badge={plan === "premium" ? t("tariffs.premium.badge") : t("tariffs.vip.badge")}
                 description={tariff.description || ""}
                 price={`${tariff.price_rub} RUB`}
-                features={tariff.perks || []}
+                features={plan === "premium" ? features.premium : features.vip}
                 active={active}
                 action={
-                  <button className={active ? "pb-btn pb-btn-secondary" : "pb-btn pb-btn-ghost"} type="button" onClick={() => setSelectedPlan(plan)}>
-                    {active ? t("tariffs.selected") : t("tariffs.select")}
-                  </button>
+                  <div className="pb-membership-actions">
+                    {current ? <StatusPill label={t("tariffs.currentPlan")} tone="success" /> : null}
+                    <button className={active ? "pb-btn pb-btn-secondary" : "pb-btn pb-btn-ghost"} type="button" onClick={() => setSelectedPlan(plan)}>
+                      {active ? t("tariffs.selected") : t("tariffs.select")}
+                    </button>
+                  </div>
                 }
               />
             );
@@ -284,19 +313,19 @@ export function TariffsPage() {
           </div>
           <div>
             <span>{t("tariffs.summary.method")}</span>
-            <strong>{selectedMethodMeta?.name || "—"}</strong>
+            <strong>{selectedMethodMeta?.name || "-"}</strong>
           </div>
           <div>
             <span>{t("tariffs.summary.base")}</span>
-            <strong>{quote?.original_amount_rub ?? "—"} RUB</strong>
+            <strong>{quote?.original_amount_rub ?? "-"} RUB</strong>
           </div>
           <div>
             <span>{t("tariffs.summary.discount")}</span>
-            <strong>{quote ? `${quote.discount_rub} RUB` : "—"}</strong>
+            <strong>{quote ? `${quote.discount_rub} RUB` : "-"}</strong>
           </div>
           <div className="total">
             <span>{t("tariffs.summary.final")}</span>
-            <strong>{quote?.final_amount_rub ?? "—"} RUB</strong>
+            <strong>{quote?.final_amount_rub ?? "-"} RUB</strong>
           </div>
           {loadingQuote ? <p>{t("tariffs.summary.refresh")}</p> : null}
           {quote?.message ? <p>{quote.message}</p> : null}
@@ -304,11 +333,7 @@ export function TariffsPage() {
 
         <CTACluster>
           <button className="pb-btn pb-btn-primary" type="button" onClick={createPayment} disabled={loadingPay || loadingQuote || !selectedMethod}>
-            {loadingPay
-              ? t("tariffs.pay.prepare")
-              : selectedMethodMeta?.method_type === "manual"
-                ? t("tariffs.pay.details")
-                : t("tariffs.pay.go")}
+            {loadingPay ? t("tariffs.pay.prepare") : selectedMethodMeta?.method_type === "manual" ? t("tariffs.pay.details") : t("tariffs.pay.go")}
           </button>
         </CTACluster>
 

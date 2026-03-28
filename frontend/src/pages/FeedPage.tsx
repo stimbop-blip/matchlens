@@ -9,15 +9,13 @@ import {
   CTACluster,
   RocketLoader,
   SectionHeader,
-  SegmentedTabs,
   SignalCardSkeleton,
   SignalCardV3,
 } from "../components/ui";
 import { api, type Prediction } from "../services/api";
 
 type AccessFilter = "all" | "free" | "premium" | "vip";
-type ModeFilter = "all" | "prematch" | "live";
-type StatusFilter = "all" | "pending" | "won" | "lost" | "refund";
+type QuickFilter = "all" | "live" | "prematch" | "pending" | "won" | "lost" | "refund";
 type RiskFilter = "all" | "low" | "medium" | "high";
 
 type GroupedDay = {
@@ -108,8 +106,7 @@ export function FeedPage() {
   const [reloadKey, setReloadKey] = useState(0);
 
   const [access, setAccess] = useState<AccessFilter>("all");
-  const [mode, setMode] = useState<ModeFilter>("all");
-  const [status, setStatus] = useState<StatusFilter>("all");
+  const [quick, setQuick] = useState<QuickFilter>("all");
   const [risk, setRisk] = useState<RiskFilter>("all");
 
   useEffect(() => {
@@ -117,11 +114,14 @@ export function FeedPage() {
     setLoading(true);
     setError("");
 
+    const mode = quick === "live" || quick === "prematch" ? quick : undefined;
+    const status = quick === "pending" || quick === "won" || quick === "lost" || quick === "refund" ? quick : undefined;
+
     api
       .predictions({
         access_level: access === "all" ? undefined : access,
-        mode: mode === "all" ? undefined : mode,
-        status: status === "all" ? undefined : status,
+        mode,
+        status,
         risk_level: risk === "all" ? undefined : risk,
         limit: PREDICTIONS_LIMIT,
       })
@@ -142,7 +142,7 @@ export function FeedPage() {
     return () => {
       alive = false;
     };
-  }, [access, mode, risk, status, reloadKey]);
+  }, [access, quick, risk, reloadKey]);
 
   const groups = useMemo<GroupedDay[]>(() => {
     const sorted = [...items].sort((a, b) => {
@@ -161,28 +161,24 @@ export function FeedPage() {
     return Array.from(map.entries()).map(([key, list]) => ({ key, list }));
   }, [items]);
 
-  const accessOptions = [
+  const quickOptions: Array<{ value: QuickFilter; label: string }> = [
     { value: "all", label: t("common.all") },
-    { value: "free", label: t("common.free") },
-    { value: "premium", label: t("common.premium") },
-    { value: "vip", label: t("common.vip") },
-  ];
-
-  const modeOptions = [
-    { value: "all", label: t("common.all") },
-    { value: "prematch", label: t("common.prematch") },
     { value: "live", label: t("common.live") },
-  ];
-
-  const statusOptions = [
-    { value: "all", label: t("common.all") },
+    { value: "prematch", label: t("common.prematch") },
     { value: "pending", label: t("feed.status.pending") },
     { value: "won", label: t("feed.status.won") },
     { value: "lost", label: t("feed.status.lost") },
     { value: "refund", label: t("feed.status.refund") },
   ];
 
-  const riskOptions = [
+  const accessOptions: Array<{ value: AccessFilter; label: string }> = [
+    { value: "all", label: t("common.all") },
+    { value: "free", label: t("common.free") },
+    { value: "premium", label: t("common.premium") },
+    { value: "vip", label: t("common.vip") },
+  ];
+
+  const riskOptions: Array<{ value: RiskFilter; label: string }> = [
     { value: "all", label: t("common.all") },
     { value: "low", label: t("common.risk.low") },
     { value: "medium", label: t("common.risk.medium") },
@@ -195,27 +191,32 @@ export function FeedPage() {
         <SectionHeader
           title={t("feed.hero.title")}
           subtitle={t("feed.hero.subtitle")}
-          action={
-            <span className="pb-hint-chip">{items.length}</span>
-          }
+          action={<span className="pb-hint-chip">{items.length}</span>}
         />
 
-        <div className="pb-filterbar">
-          <div>
-            <small>{t("feed.filter.access")}</small>
-            <SegmentedTabs value={access} options={accessOptions} onChange={(next) => setAccess(next as AccessFilter)} />
+        <div className="pb-feed-filter-shell">
+          <div className="pb-filter-row sticky">
+            {quickOptions.map((item) => (
+              <button key={item.value} type="button" className={item.value === quick ? "pb-filter-chip active" : "pb-filter-chip"} onClick={() => setQuick(item.value)}>
+                {item.label}
+              </button>
+            ))}
           </div>
-          <div>
-            <small>{t("feed.filter.mode")}</small>
-            <SegmentedTabs value={mode} options={modeOptions} onChange={(next) => setMode(next as ModeFilter)} />
+
+          <div className="pb-filter-row">
+            {accessOptions.map((item) => (
+              <button key={item.value} type="button" className={item.value === access ? "pb-filter-chip soft active" : "pb-filter-chip soft"} onClick={() => setAccess(item.value)}>
+                {item.label}
+              </button>
+            ))}
           </div>
-          <div>
-            <small>{t("feed.filter.status")}</small>
-            <SegmentedTabs value={status} options={statusOptions} onChange={(next) => setStatus(next as StatusFilter)} />
-          </div>
-          <div>
-            <small>{t("feed.filter.risk")}</small>
-            <SegmentedTabs value={risk} options={riskOptions} onChange={(next) => setRisk(next as RiskFilter)} />
+
+          <div className="pb-filter-row">
+            {riskOptions.map((item) => (
+              <button key={item.value} type="button" className={item.value === risk ? "pb-filter-chip subtle active" : "pb-filter-chip subtle"} onClick={() => setRisk(item.value)}>
+                {item.label}
+              </button>
+            ))}
           </div>
         </div>
 

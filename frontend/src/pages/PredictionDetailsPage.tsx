@@ -1,10 +1,22 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { useI18n } from "../app/i18n";
+import { resolveSportLabel } from "../app/sport";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
-import { AccessBadge, ActivityBand, AppShellSection, CTACluster, MarketPulse, RocketLoader, SectionHeader, SkeletonBlock, SportIcon } from "../components/ui";
+import {
+  AccessBadge,
+  ActivityBand,
+  AppShellSection,
+  CTACluster,
+  MarketPulse,
+  RocketLoader,
+  SectionHeader,
+  SkeletonBlock,
+  StatusPill,
+  SportIcon,
+} from "../components/ui";
 import { api, type Prediction } from "../services/api";
 
 function parseErrorMessage(error: unknown, fallback: string): string {
@@ -49,6 +61,13 @@ function outcomeText(status: Prediction["status"], t: (key: string) => string) {
   return t("prediction.outcome.pending");
 }
 
+function statusTone(status: Prediction["status"]): "default" | "success" | "warning" | "danger" {
+  if (status === "won") return "success";
+  if (status === "lost") return "danger";
+  if (status === "refund") return "warning";
+  return "default";
+}
+
 export function PredictionDetailsPage() {
   const { t, language } = useI18n();
   const { predictionId } = useParams<{ predictionId: string }>();
@@ -70,9 +89,19 @@ export function PredictionDetailsPage() {
     api
       .prediction(predictionId)
       .then(setItem)
-      .catch((e: unknown) => setError(parseErrorMessage(e, "")))
+      .catch((e: unknown) => {
+        setItem(null);
+        setError(parseErrorMessage(e, ""));
+      })
       .finally(() => setLoading(false));
   }, [predictionId, reloadKey]);
+
+  const pulseValues = useMemo(() => {
+    if (!item) return [58, 55, 57, 54, 51, 48, 45, 42, 39, 36];
+    const base = item.mode === "live" ? 64 : 52;
+    const oddsImpact = Math.round(Math.max(0, item.odds - 1) * 5);
+    return [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((step) => base + oddsImpact - step * 2 + (step % 2 === 0 ? 1 : -1));
+  }, [item]);
 
   return (
     <Layout>
@@ -86,21 +115,28 @@ export function PredictionDetailsPage() {
           <h2>{item.match_name}</h2>
           <p>{item.league || t("feed.noLeague")}</p>
 
-          <MarketPulse label={t("prediction.section.context")} values={[58, 54, 56, 47, 50, 46, 42, 38, 34, 30]} tag={item.mode === "live" ? t("common.live") : t("common.prematch")} />
+          <div className="pb-meta-line">
+            <StatusPill label={item.mode === "live" ? t("common.live") : t("common.prematch")} tone="accent" />
+            <StatusPill label={statusLabel(item.status, t)} tone={statusTone(item.status)} />
+            <StatusPill label={`${t("prediction.field.odds")}: ${item.odds}`} />
+            <StatusPill label={`${t("prediction.field.risk")}: ${riskLabel(item.risk_level, t)}`} tone="warning" />
+          </div>
+
+          <MarketPulse label={t("prediction.section.context")} values={pulseValues} tag={item.mode === "live" ? t("common.live") : t("common.prematch")} />
 
           <ActivityBand
             items={[
-              { label: t("prediction.field.odds"), value: item.odds, tone: "accent" },
-              { label: t("prediction.field.risk"), value: riskLabel(item.risk_level, t), tone: "warning" },
-              { label: t("prediction.field.status"), value: statusLabel(item.status, t), tone: item.status === "won" ? "success" : "default" },
               { label: t("prediction.field.kickoff"), value: formatDate(item.event_start_at, language) },
+              { label: t("prediction.field.status"), value: statusLabel(item.status, t), tone: item.status === "won" ? "success" : "default" },
+              { label: t("prediction.field.access"), value: accessLabel(item.access_level, t), tone: "accent" },
             ]}
           />
         </section>
       ) : null}
 
       <AppShellSection>
-        <SectionHeader title={t("prediction.section.snapshot")} />
+        <SectionHeader title={t("prediction.section.snapshot")} subtitle={t("prediction.section.why")} />
+
         {loading ? (
           <>
             <RocketLoader title={t("prediction.loadingTitle")} subtitle={t("prediction.loadingSubtitle")} compact />
@@ -128,7 +164,7 @@ export function PredictionDetailsPage() {
               <span>{t("prediction.field.sport")}</span>
               <strong className="pb-sport-value">
                 <SportIcon sport={item.sport_type} />
-                <span>{item.sport_type}</span>
+                <span>{resolveSportLabel(item.sport_type, language)}</span>
               </strong>
             </div>
             <div>
@@ -140,24 +176,16 @@ export function PredictionDetailsPage() {
               <strong>{item.signal_type}</strong>
             </div>
             <div>
-              <span>{t("prediction.field.odds")}</span>
-              <strong>{item.odds}</strong>
-            </div>
-            <div>
-              <span>{t("prediction.field.risk")}</span>
-              <strong>{riskLabel(item.risk_level, t)}</strong>
-            </div>
-            <div>
-              <span>{t("prediction.field.access")}</span>
-              <strong>{accessLabel(item.access_level, t)}</strong>
+              <span>{t("prediction.field.mode")}</span>
+              <strong>{item.mode === "live" ? t("common.live") : t("common.prematch")}</strong>
             </div>
             <div>
               <span>{t("prediction.field.status")}</span>
               <strong>{statusLabel(item.status, t)}</strong>
             </div>
             <div>
-              <span>{t("prediction.field.mode")}</span>
-              <strong>{item.mode === "live" ? t("common.live") : t("common.prematch")}</strong>
+              <span>{t("prediction.field.access")}</span>
+              <strong>{accessLabel(item.access_level, t)}</strong>
             </div>
           </div>
         ) : null}
@@ -171,7 +199,7 @@ export function PredictionDetailsPage() {
           </AppShellSection>
 
           <AppShellSection>
-            <SectionHeader title={t("prediction.section.context")} />
+            <SectionHeader title={t("prediction.section.context")} subtitle={t("prediction.section.snapshot")} />
             <div className="pb-story-grid single">
               <article>
                 <h3>{t("prediction.field.mode")}</h3>

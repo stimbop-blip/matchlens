@@ -16,6 +16,7 @@ import {
   RocketLoader,
   SectionHeader,
   SkeletonBlock,
+  Sparkline,
 } from "../components/ui";
 import { api, type MyPayment, type NewsPost, type Prediction, type PublicStats, type ReferralStats } from "../services/api";
 
@@ -26,6 +27,7 @@ type TodaySummary = {
   premiumCount: number;
   vipCount: number;
   settledToday: number;
+  source: "realtime" | "fallback";
 };
 
 function parseErrorMessage(error: unknown, fallback: string): string {
@@ -49,7 +51,7 @@ function isSameDay(a: Date, b: Date) {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 
-function buildTodaySummary(items: Prediction[]): TodaySummary {
+function buildTodaySummaryFromPredictions(items: Prediction[]): TodaySummary {
   const today = new Date();
   const summary: TodaySummary = {
     activeSignals: 0,
@@ -58,6 +60,7 @@ function buildTodaySummary(items: Prediction[]): TodaySummary {
     premiumCount: 0,
     vipCount: 0,
     settledToday: 0,
+    source: "realtime",
   };
 
   items.forEach((item) => {
@@ -79,6 +82,23 @@ function buildTodaySummary(items: Prediction[]): TodaySummary {
   return summary;
 }
 
+function buildTodaySummaryFallback(stats: PublicStats | null): TodaySummary {
+  const pending = stats?.pending ?? 0;
+  const wins = stats?.wins ?? 0;
+  const loses = stats?.loses ?? 0;
+  const refunds = stats?.refunds ?? 0;
+  const byAccess = stats?.by_access || {};
+  return {
+    activeSignals: pending,
+    liveNow: pending > 0 ? Math.max(1, Math.round(pending * 0.35)) : 0,
+    freeCount: Number(byAccess.free || 0),
+    premiumCount: Number(byAccess.premium || 0),
+    vipCount: Number(byAccess.vip || 0),
+    settledToday: wins + loses + refunds,
+    source: "fallback",
+  };
+}
+
 function tariffLabel(level: "free" | "premium" | "vip", t: (key: string) => string) {
   if (level === "premium") return t("common.premium");
   if (level === "vip") return t("common.vip");
@@ -91,6 +111,12 @@ function statusLabel(status: "active" | "expired" | "canceled" | "inactive" | "u
   if (status === "canceled") return t("common.status.canceled");
   if (status === "inactive") return t("common.status.inactive");
   return t("common.status.unknown");
+}
+
+function accessNowLabel(tariff: "free" | "premium" | "vip", t: (key: string) => string): string {
+  if (tariff === "vip") return t("home.access.openVip");
+  if (tariff === "premium") return t("home.access.openPremium");
+  return t("home.access.openFree");
 }
 
 export function HomePage() {
@@ -159,13 +185,31 @@ export function HomePage() {
 
   const sub = resolveSubscriptionSnapshot(subscriptionRaw);
   const pendingPayments = countPendingPayments(payments);
-  const today = useMemo(() => buildTodaySummary(predictions), [predictions]);
+  const today = useMemo(() => {
+    if (predictions.length > 0) return buildTodaySummaryFromPredictions(predictions);
+    return buildTodaySummaryFallback(stats);
+  }, [predictions, stats]);
+
   const previewNews = news.slice(0, 2);
   const pulseValues = useMemo(() => {
     const roi = stats?.roi ?? 0;
-    const base = [62, 58, 64, 60, 67, 63, 70, 66, 72, 68];
-    return base.map((value, idx) => value + Math.round(roi / 12) + (idx % 2 === 0 ? 1 : -1));
-  }, [stats?.roi]);
+    const pending = stats?.pending ?? 0;
+    return [54, 57, 59, 56, 60, 63, 61, 65, 68, 70].map((value, idx) => value + Math.round(roi / 12) + (pending > 0 ? idx % 3 : 0));
+  }, [stats?.roi, stats?.pending]);
+
+  const performanceWave = useMemo(() => {
+    const total = Math.max(1, stats?.total ?? 1);
+    const wins = stats?.wins ?? 0;
+    const loses = stats?.loses ?? 0;
+    const refunds = stats?.refunds ?? 0;
+    const pending = stats?.pending ?? 0;
+    const parts = [wins, loses, refunds, pending];
+    let progress = 0;
+    return parts.map((part) => {
+      progress += part;
+      return Math.round((progress / total) * 100);
+    });
+  }, [stats]);
 
   return (
     <Layout>
@@ -183,7 +227,7 @@ export function HomePage() {
         <ActivityBand
           items={[
             { label: t("home.hero.status"), value: statusLabel(sub.status, t), tone: sub.is_active ? "success" : "warning" },
-            { label: t("home.hero.until"), value: formatDate(sub.ends_at, language, "—") },
+            { label: t("home.hero.until"), value: formatDate(sub.ends_at, language, "-") },
             { label: t("home.hero.pendingPayments"), value: pendingPayments, tone: pendingPayments > 0 ? "warning" : "accent" },
           ]}
         />
@@ -192,20 +236,14 @@ export function HomePage() {
           <Link className="pb-btn pb-btn-primary" to="/feed">
             {t("home.hero.ctaSignals")}
           </Link>
-          <Link className="pb-btn pb-btn-secondary" to="/stats">
-            {t("home.performance.action")}
-          </Link>
-          <Link className="pb-btn pb-btn-ghost" to="/profile">
-            {t("home.hero.ctaAccess")}
-          </Link>
-          <Link className="pb-btn pb-btn-ghost" to="/menu">
-            {t("home.hero.ctaHub")}
+          <Link className="pb-btn pb-btn-secondary" to="/tariffs">
+            {t("layout.main.openTariffs")}
           </Link>
         </CTACluster>
       </section>
 
       <AppShellSection className="pb-today-panel">
-        <SectionHeader title={t("home.today.title")} subtitle={t("home.today.subtitle")} action={<span className="pb-hint-chip">{predictions.length}</span>} />
+        <SectionHeader title={t("home.today.title")} subtitle={t("home.today.subtitle")} action={<span className="pb-hint-chip">{predictions.length || stats?.total || 0}</span>} />
 
         {summaryLoading ? (
           <>
@@ -229,41 +267,60 @@ export function HomePage() {
           </div>
         ) : null}
 
-        {!summaryLoading && !summaryError && predictions.length === 0 ? <p className="pb-empty-state">{t("home.today.empty")}</p> : null}
+        {!summaryLoading && !summaryError && today.activeSignals === 0 && today.settledToday === 0 ? <p className="pb-empty-state">{t("home.today.empty")}</p> : null}
 
-        {!summaryLoading && !summaryError && predictions.length > 0 ? (
-          <>
-            <div className="pb-today-grid">
-              <article className="pb-today-main">
-                <span>{t("home.today.active")}</span>
-                <AnimatedNumber value={today.activeSignals} />
+        {!summaryLoading && !summaryError ? (
+          <div className="pb-today-composer">
+            <article className="pb-today-main pb-today-main-hero">
+              <span>{t("home.today.active")}</span>
+              <AnimatedNumber value={today.activeSignals} />
+              <small>{t("home.today.liveNow")}: {today.liveNow}</small>
+            </article>
+
+            <div className="pb-today-stripe">
+              <article>
+                <span>{t("home.today.free")}</span>
+                <AnimatedNumber value={today.freeCount} />
               </article>
-
-              <div className="pb-today-stack">
-                <article>
-                  <span>{t("home.today.liveNow")}</span>
-                  <AnimatedNumber value={today.liveNow} />
-                </article>
-                <article>
-                  <span>{t("home.today.free")}</span>
-                  <AnimatedNumber value={today.freeCount} />
-                </article>
-                <article>
-                  <span>{t("home.today.premium")}</span>
-                  <AnimatedNumber value={today.premiumCount} />
-                </article>
-                <article>
-                  <span>{t("home.today.vip")}</span>
-                  <AnimatedNumber value={today.vipCount} />
-                </article>
-                <article>
-                  <span>{t("home.today.settled")}</span>
-                  <AnimatedNumber value={today.settledToday} />
-                </article>
-              </div>
+              <article>
+                <span>{t("home.today.premium")}</span>
+                <AnimatedNumber value={today.premiumCount} />
+              </article>
+              <article>
+                <span>{t("home.today.vip")}</span>
+                <AnimatedNumber value={today.vipCount} />
+              </article>
+              <article>
+                <span>{t("home.today.settled")}</span>
+                <AnimatedNumber value={today.settledToday} />
+              </article>
             </div>
-          </>
+
+            <p className="pb-today-source">{today.source === "realtime" ? t("home.today.dataRealtime") : t("home.today.dataFallback")}</p>
+          </div>
         ) : null}
+      </AppShellSection>
+
+      <AppShellSection>
+        <SectionHeader title={t("home.story.title")} subtitle={t("home.story.subtitle")} />
+        <div className="pb-story-grid">
+          <article>
+            <h3>{t("home.story.p1.title")}</h3>
+            <p>{t("home.story.p1.text")}</p>
+          </article>
+          <article>
+            <h3>{t("home.story.p2.title")}</h3>
+            <p>{t("home.story.p2.text")}</p>
+          </article>
+          <article>
+            <h3>{t("home.story.p3.title")}</h3>
+            <p>{t("home.story.p3.text")}</p>
+          </article>
+          <article>
+            <h3>{t("home.story.p4.title")}</h3>
+            <p>{t("home.story.p4.text")}</p>
+          </article>
+        </div>
       </AppShellSection>
 
       <div className="pb-home-split">
@@ -280,7 +337,7 @@ export function HomePage() {
             </div>
             <div>
               <span>{t("home.access.until")}</span>
-              <strong>{formatDate(sub.ends_at, language, "—")}</strong>
+              <strong>{formatDate(sub.ends_at, language, "-")}</strong>
             </div>
             <div>
               <span>{t("home.access.bonus")}</span>
@@ -289,6 +346,10 @@ export function HomePage() {
             <div>
               <span>{t("home.access.pending")}</span>
               <strong>{pendingPayments}</strong>
+            </div>
+            <div>
+              <span>{t("home.access.openNow")}</span>
+              <strong>{accessNowLabel(sub.tariff, t)}</strong>
             </div>
           </div>
           <CTACluster>
@@ -302,22 +363,30 @@ export function HomePage() {
           <SectionHeader title={t("home.performance.title")} subtitle={t("home.performance.subtitle")} />
           <div className="pb-metric-grid">
             <article>
-              <span>{t("home.performance.total")}</span>
-              <AnimatedNumber value={stats?.total ?? 0} />
+              <span>{t("common.roi")}</span>
+              <AnimatedNumber value={stats?.roi ?? 0} suffix="%" decimals={1} />
             </article>
             <article>
               <span>{t("home.performance.hit")}</span>
               <AnimatedNumber value={stats?.hit_rate ?? 0} suffix="%" decimals={1} />
             </article>
             <article>
-              <span>{t("common.roi")}</span>
-              <AnimatedNumber value={stats?.roi ?? 0} suffix="%" decimals={1} />
+              <span>{t("home.performance.total")}</span>
+              <AnimatedNumber value={stats?.total ?? 0} />
             </article>
             <article>
               <span>{t("home.performance.ratio")}</span>
               <strong>{`${stats?.wins ?? 0}/${stats?.loses ?? 0}/${stats?.refunds ?? 0}`}</strong>
             </article>
           </div>
+          <div className="pb-sparkline-panel">
+            <Sparkline values={performanceWave} className="pb-sparkline-band" />
+          </div>
+          <CTACluster>
+            <Link className="pb-btn pb-btn-ghost" to="/stats">
+              {t("home.performance.action")}
+            </Link>
+          </CTACluster>
         </AppShellSection>
       </div>
 
@@ -338,6 +407,7 @@ export function HomePage() {
             </article>
           </div>
         ) : null}
+
         {!loading && previewNews.length === 0 ? <p className="pb-empty-state">{t("home.news.empty")}</p> : null}
 
         {previewNews.length > 0 ? (

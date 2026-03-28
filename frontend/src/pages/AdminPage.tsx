@@ -543,18 +543,20 @@ export function AdminPage() {
 
   return (
     <Layout>
-      <section className="card">
+      <section className="card pb-admin-shell">
         <div className="section-head">
           <h2>{tx("Админка управления", "Admin control panel")}</h2>
           <span className="muted">{tx("Ручное управление контентом и доступом", "Manual content and access operations")}</span>
         </div>
 
-        <div className="admin-tabs">
-          {TABS.map((item) => (
-            <button key={item.key} className={tab === item.key ? "tab active" : "tab"} onClick={() => setTab(item.key)}>
-              {isRu ? item.ru : item.en}
-            </button>
-          ))}
+        <div className="admin-tabs-wrap">
+          <div className="admin-tabs">
+            {TABS.map((item) => (
+              <button type="button" key={item.key} className={tab === item.key ? "tab active" : "tab"} onClick={() => setTab(item.key)}>
+                {isRu ? item.ru : item.en}
+              </button>
+            ))}
+          </div>
         </div>
 
         {message ? <p className={`notice admin-toast ${messageTone}`}>{message}</p> : null}
@@ -607,7 +609,7 @@ export function AdminPage() {
                     <strong>{item.match_name}</strong>
                     <span className={`access-pill ${item.access_level}`}>{accessLabel(item.access_level, language)}</span>
                   </div>
-                  <p className="muted">{item.signal_type} • {tx("кф", "odds")} {item.odds} • {item.mode === "live" ? "Live" : tx("Прематч", "Prematch")}</p>
+                  <p className="muted">{item.signal_type} • {tx("кф", "odds")} {item.odds} • {item.mode === "live" ? tx("Лайв", "Live") : tx("Прематч", "Prematch")}</p>
                   <div className="admin-grid-3">
                     <select defaultValue={item.status} onChange={(e) => onUpdatePrediction(item.id, { status: e.target.value })}>
                       <option value="pending">{tx("В ожидании", "Pending")}</option>
@@ -868,7 +870,9 @@ export function AdminPage() {
                     <strong>{method.name}</strong>
                     <span className={`badge ${method.is_active ? "success" : "failed"}`}>{method.is_active ? tx("Активен", "Active") : tx("Выключен", "Inactive")}</span>
                   </div>
-                  <p className="muted">code: {method.code} • {method.method_type}</p>
+                  <p className="muted">
+                    code: {method.code} • {method.method_type === "auto" ? tx("Авто", "Auto") : tx("Ручной", "Manual")}
+                  </p>
                   {method.instructions ? <p className="muted">{method.instructions}</p> : null}
                   {method.card_number ? <p className="muted">{tx("Карта", "Card")}: {method.card_number}</p> : null}
                   {method.recipient_name ? <p className="muted">{tx("Получатель", "Recipient")}: {method.recipient_name}</p> : null}
