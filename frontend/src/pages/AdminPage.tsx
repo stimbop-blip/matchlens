@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from "react";
 
 import { useLanguage } from "../app/language";
 import { Layout } from "../components/Layout";
@@ -6,11 +6,11 @@ import {
   api,
   type AdminPayment,
   type AdminPromoCode,
-  type PaymentMethod,
   type AdminStats,
   type AdminSubscription,
   type AdminUser,
   type NewsPost,
+  type PaymentMethod,
   type Prediction,
 } from "../services/api";
 
@@ -28,6 +28,65 @@ const TABS: Array<{ key: TabKey; ru: string; en: string }> = [
   { key: "events", ru: "Статистика", en: "Stats" },
 ];
 
+type PredictionStatusFilter = "all" | Prediction["status"];
+type AccessFilter = "all" | Prediction["access_level"];
+type NewsFilter = "all" | "published" | "draft";
+type PromoFilter = "all" | "active" | "inactive";
+type MethodFilter = "all" | "active" | "inactive";
+
+type PredictionDraft = {
+  title: string;
+  match_name: string;
+  league: string;
+  sport_type: string;
+  event_start_at: string;
+  signal_type: string;
+  odds: string;
+  risk_level: "low" | "medium" | "high";
+  access_level: "free" | "premium" | "vip";
+  mode: "prematch" | "live";
+  status: "pending" | "won" | "lost" | "refund";
+  brief: string;
+  breakdown: string;
+  comments: string;
+  tag_pick: boolean;
+  tag_strong: boolean;
+  tag_hot: boolean;
+  result_screenshot: string | null;
+};
+
+type NewsDraft = {
+  title: string;
+  preview: string;
+  body: string;
+  category: string;
+  is_published: boolean;
+};
+
+type PromoDraft = {
+  code: string;
+  title: string;
+  description: string;
+  kind: "percent_discount" | "fixed_discount" | "extra_days" | "free_access";
+  value: string;
+  tariff_code: "" | "free" | "premium" | "vip";
+  max_activations: string;
+  expires_at: string;
+  is_active: boolean;
+};
+
+type PaymentMethodDraft = {
+  code: string;
+  name: string;
+  method_type: "auto" | "manual";
+  is_active: boolean;
+  sort_order: string;
+  card_number: string;
+  recipient_name: string;
+  payment_details: string;
+  instructions: string;
+};
+
 function textError(e: unknown, fallback: string): string {
   if (e instanceof Error && e.message) return e.message;
   return fallback;
@@ -43,13 +102,13 @@ function statusLabel(value: string, language: "ru" | "en"): string {
   if (value === "won") return language === "ru" ? "Выигрыш" : "Won";
   if (value === "lost") return language === "ru" ? "Проигрыш" : "Lost";
   if (value === "refund") return language === "ru" ? "Возврат" : "Refund";
-  if (value === "succeeded") return language === "ru" ? "Успешный" : "Succeeded";
-  if (value === "failed") return language === "ru" ? "Ошибка" : "Failed";
+  if (value === "succeeded") return language === "ru" ? "Подтвержден" : "Approved";
+  if (value === "failed") return language === "ru" ? "Отклонен" : "Rejected";
   if (value === "canceled") return language === "ru" ? "Отменен" : "Canceled";
   if (value === "active") return language === "ru" ? "Активна" : "Active";
   if (value === "expired") return language === "ru" ? "Истекла" : "Expired";
-  if (value === "pending_manual_review") return language === "ru" ? "Ожидает подтверждения" : "Pending manual review";
-  if (value === "requires_clarification") return language === "ru" ? "Ожидает уточнения" : "Needs clarification";
+  if (value === "pending_manual_review") return language === "ru" ? "На проверке" : "Manual review";
+  if (value === "requires_clarification") return language === "ru" ? "Нужно уточнение" : "Needs clarification";
   return language === "ru" ? "В ожидании" : "Pending";
 }
 
@@ -61,10 +120,193 @@ function toDateTimeLocal(value: string | null | undefined): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+function formatDateTime(value: string | null | undefined, isRu: boolean): string {
+  if (!value) return "-";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return value;
+  return d.toLocaleString(isRu ? "ru-RU" : "en-US", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 function toShortText(value: string, maxLength = 180): string {
   const compact = value.replace(/\s+/g, " ").trim();
   if (compact.length <= maxLength) return compact;
-  return `${compact.slice(0, Math.max(0, maxLength - 1)).trim()}…`;
+  return `${compact.slice(0, Math.max(0, maxLength - 1)).trim()}...`;
+}
+
+function extractNewsPreviewAndBody(body: string): { preview: string; body: string } {
+  const normalized = body.replace(/\r/g, "").trim();
+  if (!normalized) return { preview: "", body: "" };
+  const parts = normalized.split(/\n\s*\n+/);
+  if (parts.length > 1) {
+    return {
+      preview: parts[0].trim(),
+      body: parts.slice(1).join("\n\n").trim(),
+    };
+  }
+  return {
+    preview: toShortText(normalized, 180),
+    body: normalized,
+  };
+}
+
+function joinNewsPreviewAndBody(preview: string, body: string): string {
+  const p = preview.trim();
+  const b = body.trim();
+  if (!p && !b) return "";
+  if (!p) return b;
+  if (!b) return p;
+  if (b.startsWith(p)) return b;
+  return `${p}\n\n${b}`;
+}
+
+function createEmptyPredictionDraft(): PredictionDraft {
+  const inOneHour = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+  return {
+    title: "",
+    match_name: "",
+    league: "",
+    sport_type: "football",
+    event_start_at: toDateTimeLocal(inOneHour),
+    signal_type: "",
+    odds: "1.80",
+    risk_level: "medium",
+    access_level: "free",
+    mode: "prematch",
+    status: "pending",
+    brief: "",
+    breakdown: "",
+    comments: "",
+    tag_pick: false,
+    tag_strong: false,
+    tag_hot: false,
+    result_screenshot: null,
+  };
+}
+
+function createPredictionDraftFromItem(item: Prediction): PredictionDraft {
+  return {
+    title: item.title || "",
+    match_name: item.match_name,
+    league: item.league || "",
+    sport_type: item.sport_type,
+    event_start_at: toDateTimeLocal(item.event_start_at),
+    signal_type: item.signal_type,
+    odds: String(item.odds),
+    risk_level: (item.risk_level as "low" | "medium" | "high") || "medium",
+    access_level: item.access_level,
+    mode: item.mode,
+    status: item.status,
+    brief: item.short_description || "",
+    breakdown: "",
+    comments: "",
+    tag_pick: false,
+    tag_strong: false,
+    tag_hot: false,
+    result_screenshot: item.result_screenshot,
+  };
+}
+
+function createEmptyNewsDraft(): NewsDraft {
+  return {
+    title: "",
+    preview: "",
+    body: "",
+    category: "news",
+    is_published: true,
+  };
+}
+
+function createNewsDraftFromItem(item: NewsPost): NewsDraft {
+  const parsed = extractNewsPreviewAndBody(item.body || "");
+  return {
+    title: item.title,
+    preview: parsed.preview,
+    body: parsed.body || item.body,
+    category: item.category || "news",
+    is_published: item.is_published,
+  };
+}
+
+function createEmptyPromoDraft(): PromoDraft {
+  return {
+    code: "",
+    title: "",
+    description: "",
+    kind: "percent_discount",
+    value: "20",
+    tariff_code: "premium",
+    max_activations: "",
+    expires_at: "",
+    is_active: true,
+  };
+}
+
+function createPromoDraftFromItem(item: AdminPromoCode): PromoDraft {
+  return {
+    code: item.code,
+    title: item.title,
+    description: item.description || "",
+    kind: item.kind,
+    value: String(item.value),
+    tariff_code: item.tariff_code || "",
+    max_activations: item.max_activations ? String(item.max_activations) : "",
+    expires_at: toDateTimeLocal(item.expires_at),
+    is_active: item.is_active,
+  };
+}
+
+function createEmptyPaymentMethodDraft(): PaymentMethodDraft {
+  return {
+    code: "",
+    name: "",
+    method_type: "manual",
+    is_active: true,
+    sort_order: "100",
+    card_number: "",
+    recipient_name: "",
+    payment_details: "",
+    instructions: "",
+  };
+}
+
+function createPaymentMethodDraftFromItem(item: PaymentMethod): PaymentMethodDraft {
+  return {
+    code: item.code,
+    name: item.name,
+    method_type: item.method_type,
+    is_active: item.is_active,
+    sort_order: String(item.sort_order),
+    card_number: item.card_number || "",
+    recipient_name: item.recipient_name || "",
+    payment_details: item.payment_details || "",
+    instructions: item.instructions || "",
+  };
+}
+
+function composePredictionDescription(draft: PredictionDraft, isRu: boolean): string | null {
+  const parts: string[] = [];
+  const brief = draft.brief.trim();
+  const breakdown = draft.breakdown.trim();
+  const comments = draft.comments.trim();
+  const tags: string[] = [];
+
+  if (draft.tag_pick) tags.push(isRu ? "Выбор дня" : "Pick of the day");
+  if (draft.tag_strong) tags.push(isRu ? "Strong setup" : "Strong setup");
+  if (draft.tag_hot) tags.push(isRu ? "Hot pick" : "Hot pick");
+
+  if (brief) parts.push(brief);
+  if (breakdown) parts.push(`${isRu ? "Разбор" : "Breakdown"}:\n${breakdown}`);
+  if (comments) parts.push(`${isRu ? "Комментарии" : "Comments"}:\n${comments}`);
+  if (tags.length) parts.push(`${isRu ? "Метки" : "Tags"}: ${tags.join(", ")}`);
+
+  if (!parts.length) return null;
+  return parts.join("\n\n");
 }
 
 function fileToDataUrl(file: File): Promise<string> {
@@ -80,6 +322,39 @@ function fileToDataUrl(file: File): Promise<string> {
     reader.onerror = () => reject(new Error("Failed to read image"));
     reader.readAsDataURL(file);
   });
+}
+
+function proofLooksLikeImage(value: string): boolean {
+  const lower = value.toLowerCase();
+  if (lower.startsWith("data:image/")) return true;
+  return /\.(png|jpg|jpeg|webp|gif)(\?.*)?$/.test(lower);
+}
+
+function AdminSheet({
+  open,
+  title,
+  onClose,
+  children,
+}: {
+  open: boolean;
+  title: string;
+  onClose: () => void;
+  children: ReactNode;
+}) {
+  if (!open) return null;
+  return (
+    <div className="admin-sheet-backdrop" role="presentation" onClick={onClose}>
+      <section className="admin-sheet" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+        <div className="admin-sheet-head">
+          <strong>{title}</strong>
+          <button type="button" className="admin-sheet-close" onClick={onClose}>
+            x
+          </button>
+        </div>
+        <div className="admin-sheet-body">{children}</div>
+      </section>
+    </div>
+  );
 }
 
 export function AdminPage() {
@@ -103,13 +378,54 @@ export function AdminPage() {
   const [stats, setStats] = useState<AdminStats | null>(null);
 
   const [predQuery, setPredQuery] = useState("");
+  const [predStatusFilter, setPredStatusFilter] = useState<PredictionStatusFilter>("all");
+  const [predAccessFilter, setPredAccessFilter] = useState<AccessFilter>("all");
+
   const [usersQuery, setUsersQuery] = useState("");
   const [usersRoleFilter, setUsersRoleFilter] = useState("all");
+  const [usersTariffFilter, setUsersTariffFilter] = useState<"all" | "free" | "premium" | "vip">("all");
+
   const [subQuery, setSubQuery] = useState("");
   const [subStatusFilter, setSubStatusFilter] = useState("all");
+
   const [paymentQuery, setPaymentQuery] = useState("");
   const [paymentStatusFilter, setPaymentStatusFilter] = useState("all");
-  const [editingPredictionId, setEditingPredictionId] = useState<string | null>(null);
+  const [paymentMethodFilter, setPaymentMethodFilter] = useState("all");
+
+  const [newsQuery, setNewsQuery] = useState("");
+  const [newsStatusFilter, setNewsStatusFilter] = useState<NewsFilter>("all");
+
+  const [promoQuery, setPromoQuery] = useState("");
+  const [promoStatusFilter, setPromoStatusFilter] = useState<PromoFilter>("all");
+
+  const [methodQuery, setMethodQuery] = useState("");
+  const [methodStatusFilter, setMethodStatusFilter] = useState<MethodFilter>("all");
+
+  const [predictionStatusPanelId, setPredictionStatusPanelId] = useState<string | null>(null);
+  const [predictionScreenshotPanelId, setPredictionScreenshotPanelId] = useState<string | null>(null);
+
+  const [predictionSheetMode, setPredictionSheetMode] = useState<"closed" | "create" | "edit">("closed");
+  const [predictionSheetId, setPredictionSheetId] = useState<string | null>(null);
+  const [predictionDraft, setPredictionDraft] = useState<PredictionDraft>(createEmptyPredictionDraft());
+  const [predictionSaving, setPredictionSaving] = useState(false);
+
+  const [newsSheetMode, setNewsSheetMode] = useState<"closed" | "create" | "edit">("closed");
+  const [newsSheetId, setNewsSheetId] = useState<string | null>(null);
+  const [newsDraft, setNewsDraft] = useState<NewsDraft>(createEmptyNewsDraft());
+  const [newsSaving, setNewsSaving] = useState(false);
+
+  const [promoSheetMode, setPromoSheetMode] = useState<"closed" | "create" | "edit">("closed");
+  const [promoSheetId, setPromoSheetId] = useState<string | null>(null);
+  const [promoDraft, setPromoDraft] = useState<PromoDraft>(createEmptyPromoDraft());
+  const [promoSaving, setPromoSaving] = useState(false);
+
+  const [methodSheetMode, setMethodSheetMode] = useState<"closed" | "create" | "edit">("closed");
+  const [methodSheetId, setMethodSheetId] = useState<string | null>(null);
+  const [methodDraft, setMethodDraft] = useState<PaymentMethodDraft>(createEmptyPaymentMethodDraft());
+  const [methodSaving, setMethodSaving] = useState(false);
+
+  const [showGrantSubscriptionSheet, setShowGrantSubscriptionSheet] = useState(false);
+
   const [campaignSegment, setCampaignSegment] = useState("all");
   const [campaignAccess, setCampaignAccess] = useState("all");
   const [campaignNotifOnly, setCampaignNotifOnly] = useState(false);
@@ -143,14 +459,11 @@ export function AdminPage() {
   };
 
   const loadAll = async () => {
-    const role = usersRoleFilter === "all" ? undefined : usersRoleFilter;
-    const subStatus = subStatusFilter === "all" ? undefined : subStatusFilter;
-    const payStatus = paymentStatusFilter === "all" ? undefined : paymentStatusFilter;
     const [p, u, s, pay, paymentMethodList, n, promos, st] = await Promise.all([
       api.adminPredictions(),
-      api.adminUsers({ q: usersQuery || undefined, role }),
-      api.adminSubscriptions({ q: subQuery || undefined, status: subStatus }),
-      api.adminPayments({ user_query: paymentQuery || undefined, status: payStatus }),
+      api.adminUsers(),
+      api.adminSubscriptions(),
+      api.adminPayments(),
       api.adminPaymentMethods(),
       api.adminNews(),
       api.adminPromoCodes(),
@@ -167,6 +480,17 @@ export function AdminPage() {
     api.adminNotificationStats().then((v) => setDeliveryStats(v)).catch(() => setDeliveryStats(null));
   };
 
+  const refreshAll = async () => {
+    setLoading(true);
+    try {
+      await loadAll();
+    } catch (e) {
+      notifyError(textError(e, tx("Не удалось обновить данные", "Failed to refresh data")));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     api
       .me()
@@ -181,20 +505,6 @@ export function AdminPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => {
-    if (!isAdmin) return;
-    void loadAll();
-  }, [usersQuery, usersRoleFilter, subQuery, subStatusFilter, paymentQuery, paymentStatusFilter]);
-
-  const visiblePredictions = useMemo(() => {
-    const q = predQuery.trim().toLowerCase();
-    if (!q) return predictions;
-    return predictions.filter((item) => {
-      const base = `${item.match_name} ${item.title} ${item.league || ""} ${item.signal_type}`.toLowerCase();
-      return base.includes(q);
-    });
-  }, [predictions, predQuery]);
-
   const latestSubscriptionByUser = useMemo(() => {
     const map = new Map<string, AdminSubscription>();
     subscriptions.forEach((item) => {
@@ -206,52 +516,82 @@ export function AdminPage() {
     return map;
   }, [subscriptions]);
 
-  const onCreatePrediction = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setLoading(true);
-    notifyInfo("");
-    const form = e.currentTarget;
-    const formData = new FormData(form);
-    const matchName = String(formData.get("match_name") || "").trim();
-    const signalType = String(formData.get("signal_type") || "").trim();
-    try {
-      let resultScreenshot: string | null = null;
-      const screenshotCandidate = formData.get("result_screenshot");
-      if (screenshotCandidate instanceof File && screenshotCandidate.size > 0) {
-        if (!screenshotCandidate.type.startsWith("image/")) {
-          throw new Error(tx("Скрин должен быть изображением", "Screenshot must be an image"));
-        }
-        if (screenshotCandidate.size > 4 * 1024 * 1024) {
-          throw new Error(tx("Скрин слишком большой (максимум 4MB)", "Screenshot is too large (max 4MB)"));
-        }
-        resultScreenshot = await fileToDataUrl(screenshotCandidate);
-      }
+  const visiblePredictions = useMemo(() => {
+    const q = predQuery.trim().toLowerCase();
+    return predictions.filter((item) => {
+      if (predStatusFilter !== "all" && item.status !== predStatusFilter) return false;
+      if (predAccessFilter !== "all" && item.access_level !== predAccessFilter) return false;
+      if (!q) return true;
+      const dateText = formatDateTime(item.event_start_at, isRu).toLowerCase();
+      const base = `${item.match_name} ${item.title} ${item.league || ""} ${item.signal_type} ${item.sport_type} ${dateText}`.toLowerCase();
+      return base.includes(q);
+    });
+  }, [predictions, predQuery, predStatusFilter, predAccessFilter, isRu]);
 
-      await api.adminCreatePrediction({
-        title: String(formData.get("title") || `${matchName} • ${signalType}`).trim(),
-        match_name: matchName,
-        league: String(formData.get("league") || "").trim() || null,
-        sport_type: String(formData.get("sport_type") || "football"),
-        event_start_at: formData.get("event_start_at"),
-        signal_type: signalType,
-        odds: Number(formData.get("odds")),
-        short_description: String(formData.get("short_description") || "").trim() || null,
-        risk_level: String(formData.get("risk_level") || "medium"),
-        access_level: String(formData.get("access_level") || "free"),
-        mode: String(formData.get("mode") || "prematch"),
-        status: String(formData.get("status") || "pending").replace("win", "won").replace("lose", "lost"),
-        result_screenshot: resultScreenshot,
-        publish_now: true,
-      });
-      notifySuccess(tx("Прогноз создан", "Prediction created"));
-      form.reset();
-      await loadAll();
-    } catch (e) {
-      notifyError(textError(e, tx("Не удалось создать прогноз", "Failed to create prediction")));
-    } finally {
-      setLoading(false);
-    }
-  };
+  const visibleUsers = useMemo(() => {
+    const q = usersQuery.trim().toLowerCase();
+    return users.filter((user) => {
+      if (usersRoleFilter !== "all" && user.role !== usersRoleFilter) return false;
+      if (usersTariffFilter !== "all" && user.tariff !== usersTariffFilter) return false;
+      if (!q) return true;
+      const base = `${user.first_name || ""} ${user.username || ""} ${user.telegram_id}`.toLowerCase();
+      return base.includes(q);
+    });
+  }, [users, usersQuery, usersRoleFilter, usersTariffFilter]);
+
+  const visibleSubscriptions = useMemo(() => {
+    const q = subQuery.trim().toLowerCase();
+    return subscriptions.filter((sub) => {
+      if (subStatusFilter !== "all" && sub.status !== subStatusFilter) return false;
+      if (!q) return true;
+      const base = `${sub.username || ""} ${sub.telegram_id} ${sub.tariff_code}`.toLowerCase();
+      return base.includes(q);
+    });
+  }, [subscriptions, subQuery, subStatusFilter]);
+
+  const visiblePayments = useMemo(() => {
+    const q = paymentQuery.trim().toLowerCase();
+    return payments.filter((payment) => {
+      if (paymentStatusFilter !== "all" && payment.status !== paymentStatusFilter) return false;
+      if (paymentMethodFilter !== "all" && (payment.method_code || "") !== paymentMethodFilter) return false;
+      if (!q) return true;
+      const base = `${payment.username || ""} ${payment.telegram_id} ${payment.provider_order_id} ${payment.method_name || ""} ${payment.method_code || ""}`.toLowerCase();
+      return base.includes(q);
+    });
+  }, [payments, paymentQuery, paymentStatusFilter, paymentMethodFilter]);
+
+  const visibleNews = useMemo(() => {
+    const q = newsQuery.trim().toLowerCase();
+    return news.filter((item) => {
+      if (newsStatusFilter === "published" && !item.is_published) return false;
+      if (newsStatusFilter === "draft" && item.is_published) return false;
+      if (!q) return true;
+      const base = `${item.title} ${item.body} ${item.category}`.toLowerCase();
+      return base.includes(q);
+    });
+  }, [news, newsQuery, newsStatusFilter]);
+
+  const visiblePromos = useMemo(() => {
+    const q = promoQuery.trim().toLowerCase();
+    return promoCodes.filter((promo) => {
+      if (promoStatusFilter === "active" && !promo.is_active) return false;
+      if (promoStatusFilter === "inactive" && promo.is_active) return false;
+      if (!q) return true;
+      const base = `${promo.code} ${promo.title} ${promo.description || ""} ${promo.kind}`.toLowerCase();
+      return base.includes(q);
+    });
+  }, [promoCodes, promoQuery, promoStatusFilter]);
+
+  const visiblePaymentMethods = useMemo(() => {
+    const q = methodQuery.trim().toLowerCase();
+    return paymentMethods.filter((item) => {
+      if (methodStatusFilter === "active" && !item.is_active) return false;
+      if (methodStatusFilter === "inactive" && item.is_active) return false;
+      if (!q) return true;
+      const base = `${item.code} ${item.name} ${item.method_type} ${item.card_number || ""} ${item.recipient_name || ""}`.toLowerCase();
+      return base.includes(q);
+    });
+  }, [paymentMethods, methodQuery, methodStatusFilter]);
 
   const onUpdatePrediction = async (id: string, payload: Record<string, unknown>) => {
     try {
@@ -263,13 +603,23 @@ export function AdminPage() {
     }
   };
 
+  const onDeletePrediction = async (id: string) => {
+    if (!window.confirm(tx("Удалить прогноз из ленты?", "Delete prediction from feed?"))) return;
+    try {
+      await api.adminDeletePrediction(id);
+      notifySuccess(tx("Прогноз удален", "Prediction deleted"));
+      await loadAll();
+    } catch (e) {
+      notifyError(textError(e, tx("Ошибка удаления прогноза", "Failed to delete prediction")));
+    }
+  };
+
   const onUploadPredictionScreenshot = async (predictionId: string, file: File) => {
     if (!file.type.startsWith("image/")) {
       notifyError(tx("Нужен файл изображения", "Please upload an image file"));
       return;
     }
-    const maxSizeMb = 4;
-    if (file.size > maxSizeMb * 1024 * 1024) {
+    if (file.size > 4 * 1024 * 1024) {
       notifyError(tx("Скрин слишком большой (максимум 4MB)", "Image is too large (max 4MB)"));
       return;
     }
@@ -297,25 +647,96 @@ export function AdminPage() {
     }
   };
 
-  const onDeletePrediction = async (id: string) => {
-    if (!window.confirm(tx("Удалить прогноз из ленты?", "Delete prediction from feed?"))) return;
+  const openPredictionCreate = () => {
+    setPredictionDraft(createEmptyPredictionDraft());
+    setPredictionSheetId(null);
+    setPredictionSheetMode("create");
+  };
+
+  const openPredictionEdit = (item: Prediction) => {
+    setPredictionDraft(createPredictionDraftFromItem(item));
+    setPredictionSheetId(item.id);
+    setPredictionSheetMode("edit");
+  };
+
+  const closePredictionSheet = () => {
+    setPredictionSheetMode("closed");
+    setPredictionSheetId(null);
+    setPredictionSaving(false);
+  };
+
+  const onPredictionDraftScreenshotPick = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      notifyError(tx("Нужен файл изображения", "Please upload an image file"));
+      return;
+    }
+    if (file.size > 4 * 1024 * 1024) {
+      notifyError(tx("Скрин слишком большой (максимум 4MB)", "Image is too large (max 4MB)"));
+      return;
+    }
     try {
-      await api.adminDeletePrediction(id);
-      notifySuccess(tx("Прогноз удален", "Prediction deleted"));
-      await loadAll();
+      const payload = await fileToDataUrl(file);
+      setPredictionDraft((prev) => ({ ...prev, result_screenshot: payload }));
     } catch (e) {
-      notifyError(textError(e, tx("Ошибка удаления прогноза", "Failed to delete prediction")));
+      notifyError(textError(e, tx("Не удалось прочитать файл", "Failed to read file")));
+    }
+  };
+
+  const onSavePredictionDraft = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const matchName = predictionDraft.match_name.trim();
+    const signalType = predictionDraft.signal_type.trim();
+    const eventStart = predictionDraft.event_start_at.trim();
+    const odds = Number(predictionDraft.odds);
+
+    if (!matchName || !signalType || !eventStart || !Number.isFinite(odds) || odds <= 1) {
+      notifyError(tx("Заполните обязательные поля прогноза", "Fill required prediction fields"));
+      return;
+    }
+
+    const description = composePredictionDescription(predictionDraft, isRu);
+    const screenshot = predictionDraft.result_screenshot && predictionDraft.result_screenshot.trim() ? predictionDraft.result_screenshot : null;
+
+    const payload = {
+      title: predictionDraft.title.trim() || `${matchName} • ${signalType}`,
+      match_name: matchName,
+      league: predictionDraft.league.trim() || null,
+      sport_type: predictionDraft.sport_type.trim() || "football",
+      event_start_at: eventStart,
+      signal_type: signalType,
+      odds,
+      short_description: description,
+      result_screenshot: predictionSheetMode === "edit" ? screenshot || "" : screenshot,
+      risk_level: predictionDraft.risk_level,
+      access_level: predictionDraft.access_level,
+      mode: predictionDraft.mode,
+      status: predictionDraft.status,
+      publish_now: true,
+    };
+
+    setPredictionSaving(true);
+    try {
+      if (predictionSheetMode === "create") {
+        await api.adminCreatePrediction(payload);
+        notifySuccess(tx("Прогноз создан", "Prediction created"));
+      } else if (predictionSheetMode === "edit" && predictionSheetId) {
+        await api.adminUpdatePrediction(predictionSheetId, payload);
+        notifySuccess(tx("Прогноз обновлен", "Prediction updated"));
+      }
+      closePredictionSheet();
+      await loadAll();
+    } catch (err) {
+      notifyError(textError(err, tx("Не удалось сохранить прогноз", "Failed to save prediction")));
+    } finally {
+      setPredictionSaving(false);
     }
   };
 
   const onUpdateRole = async (userId: string, role: "user" | "admin") => {
     try {
       await api.adminUpdateUserRole(userId, role);
-      notifySuccess(
-        role === "admin"
-          ? tx("Права администратора выданы", "Admin permissions granted")
-          : tx("Права администратора сняты", "Admin permissions revoked")
-      );
+      notifySuccess(role === "admin" ? tx("Права администратора выданы", "Admin permissions granted") : tx("Права администратора сняты", "Admin permissions revoked"));
       await loadAll();
     } catch (e) {
       notifyError(textError(e, tx("Не удалось изменить роль", "Failed to update role")));
@@ -333,27 +754,6 @@ export function AdminPage() {
     }
   };
 
-  const onGrantSubscription = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const form = e.currentTarget;
-    const formData = new FormData(form);
-    try {
-      await api.adminGrantSubscription({
-        user_id: String(formData.get("user_id") || "").trim() || undefined,
-        telegram_id: String(formData.get("telegram_id") || "").trim()
-          ? Number(formData.get("telegram_id"))
-          : undefined,
-        tariff_code: String(formData.get("tariff_code") || "free") as "free" | "premium" | "vip",
-        duration_days: Number(formData.get("duration_days") || 30),
-      });
-      notifySuccess(tx("Подписка выдана", "Subscription granted"));
-      form.reset();
-      await loadAll();
-    } catch (e) {
-      notifyError(textError(e, tx("Не удалось выдать подписку", "Failed to grant subscription")));
-    }
-  };
-
   const onSubAction = async (action: () => Promise<unknown>, success: string, fail: string) => {
     try {
       await action();
@@ -361,6 +761,24 @@ export function AdminPage() {
       await loadAll();
     } catch (e) {
       notifyError(textError(e, fail));
+    }
+  };
+
+  const onGrantSubscription = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    try {
+      await api.adminGrantSubscription({
+        user_id: String(formData.get("user_id") || "").trim() || undefined,
+        telegram_id: String(formData.get("telegram_id") || "").trim() ? Number(formData.get("telegram_id")) : undefined,
+        tariff_code: String(formData.get("tariff_code") || "free") as "free" | "premium" | "vip",
+        duration_days: Number(formData.get("duration_days") || 30),
+      });
+      notifySuccess(tx("Подписка выдана", "Subscription granted"));
+      setShowGrantSubscriptionSheet(false);
+      await loadAll();
+    } catch (e) {
+      notifyError(textError(e, tx("Не удалось выдать подписку", "Failed to grant subscription")));
     }
   };
 
@@ -378,65 +796,65 @@ export function AdminPage() {
     }
   };
 
-  const onCreatePaymentMethod = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const fd = new FormData(e.currentTarget);
-    try {
-      await api.adminCreatePaymentMethod({
-        code: String(fd.get("code") || "").trim(),
-        name: String(fd.get("name") || "").trim(),
-        method_type: String(fd.get("method_type") || "manual") as "auto" | "manual",
-        is_active: fd.get("is_active") === "on",
-        sort_order: Number(fd.get("sort_order") || 100),
-        card_number: String(fd.get("card_number") || "").trim() || null,
-        recipient_name: String(fd.get("recipient_name") || "").trim() || null,
-        payment_details: String(fd.get("payment_details") || "").trim() || null,
-        instructions: String(fd.get("instructions") || "").trim() || null,
-      });
-      notifySuccess(tx("Метод оплаты добавлен", "Payment method created"));
-      e.currentTarget.reset();
-      await loadAll();
-    } catch (e) {
-      notifyError(textError(e, tx("Не удалось создать метод оплаты", "Failed to create payment method")));
-    }
+  const openNewsCreate = () => {
+    setNewsDraft(createEmptyNewsDraft());
+    setNewsSheetId(null);
+    setNewsSheetMode("create");
   };
 
-  const onPatchPaymentMethod = async (code: string, payload: Partial<PaymentMethod>) => {
-    try {
-      await api.adminUpdatePaymentMethod(code, payload);
-      notifySuccess(tx("Метод оплаты обновлен", "Payment method updated"));
-      await loadAll();
-    } catch (e) {
-      notifyError(textError(e, tx("Не удалось обновить метод оплаты", "Failed to update payment method")));
-    }
+  const openNewsEdit = (item: NewsPost) => {
+    setNewsDraft(createNewsDraftFromItem(item));
+    setNewsSheetId(item.id);
+    setNewsSheetMode("edit");
   };
 
-  const onCreateNews = async (e: FormEvent<HTMLFormElement>) => {
+  const closeNewsSheet = () => {
+    setNewsSheetMode("closed");
+    setNewsSheetId(null);
+    setNewsSaving(false);
+  };
+
+  const onSaveNewsDraft = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const fd = new FormData(e.currentTarget);
+    const title = newsDraft.title.trim();
+    const body = joinNewsPreviewAndBody(newsDraft.preview, newsDraft.body);
+    if (!title || !body.trim()) {
+      notifyError(tx("Заполните заголовок и текст", "Fill title and text"));
+      return;
+    }
+
+    setNewsSaving(true);
     try {
-      await api.adminCreateNews({
-        title: String(fd.get("title") || "").trim(),
-        body: String(fd.get("body") || "").trim(),
-        category: String(fd.get("category") || "news").trim(),
-        is_published: fd.get("is_published") === "on",
-      });
-      notifySuccess(tx("Новость добавлена", "News post created"));
-      e.currentTarget.reset();
+      if (newsSheetMode === "create") {
+        await api.adminCreateNews({
+          title,
+          body,
+          category: newsDraft.category.trim() || "news",
+          is_published: newsDraft.is_published,
+        });
+        notifySuccess(tx("Новость добавлена", "News post created"));
+      } else if (newsSheetMode === "edit" && newsSheetId) {
+        await api.adminUpdateNews(newsSheetId, {
+          title,
+          body,
+          category: newsDraft.category.trim() || "news",
+          is_published: newsDraft.is_published,
+        });
+        notifySuccess(tx("Новость обновлена", "News post updated"));
+      }
+      closeNewsSheet();
       await loadAll();
     } catch (e) {
-      notifyError(textError(e, tx("Не удалось добавить новость", "Failed to create news post")));
+      notifyError(textError(e, tx("Не удалось сохранить новость", "Failed to save news")));
+    } finally {
+      setNewsSaving(false);
     }
   };
 
   const onToggleNews = async (item: NewsPost) => {
     try {
       await api.adminUpdateNews(item.id, { is_published: !item.is_published });
-      notifySuccess(
-        item.is_published
-          ? tx("Новость снята с публикации", "News post unpublished")
-          : tx("Новость опубликована", "News post published")
-      );
+      notifySuccess(item.is_published ? tx("Новость снята с публикации", "News post unpublished") : tx("Новость опубликована", "News post published"));
       await loadAll();
     } catch (e) {
       notifyError(textError(e, tx("Не удалось обновить новость", "Failed to update news post")));
@@ -454,29 +872,74 @@ export function AdminPage() {
     }
   };
 
-  const onCreatePromo = async (e: FormEvent<HTMLFormElement>) => {
+  const openPromoCreate = () => {
+    setPromoDraft(createEmptyPromoDraft());
+    setPromoSheetId(null);
+    setPromoSheetMode("create");
+  };
+
+  const openPromoEdit = (item: AdminPromoCode) => {
+    setPromoDraft(createPromoDraftFromItem(item));
+    setPromoSheetId(item.id);
+    setPromoSheetMode("edit");
+  };
+
+  const closePromoSheet = () => {
+    setPromoSheetMode("closed");
+    setPromoSheetId(null);
+    setPromoSaving(false);
+  };
+
+  const onSavePromoDraft = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const fd = new FormData(e.currentTarget);
-    const kind = String(fd.get("kind") || "percent_discount") as "percent_discount" | "fixed_discount" | "extra_days" | "free_access";
-    const tariffCodeValue = String(fd.get("tariff_code") || "").trim();
-    const expiresAtValue = String(fd.get("expires_at") || "").trim();
+
+    const title = promoDraft.title.trim();
+    const value = Number(promoDraft.value);
+    if (!title || !Number.isFinite(value) || value < 0) {
+      notifyError(tx("Проверьте поля промокода", "Check promo code fields"));
+      return;
+    }
+
+    setPromoSaving(true);
     try {
-      await api.adminCreatePromoCode({
-        code: String(fd.get("code") || "").trim(),
-        title: String(fd.get("title") || "").trim(),
-        description: String(fd.get("description") || "").trim() || undefined,
-        kind,
-        value: Number(fd.get("value") || 0),
-        tariff_code: (tariffCodeValue || undefined) as "free" | "premium" | "vip" | undefined,
-        max_activations: String(fd.get("max_activations") || "").trim() ? Number(fd.get("max_activations")) : undefined,
-        expires_at: expiresAtValue ? new Date(expiresAtValue).toISOString() : undefined,
-        is_active: fd.get("is_active") === "on",
-      });
-      notifySuccess(tx("Промокод добавлен", "Promo code created"));
-      e.currentTarget.reset();
+      if (promoSheetMode === "create") {
+        const code = promoDraft.code.trim();
+        if (!code) {
+          notifyError(tx("Укажите код промокода", "Provide promo code"));
+          setPromoSaving(false);
+          return;
+        }
+        await api.adminCreatePromoCode({
+          code,
+          title,
+          description: promoDraft.description.trim() || undefined,
+          kind: promoDraft.kind,
+          value,
+          tariff_code: (promoDraft.tariff_code || undefined) as "free" | "premium" | "vip" | undefined,
+          max_activations: promoDraft.max_activations.trim() ? Number(promoDraft.max_activations) : undefined,
+          expires_at: promoDraft.expires_at ? new Date(promoDraft.expires_at).toISOString() : undefined,
+          is_active: promoDraft.is_active,
+        });
+        notifySuccess(tx("Промокод добавлен", "Promo code created"));
+      } else if (promoSheetMode === "edit" && promoSheetId) {
+        await api.adminUpdatePromoCode(promoSheetId, {
+          title,
+          description: promoDraft.description.trim() || undefined,
+          kind: promoDraft.kind,
+          value,
+          tariff_code: (promoDraft.tariff_code || undefined) as "free" | "premium" | "vip" | undefined,
+          max_activations: promoDraft.max_activations.trim() ? Number(promoDraft.max_activations) : undefined,
+          expires_at: promoDraft.expires_at ? new Date(promoDraft.expires_at).toISOString() : undefined,
+          is_active: promoDraft.is_active,
+        });
+        notifySuccess(tx("Промокод обновлен", "Promo code updated"));
+      }
+      closePromoSheet();
       await loadAll();
     } catch (e) {
-      notifyError(textError(e, tx("Не удалось создать промокод", "Failed to create promo code")));
+      notifyError(textError(e, tx("Не удалось сохранить промокод", "Failed to save promo code")));
+    } finally {
+      setPromoSaving(false);
     }
   };
 
@@ -494,22 +957,85 @@ export function AdminPage() {
     if (!window.confirm(tx("Удалить промокод?", "Delete promo code?"))) return;
     try {
       await api.adminDeletePromoCode(id);
-      setPromoCodes((prev) => prev.filter((item) => item.id !== id));
       notifySuccess(tx("Промокод удален", "Promo code deleted"));
+      await loadAll();
     } catch (e) {
       notifyError(textError(e, tx("Не удалось удалить промокод", "Failed to delete promo code")));
     }
   };
 
+  const openMethodCreate = () => {
+    setMethodDraft(createEmptyPaymentMethodDraft());
+    setMethodSheetId(null);
+    setMethodSheetMode("create");
+  };
+
+  const openMethodEdit = (item: PaymentMethod) => {
+    setMethodDraft(createPaymentMethodDraftFromItem(item));
+    setMethodSheetId(item.code);
+    setMethodSheetMode("edit");
+  };
+
+  const closeMethodSheet = () => {
+    setMethodSheetMode("closed");
+    setMethodSheetId(null);
+    setMethodSaving(false);
+  };
+
+  const onSaveMethodDraft = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const code = methodDraft.code.trim();
+    const name = methodDraft.name.trim();
+    if (!code || !name) {
+      notifyError(tx("Заполните код и название метода", "Fill method code and name"));
+      return;
+    }
+
+    const payload: PaymentMethod = {
+      code,
+      name,
+      method_type: methodDraft.method_type,
+      is_active: methodDraft.is_active,
+      sort_order: Number(methodDraft.sort_order) || 100,
+      card_number: methodDraft.card_number.trim() || null,
+      recipient_name: methodDraft.recipient_name.trim() || null,
+      payment_details: methodDraft.payment_details.trim() || null,
+      instructions: methodDraft.instructions.trim() || null,
+    };
+
+    setMethodSaving(true);
+    try {
+      if (methodSheetMode === "create") {
+        await api.adminCreatePaymentMethod(payload);
+        notifySuccess(tx("Метод оплаты создан", "Payment method created"));
+      } else if (methodSheetMode === "edit" && methodSheetId) {
+        await api.adminUpdatePaymentMethod(methodSheetId, {
+          name: payload.name,
+          method_type: payload.method_type,
+          is_active: payload.is_active,
+          sort_order: payload.sort_order,
+          card_number: payload.card_number,
+          recipient_name: payload.recipient_name,
+          payment_details: payload.payment_details,
+          instructions: payload.instructions,
+        });
+        notifySuccess(tx("Метод оплаты обновлен", "Payment method updated"));
+      }
+      closeMethodSheet();
+      await loadAll();
+    } catch (e) {
+      notifyError(textError(e, tx("Не удалось сохранить метод оплаты", "Failed to save payment method")));
+    } finally {
+      setMethodSaving(false);
+    }
+  };
+
   const onDirectMessageUser = async (user: AdminUser) => {
-    const text = window.prompt(
-      tx(`Сообщение для @${user.username || user.telegram_id}:`, `Message for @${user.username || user.telegram_id}:`)
-    );
+    const text = window.prompt(tx(`Сообщение для @${user.username || user.telegram_id}:`, `Message for @${user.username || user.telegram_id}:`));
     if (!text || !text.trim()) return;
 
-    const buttonTextRaw = window.prompt(
-      tx("Текст кнопки (опционально). Оставьте пустым, если кнопка не нужна:", "Button text (optional). Leave empty for no button:")
-    ) || "";
+    const buttonTextRaw = window.prompt(tx("Текст кнопки (опционально):", "Button text (optional):")) || "";
     const buttonText = buttonTextRaw.trim();
     let buttonUrl: string | undefined;
     if (buttonText) {
@@ -567,7 +1093,7 @@ export function AdminPage() {
 
   const onCampaignSend = async () => {
     if (!campaignTitle.trim() || !campaignMessage.trim()) {
-      notifyError(tx("Заполните заголовок и текст рассылки", "Fill in campaign title and message"));
+      notifyError(tx("Заполните заголовок и текст рассылки", "Fill campaign title and message"));
       return;
     }
     const buttonText = campaignButtonText.trim();
@@ -612,14 +1138,14 @@ export function AdminPage() {
 
   return (
     <Layout>
-      <section className="card pb-admin-shell">
+      <section className="card pb-admin-shell pb-admin-mobile">
         <div className="section-head">
-          <h2>{tx("Админка управления", "Admin control panel")}</h2>
-          <span className="muted">{tx("Ручное управление контентом и доступом", "Manual content and access operations")}</span>
+          <h2>{tx("Админка PIT BET", "PIT BET admin panel")}</h2>
+          <span className="muted">{tx("Мобильная control panel для контента, пользователей и платежей", "Mobile control panel for content, users, and payments")}</span>
         </div>
 
-        <div className="admin-tabs-wrap">
-          <div className="admin-tabs">
+        <div className="admin-tabs-wrap admin-tabs-mobile">
+          <div className="admin-tabs" role="tablist" aria-label={tx("Разделы админки", "Admin sections")}>
             {TABS.map((item) => (
               <button type="button" key={item.key} className={tab === item.key ? "tab active" : "tab"} onClick={() => setTab(item.key)}>
                 {isRu ? item.ru : item.en}
@@ -633,175 +1159,126 @@ export function AdminPage() {
 
         {tab === "predictions" ? (
           <div className="admin-panel">
-            <div className="admin-panel-head">
-              <h3>{tx("Прогнозы", "Predictions")}</h3>
-              <p className="muted">{tx("Публикация, результат и скрин ставки в одном потоке", "Publish, close, and attach screenshots in one flow")}</p>
+            <div className="admin-control-bar">
+              <div className="admin-control-top">
+                <button className="btn" type="button" onClick={openPredictionCreate}>
+                  {tx("Добавить прогноз", "Add prediction")}
+                </button>
+                <button className="btn ghost" type="button" onClick={() => void refreshAll()}>
+                  {tx("Обновить", "Refresh")}
+                </button>
+                <span className="admin-count-chip">{visiblePredictions.length}</span>
+              </div>
+              <div className="admin-control-grid">
+                <input value={predQuery} onChange={(e) => setPredQuery(e.target.value)} placeholder={tx("Поиск: матч, спорт, дата", "Search: match, sport, date")} />
+                <select value={predStatusFilter} onChange={(e) => setPredStatusFilter(e.target.value as PredictionStatusFilter)}>
+                  <option value="all">{tx("Все статусы", "All statuses")}</option>
+                  <option value="pending">{tx("В ожидании", "Pending")}</option>
+                  <option value="won">{tx("Выигрыш", "Won")}</option>
+                  <option value="lost">{tx("Проигрыш", "Lost")}</option>
+                  <option value="refund">{tx("Возврат", "Refund")}</option>
+                </select>
+                <select value={predAccessFilter} onChange={(e) => setPredAccessFilter(e.target.value as AccessFilter)}>
+                  <option value="all">{tx("Любой доступ", "Any access")}</option>
+                  <option value="free">{tx("Бесплатный", "Free")}</option>
+                  <option value="premium">{tx("Премиум", "Premium")}</option>
+                  <option value="vip">VIP</option>
+                </select>
+              </div>
             </div>
 
-            <details className="admin-collapsible">
-              <summary>{tx("Добавить прогноз", "Create prediction")}</summary>
-              <form className="admin-form" onSubmit={onCreatePrediction}>
-                <div className="admin-form-section">
-                  <h4>{tx("Событие", "Event")}</h4>
-                  <div className="admin-grid-2">
-                    <input name="match_name" placeholder={tx("Матч", "Match")} required />
-                    <input name="league" placeholder={tx("Лига", "League")} required />
-                  </div>
-                  <div className="admin-grid-3">
-                    <input name="sport_type" placeholder={tx("Вид спорта", "Sport type")} defaultValue="football" required />
-                    <input name="event_start_at" type="datetime-local" required />
-                    <input name="signal_type" placeholder={tx("Тип сигнала", "Signal type")} required />
-                  </div>
-                </div>
-
-                <div className="admin-form-section">
-                  <h4>{tx("Параметры публикации", "Publication settings")}</h4>
-                  <input name="title" placeholder={tx("Заголовок (необязательно)", "Title (optional)")} />
-                  <div className="admin-grid-4">
-                    <input name="odds" type="number" min="1.01" step="0.01" defaultValue="1.80" required />
-                    <select name="risk_level" defaultValue="medium">
-                      <option value="low">{tx("Риск: низкий", "Risk: low")}</option>
-                      <option value="medium">{tx("Риск: средний", "Risk: medium")}</option>
-                      <option value="high">{tx("Риск: высокий", "Risk: high")}</option>
-                    </select>
-                    <select name="access_level" defaultValue="free">
-                      <option value="free">{tx("Доступ: Бесплатный", "Access: Free")}</option>
-                      <option value="premium">{tx("Доступ: Премиум", "Access: Premium")}</option>
-                      <option value="vip">{tx("Доступ: VIP", "Access: VIP")}</option>
-                    </select>
-                    <select name="mode" defaultValue="prematch">
-                      <option value="prematch">{tx("Формат: Прематч", "Mode: Prematch")}</option>
-                      <option value="live">{tx("Формат: Лайв", "Mode: Live")}</option>
-                    </select>
-                  </div>
-                  <select name="status" defaultValue="pending">
-                    <option value="pending">{tx("Статус: в ожидании", "Status: pending")}</option>
-                    <option value="win">{tx("Статус: выигрыш", "Status: won")}</option>
-                    <option value="lose">{tx("Статус: проигрыш", "Status: lost")}</option>
-                    <option value="refund">{tx("Статус: возврат", "Status: refund")}</option>
-                  </select>
-                  <textarea name="short_description" placeholder={tx("Краткое описание", "Short description")} rows={3} />
-                </div>
-
-                <div className="admin-form-section">
-                  <h4>{tx("Скрин результата", "Result screenshot")}</h4>
-                  <label className="admin-file-field">
-                    <span>{tx("Скрин ставки/результата (опционально)", "Bet/result screenshot (optional)")}</span>
-                    <input name="result_screenshot" type="file" accept="image/*" />
-                  </label>
-                </div>
-
-                <div className="cta-row admin-cta-compact">
-                  <button className="btn" type="submit">
-                    {tx("Добавить прогноз", "Create prediction")}
-                  </button>
-                </div>
-              </form>
-            </details>
-
-            <div className="admin-prediction-toolbar">
-              <input value={predQuery} onChange={(e) => setPredQuery(e.target.value)} placeholder={tx("Поиск по матчу / сигналу", "Search by match / signal")} />
-              <span className="muted">{tx("Найдено", "Found")}: {visiblePredictions.length}</span>
-            </div>
-
-            <div className="admin-list">
-              {visiblePredictions.slice(0, 80).map((item) => (
-                <article key={item.id} className="prediction-card admin-item admin-prediction-card">
-                  <div className="prediction-top admin-prediction-head">
+            <div className="admin-list admin-list-compact">
+              {visiblePredictions.map((item) => (
+                <article key={item.id} className="prediction-card admin-item admin-card-compact">
+                  <div className="prediction-top admin-card-title-row">
                     <strong>{item.match_name}</strong>
                     <span className={`access-pill ${item.access_level}`}>{accessLabel(item.access_level, language)}</span>
                   </div>
-
-                  <div className="admin-prediction-meta muted">
-                    <span>{item.signal_type}</span>
+                  <p className="muted admin-card-sub">
+                    {item.league || tx("Без лиги", "No league")} • {item.sport_type} • {formatDateTime(item.event_start_at, isRu)}
+                  </p>
+                  <div className="admin-meta-row">
                     <span>{tx("кф", "odds")} {item.odds}</span>
                     <span>{item.mode === "live" ? tx("Лайв", "Live") : tx("Прематч", "Prematch")}</span>
-                  </div>
-
-                  <div className="admin-grid-3 admin-prediction-controls">
-                    <select defaultValue={item.status} onChange={(e) => onUpdatePrediction(item.id, { status: e.target.value })}>
-                      <option value="pending">{tx("В ожидании", "Pending")}</option>
-                      <option value="won">{tx("Выигрыш", "Won")}</option>
-                      <option value="lost">{tx("Проигрыш", "Lost")}</option>
-                      <option value="refund">{tx("Возврат", "Refund")}</option>
-                    </select>
-                    <select defaultValue={item.access_level} onChange={(e) => onUpdatePrediction(item.id, { access_level: e.target.value })}>
-                      <option value="free">{tx("Бесплатный", "Free")}</option>
-                      <option value="premium">{tx("Премиум", "Premium")}</option>
-                      <option value="vip">VIP</option>
-                    </select>
-                    <input type="number" step="0.01" min="1.01" defaultValue={item.odds} onBlur={(e) => onUpdatePrediction(item.id, { odds: Number(e.target.value) })} />
+                    <span>{item.signal_type}</span>
+                    <span className={`badge ${item.status}`}>{statusLabel(item.status, language)}</span>
                   </div>
 
                   {item.result_screenshot ? (
-                    <div className="admin-image-preview compact">
+                    <div className="admin-mini-shot">
                       <img src={item.result_screenshot} alt={tx("Скрин результата", "Result screenshot")} loading="lazy" />
                     </div>
-                  ) : (
-                    <p className="muted admin-shot-empty">{tx("Скрин пока не загружен", "No screenshot uploaded yet")}</p>
-                  )}
+                  ) : null}
 
-                  <div className="admin-grid-2 admin-shot-actions">
-                    <label className="admin-file-field compact">
-                      <span>
-                        {uploadingPredictionId === item.id
-                          ? tx("Загружаем скрин...", "Uploading screenshot...")
-                          : tx("Загрузить скрин", "Upload screenshot")}
-                      </span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => {
-                          const file = e.currentTarget.files?.[0];
-                          if (!file) return;
-                          void onUploadPredictionScreenshot(item.id, file);
-                          e.currentTarget.value = "";
-                        }}
-                        disabled={uploadingPredictionId === item.id}
-                      />
-                    </label>
-                    <button className="btn ghost" type="button" disabled={!item.result_screenshot} onClick={() => onClearPredictionScreenshot(item.id)}>
-                      {tx("Удалить скрин", "Remove screenshot")}
-                    </button>
-                  </div>
-
-                  <div className="cta-row admin-cta-compact">
-                    <button className="btn ghost" type="button" onClick={() => setEditingPredictionId(item.id)}>
+                  <div className="admin-quick-actions">
+                    <button className="btn ghost" type="button" onClick={() => openPredictionEdit(item)}>
                       {tx("Редактировать", "Edit")}
+                    </button>
+                    <button
+                      className="btn ghost"
+                      type="button"
+                      onClick={() => setPredictionStatusPanelId((prev) => (prev === item.id ? null : item.id))}
+                    >
+                      {tx("Статус", "Status")}
+                    </button>
+                    <button
+                      className="btn ghost"
+                      type="button"
+                      onClick={() => setPredictionScreenshotPanelId((prev) => (prev === item.id ? null : item.id))}
+                    >
+                      {tx("Скрин", "Screenshot")}
                     </button>
                     <button className="btn danger" type="button" onClick={() => onDeletePrediction(item.id)}>
                       {tx("Удалить", "Delete")}
                     </button>
                   </div>
-                  {editingPredictionId === item.id ? (
-                    <details className="admin-collapsible inline" open>
-                      <summary>{tx("Редактирование прогноза", "Prediction edit")}</summary>
-                      <form
-                        className="admin-form"
-                        onSubmit={(e) => {
-                          e.preventDefault();
-                          const fd = new FormData(e.currentTarget);
-                          void onUpdatePrediction(item.id, {
-                            title: String(fd.get("title") || ""),
-                            league: String(fd.get("league") || ""),
-                            short_description: String(fd.get("short_description") || ""),
-                          });
-                          setEditingPredictionId(null);
-                        }}
-                      >
-                        <input name="title" defaultValue={item.title} placeholder={tx("Заголовок", "Title")} />
-                        <div className="admin-grid-2">
-                          <input name="league" defaultValue={item.league || ""} placeholder={tx("Лига", "League")} />
-                          <input name="signal_type" defaultValue={item.signal_type} placeholder={tx("Тип сигнала", "Signal type")} disabled />
+
+                  {predictionStatusPanelId === item.id ? (
+                    <div className="admin-status-switch">
+                      <button className={item.status === "pending" ? "active" : ""} type="button" onClick={() => void onUpdatePrediction(item.id, { status: "pending" })}>
+                        {tx("В ожидании", "Pending")}
+                      </button>
+                      <button className={item.status === "won" ? "active" : ""} type="button" onClick={() => void onUpdatePrediction(item.id, { status: "won" })}>
+                        {tx("Выигрыш", "Won")}
+                      </button>
+                      <button className={item.status === "lost" ? "active" : ""} type="button" onClick={() => void onUpdatePrediction(item.id, { status: "lost" })}>
+                        {tx("Проигрыш", "Lost")}
+                      </button>
+                      <button className={item.status === "refund" ? "active" : ""} type="button" onClick={() => void onUpdatePrediction(item.id, { status: "refund" })}>
+                        {tx("Возврат", "Refund")}
+                      </button>
+                    </div>
+                  ) : null}
+
+                  {predictionScreenshotPanelId === item.id ? (
+                    <div className="admin-shot-panel">
+                      {item.result_screenshot ? (
+                        <div className="admin-image-preview compact">
+                          <img src={item.result_screenshot} alt={tx("Скрин результата", "Result screenshot")} loading="lazy" />
                         </div>
-                        <textarea name="short_description" defaultValue={item.short_description || ""} rows={3} />
-                        <div className="cta-row admin-cta-compact">
-                          <button className="btn" type="submit">
-                            {tx("Сохранить изменения", "Save changes")}
-                          </button>
-                        </div>
-                      </form>
-                    </details>
+                      ) : (
+                        <p className="muted">{tx("Скрин пока не загружен", "No screenshot uploaded yet")}</p>
+                      )}
+                      <div className="admin-shot-actions-row">
+                        <label className="btn ghost admin-file-btn">
+                          {uploadingPredictionId === item.id ? tx("Загрузка...", "Uploading...") : item.result_screenshot ? tx("Заменить", "Replace") : tx("Загрузить", "Upload")}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.currentTarget.files?.[0];
+                              if (!file) return;
+                              void onUploadPredictionScreenshot(item.id, file);
+                              e.currentTarget.value = "";
+                            }}
+                            disabled={uploadingPredictionId === item.id}
+                          />
+                        </label>
+                        <button className="btn ghost" type="button" disabled={!item.result_screenshot} onClick={() => void onClearPredictionScreenshot(item.id)}>
+                          {tx("Удалить", "Delete")}
+                        </button>
+                      </div>
+                    </div>
                   ) : null}
                 </article>
               ))}
@@ -811,74 +1288,122 @@ export function AdminPage() {
 
         {tab === "users" ? (
           <div className="admin-panel">
-            <h3>{tx("Пользователи", "Users")}</h3>
-            <div className="filter-row">
-              <input value={usersQuery} onChange={(e) => setUsersQuery(e.target.value)} placeholder={tx("Поиск по telegram_id / username", "Search by telegram_id / username")} />
-              <select value={usersRoleFilter} onChange={(e) => setUsersRoleFilter(e.target.value)}>
-                <option value="all">{tx("Все роли", "All roles")}</option>
-                <option value="user">{tx("Пользователь", "User")}</option>
-                <option value="admin">{tx("Администратор", "Admin")}</option>
-              </select>
+            <div className="admin-control-bar">
+              <div className="admin-control-top">
+                <span className="admin-count-chip">{visibleUsers.length}</span>
+              </div>
+              <div className="admin-control-grid">
+                <input value={usersQuery} onChange={(e) => setUsersQuery(e.target.value)} placeholder={tx("Поиск: имя, username, telegram id", "Search: name, username, telegram id")} />
+                <select value={usersRoleFilter} onChange={(e) => setUsersRoleFilter(e.target.value)}>
+                  <option value="all">{tx("Все роли", "All roles")}</option>
+                  <option value="user">{tx("Пользователь", "User")}</option>
+                  <option value="admin">{tx("Администратор", "Admin")}</option>
+                </select>
+                <select value={usersTariffFilter} onChange={(e) => setUsersTariffFilter(e.target.value as "all" | "free" | "premium" | "vip")}>
+                  <option value="all">{tx("Все тарифы", "All plans")}</option>
+                  <option value="free">{tx("Бесплатный", "Free")}</option>
+                  <option value="premium">{tx("Премиум", "Premium")}</option>
+                  <option value="vip">VIP</option>
+                </select>
+              </div>
             </div>
-            <div className="admin-list">
-              {users.map((user) => {
+
+            <div className="admin-list admin-list-compact">
+              {visibleUsers.map((user) => {
                 const latestSub = latestSubscriptionByUser.get(user.id);
                 return (
-                  <article key={user.id} className="prediction-card admin-item">
-                    <div className="prediction-top">
+                  <article key={user.id} className="prediction-card admin-item admin-card-compact">
+                    <div className="prediction-top admin-card-title-row">
                       <strong>{user.first_name || tx("Без имени", "No name")}</strong>
-                      <span className={user.role === "admin" ? "badge success" : "badge"}>{user.role === "admin" ? tx("администратор", "admin") : tx("пользователь", "user")}</span>
+                      <span className={user.role === "admin" ? "badge success" : "badge"}>{user.role === "admin" ? tx("админ", "admin") : tx("user", "user")}</span>
                     </div>
-                    <p className="muted">@{user.username || "-"} • tg: {user.telegram_id}</p>
-                    <p className="muted">{tx("Тариф", "Tariff")}: {accessLabel(user.tariff, language)} • {tx("до", "until")}: {user.subscription_ends_at || "—"}</p>
+                    <p className="muted admin-card-sub">@{user.username || "-"} • tg: {user.telegram_id}</p>
+                    <div className="admin-meta-row">
+                      <span>{tx("Тариф", "Plan")}: {accessLabel(user.tariff, language)}</span>
+                      <span>{tx("Доступ до", "Access until")}: {formatDateTime(user.subscription_ends_at, isRu)}</span>
+                    </div>
                     <p className="muted">
-                      {tx("Рефкод", "Referral code")}: {user.referral_code || "—"} • {tx("приглашено", "invited")}: {user.referrals_invited ?? 0} • {tx("активировано", "activated")}: {user.referrals_activated ?? 0} • {tx("бонусных дней", "bonus days")}: {user.referral_bonus_days ?? 0}
+                      {tx("Рефералы", "Referrals")}: {user.referrals_invited ?? 0}/{user.referrals_activated ?? 0} • {tx("Бонус", "Bonus")}: {user.referral_bonus_days ?? 0}
                     </p>
-                    <details className="admin-actions-fold">
-                      <summary>{tx("Действия с пользователем", "User actions")}</summary>
-                      <div className="cta-row wrap">
-                        {user.role === "admin" ? (
-                          <button className="btn ghost" type="button" onClick={() => onUpdateRole(user.id, "user")}>{tx("Снять админку", "Revoke admin")}</button>
-                        ) : (
-                          <button className="btn" type="button" onClick={() => onUpdateRole(user.id, "admin")}>{tx("Выдать админку", "Grant admin")}</button>
-                        )}
-                        <button
-                          className="btn ghost"
-                          type="button"
-                          onClick={() =>
-                            onSubAction(
-                              () => api.adminGrantSubscription({ user_id: user.id, tariff_code: "premium", duration_days: 30 }),
-                              tx("Премиум выдан на 30 дней", "Premium granted for 30 days"),
-                              tx("Не удалось выдать Премиум", "Failed to grant Premium")
-                            )
-                          }
-                        >
-                          {tx("Выдать Премиум", "Grant Premium")}
+
+                    <div className="admin-quick-actions">
+                      <button
+                        className="btn ghost"
+                        type="button"
+                        onClick={() =>
+                          void onSubAction(
+                            () => api.adminGrantSubscription({ user_id: user.id, tariff_code: "premium", duration_days: 30 }),
+                            tx("Премиум выдан", "Premium granted"),
+                            tx("Не удалось выдать Премиум", "Failed to grant Premium")
+                          )
+                        }
+                      >
+                        {tx("Premium", "Premium")}
+                      </button>
+                      <button
+                        className="btn ghost"
+                        type="button"
+                        onClick={() =>
+                          void onSubAction(
+                            () => api.adminGrantSubscription({ user_id: user.id, tariff_code: "vip", duration_days: 30 }),
+                            tx("VIP выдан", "VIP granted"),
+                            tx("Не удалось выдать VIP", "Failed to grant VIP")
+                          )
+                        }
+                      >
+                        VIP
+                      </button>
+                      <button
+                        className="btn ghost"
+                        type="button"
+                        disabled={!latestSub}
+                        onClick={() =>
+                          latestSub
+                            ? void onSubAction(
+                                () => api.adminExtendSubscription(latestSub.id, 30),
+                                tx("Подписка продлена +30", "Subscription extended +30"),
+                                tx("Не удалось продлить", "Failed to extend")
+                              )
+                            : undefined
+                        }
+                      >
+                        {tx("+30 дней", "+30 days")}
+                      </button>
+                      <button className="btn ghost" type="button" onClick={() => void onDirectMessageUser(user)}>
+                        {tx("Сообщение", "Message")}
+                      </button>
+                    </div>
+
+                    <div className="admin-quick-actions">
+                      {user.role === "admin" ? (
+                        <button className="btn" type="button" onClick={() => void onUpdateRole(user.id, "user")}>
+                          {tx("Снять админку", "Revoke admin")}
                         </button>
-                        <button
-                          className="btn ghost"
-                          type="button"
-                          onClick={() =>
-                            onSubAction(
-                              () => api.adminGrantSubscription({ user_id: user.id, tariff_code: "vip", duration_days: 30 }),
-                              tx("VIP выдан на 30 дней", "VIP granted for 30 days"),
-                              tx("Не удалось выдать VIP", "Failed to grant VIP")
-                            )
-                          }
-                        >
-                          {tx("Выдать VIP", "Grant VIP")}
+                      ) : (
+                        <button className="btn" type="button" onClick={() => void onUpdateRole(user.id, "admin")}>
+                          {tx("Выдать админку", "Grant admin")}
                         </button>
-                        {latestSub ? (
-                          <>
-                            <button className="btn" type="button" onClick={() => onSubAction(() => api.adminExtendSubscription(latestSub.id, 30), tx("Подписка продлена на 30 дней", "Subscription extended by 30 days"), tx("Не удалось продлить", "Failed to extend"))}>{tx("Продлить +30", "Extend +30")}</button>
-                            <button className="btn" type="button" onClick={() => onSubAction(() => api.adminChangeSubscriptionTariff(latestSub.id, { tariff_code: "free" }), tx("Тариф переведен на бесплатный", "Tariff switched to Free"), tx("Не удалось сменить тариф", "Failed to switch tariff"))}>{tx("На бесплатный", "Switch to Free")}</button>
-                            <button className="btn danger" type="button" onClick={() => onSubAction(() => api.adminCancelSubscription(latestSub.id), tx("Подписка отменена", "Subscription canceled"), tx("Не удалось отменить", "Failed to cancel"))}>{tx("Отменить подписку", "Cancel subscription")}</button>
-                          </>
-                        ) : null}
-                        <button className="btn danger" type="button" onClick={() => onDeleteUser(user.id)}>{tx("Удалить", "Delete")}</button>
-                        <button className="btn" type="button" onClick={() => onDirectMessageUser(user)}>{tx("Сообщение", "Message")}</button>
-                      </div>
-                    </details>
+                      )}
+                      <button
+                        className="btn danger"
+                        type="button"
+                        disabled={!latestSub}
+                        onClick={() =>
+                          latestSub
+                            ? void onSubAction(
+                                () => api.adminCancelSubscription(latestSub.id),
+                                tx("Подписка отменена", "Subscription canceled"),
+                                tx("Не удалось отменить", "Failed to cancel")
+                              )
+                            : undefined
+                        }
+                      >
+                        {tx("Отменить подписку", "Cancel subscription")}
+                      </button>
+                      <button className="btn danger" type="button" onClick={() => void onDeleteUser(user.id)}>
+                        {tx("Удалить", "Delete")}
+                      </button>
+                    </div>
                   </article>
                 );
               })}
@@ -888,54 +1413,49 @@ export function AdminPage() {
 
         {tab === "subscriptions" ? (
           <div className="admin-panel">
-            <h3>{tx("Подписки", "Subscriptions")}</h3>
-            <details className="admin-collapsible">
-              <summary>{tx("Выдать подписку вручную", "Grant subscription manually")}</summary>
-              <form className="admin-form" onSubmit={onGrantSubscription}>
-                <div className="admin-grid-2">
-                  <input name="user_id" placeholder={tx("user_id (или оставьте пустым)", "user_id (or leave empty)")} />
-                  <input name="telegram_id" placeholder="telegram_id" />
-                </div>
-                <div className="admin-grid-3">
-                  <select name="tariff_code" defaultValue="premium">
-                    <option value="free">{tx("Бесплатный", "Free")}</option>
-                    <option value="premium">{tx("Премиум", "Premium")}</option>
-                    <option value="vip">VIP</option>
-                  </select>
-                  <input name="duration_days" type="number" min="1" defaultValue="30" />
-                  <button className="btn" type="submit">{tx("Выдать подписку", "Grant subscription")}</button>
-                </div>
-              </form>
-            </details>
-
-            <div className="filter-row">
-              <input value={subQuery} onChange={(e) => setSubQuery(e.target.value)} placeholder={tx("Поиск по пользователю", "Search by user")} />
-              <select value={subStatusFilter} onChange={(e) => setSubStatusFilter(e.target.value)}>
-                <option value="all">{tx("Все статусы", "All statuses")}</option>
-                <option value="active">{tx("Активна", "Active")}</option>
-                <option value="expired">{tx("Истекла", "Expired")}</option>
-                <option value="canceled">{tx("Отменена", "Canceled")}</option>
-              </select>
+            <div className="admin-control-bar">
+              <div className="admin-control-top">
+                <button className="btn" type="button" onClick={() => setShowGrantSubscriptionSheet(true)}>
+                  {tx("Выдать подписку", "Grant subscription")}
+                </button>
+                <span className="admin-count-chip">{visibleSubscriptions.length}</span>
+              </div>
+              <div className="admin-control-grid">
+                <input value={subQuery} onChange={(e) => setSubQuery(e.target.value)} placeholder={tx("Поиск: пользователь, telegram id", "Search: user, telegram id")} />
+                <select value={subStatusFilter} onChange={(e) => setSubStatusFilter(e.target.value)}>
+                  <option value="all">{tx("Все статусы", "All statuses")}</option>
+                  <option value="active">{tx("Активна", "Active")}</option>
+                  <option value="expired">{tx("Истекла", "Expired")}</option>
+                  <option value="canceled">{tx("Отменена", "Canceled")}</option>
+                </select>
+              </div>
             </div>
 
-            <div className="admin-list">
-              {subscriptions.map((sub) => (
-                <article key={sub.id} className="prediction-card admin-item">
-                  <div className="prediction-top">
+            <div className="admin-list admin-list-compact">
+              {visibleSubscriptions.map((sub) => (
+                <article key={sub.id} className="prediction-card admin-item admin-card-compact">
+                  <div className="prediction-top admin-card-title-row">
                     <strong>@{sub.username || sub.telegram_id}</strong>
                     <span className={`access-pill ${sub.tariff_code}`}>{accessLabel(sub.tariff_code, language)}</span>
                   </div>
-                  <p className="muted">{statusLabel(sub.status, language)} • {tx("до", "until")} {new Date(sub.ends_at).toLocaleDateString(isRu ? "ru-RU" : "en-US")}</p>
-                  <details className="admin-actions-fold">
-                    <summary>{tx("Действия с подпиской", "Subscription actions")}</summary>
-                    <div className="cta-row wrap">
-                      <button className="btn ghost" type="button" onClick={() => onSubAction(() => api.adminExtendSubscription(sub.id, 7), tx("Подписка продлена на 7 дней", "Subscription extended by 7 days"), tx("Не удалось продлить", "Failed to extend"))}>{tx("+7 дней", "+7 days")}</button>
-                      <button className="btn ghost" type="button" onClick={() => onSubAction(() => api.adminExtendSubscription(sub.id, 30), tx("Подписка продлена на 30 дней", "Subscription extended by 30 days"), tx("Не удалось продлить", "Failed to extend"))}>{tx("+30 дней", "+30 days")}</button>
-                      <button className="btn" type="button" onClick={() => onSubAction(() => api.adminChangeSubscriptionTariff(sub.id, { tariff_code: "premium" }), tx("Тариф обновлен", "Tariff updated"), tx("Не удалось сменить тариф", "Failed to switch tariff"))}>{tx("На Премиум", "Switch to Premium")}</button>
-                      <button className="btn" type="button" onClick={() => onSubAction(() => api.adminChangeSubscriptionTariff(sub.id, { tariff_code: "vip" }), tx("Тариф обновлен", "Tariff updated"), tx("Не удалось сменить тариф", "Failed to switch tariff"))}>{tx("На VIP", "Switch to VIP")}</button>
-                      <button className="btn danger" type="button" onClick={() => onSubAction(() => api.adminCancelSubscription(sub.id), tx("Подписка отменена", "Subscription canceled"), tx("Не удалось отменить подписку", "Failed to cancel subscription"))}>{tx("Отменить", "Cancel")}</button>
-                    </div>
-                  </details>
+                  <p className="muted admin-card-sub">{statusLabel(sub.status, language)} • {tx("до", "until")} {formatDateTime(sub.ends_at, isRu)}</p>
+                  <div className="admin-quick-actions">
+                    <button className="btn ghost" type="button" onClick={() => void onSubAction(() => api.adminExtendSubscription(sub.id, 7), tx("+7 дней", "+7 days"), tx("Не удалось продлить", "Failed to extend"))}>
+                      +7
+                    </button>
+                    <button className="btn ghost" type="button" onClick={() => void onSubAction(() => api.adminExtendSubscription(sub.id, 30), tx("+30 дней", "+30 days"), tx("Не удалось продлить", "Failed to extend"))}>
+                      +30
+                    </button>
+                    <button className="btn" type="button" onClick={() => void onSubAction(() => api.adminChangeSubscriptionTariff(sub.id, { tariff_code: "premium" }), tx("Тариф -> Премиум", "Tariff -> Premium"), tx("Не удалось сменить тариф", "Failed to switch tariff"))}>
+                      {tx("На Premium", "To Premium")}
+                    </button>
+                    <button className="btn" type="button" onClick={() => void onSubAction(() => api.adminChangeSubscriptionTariff(sub.id, { tariff_code: "vip" }), tx("Тариф -> VIP", "Tariff -> VIP"), tx("Не удалось сменить тариф", "Failed to switch tariff"))}>
+                      VIP
+                    </button>
+                    <button className="btn danger" type="button" onClick={() => void onSubAction(() => api.adminCancelSubscription(sub.id), tx("Подписка отменена", "Subscription canceled"), tx("Не удалось отменить", "Failed to cancel"))}>
+                      {tx("Отменить", "Cancel")}
+                    </button>
+                  </div>
                 </article>
               ))}
             </div>
@@ -944,120 +1464,137 @@ export function AdminPage() {
 
         {tab === "payments" ? (
           <div className="admin-panel">
-            <h3>{tx("Платежи", "Payments")}</h3>
-            <div className="filter-row">
-              <input value={paymentQuery} onChange={(e) => setPaymentQuery(e.target.value)} placeholder={tx("Поиск по пользователю", "Search by user")} />
-              <select value={paymentStatusFilter} onChange={(e) => setPaymentStatusFilter(e.target.value)}>
-                <option value="all">{tx("Все статусы", "All statuses")}</option>
-                <option value="pending">{tx("В ожидании", "Pending")}</option>
-                <option value="pending_manual_review">{tx("Ожидает подтверждения", "Pending review")}</option>
-                <option value="requires_clarification">{tx("Ожидает уточнения", "Needs clarification")}</option>
-                <option value="succeeded">{tx("Успешный", "Succeeded")}</option>
-                <option value="failed">{tx("Ошибка", "Failed")}</option>
-                <option value="canceled">{tx("Отменен", "Canceled")}</option>
-              </select>
+            <div className="admin-control-bar">
+              <div className="admin-control-top">
+                <span className="admin-count-chip">{visiblePayments.length}</span>
+              </div>
+              <div className="admin-control-grid">
+                <input value={paymentQuery} onChange={(e) => setPaymentQuery(e.target.value)} placeholder={tx("Поиск: пользователь, order id", "Search: user, order id")} />
+                <select value={paymentStatusFilter} onChange={(e) => setPaymentStatusFilter(e.target.value)}>
+                  <option value="all">{tx("Все статусы", "All statuses")}</option>
+                  <option value="pending">{tx("В ожидании", "Pending")}</option>
+                  <option value="pending_manual_review">{tx("На проверке", "Manual review")}</option>
+                  <option value="requires_clarification">{tx("Нужно уточнение", "Needs clarification")}</option>
+                  <option value="succeeded">{tx("Подтвержден", "Approved")}</option>
+                  <option value="failed">{tx("Отклонен", "Rejected")}</option>
+                  <option value="canceled">{tx("Отменен", "Canceled")}</option>
+                </select>
+                <select value={paymentMethodFilter} onChange={(e) => setPaymentMethodFilter(e.target.value)}>
+                  <option value="all">{tx("Все методы", "All methods")}</option>
+                  {paymentMethods.map((method) => (
+                    <option key={method.code} value={method.code}>
+                      {method.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-            <div className="admin-list">
-              {payments.map((payment) => (
-                <article key={payment.id} className="prediction-card admin-item">
-                  <div className="prediction-top">
-                    <strong>{payment.amount_rub} RUB • {accessLabel(payment.access_level, language)} • {payment.duration_days} {tx("дн", "d")}</strong>
-                    <span className={`badge ${payment.status}`}>{statusLabel(payment.status, language)}</span>
-                  </div>
-                  <p className="muted">@{payment.username || "-"} • tg: {payment.telegram_id}</p>
-                  <p className="muted">{tx("Метод", "Method")}: {payment.method_name || payment.method_code || "-"}</p>
-                  <p className="muted">order: {payment.provider_order_id}</p>
-                  {payment.manual_note ? <p className="muted">{tx("Комментарий", "Comment")}: {payment.manual_note}</p> : null}
-                  {payment.manual_proof ? <p className="muted">{tx("Подтверждение", "Proof")}: {payment.manual_proof}</p> : null}
-                  {payment.review_comment ? <p className="muted">{tx("Комментарий админа", "Admin comment")}: {payment.review_comment}</p> : null}
-                  <details className="admin-actions-fold">
-                    <summary>{tx("Действия с платежом", "Payment actions")}</summary>
-                    <div className="admin-grid-2">
-                      <button className="btn" type="button" onClick={() => onPaymentStatus(payment.id, "succeeded")}>{tx("Пометить успешным", "Mark succeeded")}</button>
+
+            <div className="admin-list admin-list-compact">
+              {visiblePayments.map((payment) => {
+                const proof = (payment.manual_proof || "").trim();
+                return (
+                  <article key={payment.id} className="prediction-card admin-item admin-card-compact">
+                    <div className="prediction-top admin-card-title-row">
+                      <strong>@{payment.username || payment.telegram_id}</strong>
+                      <span className={`badge ${payment.status}`}>{statusLabel(payment.status, language)}</span>
+                    </div>
+                    <div className="admin-meta-row">
+                      <span>{accessLabel(payment.access_level, language)}</span>
+                      <span>{payment.duration_days} {tx("дней", "days")}</span>
+                      <span>{payment.amount_rub} RUB</span>
+                    </div>
+                    <p className="muted admin-card-sub">{tx("Метод", "Method")}: {payment.method_name || payment.method_code || "-"} • {formatDateTime(payment.created_at, isRu)}</p>
+                    {payment.manual_note ? <p className="stacked">{tx("Комментарий", "Comment")}: {toShortText(payment.manual_note, 140)}</p> : null}
+                    {payment.review_comment ? <p className="stacked">{tx("Комментарий админа", "Admin comment")}: {toShortText(payment.review_comment, 140)}</p> : null}
+                    {proof ? (
+                      <div className="admin-proof-block">
+                        <a href={proof} target="_blank" rel="noreferrer" className="admin-proof-link">
+                          {tx("Открыть подтверждение", "Open proof")}
+                        </a>
+                        {proofLooksLikeImage(proof) ? <img src={proof} alt={tx("Подтверждение платежа", "Payment proof")} loading="lazy" className="admin-proof-image" /> : null}
+                      </div>
+                    ) : null}
+
+                    <div className="admin-quick-actions three">
+                      <button className="btn" type="button" onClick={() => void onPaymentStatus(payment.id, "succeeded")}>
+                        {tx("Подтвердить", "Approve")}
+                      </button>
                       <button
                         className="btn ghost"
                         type="button"
                         onClick={() => {
                           const comment = window.prompt(tx("Что нужно уточнить у пользователя?", "What should be clarified with user?")) || "";
-                          void onPaymentStatus(payment.id, "requires_clarification", comment);
+                          if (!comment.trim()) return;
+                          void onPaymentStatus(payment.id, "requires_clarification", comment.trim());
                         }}
                       >
-                        {tx("Запросить уточнение", "Request clarification")}
+                        {tx("Уточнить", "Clarify")}
                       </button>
                       <button
                         className="btn danger"
                         type="button"
                         onClick={() => {
-                          const comment = window.prompt(tx("Причина отклонения", "Rejection reason")) || "";
-                          void onPaymentStatus(payment.id, "failed", comment);
+                          const reason = window.prompt(tx("Причина отклонения", "Rejection reason")) || "";
+                          void onPaymentStatus(payment.id, "failed", reason.trim() || undefined);
                         }}
                       >
                         {tx("Отклонить", "Reject")}
                       </button>
                     </div>
-                  </details>
-                </article>
-              ))}
+                  </article>
+                );
+              })}
             </div>
           </div>
         ) : null}
 
         {tab === "payment_methods" ? (
           <div className="admin-panel">
-            <h3>{tx("Способы оплаты", "Payment methods")}</h3>
-            <details className="admin-collapsible">
-              <summary>{tx("Добавить способ оплаты", "Create payment method")}</summary>
-              <form className="admin-form" onSubmit={onCreatePaymentMethod}>
-                <div className="admin-grid-3">
-                  <input name="code" placeholder={tx("Код метода", "Method code")} required />
-                  <input name="name" placeholder={tx("Название", "Name")} required />
-                  <select name="method_type" defaultValue="manual">
-                    <option value="auto">{tx("Авто", "Auto")}</option>
-                    <option value="manual">{tx("Ручной", "Manual")}</option>
-                  </select>
-                </div>
-                <div className="admin-grid-3">
-                  <input name="sort_order" type="number" defaultValue="100" placeholder={tx("Порядок", "Sort order")} />
-                  <input name="card_number" placeholder={tx("Номер карты", "Card number")} />
-                  <input name="recipient_name" placeholder={tx("Получатель", "Recipient")} />
-                </div>
-                <input name="payment_details" placeholder={tx("Реквизиты / детали", "Payment details")} />
-                <textarea name="instructions" rows={2} placeholder={tx("Инструкция для пользователя", "User instructions")} />
-                <label className="switch-row" style={{ padding: "0 4px" }}>
-                  <span>{tx("Активен", "Active")}</span>
-                  <input name="is_active" type="checkbox" defaultChecked />
-                </label>
-                <button className="btn" type="submit">{tx("Добавить метод", "Create method")}</button>
-              </form>
-            </details>
+            <div className="admin-control-bar">
+              <div className="admin-control-top">
+                <button className="btn" type="button" onClick={openMethodCreate}>
+                  {tx("Добавить метод", "Add method")}
+                </button>
+                <span className="admin-count-chip">{visiblePaymentMethods.length}</span>
+              </div>
+              <div className="admin-control-grid">
+                <input value={methodQuery} onChange={(e) => setMethodQuery(e.target.value)} placeholder={tx("Поиск: код, название", "Search: code, name")} />
+                <select value={methodStatusFilter} onChange={(e) => setMethodStatusFilter(e.target.value as MethodFilter)}>
+                  <option value="all">{tx("Все", "All")}</option>
+                  <option value="active">{tx("Активные", "Active")}</option>
+                  <option value="inactive">{tx("Неактивные", "Inactive")}</option>
+                </select>
+              </div>
+            </div>
 
-            <div className="admin-list">
-              {paymentMethods.map((method) => (
-                <article key={method.code} className="prediction-card admin-item">
-                  <div className="prediction-top">
+            <div className="admin-list admin-list-compact">
+              {visiblePaymentMethods.map((method) => (
+                <article key={method.code} className="prediction-card admin-item admin-card-compact">
+                  <div className="prediction-top admin-card-title-row">
                     <strong>{method.name}</strong>
-                    <span className={`badge ${method.is_active ? "success" : "failed"}`}>{method.is_active ? tx("Активен", "Active") : tx("Выключен", "Inactive")}</span>
+                    <span className={`badge ${method.is_active ? "success" : "failed"}`}>{method.is_active ? tx("Активен", "Active") : tx("Неактивен", "Inactive")}</span>
                   </div>
-                  <p className="muted">
-                    code: {method.code} • {method.method_type === "auto" ? tx("Авто", "Auto") : tx("Ручной", "Manual")}
-                  </p>
-                  {method.instructions ? <p className="muted">{method.instructions}</p> : null}
+                  <p className="muted admin-card-sub">{method.code} • {method.method_type === "manual" ? tx("Ручной", "Manual") : tx("Авто", "Auto")}</p>
                   {method.card_number ? <p className="muted">{tx("Карта", "Card")}: {method.card_number}</p> : null}
                   {method.recipient_name ? <p className="muted">{tx("Получатель", "Recipient")}: {method.recipient_name}</p> : null}
-                  <div className="cta-row wrap">
-                    <button className="btn ghost" type="button" onClick={() => onPatchPaymentMethod(method.code, { is_active: !method.is_active })}>
-                      {method.is_active ? tx("Выключить", "Disable") : tx("Включить", "Enable")}
+                  {method.instructions ? <p className="stacked">{toShortText(method.instructions, 150)}</p> : null}
+                  <div className="admin-quick-actions">
+                    <button className="btn ghost" type="button" onClick={() => openMethodEdit(method)}>
+                      {tx("Редактировать", "Edit")}
                     </button>
                     <button
                       className="btn"
                       type="button"
-                      onClick={() => {
-                        const details = window.prompt(tx("Новые реквизиты", "New payment details"), method.payment_details || "") || "";
-                        const instructions = window.prompt(tx("Новая инструкция", "New instructions"), method.instructions || "") || "";
-                        void onPatchPaymentMethod(method.code, { payment_details: details, instructions });
-                      }}
+                      onClick={() =>
+                        void onSubAction(
+                          () => api.adminUpdatePaymentMethod(method.code, { is_active: !method.is_active }),
+                          method.is_active ? tx("Метод отключен", "Method disabled") : tx("Метод включен", "Method enabled"),
+                          tx("Не удалось обновить метод", "Failed to update method")
+                        )
+                      }
                     >
-                      {tx("Обновить реквизиты", "Update details")}
+                      {method.is_active ? tx("Отключить", "Disable") : tx("Включить", "Enable")}
                     </button>
                   </div>
                 </article>
@@ -1068,159 +1605,93 @@ export function AdminPage() {
 
         {tab === "news" ? (
           <div className="admin-panel">
-            <h3>{tx("Новости PIT BET", "PIT BET News")}</h3>
-            <details className="admin-collapsible">
-              <summary>{tx("Добавить новость", "Create news")}</summary>
-              <form className="admin-form" onSubmit={onCreateNews}>
-                <input name="title" placeholder={tx("Заголовок", "Title")} required />
-                <textarea name="body" placeholder={tx("Текст новости", "News text")} rows={4} required />
-                <div className="admin-grid-3">
-                  <input name="category" placeholder={tx("Категория", "Category")} defaultValue="news" />
-                  <label className="switch-row" style={{ padding: "0 4px" }}>
-                    <span>{tx("Опубликовать сразу", "Publish immediately")}</span>
-                    <input name="is_published" type="checkbox" defaultChecked />
-                  </label>
-                  <button className="btn" type="submit">
-                    {tx("Добавить новость", "Create news")}
-                  </button>
-                </div>
-              </form>
-            </details>
+            <div className="admin-control-bar">
+              <div className="admin-control-top">
+                <button className="btn" type="button" onClick={openNewsCreate}>
+                  {tx("Добавить новость", "Add news")}
+                </button>
+                <span className="admin-count-chip">{visibleNews.length}</span>
+              </div>
+              <div className="admin-control-grid">
+                <input value={newsQuery} onChange={(e) => setNewsQuery(e.target.value)} placeholder={tx("Поиск по новостям", "Search news")} />
+                <select value={newsStatusFilter} onChange={(e) => setNewsStatusFilter(e.target.value as NewsFilter)}>
+                  <option value="all">{tx("Все", "All")}</option>
+                  <option value="published">{tx("Опубликованные", "Published")}</option>
+                  <option value="draft">{tx("Черновики", "Drafts")}</option>
+                </select>
+              </div>
+            </div>
 
-            <div className="admin-list">
-              {news.map((item) => (
-                <article key={item.id} className="prediction-card admin-item">
-                  <div className="prediction-top">
-                    <strong>{item.title}</strong>
-                    <span className={`badge ${item.is_published ? "success" : "pending"}`}>{item.is_published ? tx("Опубликовано", "Published") : tx("Черновик", "Draft")}</span>
-                  </div>
-                  <p className="muted">{tx("Категория", "Category")}: {item.category} • {item.published_at ? new Date(item.published_at).toLocaleString(isRu ? "ru-RU" : "en-US") : tx("без даты публикации", "no publish date")}</p>
-                  <p className="stacked">{toShortText(item.body)}</p>
-                  <div className="cta-row wrap">
-                    <button className="btn ghost" type="button" onClick={() => onToggleNews(item)}>
-                      {item.is_published ? tx("Снять с публикации", "Unpublish") : tx("Опубликовать", "Publish")}
-                    </button>
-                    <button className="btn danger" type="button" onClick={() => onDeleteNews(item.id)}>
-                      {tx("Удалить", "Delete")}
-                    </button>
-                  </div>
-                </article>
-              ))}
+            <div className="admin-list admin-list-compact">
+              {visibleNews.map((item) => {
+                const parsed = extractNewsPreviewAndBody(item.body || "");
+                return (
+                  <article key={item.id} className="prediction-card admin-item admin-card-compact">
+                    <div className="prediction-top admin-card-title-row">
+                      <strong>{item.title}</strong>
+                      <span className={`badge ${item.is_published ? "success" : "pending"}`}>{item.is_published ? tx("Опубликовано", "Published") : tx("Черновик", "Draft")}</span>
+                    </div>
+                    <p className="muted admin-card-sub">{formatDateTime(item.published_at, isRu)}</p>
+                    <p className="stacked">{toShortText(parsed.preview || item.body, 180)}</p>
+                    <div className="admin-quick-actions">
+                      <button className="btn ghost" type="button" onClick={() => openNewsEdit(item)}>
+                        {tx("Редактировать", "Edit")}
+                      </button>
+                      <button className="btn" type="button" onClick={() => void onToggleNews(item)}>
+                        {item.is_published ? tx("Снять", "Unpublish") : tx("Опубликовать", "Publish")}
+                      </button>
+                      <button className="btn danger" type="button" onClick={() => void onDeleteNews(item.id)}>
+                        {tx("Удалить", "Delete")}
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           </div>
         ) : null}
 
         {tab === "promocodes" ? (
           <div className="admin-panel">
-            <h3>{tx("Промокоды", "Promo codes")}</h3>
-            <details className="admin-collapsible">
-              <summary>{tx("Создать промокод", "Create promo code")}</summary>
-              <form className="admin-form" onSubmit={onCreatePromo}>
-                <input name="code" placeholder={tx("Код (например PIT20)", "Code (e.g. PIT20)")} required />
-                <input name="title" placeholder={tx("Название для админки", "Admin title")} required />
-                <textarea name="description" placeholder={tx("Комментарий", "Comment")} rows={2} />
-                <div className="admin-grid-3">
-                  <select name="kind" defaultValue="percent_discount">
-                    <option value="percent_discount">{tx("Скидка в процентах", "Percent discount")}</option>
-                    <option value="fixed_discount">{tx("Фиксированная скидка", "Fixed discount")}</option>
-                    <option value="extra_days">{tx("Бонусные дни", "Bonus days")}</option>
-                    <option value="free_access">{tx("Бесплатный доступ", "Free access")}</option>
-                  </select>
-                  <input name="value" type="number" min="0" defaultValue="20" placeholder={tx("Значение", "Value")} required />
-                  <select name="tariff_code" defaultValue="premium">
-                    <option value="">{tx("Любой тариф", "Any tariff")}</option>
-                    <option value="free">Free</option>
-                    <option value="premium">Premium</option>
-                    <option value="vip">VIP</option>
-                  </select>
-                </div>
-                <div className="admin-grid-3">
-                  <input name="max_activations" type="number" min="1" placeholder={tx("Лимит активаций", "Activation limit")} />
-                  <input name="expires_at" type="datetime-local" placeholder={tx("Срок действия", "Expires at")} />
-                  <label className="switch-row" style={{ padding: "0 4px" }}>
-                    <span>{tx("Активен", "Active")}</span>
-                    <input name="is_active" type="checkbox" defaultChecked />
-                  </label>
-                </div>
-                <button className="btn" type="submit">
+            <div className="admin-control-bar">
+              <div className="admin-control-top">
+                <button className="btn" type="button" onClick={openPromoCreate}>
                   {tx("Создать промокод", "Create promo code")}
                 </button>
-              </form>
-            </details>
+                <span className="admin-count-chip">{visiblePromos.length}</span>
+              </div>
+              <div className="admin-control-grid">
+                <input value={promoQuery} onChange={(e) => setPromoQuery(e.target.value)} placeholder={tx("Поиск: код или название", "Search: code or title")} />
+                <select value={promoStatusFilter} onChange={(e) => setPromoStatusFilter(e.target.value as PromoFilter)}>
+                  <option value="all">{tx("Все", "All")}</option>
+                  <option value="active">{tx("Активные", "Active")}</option>
+                  <option value="inactive">{tx("Неактивные", "Inactive")}</option>
+                </select>
+              </div>
+            </div>
 
-            <div className="admin-list">
-              {promoCodes.map((promo) => (
-                <article key={promo.id} className="prediction-card admin-item">
-                  <div className="prediction-top">
+            <div className="admin-list admin-list-compact">
+              {visiblePromos.map((promo) => (
+                <article key={promo.id} className="prediction-card admin-item admin-card-compact">
+                  <div className="prediction-top admin-card-title-row">
                     <strong>{promo.code}</strong>
-                    <span className={`badge ${promo.is_active ? "success" : "lost"}`}>{promo.is_active ? tx("Активен", "Active") : tx("Отключен", "Disabled")}</span>
+                    <span className={`badge ${promo.is_active ? "success" : "lost"}`}>{promo.is_active ? tx("Активен", "Active") : tx("Отключен", "Inactive")}</span>
                   </div>
-                  <p className="muted">
-                    {promo.title} • {tx("тип", "kind")}: {promo.kind} • {tx("значение", "value")}: {promo.value}
-                  </p>
-                  <p className="muted">
-                    {tx("Тариф", "Tariff")}: {promo.tariff_code ? accessLabel(promo.tariff_code, language) : tx("любой", "any")} • {tx("активации", "activations")}: {promo.activations}
-                    {promo.max_activations ? `/${promo.max_activations}` : ""}
-                  </p>
-                  <p className="muted">
-                    {tx("Действует до", "Valid until")}: {promo.expires_at ? new Date(promo.expires_at).toLocaleString(isRu ? "ru-RU" : "en-US") : tx("без ограничения", "no limit")}
-                  </p>
-                  <div className="admin-grid-3">
-                    <input
-                      type="number"
-                      min="0"
-                      defaultValue={promo.value}
-                      onBlur={(e) => {
-                        const nextValue = Number(e.target.value);
-                        if (!Number.isFinite(nextValue) || nextValue < 0 || nextValue === promo.value) return;
-                        void api
-                          .adminUpdatePromoCode(promo.id, { value: nextValue })
-                          .then(async () => {
-                            notifySuccess(tx("Значение промокода обновлено", "Promo code value updated"));
-                            await loadAll();
-                          })
-                          .catch((err) => notifyError(textError(err, tx("Не удалось обновить значение", "Failed to update value"))));
-                      }}
-                    />
-                    <select
-                      defaultValue={promo.kind}
-                      onChange={(e) => {
-                        const nextKind = e.target.value as "percent_discount" | "fixed_discount" | "extra_days" | "free_access";
-                        if (nextKind === promo.kind) return;
-                        void api
-                          .adminUpdatePromoCode(promo.id, { kind: nextKind })
-                          .then(async () => {
-                            notifySuccess(tx("Тип промокода обновлен", "Promo code type updated"));
-                            await loadAll();
-                          })
-                          .catch((err) => notifyError(textError(err, tx("Не удалось обновить тип", "Failed to update type"))));
-                      }}
-                    >
-                      <option value="percent_discount">{tx("% скидка", "% discount")}</option>
-                      <option value="fixed_discount">{tx("фикс. скидка", "fixed discount")}</option>
-                      <option value="extra_days">{tx("бонусные дни", "bonus days")}</option>
-                      <option value="free_access">{tx("бесплатный доступ", "free access")}</option>
-                    </select>
-                    <input
-                      type="datetime-local"
-                      defaultValue={toDateTimeLocal(promo.expires_at)}
-                      onBlur={(e) => {
-                        const value = e.target.value.trim();
-                        void api
-                          .adminUpdatePromoCode(promo.id, { expires_at: value ? new Date(value).toISOString() : undefined })
-                          .then(async () => {
-                            notifySuccess(tx("Срок действия обновлен", "Expiration updated"));
-                            await loadAll();
-                          })
-                          .catch((err) => notifyError(textError(err, tx("Не удалось обновить срок", "Failed to update expiration"))));
-                      }}
-                    />
+                  <p className="muted admin-card-sub">{promo.title}</p>
+                  <div className="admin-meta-row">
+                    <span>{promo.kind}</span>
+                    <span>{tx("значение", "value")}: {promo.value}</span>
+                    <span>{tx("действует до", "valid until")}: {promo.expires_at ? formatDateTime(promo.expires_at, isRu) : tx("без срока", "no limit")}</span>
                   </div>
-                  <div className="cta-row wrap">
-                    <button className="btn ghost" type="button" onClick={() => onTogglePromo(promo)}>
-                      {promo.is_active ? tx("Отключить", "Disable") : tx("Активировать", "Enable")}
+                  <p className="muted">{tx("Активации", "Activations")}: {promo.activations}{promo.max_activations ? `/${promo.max_activations}` : ""}</p>
+                  <div className="admin-quick-actions">
+                    <button className="btn ghost" type="button" onClick={() => openPromoEdit(promo)}>
+                      {tx("Редактировать", "Edit")}
                     </button>
-                    <button className="btn danger" type="button" onClick={() => onDeletePromo(promo.id)}>
+                    <button className="btn" type="button" onClick={() => void onTogglePromo(promo)}>
+                      {promo.is_active ? tx("Деактивировать", "Deactivate") : tx("Активировать", "Activate")}
+                    </button>
+                    <button className="btn danger" type="button" onClick={() => void onDeletePromo(promo.id)}>
                       {tx("Удалить", "Delete")}
                     </button>
                   </div>
@@ -1232,13 +1703,37 @@ export function AdminPage() {
 
         {tab === "broadcasts" ? (
           <div className="admin-panel">
-            <h3>{tx("Рассылки", "Campaigns")}</h3>
-            <p className="muted">{tx("Массовые и сегментные уведомления пользователям.", "Mass and segmented user notifications.")}</p>
-            <div className="admin-form admin-broadcast-form">
-              <div className="admin-form-section">
-                <input value={campaignTitle} onChange={(e) => setCampaignTitle(e.target.value)} placeholder={tx("Заголовок рассылки", "Campaign title")} />
-                <textarea value={campaignMessage} onChange={(e) => setCampaignMessage(e.target.value)} rows={4} placeholder={tx("Текст сообщения", "Message text")} />
+            <div className="admin-control-bar">
+              <div className="admin-control-top">
+                <span className="admin-count-chip">{campaignPreviewCount ?? "-"}</span>
               </div>
+              <div className="admin-control-grid">
+                <select value={campaignSegment} onChange={(e) => setCampaignSegment(e.target.value)}>
+                  <option value="all">{tx("Все пользователи", "All users")}</option>
+                  <option value="free">{tx("Только free", "Free only")}</option>
+                  <option value="premium">{tx("Только Premium", "Premium only")}</option>
+                  <option value="vip">{tx("Только VIP", "VIP only")}</option>
+                  <option value="active_subscription">{tx("С активной подпиской", "Active subscription")}</option>
+                  <option value="admin">{tx("Только админы", "Admins only")}</option>
+                  <option value="notifications_enabled">{tx("Только с уведомлениями", "Notifications enabled")}</option>
+                </select>
+                <select value={campaignAccess} onChange={(e) => setCampaignAccess(e.target.value)}>
+                  <option value="all">{tx("Любой доступ", "Any access")}</option>
+                  <option value="free">Free</option>
+                  <option value="premium">Premium</option>
+                  <option value="vip">VIP</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="admin-form admin-broadcast-form admin-broadcast-compact">
+              <input value={campaignTitle} onChange={(e) => setCampaignTitle(e.target.value)} placeholder={tx("Заголовок рассылки", "Campaign title")} />
+              <textarea value={campaignMessage} onChange={(e) => setCampaignMessage(e.target.value)} rows={4} placeholder={tx("Текст сообщения", "Message text")} />
+
+              <label className="switch-row" style={{ padding: "0 4px" }}>
+                <span>{tx("Только с включенными уведомлениями", "Notifications enabled only")}</span>
+                <input type="checkbox" checked={campaignNotifOnly} onChange={(e) => setCampaignNotifOnly(e.target.checked)} />
+              </label>
 
               <details className="admin-collapsible inline">
                 <summary>{tx("Кнопка в сообщении (опционально)", "Message button (optional)")}</summary>
@@ -1248,44 +1743,23 @@ export function AdminPage() {
                 </div>
               </details>
 
-              <div className="admin-form-section">
-                <div className="admin-grid-3">
-                  <select value={campaignSegment} onChange={(e) => setCampaignSegment(e.target.value)}>
-                    <option value="all">{tx("Все пользователи", "All users")}</option>
-                    <option value="free">{tx("Только бесплатные", "Free only")}</option>
-                    <option value="premium">{tx("Только Премиум", "Premium only")}</option>
-                    <option value="vip">{tx("Только VIP", "VIP only")}</option>
-                    <option value="active_subscription">{tx("С активной подпиской", "With active subscription")}</option>
-                    <option value="admin">{tx("Только админы", "Admins only")}</option>
-                    <option value="notifications_enabled">{tx("Только с включенными уведомлениями", "Notifications enabled only")}</option>
-                  </select>
-                  <select value={campaignAccess} onChange={(e) => setCampaignAccess(e.target.value)}>
-                    <option value="all">{tx("Любой доступ", "Any access")}</option>
-                    <option value="free">Free</option>
-                    <option value="premium">{tx("Премиум+", "Premium+")}</option>
-                    <option value="vip">VIP</option>
-                  </select>
-                  <label className="switch-row" style={{ padding: "0 4px" }}>
-                    <span>{tx("Только с включенными уведомлениями", "Notifications enabled only")}</span>
-                    <input type="checkbox" checked={campaignNotifOnly} onChange={(e) => setCampaignNotifOnly(e.target.checked)} />
-                  </label>
-                </div>
+              <div className="admin-quick-actions three">
+                <button className="btn ghost" type="button" onClick={() => void onCampaignPreview()}>
+                  {tx("Превью аудитории", "Audience preview")}
+                </button>
+                <button className="btn" type="button" onClick={() => void onCampaignSend()}>
+                  {tx("Отправить рассылку", "Send campaign")}
+                </button>
               </div>
 
-              <div className="cta-row">
-                <button className="btn ghost" type="button" onClick={onCampaignPreview}>{tx("Превью аудитории", "Audience preview")}</button>
-                <button className="btn" type="button" onClick={onCampaignSend}>{tx("Отправить рассылку", "Send campaign")}</button>
-              </div>
-              {campaignPreviewCount !== null ? <p className="muted">{tx("Оценка получателей", "Estimated recipients")}: {campaignPreviewCount}</p> : null}
+              {campaignPreviewCount !== null ? <p className="muted">{tx("Получателей", "Recipients")}: {campaignPreviewCount}</p> : null}
               {campaignPreviewPayload ? (
                 <div className="card-lite">
-                  <p className="stacked"><b>{tx("Предпросмотр сообщения", "Message preview")}</b></p>
+                  <p className="stacked"><b>{tx("Предпросмотр", "Preview")}</b></p>
                   <p className="stacked"><b>{campaignPreviewPayload.title || tx("Без заголовка", "No title")}</b></p>
                   <p className="stacked">{campaignPreviewPayload.message || ""}</p>
                   {campaignPreviewPayload.button_text && campaignPreviewPayload.button_url ? (
-                    <p className="stacked">
-                      {tx("Кнопка", "Button")}: <b>{campaignPreviewPayload.button_text}</b> ({campaignPreviewPayload.button_url})
-                    </p>
+                    <p className="stacked">{tx("Кнопка", "Button")}: <b>{campaignPreviewPayload.button_text}</b> ({campaignPreviewPayload.button_url})</p>
                   ) : (
                     <p className="stacked muted">{tx("Без кнопки", "No button")}</p>
                   )}
@@ -1293,7 +1767,7 @@ export function AdminPage() {
               ) : null}
               {deliveryStats ? (
                 <p className="muted">
-                  {tx("Доставка (последние 500)", "Delivery (last 500)")}: {tx("всего", "total")} {deliveryStats.total} • {tx("отправлено", "sent")} {deliveryStats.sent} • {tx("ошибок", "failed")} {deliveryStats.failed} • {tx("в очереди", "queued")} {deliveryStats.queued}
+                  {tx("Доставка", "Delivery")}: {tx("всего", "total")} {deliveryStats.total} • {tx("отправлено", "sent")} {deliveryStats.sent} • {tx("ошибок", "failed")} {deliveryStats.failed} • {tx("в очереди", "queued")} {deliveryStats.queued}
                 </p>
               ) : null}
             </div>
@@ -1302,7 +1776,6 @@ export function AdminPage() {
 
         {tab === "events" ? (
           <div className="admin-panel">
-            <h3>{tx("События и агрегаты", "Events and aggregates")}</h3>
             <div className="metrics-grid">
               <article>
                 <span>{tx("Пользователи", "Users")}</span>
@@ -1340,6 +1813,269 @@ export function AdminPage() {
           </div>
         ) : null}
       </section>
+
+      <AdminSheet
+        open={predictionSheetMode !== "closed"}
+        title={predictionSheetMode === "create" ? tx("Новый прогноз", "New prediction") : tx("Редактирование прогноза", "Edit prediction")}
+        onClose={closePredictionSheet}
+      >
+        <form className="admin-sheet-form" onSubmit={onSavePredictionDraft}>
+          <section className="admin-editor-section">
+            <h4>{tx("Секция 1. Событие", "Section 1. Event")}</h4>
+            <div className="admin-grid-2">
+              <input value={predictionDraft.match_name} onChange={(e) => setPredictionDraft((prev) => ({ ...prev, match_name: e.target.value }))} placeholder={tx("Матч", "Match")} required />
+              <input value={predictionDraft.league} onChange={(e) => setPredictionDraft((prev) => ({ ...prev, league: e.target.value }))} placeholder={tx("Лига", "League")} />
+            </div>
+            <div className="admin-grid-2">
+              <input value={predictionDraft.sport_type} onChange={(e) => setPredictionDraft((prev) => ({ ...prev, sport_type: e.target.value }))} placeholder={tx("Вид спорта", "Sport type")} />
+              <input type="datetime-local" value={predictionDraft.event_start_at} onChange={(e) => setPredictionDraft((prev) => ({ ...prev, event_start_at: e.target.value }))} required />
+            </div>
+          </section>
+
+          <section className="admin-editor-section">
+            <h4>{tx("Секция 2. Публикация", "Section 2. Publication")}</h4>
+            <input value={predictionDraft.title} onChange={(e) => setPredictionDraft((prev) => ({ ...prev, title: e.target.value }))} placeholder={tx("Заголовок (опционально)", "Title (optional)")} />
+            <div className="admin-grid-3">
+              <select value={predictionDraft.access_level} onChange={(e) => setPredictionDraft((prev) => ({ ...prev, access_level: e.target.value as "free" | "premium" | "vip" }))}>
+                <option value="free">{tx("Бесплатный", "Free")}</option>
+                <option value="premium">{tx("Премиум", "Premium")}</option>
+                <option value="vip">VIP</option>
+              </select>
+              <input type="number" min="1.01" step="0.01" value={predictionDraft.odds} onChange={(e) => setPredictionDraft((prev) => ({ ...prev, odds: e.target.value }))} placeholder="1.80" />
+              <select value={predictionDraft.risk_level} onChange={(e) => setPredictionDraft((prev) => ({ ...prev, risk_level: e.target.value as "low" | "medium" | "high" }))}>
+                <option value="low">{tx("Риск: низкий", "Risk: low")}</option>
+                <option value="medium">{tx("Риск: средний", "Risk: medium")}</option>
+                <option value="high">{tx("Риск: высокий", "Risk: high")}</option>
+              </select>
+            </div>
+            <div className="admin-grid-2">
+              <input value={predictionDraft.signal_type} onChange={(e) => setPredictionDraft((prev) => ({ ...prev, signal_type: e.target.value }))} placeholder={tx("Тип сигнала", "Signal type")} required />
+              <select value={predictionDraft.mode} onChange={(e) => setPredictionDraft((prev) => ({ ...prev, mode: e.target.value as "prematch" | "live" }))}>
+                <option value="prematch">{tx("Прематч", "Prematch")}</option>
+                <option value="live">{tx("Лайв", "Live")}</option>
+              </select>
+            </div>
+            <div className="admin-chip-toggle-row">
+              <label className={predictionDraft.tag_pick ? "admin-chip-toggle active" : "admin-chip-toggle"}>
+                <input type="checkbox" checked={predictionDraft.tag_pick} onChange={(e) => setPredictionDraft((prev) => ({ ...prev, tag_pick: e.target.checked }))} />
+                {tx("Выбор дня", "Pick of the day")}
+              </label>
+              <label className={predictionDraft.tag_strong ? "admin-chip-toggle active" : "admin-chip-toggle"}>
+                <input type="checkbox" checked={predictionDraft.tag_strong} onChange={(e) => setPredictionDraft((prev) => ({ ...prev, tag_strong: e.target.checked }))} />
+                {tx("Strong setup", "Strong setup")}
+              </label>
+              <label className={predictionDraft.tag_hot ? "admin-chip-toggle active" : "admin-chip-toggle"}>
+                <input type="checkbox" checked={predictionDraft.tag_hot} onChange={(e) => setPredictionDraft((prev) => ({ ...prev, tag_hot: e.target.checked }))} />
+                {tx("Hot pick", "Hot pick")}
+              </label>
+            </div>
+          </section>
+
+          <section className="admin-editor-section">
+            <h4>{tx("Секция 3. Статус и результат", "Section 3. Status and result")}</h4>
+            <div className="admin-status-switch">
+              <button className={predictionDraft.status === "pending" ? "active" : ""} type="button" onClick={() => setPredictionDraft((prev) => ({ ...prev, status: "pending" }))}>
+                {tx("В ожидании", "Pending")}
+              </button>
+              <button className={predictionDraft.status === "won" ? "active" : ""} type="button" onClick={() => setPredictionDraft((prev) => ({ ...prev, status: "won" }))}>
+                {tx("Выигрыш", "Won")}
+              </button>
+              <button className={predictionDraft.status === "lost" ? "active" : ""} type="button" onClick={() => setPredictionDraft((prev) => ({ ...prev, status: "lost" }))}>
+                {tx("Проигрыш", "Lost")}
+              </button>
+              <button className={predictionDraft.status === "refund" ? "active" : ""} type="button" onClick={() => setPredictionDraft((prev) => ({ ...prev, status: "refund" }))}>
+                {tx("Возврат", "Refund")}
+              </button>
+            </div>
+          </section>
+
+          <section className="admin-editor-section">
+            <h4>{tx("Секция 4. Разбор", "Section 4. Breakdown")}</h4>
+            <textarea value={predictionDraft.brief} onChange={(e) => setPredictionDraft((prev) => ({ ...prev, brief: e.target.value }))} rows={3} placeholder={tx("Краткий текст", "Brief text")} />
+            <textarea value={predictionDraft.breakdown} onChange={(e) => setPredictionDraft((prev) => ({ ...prev, breakdown: e.target.value }))} rows={4} placeholder={tx("Полный разбор", "Full breakdown")} />
+            <textarea value={predictionDraft.comments} onChange={(e) => setPredictionDraft((prev) => ({ ...prev, comments: e.target.value }))} rows={3} placeholder={tx("Комментарии", "Comments")} />
+          </section>
+
+          <section className="admin-editor-section">
+            <h4>{tx("Секция 5. Скрин", "Section 5. Screenshot")}</h4>
+            {predictionDraft.result_screenshot ? (
+              <div className="admin-image-preview compact">
+                <img src={predictionDraft.result_screenshot} alt={tx("Скрин результата", "Result screenshot")} loading="lazy" />
+              </div>
+            ) : (
+              <p className="muted">{tx("Скрин не добавлен", "No screenshot attached")}</p>
+            )}
+            <div className="admin-shot-actions-row">
+              <label className="btn ghost admin-file-btn">
+                {predictionDraft.result_screenshot ? tx("Заменить", "Replace") : tx("Загрузить", "Upload")}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.currentTarget.files?.[0];
+                    if (!file) return;
+                    void onPredictionDraftScreenshotPick(file);
+                    e.currentTarget.value = "";
+                  }}
+                />
+              </label>
+              <button className="btn ghost" type="button" disabled={!predictionDraft.result_screenshot} onClick={() => setPredictionDraft((prev) => ({ ...prev, result_screenshot: null }))}>
+                {tx("Удалить", "Delete")}
+              </button>
+            </div>
+          </section>
+
+          <div className="admin-sheet-footer">
+            <button className="btn ghost" type="button" onClick={closePredictionSheet}>
+              {tx("Отмена", "Cancel")}
+            </button>
+            <button className="btn" type="submit" disabled={predictionSaving}>
+              {predictionSaving ? tx("Сохраняем...", "Saving...") : tx("Сохранить", "Save")}
+            </button>
+          </div>
+        </form>
+      </AdminSheet>
+
+      <AdminSheet
+        open={newsSheetMode !== "closed"}
+        title={newsSheetMode === "create" ? tx("Новая новость", "New news") : tx("Редактирование новости", "Edit news")}
+        onClose={closeNewsSheet}
+      >
+        <form className="admin-sheet-form" onSubmit={onSaveNewsDraft}>
+          <section className="admin-editor-section">
+            <h4>{tx("Новость", "News")}</h4>
+            <input value={newsDraft.title} onChange={(e) => setNewsDraft((prev) => ({ ...prev, title: e.target.value }))} placeholder={tx("Заголовок", "Title")} required />
+            <textarea value={newsDraft.preview} onChange={(e) => setNewsDraft((prev) => ({ ...prev, preview: e.target.value }))} rows={3} placeholder={tx("Preview", "Preview")} />
+            <textarea value={newsDraft.body} onChange={(e) => setNewsDraft((prev) => ({ ...prev, body: e.target.value }))} rows={8} placeholder={tx("Текст", "Text")} required />
+            <input value={newsDraft.category} onChange={(e) => setNewsDraft((prev) => ({ ...prev, category: e.target.value }))} placeholder={tx("Категория", "Category")} />
+            <label className="switch-row" style={{ padding: "0 4px" }}>
+              <span>{tx("Опубликовать", "Publish")}</span>
+              <input type="checkbox" checked={newsDraft.is_published} onChange={(e) => setNewsDraft((prev) => ({ ...prev, is_published: e.target.checked }))} />
+            </label>
+          </section>
+          <div className="admin-sheet-footer">
+            <button className="btn ghost" type="button" onClick={closeNewsSheet}>
+              {tx("Отмена", "Cancel")}
+            </button>
+            <button className="btn" type="submit" disabled={newsSaving}>
+              {newsSaving ? tx("Сохраняем...", "Saving...") : tx("Сохранить", "Save")}
+            </button>
+          </div>
+        </form>
+      </AdminSheet>
+
+      <AdminSheet
+        open={promoSheetMode !== "closed"}
+        title={promoSheetMode === "create" ? tx("Новый промокод", "New promo code") : tx("Редактирование промокода", "Edit promo code")}
+        onClose={closePromoSheet}
+      >
+        <form className="admin-sheet-form" onSubmit={onSavePromoDraft}>
+          <section className="admin-editor-section">
+            <h4>{tx("Параметры промокода", "Promo code settings")}</h4>
+            <input value={promoDraft.code} onChange={(e) => setPromoDraft((prev) => ({ ...prev, code: e.target.value }))} placeholder={tx("Код", "Code")} disabled={promoSheetMode === "edit"} required />
+            <input value={promoDraft.title} onChange={(e) => setPromoDraft((prev) => ({ ...prev, title: e.target.value }))} placeholder={tx("Название", "Title")} required />
+            <textarea value={promoDraft.description} onChange={(e) => setPromoDraft((prev) => ({ ...prev, description: e.target.value }))} rows={3} placeholder={tx("Описание", "Description")} />
+            <div className="admin-grid-2">
+              <select value={promoDraft.kind} onChange={(e) => setPromoDraft((prev) => ({ ...prev, kind: e.target.value as PromoDraft["kind"] }))}>
+                <option value="percent_discount">{tx("Скидка в процентах", "Percent discount")}</option>
+                <option value="fixed_discount">{tx("Фиксированная скидка", "Fixed discount")}</option>
+                <option value="extra_days">{tx("Бонусные дни", "Bonus days")}</option>
+                <option value="free_access">{tx("Бесплатный доступ", "Free access")}</option>
+              </select>
+              <input value={promoDraft.value} onChange={(e) => setPromoDraft((prev) => ({ ...prev, value: e.target.value }))} type="number" min="0" placeholder={tx("Значение", "Value")} />
+            </div>
+            <div className="admin-grid-2">
+              <select value={promoDraft.tariff_code} onChange={(e) => setPromoDraft((prev) => ({ ...prev, tariff_code: e.target.value as PromoDraft["tariff_code"] }))}>
+                <option value="">{tx("Любой тариф", "Any plan")}</option>
+                <option value="free">Free</option>
+                <option value="premium">Premium</option>
+                <option value="vip">VIP</option>
+              </select>
+              <input value={promoDraft.max_activations} onChange={(e) => setPromoDraft((prev) => ({ ...prev, max_activations: e.target.value }))} type="number" min="1" placeholder={tx("Лимит активаций", "Activation limit")} />
+            </div>
+            <input value={promoDraft.expires_at} onChange={(e) => setPromoDraft((prev) => ({ ...prev, expires_at: e.target.value }))} type="datetime-local" placeholder={tx("Срок действия", "Expiration")} />
+            <label className="switch-row" style={{ padding: "0 4px" }}>
+              <span>{tx("Активен", "Active")}</span>
+              <input type="checkbox" checked={promoDraft.is_active} onChange={(e) => setPromoDraft((prev) => ({ ...prev, is_active: e.target.checked }))} />
+            </label>
+          </section>
+          <div className="admin-sheet-footer">
+            <button className="btn ghost" type="button" onClick={closePromoSheet}>
+              {tx("Отмена", "Cancel")}
+            </button>
+            <button className="btn" type="submit" disabled={promoSaving}>
+              {promoSaving ? tx("Сохраняем...", "Saving...") : tx("Сохранить", "Save")}
+            </button>
+          </div>
+        </form>
+      </AdminSheet>
+
+      <AdminSheet
+        open={methodSheetMode !== "closed"}
+        title={methodSheetMode === "create" ? tx("Новый способ оплаты", "New payment method") : tx("Редактирование способа оплаты", "Edit payment method")}
+        onClose={closeMethodSheet}
+      >
+        <form className="admin-sheet-form" onSubmit={onSaveMethodDraft}>
+          <section className="admin-editor-section">
+            <h4>{tx("Параметры способа оплаты", "Payment method settings")}</h4>
+            <div className="admin-grid-2">
+              <input value={methodDraft.code} onChange={(e) => setMethodDraft((prev) => ({ ...prev, code: e.target.value }))} placeholder={tx("Код", "Code")} disabled={methodSheetMode === "edit"} required />
+              <input value={methodDraft.name} onChange={(e) => setMethodDraft((prev) => ({ ...prev, name: e.target.value }))} placeholder={tx("Название", "Name")} required />
+            </div>
+            <div className="admin-grid-3">
+              <select value={methodDraft.method_type} onChange={(e) => setMethodDraft((prev) => ({ ...prev, method_type: e.target.value as "auto" | "manual" }))}>
+                <option value="manual">{tx("Ручной", "Manual")}</option>
+                <option value="auto">{tx("Авто", "Auto")}</option>
+              </select>
+              <input value={methodDraft.sort_order} onChange={(e) => setMethodDraft((prev) => ({ ...prev, sort_order: e.target.value }))} type="number" placeholder={tx("Порядок", "Sort order")} />
+              <label className="switch-row" style={{ padding: "0 4px" }}>
+                <span>{tx("Активен", "Active")}</span>
+                <input type="checkbox" checked={methodDraft.is_active} onChange={(e) => setMethodDraft((prev) => ({ ...prev, is_active: e.target.checked }))} />
+              </label>
+            </div>
+            <input value={methodDraft.card_number} onChange={(e) => setMethodDraft((prev) => ({ ...prev, card_number: e.target.value }))} placeholder={tx("Номер карты", "Card number")} />
+            <input value={methodDraft.recipient_name} onChange={(e) => setMethodDraft((prev) => ({ ...prev, recipient_name: e.target.value }))} placeholder={tx("Получатель", "Recipient")} />
+            <input value={methodDraft.payment_details} onChange={(e) => setMethodDraft((prev) => ({ ...prev, payment_details: e.target.value }))} placeholder={tx("Реквизиты", "Payment details")} />
+            <textarea value={methodDraft.instructions} onChange={(e) => setMethodDraft((prev) => ({ ...prev, instructions: e.target.value }))} rows={4} placeholder={tx("Инструкция для пользователя", "User instructions")} />
+          </section>
+          <div className="admin-sheet-footer">
+            <button className="btn ghost" type="button" onClick={closeMethodSheet}>
+              {tx("Отмена", "Cancel")}
+            </button>
+            <button className="btn" type="submit" disabled={methodSaving}>
+              {methodSaving ? tx("Сохраняем...", "Saving...") : tx("Сохранить", "Save")}
+            </button>
+          </div>
+        </form>
+      </AdminSheet>
+
+      <AdminSheet open={showGrantSubscriptionSheet} title={tx("Выдать подписку вручную", "Grant subscription manually")} onClose={() => setShowGrantSubscriptionSheet(false)}>
+        <form className="admin-sheet-form" onSubmit={onGrantSubscription}>
+          <section className="admin-editor-section">
+            <h4>{tx("Параметры подписки", "Subscription settings")}</h4>
+            <div className="admin-grid-2">
+              <input name="user_id" placeholder="user_id" />
+              <input name="telegram_id" placeholder="telegram_id" />
+            </div>
+            <div className="admin-grid-2">
+              <select name="tariff_code" defaultValue="premium">
+                <option value="free">{tx("Бесплатный", "Free")}</option>
+                <option value="premium">{tx("Премиум", "Premium")}</option>
+                <option value="vip">VIP</option>
+              </select>
+              <input name="duration_days" type="number" min="1" defaultValue="30" />
+            </div>
+          </section>
+          <div className="admin-sheet-footer">
+            <button className="btn ghost" type="button" onClick={() => setShowGrantSubscriptionSheet(false)}>
+              {tx("Отмена", "Cancel")}
+            </button>
+            <button className="btn" type="submit">
+              {tx("Выдать", "Grant")}
+            </button>
+          </div>
+        </form>
+      </AdminSheet>
     </Layout>
   );
 }
