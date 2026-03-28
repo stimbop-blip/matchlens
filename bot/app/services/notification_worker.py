@@ -113,13 +113,27 @@ async def run_notification_worker(bot: Bot, backend_client: BackendClient) -> No
 
                     photo = _photo_from_data_url(image_data) if image_data else None
                     if photo is not None:
-                        await bot.send_photo(
-                            chat_id=int(telegram_id),
-                            photo=photo,
-                            caption=_render_photo_caption(title, message),
-                            reply_markup=reply_markup,
-                            parse_mode=None,
-                        )
+                        try:
+                            await bot.send_photo(
+                                chat_id=int(telegram_id),
+                                photo=photo,
+                                caption=_render_photo_caption(title, message),
+                                reply_markup=reply_markup,
+                                parse_mode=None,
+                            )
+                        except Exception as photo_exc:
+                            logger.warning(
+                                "notification_worker send_photo_failed id=%s telegram_id=%s reason=%s",
+                                notification_id,
+                                telegram_id,
+                                photo_exc,
+                            )
+                            await bot.send_message(
+                                chat_id=int(telegram_id),
+                                text=_render_message(title, message),
+                                disable_web_page_preview=True,
+                                reply_markup=reply_markup,
+                            )
                     else:
                         await bot.send_message(
                             chat_id=int(telegram_id),

@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.models.enums import AccessLevel, PredictionStatus
 from app.models.prediction import Prediction
 
-MAX_RESULT_SCREENSHOT_CHARS = 5_000_000
+MAX_RESULT_SCREENSHOT_CHARS = 8_000_000
 
 
 def _normalize_result_screenshot(value: object | None) -> str | None:

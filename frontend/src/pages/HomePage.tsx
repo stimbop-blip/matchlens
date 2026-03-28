@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { useI18n } from "../app/i18n";
@@ -89,7 +89,7 @@ function buildTodaySummaryFallback(stats: PublicStats | null): TodaySummary {
   const byAccess = stats?.by_access || {};
   return {
     activeSignals: pending,
-    liveNow: pending > 0 ? Math.max(1, Math.round(pending * 0.35)) : 0,
+    liveNow: 0,
     freeCount: Number(byAccess.free || 0),
     premiumCount: Number(byAccess.premium || 0),
     vipCount: Number(byAccess.vip || 0),
@@ -142,14 +142,16 @@ export function HomePage() {
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [summaryLoading, setSummaryLoading] = useState(true);
   const [summaryError, setSummaryError] = useState("");
-  const [summaryReloadKey, setSummaryReloadKey] = useState(0);
+  const [refreshTick, setRefreshTick] = useState(0);
 
   const [loading, setLoading] = useState(true);
+  const didLoadCoreRef = useRef(false);
+  const didLoadSummaryRef = useRef(false);
 
   useEffect(() => {
     let alive = true;
     const load = async () => {
-      setLoading(true);
+      if (!didLoadCoreRef.current) setLoading(true);
       const results = await Promise.allSettled([api.stats(), api.mySubscription(), api.myReferral(), api.news(), api.myPayments()]);
       if (!alive) return;
 
@@ -160,17 +162,18 @@ export function HomePage() {
       setNews(newsRes.status === "fulfilled" ? newsRes.value : []);
       setPayments(payRes.status === "fulfilled" ? payRes.value : []);
       setLoading(false);
+      didLoadCoreRef.current = true;
     };
 
     void load();
     return () => {
       alive = false;
     };
-  }, []);
+  }, [refreshTick]);
 
   useEffect(() => {
     let alive = true;
-    setSummaryLoading(true);
+    if (!didLoadSummaryRef.current) setSummaryLoading(true);
     setSummaryError("");
 
     api
@@ -187,12 +190,33 @@ export function HomePage() {
       .finally(() => {
         if (!alive) return;
         setSummaryLoading(false);
+        didLoadSummaryRef.current = true;
       });
 
     return () => {
       alive = false;
     };
-  }, [summaryReloadKey]);
+  }, [refreshTick]);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        setRefreshTick((prev) => prev + 1);
+      }
+    }, 30000);
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        setRefreshTick((prev) => prev + 1);
+      }
+    };
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, []);
 
   const sub = resolveSubscriptionSnapshot(subscriptionRaw);
   const pendingPayments = countPendingPayments(payments);
@@ -275,7 +299,7 @@ export function HomePage() {
           <div className="pb-error-state">
             <p>{summaryError || t("home.today.error")}</p>
             <CTACluster>
-              <button className="pb-btn pb-btn-ghost" type="button" onClick={() => setSummaryReloadKey((prev) => prev + 1)}>
+              <button className="pb-btn pb-btn-ghost" type="button" onClick={() => setRefreshTick((prev) => prev + 1)}>
                 {t("common.retry")}
               </button>
             </CTACluster>

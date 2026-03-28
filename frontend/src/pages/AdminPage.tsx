@@ -638,7 +638,7 @@ export function AdminPage() {
               <p className="muted">{tx("Публикация, результат и скрин ставки в одном потоке", "Publish, close, and attach screenshots in one flow")}</p>
             </div>
 
-            <details className="admin-collapsible" open>
+            <details className="admin-collapsible">
               <summary>{tx("Добавить прогноз", "Create prediction")}</summary>
               <form className="admin-form" onSubmit={onCreatePrediction}>
                 <input name="title" placeholder={tx("Заголовок (необязательно)", "Title (optional)")} />
@@ -853,7 +853,7 @@ export function AdminPage() {
         {tab === "subscriptions" ? (
           <div className="admin-panel">
             <h3>{tx("Подписки", "Subscriptions")}</h3>
-            <details className="admin-collapsible" open>
+            <details className="admin-collapsible">
               <summary>{tx("Выдать подписку вручную", "Grant subscription manually")}</summary>
               <form className="admin-form" onSubmit={onGrantSubscription}>
                 <div className="admin-grid-2">
@@ -969,7 +969,7 @@ export function AdminPage() {
         {tab === "payment_methods" ? (
           <div className="admin-panel">
             <h3>{tx("Способы оплаты", "Payment methods")}</h3>
-            <details className="admin-collapsible" open>
+            <details className="admin-collapsible">
               <summary>{tx("Добавить способ оплаты", "Create payment method")}</summary>
               <form className="admin-form" onSubmit={onCreatePaymentMethod}>
                 <div className="admin-grid-3">
@@ -1033,7 +1033,7 @@ export function AdminPage() {
         {tab === "news" ? (
           <div className="admin-panel">
             <h3>{tx("Новости PIT BET", "PIT BET News")}</h3>
-            <details className="admin-collapsible" open>
+            <details className="admin-collapsible">
               <summary>{tx("Добавить новость", "Create news")}</summary>
               <form className="admin-form" onSubmit={onCreateNews}>
                 <input name="title" placeholder={tx("Заголовок", "Title")} required />
@@ -1077,7 +1077,7 @@ export function AdminPage() {
         {tab === "promocodes" ? (
           <div className="admin-panel">
             <h3>{tx("Промокоды", "Promo codes")}</h3>
-            <details className="admin-collapsible" open>
+            <details className="admin-collapsible">
               <summary>{tx("Создать промокод", "Create promo code")}</summary>
               <form className="admin-form" onSubmit={onCreatePromo}>
                 <input name="code" placeholder={tx("Код (например PIT20)", "Code (e.g. PIT20)")} required />

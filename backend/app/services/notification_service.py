@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 _LEVEL_PRIORITY = {"free": 0, "premium": 1, "vip": 2}
 _SUPPORTED_LANGUAGES = {"ru", "en"}
 _SUPPORTED_THEMES = {"dark", "light"}
-_MAX_IMAGE_DATA_LEN = 5_000_000
+_MAX_IMAGE_DATA_LEN = 8_000_000
 
 
 def _allowed_levels(access_level: str) -> set[str]:

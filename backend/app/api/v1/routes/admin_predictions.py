@@ -66,12 +66,19 @@ def admin_update_prediction(
         raise HTTPException(status_code=404, detail="Prediction not found")
     previous_published_at = item.published_at
     previous_status = item.status.value
+    previous_has_screenshot = bool((item.result_screenshot or "").strip())
     item = update_prediction(db, item, payload.model_dump())
     if previous_published_at is None and item.published_at is not None:
         queue_prediction_created_notification(db, item)
 
     result_statuses = {"won", "lost", "refund"}
-    if item.status.value in result_statuses and previous_status != item.status.value:
+    status_changed_to_result = item.status.value in result_statuses and previous_status != item.status.value
+    screenshot_added_for_result = (
+        item.status.value in result_statuses
+        and not previous_has_screenshot
+        and bool((item.result_screenshot or "").strip())
+    )
+    if status_changed_to_result or screenshot_added_for_result:
         queue_prediction_result_notification(db, item)
     return _prediction_out(item)
 
