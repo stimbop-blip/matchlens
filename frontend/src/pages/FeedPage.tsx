@@ -15,7 +15,8 @@ import {
 import { api, type Prediction } from "../services/api";
 
 type AccessFilter = "all" | "free" | "premium" | "vip";
-type QuickFilter = "all" | "live" | "prematch" | "pending" | "won" | "lost" | "refund";
+type ModeFilter = "all" | "live" | "prematch";
+type StatusFilter = "all" | "pending" | "won" | "lost" | "refund";
 type RiskFilter = "all" | "low" | "medium" | "high";
 
 type GroupedDay = {
@@ -106,22 +107,21 @@ export function FeedPage() {
   const [reloadKey, setReloadKey] = useState(0);
 
   const [access, setAccess] = useState<AccessFilter>("all");
-  const [quick, setQuick] = useState<QuickFilter>("all");
+  const [mode, setMode] = useState<ModeFilter>("all");
+  const [status, setStatus] = useState<StatusFilter>("all");
   const [risk, setRisk] = useState<RiskFilter>("all");
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   useEffect(() => {
     let alive = true;
     setLoading(true);
     setError("");
 
-    const mode = quick === "live" || quick === "prematch" ? quick : undefined;
-    const status = quick === "pending" || quick === "won" || quick === "lost" || quick === "refund" ? quick : undefined;
-
     api
       .predictions({
         access_level: access === "all" ? undefined : access,
-        mode,
-        status,
+        mode: mode === "all" ? undefined : mode,
+        status: status === "all" ? undefined : status,
         risk_level: risk === "all" ? undefined : risk,
         limit: PREDICTIONS_LIMIT,
       })
@@ -142,7 +142,7 @@ export function FeedPage() {
     return () => {
       alive = false;
     };
-  }, [access, quick, risk, reloadKey]);
+  }, [access, mode, risk, status, reloadKey]);
 
   const groups = useMemo<GroupedDay[]>(() => {
     const sorted = [...items].sort((a, b) => {
@@ -161,10 +161,14 @@ export function FeedPage() {
     return Array.from(map.entries()).map(([key, list]) => ({ key, list }));
   }, [items]);
 
-  const quickOptions: Array<{ value: QuickFilter; label: string }> = [
+  const modeOptions: Array<{ value: ModeFilter; label: string }> = [
     { value: "all", label: t("common.all") },
     { value: "live", label: t("common.live") },
     { value: "prematch", label: t("common.prematch") },
+  ];
+
+  const statusOptions: Array<{ value: StatusFilter; label: string }> = [
+    { value: "all", label: t("common.all") },
     { value: "pending", label: t("feed.status.pending") },
     { value: "won", label: t("feed.status.won") },
     { value: "lost", label: t("feed.status.lost") },
@@ -194,30 +198,60 @@ export function FeedPage() {
           action={<span className="pb-hint-chip">{items.length}</span>}
         />
 
-        <div className="pb-feed-filter-shell">
-          <div className="pb-filter-row sticky">
-            {quickOptions.map((item) => (
-              <button key={item.value} type="button" className={item.value === quick ? "pb-filter-chip active" : "pb-filter-chip"} onClick={() => setQuick(item.value)}>
+        <div className="pb-feed-filter-shell pb-feed-filter-shell-v2">
+          <div className="pb-filter-row sticky primary">
+            {modeOptions.map((item) => (
+              <button key={item.value} type="button" className={item.value === mode ? "pb-filter-chip active" : "pb-filter-chip"} onClick={() => setMode(item.value)}>
                 {item.label}
               </button>
             ))}
           </div>
 
-          <div className="pb-filter-row">
-            {accessOptions.map((item) => (
-              <button key={item.value} type="button" className={item.value === access ? "pb-filter-chip soft active" : "pb-filter-chip soft"} onClick={() => setAccess(item.value)}>
+          <div className="pb-filter-row sticky secondary">
+            {statusOptions.map((item) => (
+              <button
+                key={item.value}
+                type="button"
+                className={item.value === status ? "pb-filter-chip soft active" : "pb-filter-chip soft"}
+                onClick={() => setStatus(item.value)}
+              >
                 {item.label}
               </button>
             ))}
+            <button
+              type="button"
+              className={showAdvancedFilters ? "pb-filter-chip subtle active" : "pb-filter-chip subtle"}
+              onClick={() => setShowAdvancedFilters((prev) => !prev)}
+            >
+              {showAdvancedFilters ? t("feed.filter.advanced.hide") : t("feed.filter.advanced.show")}
+            </button>
           </div>
 
-          <div className="pb-filter-row">
-            {riskOptions.map((item) => (
-              <button key={item.value} type="button" className={item.value === risk ? "pb-filter-chip subtle active" : "pb-filter-chip subtle"} onClick={() => setRisk(item.value)}>
-                {item.label}
-              </button>
-            ))}
-          </div>
+          {showAdvancedFilters ? (
+            <div className="pb-feed-advanced-filters">
+              <div>
+                <small>{t("feed.filter.access")}</small>
+                <div className="pb-filter-row">
+                  {accessOptions.map((item) => (
+                    <button key={item.value} type="button" className={item.value === access ? "pb-filter-chip soft active" : "pb-filter-chip soft"} onClick={() => setAccess(item.value)}>
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <small>{t("feed.filter.risk")}</small>
+                <div className="pb-filter-row">
+                  {riskOptions.map((item) => (
+                    <button key={item.value} type="button" className={item.value === risk ? "pb-filter-chip subtle active" : "pb-filter-chip subtle"} onClick={() => setRisk(item.value)}>
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : null}
         </div>
 
         {loading ? (

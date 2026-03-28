@@ -1,24 +1,13 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 
 import { useI18n } from "../app/i18n";
 import { resolveSubscriptionSnapshot } from "../app/subscription";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
-import { ActivityBand, AppShellSection, SectionHeader } from "../components/ui";
+import { ActivityBand, AppShellSection, MoreFeatureCard, SectionHeader, SettingsRow, SettingsSection } from "../components/ui";
 import { api, type Me, type NotificationSettings, type ReferralStats } from "../services/api";
 
 const SUPPORT_URL = import.meta.env.VITE_SUPPORT_URL || "https://t.me/your_support";
-
-type ServiceEntry = {
-  id: string;
-  titleKey: string;
-  descKey: string;
-  to?: string;
-  href?: string;
-  adminOnly?: boolean;
-  disabled?: boolean;
-};
 
 export function MenuPage() {
   const { t } = useI18n();
@@ -49,25 +38,15 @@ export function MenuPage() {
   const supportConfigured = !SUPPORT_URL.includes("your_support");
   const isAdmin = Boolean(me?.is_admin || me?.role === "admin");
   const subscription = resolveSubscriptionSnapshot(subscriptionRaw);
-
-  const services: ServiceEntry[] = [
-    { id: "tariffs", titleKey: "hub.item.tariffs.title", descKey: "hub.item.tariffs.desc", to: "/tariffs" },
-    { id: "news", titleKey: "hub.item.news.title", descKey: "hub.item.news.desc", to: "/news" },
-    { id: "referrals", titleKey: "hub.item.referrals.title", descKey: "hub.item.referrals.desc", to: "/profile#referral" },
-    { id: "notifications", titleKey: "hub.item.notifications.title", descKey: "hub.item.notifications.desc", to: "/profile#notifications" },
-    { id: "language", titleKey: "hub.item.language.title", descKey: "hub.item.language.desc", to: "/menu/language" },
-    { id: "theme", titleKey: "hub.item.theme.title", descKey: "hub.item.theme.desc", to: "/menu/theme" },
-    {
-      id: "support",
-      titleKey: "hub.item.support.title",
-      descKey: supportConfigured ? "hub.item.support.desc" : "hub.support.notSet",
-      href: supportConfigured ? SUPPORT_URL : undefined,
-      disabled: !supportConfigured,
-    },
-    { id: "rules", titleKey: "hub.item.rules.title", descKey: "hub.item.rules.desc", to: "/menu/rules" },
-    { id: "responsible", titleKey: "hub.item.responsible.title", descKey: "hub.item.responsible.desc", to: "/menu/responsible" },
-    { id: "admin", titleKey: "hub.item.admin.title", descKey: "hub.item.admin.desc", to: "/admin", adminOnly: true },
-  ];
+  const accessValue = subscription.tariff === "vip" ? t("common.vip") : subscription.tariff === "premium" ? t("common.premium") : t("common.free");
+  const statusValue =
+    subscription.status === "active"
+      ? t("common.status.active")
+      : subscription.status === "expired"
+        ? t("common.status.expired")
+        : subscription.status === "canceled"
+          ? t("common.status.canceled")
+          : t("common.status.unknown");
 
   return (
     <Layout>
@@ -90,39 +69,75 @@ export function MenuPage() {
       <AppShellSection>
         <SectionHeader title={t("menu.title")} subtitle={t("menu.subtitle")} />
 
-        <div className="pb-service-grid">
-          {services
-            .filter((entry) => !entry.adminOnly || isAdmin)
-            .map((entry) => {
-              const body = (
-                <>
-                  <strong>{t(entry.titleKey)}</strong>
-                  <p>{t(entry.descKey)}</p>
-                </>
-              );
+        <div className="pb-more-layout">
+          <section className="pb-more-zone">
+            <h3 className="pb-more-zone-title">{t("menu.section.account")}</h3>
+            <div className="pb-more-feature-grid">
+              <MoreFeatureCard
+                to="/tariffs"
+                title={t("hub.item.tariffs.title")}
+                subtitle={t("hub.item.tariffs.desc")}
+                metrics={[
+                  { label: t("menu.metric.access"), value: accessValue },
+                  { label: t("profile.snapshot.status"), value: statusValue },
+                ]}
+              />
+              <MoreFeatureCard
+                to="/profile#referral"
+                title={t("hub.item.referrals.title")}
+                subtitle={t("hub.item.referrals.desc")}
+                metrics={[
+                  { label: t("profile.referral.invited"), value: referral?.invited ?? 0 },
+                  { label: t("profile.referral.activated"), value: referral?.activated ?? 0 },
+                ]}
+              />
+            </div>
+            <SettingsSection title={t("menu.section.account.settings")}>
+              <SettingsRow
+                icon="NT"
+                title={t("hub.item.notifications.title")}
+                subtitle={t("hub.item.notifications.desc")}
+                value={notify?.notifications_enabled ? t("common.status.active") : t("common.status.inactive")}
+                to="/profile#notifications"
+              />
+              <SettingsRow icon="PR" title={t("hub.item.profile.title")} subtitle={t("hub.item.profile.desc")} to="/profile" />
+            </SettingsSection>
+          </section>
 
-              if (entry.disabled) {
-                return (
-                  <div key={entry.id} className="pb-service-card disabled">
-                    {body}
-                  </div>
-                );
-              }
+          <section className="pb-more-zone">
+            <h3 className="pb-more-zone-title">{t("menu.section.service")}</h3>
+            <div className="pb-more-feature-grid single">
+              <MoreFeatureCard
+                to="/news"
+                title={t("hub.item.news.title")}
+                subtitle={t("hub.item.news.desc")}
+                metrics={[
+                  { label: t("menu.metric.notifications"), value: notify?.notify_news ? t("common.status.active") : t("common.status.inactive") },
+                  { label: t("menu.metric.referral"), value: `${referral?.invited ?? 0}/${referral?.activated ?? 0}` },
+                ]}
+              />
+            </div>
+            <SettingsSection title={t("menu.section.service.tools")}>
+              <SettingsRow icon="LN" title={t("hub.item.language.title")} subtitle={t("hub.item.language.desc")} to="/menu/language" />
+              <SettingsRow icon="TH" title={t("hub.item.theme.title")} subtitle={t("hub.item.theme.desc")} to="/menu/theme" />
+              {isAdmin ? <SettingsRow icon="AD" title={t("hub.item.admin.title")} subtitle={t("hub.item.admin.desc")} to="/admin" /> : null}
+            </SettingsSection>
+          </section>
 
-              if (entry.href) {
-                return (
-                  <a key={entry.id} className="pb-service-card" href={entry.href} target="_blank" rel="noreferrer">
-                    {body}
-                  </a>
-                );
-              }
-
-              return (
-                <Link key={entry.id} className="pb-service-card" to={entry.to || "/menu"}>
-                  {body}
-                </Link>
-              );
-            })}
+          <section className="pb-more-zone">
+            <h3 className="pb-more-zone-title">{t("menu.section.info")}</h3>
+            <SettingsSection title={t("menu.section.info.links")}>
+              <SettingsRow
+                icon="SP"
+                title={t("hub.item.support.title")}
+                subtitle={supportConfigured ? t("hub.item.support.desc") : t("hub.support.notSet")}
+                href={supportConfigured ? SUPPORT_URL : undefined}
+                disabled={!supportConfigured}
+              />
+              <SettingsRow icon="RL" title={t("hub.item.rules.title")} subtitle={t("hub.item.rules.desc")} to="/menu/rules" />
+              <SettingsRow icon="RG" title={t("hub.item.responsible.title")} subtitle={t("hub.item.responsible.desc")} to="/menu/responsible" />
+            </SettingsSection>
+          </section>
         </div>
       </AppShellSection>
 

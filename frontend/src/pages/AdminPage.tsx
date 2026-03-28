@@ -641,63 +641,84 @@ export function AdminPage() {
             <details className="admin-collapsible">
               <summary>{tx("Добавить прогноз", "Create prediction")}</summary>
               <form className="admin-form" onSubmit={onCreatePrediction}>
-                <input name="title" placeholder={tx("Заголовок (необязательно)", "Title (optional)")} />
-                <input name="match_name" placeholder={tx("Матч", "Match")} required />
-                <input name="league" placeholder={tx("Лига", "League")} required />
-                <input name="sport_type" placeholder={tx("Вид спорта", "Sport type")} defaultValue="football" required />
-                <input name="event_start_at" type="datetime-local" required />
-                <input name="signal_type" placeholder={tx("Тип сигнала", "Signal type")} required />
-                <input name="odds" type="number" min="1.01" step="0.01" defaultValue="1.80" required />
-                <div className="admin-grid-3">
-                  <select name="risk_level" defaultValue="medium">
-                    <option value="low">{tx("Риск: низкий", "Risk: low")}</option>
-                    <option value="medium">{tx("Риск: средний", "Risk: medium")}</option>
-                    <option value="high">{tx("Риск: высокий", "Risk: high")}</option>
-                  </select>
-                  <select name="access_level" defaultValue="free">
-                    <option value="free">{tx("Доступ: Бесплатный", "Access: Free")}</option>
-                    <option value="premium">{tx("Доступ: Премиум", "Access: Premium")}</option>
-                    <option value="vip">{tx("Доступ: VIP", "Access: VIP")}</option>
-                  </select>
-                  <select name="mode" defaultValue="prematch">
-                    <option value="prematch">{tx("Формат: Прематч", "Mode: Prematch")}</option>
-                    <option value="live">{tx("Формат: Лайв", "Mode: Live")}</option>
-                  </select>
+                <div className="admin-form-section">
+                  <h4>{tx("Событие", "Event")}</h4>
+                  <div className="admin-grid-2">
+                    <input name="match_name" placeholder={tx("Матч", "Match")} required />
+                    <input name="league" placeholder={tx("Лига", "League")} required />
+                  </div>
+                  <div className="admin-grid-3">
+                    <input name="sport_type" placeholder={tx("Вид спорта", "Sport type")} defaultValue="football" required />
+                    <input name="event_start_at" type="datetime-local" required />
+                    <input name="signal_type" placeholder={tx("Тип сигнала", "Signal type")} required />
+                  </div>
                 </div>
-                <select name="status" defaultValue="pending">
-                  <option value="pending">{tx("Статус: в ожидании", "Status: pending")}</option>
-                  <option value="win">{tx("Статус: выигрыш", "Status: won")}</option>
-                  <option value="lose">{tx("Статус: проигрыш", "Status: lost")}</option>
-                  <option value="refund">{tx("Статус: возврат", "Status: refund")}</option>
-                </select>
-                <textarea name="short_description" placeholder={tx("Краткое описание", "Short description")} rows={3} />
-                <label className="admin-file-field">
-                  <span>{tx("Скрин ставки/результата (опционально)", "Bet/result screenshot (optional)")}</span>
-                  <input name="result_screenshot" type="file" accept="image/*" />
-                </label>
-                <button className="btn" type="submit">
-                  {tx("Добавить прогноз", "Create prediction")}
-                </button>
+
+                <div className="admin-form-section">
+                  <h4>{tx("Параметры публикации", "Publication settings")}</h4>
+                  <input name="title" placeholder={tx("Заголовок (необязательно)", "Title (optional)")} />
+                  <div className="admin-grid-4">
+                    <input name="odds" type="number" min="1.01" step="0.01" defaultValue="1.80" required />
+                    <select name="risk_level" defaultValue="medium">
+                      <option value="low">{tx("Риск: низкий", "Risk: low")}</option>
+                      <option value="medium">{tx("Риск: средний", "Risk: medium")}</option>
+                      <option value="high">{tx("Риск: высокий", "Risk: high")}</option>
+                    </select>
+                    <select name="access_level" defaultValue="free">
+                      <option value="free">{tx("Доступ: Бесплатный", "Access: Free")}</option>
+                      <option value="premium">{tx("Доступ: Премиум", "Access: Premium")}</option>
+                      <option value="vip">{tx("Доступ: VIP", "Access: VIP")}</option>
+                    </select>
+                    <select name="mode" defaultValue="prematch">
+                      <option value="prematch">{tx("Формат: Прематч", "Mode: Prematch")}</option>
+                      <option value="live">{tx("Формат: Лайв", "Mode: Live")}</option>
+                    </select>
+                  </div>
+                  <select name="status" defaultValue="pending">
+                    <option value="pending">{tx("Статус: в ожидании", "Status: pending")}</option>
+                    <option value="win">{tx("Статус: выигрыш", "Status: won")}</option>
+                    <option value="lose">{tx("Статус: проигрыш", "Status: lost")}</option>
+                    <option value="refund">{tx("Статус: возврат", "Status: refund")}</option>
+                  </select>
+                  <textarea name="short_description" placeholder={tx("Краткое описание", "Short description")} rows={3} />
+                </div>
+
+                <div className="admin-form-section">
+                  <h4>{tx("Скрин результата", "Result screenshot")}</h4>
+                  <label className="admin-file-field">
+                    <span>{tx("Скрин ставки/результата (опционально)", "Bet/result screenshot (optional)")}</span>
+                    <input name="result_screenshot" type="file" accept="image/*" />
+                  </label>
+                </div>
+
+                <div className="cta-row admin-cta-compact">
+                  <button className="btn" type="submit">
+                    {tx("Добавить прогноз", "Create prediction")}
+                  </button>
+                </div>
               </form>
             </details>
 
-            <input value={predQuery} onChange={(e) => setPredQuery(e.target.value)} placeholder={tx("Поиск по матчу / сигналу", "Search by match / signal")} />
+            <div className="admin-prediction-toolbar">
+              <input value={predQuery} onChange={(e) => setPredQuery(e.target.value)} placeholder={tx("Поиск по матчу / сигналу", "Search by match / signal")} />
+              <span className="muted">{tx("Найдено", "Found")}: {visiblePredictions.length}</span>
+            </div>
+
             <div className="admin-list">
               {visiblePredictions.slice(0, 80).map((item) => (
-                <article key={item.id} className="prediction-card admin-item">
-                  <div className="prediction-top">
+                <article key={item.id} className="prediction-card admin-item admin-prediction-card">
+                  <div className="prediction-top admin-prediction-head">
                     <strong>{item.match_name}</strong>
                     <span className={`access-pill ${item.access_level}`}>{accessLabel(item.access_level, language)}</span>
                   </div>
-                  <p className="muted">{item.signal_type} • {tx("кф", "odds")} {item.odds} • {item.mode === "live" ? tx("Лайв", "Live") : tx("Прематч", "Prematch")}</p>
-                  {item.result_screenshot ? (
-                    <div className="admin-image-preview">
-                      <img src={item.result_screenshot} alt={tx("Скрин результата", "Result screenshot")} loading="lazy" />
-                    </div>
-                  ) : (
-                    <p className="muted">{tx("Скрин пока не загружен", "No screenshot uploaded yet")}</p>
-                  )}
-                  <div className="admin-grid-3">
+
+                  <div className="admin-prediction-meta muted">
+                    <span>{item.signal_type}</span>
+                    <span>{tx("кф", "odds")} {item.odds}</span>
+                    <span>{item.mode === "live" ? tx("Лайв", "Live") : tx("Прематч", "Prematch")}</span>
+                  </div>
+
+                  <div className="admin-grid-3 admin-prediction-controls">
                     <select defaultValue={item.status} onChange={(e) => onUpdatePrediction(item.id, { status: e.target.value })}>
                       <option value="pending">{tx("В ожидании", "Pending")}</option>
                       <option value="won">{tx("Выигрыш", "Won")}</option>
@@ -711,7 +732,16 @@ export function AdminPage() {
                     </select>
                     <input type="number" step="0.01" min="1.01" defaultValue={item.odds} onBlur={(e) => onUpdatePrediction(item.id, { odds: Number(e.target.value) })} />
                   </div>
-                  <div className="admin-grid-2">
+
+                  {item.result_screenshot ? (
+                    <div className="admin-image-preview compact">
+                      <img src={item.result_screenshot} alt={tx("Скрин результата", "Result screenshot")} loading="lazy" />
+                    </div>
+                  ) : (
+                    <p className="muted admin-shot-empty">{tx("Скрин пока не загружен", "No screenshot uploaded yet")}</p>
+                  )}
+
+                  <div className="admin-grid-2 admin-shot-actions">
                     <label className="admin-file-field compact">
                       <span>
                         {uploadingPredictionId === item.id
@@ -734,7 +764,8 @@ export function AdminPage() {
                       {tx("Удалить скрин", "Remove screenshot")}
                     </button>
                   </div>
-                  <div className="cta-row">
+
+                  <div className="cta-row admin-cta-compact">
                     <button className="btn ghost" type="button" onClick={() => setEditingPredictionId(item.id)}>
                       {tx("Редактировать", "Edit")}
                     </button>
@@ -759,11 +790,16 @@ export function AdminPage() {
                         }}
                       >
                         <input name="title" defaultValue={item.title} placeholder={tx("Заголовок", "Title")} />
-                        <input name="league" defaultValue={item.league || ""} placeholder={tx("Лига", "League")} />
+                        <div className="admin-grid-2">
+                          <input name="league" defaultValue={item.league || ""} placeholder={tx("Лига", "League")} />
+                          <input name="signal_type" defaultValue={item.signal_type} placeholder={tx("Тип сигнала", "Signal type")} disabled />
+                        </div>
                         <textarea name="short_description" defaultValue={item.short_description || ""} rows={3} />
-                        <button className="btn" type="submit">
-                          {tx("Сохранить изменения", "Save changes")}
-                        </button>
+                        <div className="cta-row admin-cta-compact">
+                          <button className="btn" type="submit">
+                            {tx("Сохранить изменения", "Save changes")}
+                          </button>
+                        </div>
                       </form>
                     </details>
                   ) : null}

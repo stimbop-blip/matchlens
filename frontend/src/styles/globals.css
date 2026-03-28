@@ -5137,3 +5137,287 @@ a:focus {
     grid-template-columns: 1fr;
   }
 }
+
+/* PIT BET product fixes: feed + menu + admin mobile compact pass */
+
+.pb-feed-filter-shell-v2 {
+  gap: 8px;
+}
+
+.pb-feed-filter-shell-v2 .pb-filter-row.sticky.primary {
+  top: 66px;
+}
+
+.pb-feed-filter-shell-v2 .pb-filter-row.sticky.secondary {
+  top: 112px;
+  z-index: 11;
+}
+
+.pb-feed-advanced-filters {
+  border: 1px solid color-mix(in srgb, var(--border-soft) 88%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface-3) 54%, transparent);
+  padding: 10px;
+  display: grid;
+  gap: 10px;
+}
+
+.pb-feed-advanced-filters > div {
+  display: grid;
+  gap: 6px;
+}
+
+.pb-feed-advanced-filters small {
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.pb-signal-card-compact {
+  gap: 8px;
+  padding: 10px;
+}
+
+.pb-signal-topline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.pb-signal-sportline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-style: normal;
+}
+
+.pb-signal-sportline em {
+  color: var(--text-secondary);
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.pb-signal-grid.compact {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.pb-signal-grid-cell {
+  min-width: 0;
+}
+
+.pb-status-inline {
+  color: var(--text-secondary);
+}
+
+.pb-status-inline.won {
+  color: var(--success);
+}
+
+.pb-status-inline.lost {
+  color: var(--danger);
+}
+
+.pb-status-inline.refund {
+  color: var(--warning);
+}
+
+.pb-signal-foot.compact {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.pb-signal-action.compact {
+  padding: 6px 10px;
+}
+
+.pb-more-layout {
+  margin-top: 10px;
+  display: grid;
+  gap: 12px;
+}
+
+.pb-more-zone {
+  border: 1px solid color-mix(in srgb, var(--border-soft) 88%, transparent);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--surface-3) 56%, transparent);
+  padding: 10px;
+  display: grid;
+  gap: 10px;
+}
+
+.pb-more-zone-title {
+  font-size: 12px;
+  letter-spacing: 0.28px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.pb-more-feature-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.pb-more-feature-grid.single {
+  grid-template-columns: 1fr;
+}
+
+.pb-more-feature-card {
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 28%, var(--border-soft));
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at 100% -30%, color-mix(in srgb, var(--accent-soft) 64%, transparent), transparent 46%),
+    color-mix(in srgb, var(--surface-2) 80%, transparent);
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.pb-more-feature-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.pb-more-feature-head strong {
+  font-size: 14px;
+}
+
+.pb-more-feature-head em {
+  color: var(--accent-primary);
+  font-style: normal;
+  font-size: 13px;
+}
+
+.pb-more-feature-card > p {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.pb-more-feature-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.pb-more-feature-metrics span {
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface-1) 72%, transparent);
+  padding: 6px;
+  display: grid;
+  gap: 2px;
+}
+
+.pb-more-feature-metrics small {
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.pb-more-feature-metrics b {
+  font-size: 12px;
+}
+
+.admin-tabs-wrap {
+  border: 1px solid color-mix(in srgb, var(--border-soft) 90%, transparent);
+}
+
+.admin-tabs .tab {
+  padding: 9px 12px;
+}
+
+.admin-panel .admin-form-section h4 {
+  font-size: 11px;
+  letter-spacing: 0.28px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.admin-prediction-toolbar {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.admin-prediction-card {
+  padding: 10px;
+  gap: 8px;
+}
+
+.admin-prediction-head {
+  align-items: center;
+}
+
+.admin-prediction-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.admin-prediction-meta span {
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: color-mix(in srgb, var(--surface-1) 74%, transparent);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.admin-prediction-controls {
+  margin-top: 2px;
+}
+
+.admin-image-preview.compact {
+  padding: 6px;
+}
+
+.admin-shot-empty {
+  border: 1px dashed var(--border-soft);
+  border-radius: 10px;
+  padding: 8px;
+  text-align: center;
+}
+
+.admin-shot-actions {
+  margin-top: 0;
+}
+
+.admin-cta-compact {
+  margin-top: 4px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 760px) {
+  .pb-feed-filter-shell-v2 .pb-filter-row.sticky.primary {
+    top: 62px;
+  }
+
+  .pb-feed-filter-shell-v2 .pb-filter-row.sticky.secondary {
+    top: 106px;
+  }
+
+  .pb-signal-grid.compact {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pb-signal-foot.compact {
+    grid-template-columns: 1fr;
+  }
+
+  .pb-more-feature-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-cta-compact {
+    grid-template-columns: 1fr;
+  }
+}

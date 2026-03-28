@@ -357,9 +357,10 @@ export function SignalCardV3({
   hint: string;
 }) {
   const { t, language } = useI18n();
+  const sportLabel = resolveSportLabel(sport, language);
 
   return (
-    <Link to={to} className={cx("pb-signal-card pb-reveal", accessLevel)}>
+    <Link to={to} className={cx("pb-signal-card pb-signal-card-compact pb-reveal", accessLevel)}>
       <div className="pb-signal-head">
         <div>
           <h3>{match}</h3>
@@ -368,46 +369,76 @@ export function SignalCardV3({
         {access}
       </div>
 
-      <div className="pb-signal-meta">
-        <span className={cx("pb-meta-pill", modeKey)}>{mode}</span>
-        <span className={cx("pb-meta-pill", "status", statusKey)}>{status}</span>
+      <div className="pb-signal-topline">
+        <span className="pb-signal-sportline">
+          <SportIcon sport={sport} />
+          <em>{sportLabel}</em>
+        </span>
         <span className="pb-meta-pill kickoff">{kickoff}</span>
+        <span className={cx("pb-meta-pill", modeKey)}>{mode}</span>
       </div>
 
-      <div className="pb-signal-grid">
-        <div>
+      <div className="pb-signal-grid compact">
+        <div className="pb-signal-grid-cell">
           <small>{t("feed.label.odds")}</small>
           <strong>{odds}</strong>
         </div>
-        <div>
+        <div className="pb-signal-grid-cell">
           <small>{t("feed.label.risk")}</small>
           <strong>{risk}</strong>
         </div>
-        <div>
+        <div className="pb-signal-grid-cell">
           <small>{t("feed.label.signal")}</small>
           <strong>{signal}</strong>
         </div>
-        <div>
-          <small>{t("feed.label.sport")}</small>
-          <strong className="pb-sport-value">
-            <SportIcon sport={sport} />
-            <span>{resolveSportLabel(sport, language)}</span>
-          </strong>
+        <div className="pb-signal-grid-cell">
+          <small>{t("feed.filter.status")}</small>
+          <strong className={cx("pb-status-inline", statusKey)}>{status}</strong>
         </div>
       </div>
 
       <p className="pb-signal-teaser">{teaser}</p>
 
-      <div className="pb-signal-foot">
+      <div className="pb-signal-foot compact">
         <div className="pb-tag-row">
           {tags.map((tag) => (
             <span key={tag}>{tag}</span>
           ))}
         </div>
-        <div className="pb-signal-action">
+        <div className="pb-signal-action compact">
           <span>{hint}</span>
           <em>&gt;</em>
         </div>
+      </div>
+    </Link>
+  );
+}
+
+export function MoreFeatureCard({
+  to,
+  title,
+  subtitle,
+  metrics,
+}: {
+  to: string;
+  title: string;
+  subtitle: string;
+  metrics: Array<{ label: string; value: string | number }>;
+}) {
+  return (
+    <Link to={to} className="pb-more-feature-card">
+      <div className="pb-more-feature-head">
+        <strong>{title}</strong>
+        <em>&gt;</em>
+      </div>
+      <p>{subtitle}</p>
+      <div className="pb-more-feature-metrics">
+        {metrics.map((metric) => (
+          <span key={metric.label}>
+            <small>{metric.label}</small>
+            <b>{metric.value}</b>
+          </span>
+        ))}
       </div>
     </Link>
   );
