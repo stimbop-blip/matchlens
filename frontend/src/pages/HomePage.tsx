@@ -1,22 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { useI18n } from "../app/i18n";
 import { countPendingPayments, resolveSubscriptionSnapshot } from "../app/subscription";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
-import {
-  AccessBadge,
-  ActivityBand,
-  AnimatedNumber,
-  AppShellSection,
-  CTACluster,
-  MarketPulse,
-  RocketLoader,
-  SectionHeader,
-  SkeletonBlock,
-  Sparkline,
-} from "../components/ui";
+import { HeroPanel } from "../components/premium/HeroPanel";
+import { PremiumKpi } from "../components/premium/PremiumKpi";
+import { PremiumRing } from "../components/premium/PremiumRing";
+import { RocketLoader, SkeletonBlock, Sparkline } from "../components/ui";
 import { api, type MyPayment, type NewsPost, type Prediction, type PublicStats, type ReferralStats } from "../services/api";
 
 type TodaySummary = {
@@ -34,7 +26,7 @@ function parseErrorMessage(error: unknown, fallback: string): string {
   return fallback;
 }
 
-function formatDate(value: string | null | undefined, language: "ru" | "en", fallback: string) {
+function formatDate(value: string | null | undefined, language: "ru" | "en", fallback: string): string {
   if (!value) return fallback;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return fallback;
@@ -46,7 +38,7 @@ function formatDate(value: string | null | undefined, language: "ru" | "en", fal
   });
 }
 
-function isSameDay(a: Date, b: Date) {
+function isSameDay(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 
@@ -98,13 +90,13 @@ function buildTodaySummaryFallback(stats: PublicStats | null): TodaySummary {
   };
 }
 
-function tariffLabel(level: "free" | "premium" | "vip", t: (key: string) => string) {
+function tariffLabel(level: "free" | "premium" | "vip", t: (key: string) => string): string {
   if (level === "premium") return t("common.premium");
   if (level === "vip") return t("common.vip");
   return t("common.free");
 }
 
-function statusLabel(status: "active" | "expired" | "canceled" | "inactive" | "unknown", t: (key: string) => string) {
+function statusLabel(status: "active" | "expired" | "canceled" | "inactive" | "unknown", t: (key: string) => string): string {
   if (status === "active") return t("common.status.active");
   if (status === "expired") return t("common.status.expired");
   if (status === "canceled") return t("common.status.canceled");
@@ -127,7 +119,36 @@ function buildAccessProgress(tariff: "free" | "premium" | "vip", isActive: boole
 function buildNewsPreview(body: string, maxLength = 170): string {
   const compact = body.replace(/\s+/g, " ").trim();
   if (compact.length <= maxLength) return compact;
-  return `${compact.slice(0, Math.max(0, maxLength - 1)).trim()}…`;
+  return `${compact.slice(0, Math.max(0, maxLength - 1)).trim()}...`;
+}
+
+function storyIcon(type: "line" | "odds" | "pattern" | "selection") {
+  if (type === "line") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 18.4h16v1.6H4zm1.2-2.5h2.3V9.2H5.2zm4.1 0h2.3V5.8H9.3zm4.1 0h2.3v-4.1h-2.3zm4.1 0h2.3v-6.6h-2.3z" />
+      </svg>
+    );
+  }
+  if (type === "odds") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M7.3 4.9a2.7 2.7 0 1 0 2.7 2.7 2.7 2.7 0 0 0-2.7-2.7m9.4 9.8a2.7 2.7 0 1 0 2.7 2.7 2.7 2.7 0 0 0-2.7-2.7M6.2 19.4l11.6-14.8 1.6 1.3L7.8 20.7z" />
+      </svg>
+    );
+  }
+  if (type === "pattern") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 5.1h7.1v7H4zm8.9 0H20v4h-7.1zm0 5.8H20v8h-7.1zm-8.9 3H11v5.1H4z" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 3.5 4.8 6.6V12c0 4.1 2.7 6.9 7.2 8.5 4.5-1.6 7.2-4.4 7.2-8.5V6.6zM10.9 14.8l-2.4-2.3 1.4-1.4 1 1 3.2-3.1 1.4 1.4z" />
+    </svg>
+  );
 }
 
 export function HomePage() {
@@ -144,36 +165,42 @@ export function HomePage() {
   const [summaryError, setSummaryError] = useState("");
   const [refreshTick, setRefreshTick] = useState(0);
 
-  const [loading, setLoading] = useState(true);
-  const didLoadCoreRef = useRef(false);
-  const didLoadSummaryRef = useRef(false);
+  const [coreLoading, setCoreLoading] = useState(true);
+  const [coreError, setCoreError] = useState("");
 
   useEffect(() => {
     let alive = true;
-    const load = async () => {
-      if (!didLoadCoreRef.current) setLoading(true);
-      const results = await Promise.allSettled([api.stats(), api.mySubscription(), api.myReferral(), api.news(), api.myPayments()]);
-      if (!alive) return;
+    setCoreLoading(true);
+    setCoreError("");
 
-      const [statsRes, subRes, refRes, newsRes, payRes] = results;
-      setStats(statsRes.status === "fulfilled" ? statsRes.value : null);
-      setSubscriptionRaw(subRes.status === "fulfilled" ? subRes.value : null);
-      setReferral(refRes.status === "fulfilled" ? refRes.value : null);
-      setNews(newsRes.status === "fulfilled" ? newsRes.value : []);
-      setPayments(payRes.status === "fulfilled" ? payRes.value : []);
-      setLoading(false);
-      didLoadCoreRef.current = true;
-    };
+    Promise.allSettled([api.stats(), api.mySubscription(), api.myReferral(), api.news(), api.myPayments()])
+      .then((results) => {
+        if (!alive) return;
 
-    void load();
+        const [statsRes, subRes, refRes, newsRes, payRes] = results;
+        setStats(statsRes.status === "fulfilled" ? statsRes.value : null);
+        setSubscriptionRaw(subRes.status === "fulfilled" ? subRes.value : null);
+        setReferral(refRes.status === "fulfilled" ? refRes.value : null);
+        setNews(newsRes.status === "fulfilled" ? newsRes.value : []);
+        setPayments(payRes.status === "fulfilled" ? payRes.value : []);
+
+        if (results.every((entry) => entry.status === "rejected")) {
+          setCoreError(t("common.retry"));
+        }
+      })
+      .finally(() => {
+        if (!alive) return;
+        setCoreLoading(false);
+      });
+
     return () => {
       alive = false;
     };
-  }, [refreshTick]);
+  }, [refreshTick, t]);
 
   useEffect(() => {
     let alive = true;
-    if (!didLoadSummaryRef.current) setSummaryLoading(true);
+    setSummaryLoading(true);
     setSummaryError("");
 
     api
@@ -190,7 +217,6 @@ export function HomePage() {
       .finally(() => {
         if (!alive) return;
         setSummaryLoading(false);
-        didLoadSummaryRef.current = true;
       });
 
     return () => {
@@ -225,11 +251,12 @@ export function HomePage() {
     return buildTodaySummaryFallback(stats);
   }, [predictions, stats]);
 
-  const previewNews = news.slice(0, 3);
+  const previewNews = useMemo(() => news.filter((item) => item.is_published).slice(0, 3), [news]);
+
   const pulseValues = useMemo(() => {
     const roi = stats?.roi ?? 0;
     const pending = stats?.pending ?? 0;
-    return [54, 57, 59, 56, 60, 63, 61, 65, 68, 70].map((value, idx) => value + Math.round(roi / 12) + (pending > 0 ? idx % 3 : 0));
+    return [52, 55, 58, 56, 60, 63, 61, 66, 68, 71].map((value, idx) => value + Math.round(roi / 11) + (pending > 0 ? idx % 2 : 0));
   }, [stats?.roi, stats?.pending]);
 
   const performanceWave = useMemo(() => {
@@ -245,52 +272,70 @@ export function HomePage() {
       return Math.round((progress / total) * 100);
     });
   }, [stats]);
+
   const accessProgress = buildAccessProgress(sub.tariff, sub.is_active);
-  const accessRingStyle = {
-    background: `conic-gradient(var(--accent-primary) ${accessProgress}%, color-mix(in srgb, var(--surface-1) 82%, transparent) ${accessProgress}% 100%)`,
-  };
+  const statusText = statusLabel(sub.status, t);
 
   return (
     <Layout>
-      <section className="pb-hero-panel pb-reveal">
-        <div className="pb-hero-top">
-          <span className="pb-brand-chip large">PIT BET</span>
-          <AccessBadge level={sub.tariff} label={tariffLabel(sub.tariff, t)} />
+      <HeroPanel
+        eyebrow="PIT BET Private Club"
+        title="Private Sports Intelligence"
+        subtitle={t("home.hero.subheadline")}
+        right={<span className={`pb-tier-pill ${sub.tariff}`}>{tariffLabel(sub.tariff, t)}</span>}
+      >
+        <div className="pb-overview-market-shell">
+          <div className="pb-overview-market-head">
+            <span>{t("home.hero.marketPulse")}</span>
+            <span className="pb-overview-live-tag">{t("home.hero.marketTag")}</span>
+          </div>
+          <Sparkline values={pulseValues} className="pb-overview-sparkline" />
         </div>
 
-        <h2>{t("home.hero.headline")}</h2>
-        <p>{t("home.hero.subheadline")}</p>
-
-        <MarketPulse label={t("home.hero.marketPulse")} values={pulseValues} tag={t("home.hero.marketTag")} />
-
-        <ActivityBand
-          items={[
-            { label: t("home.hero.status"), value: statusLabel(sub.status, t), tone: sub.is_active ? "success" : "warning" },
-            { label: t("home.hero.until"), value: formatDate(sub.ends_at, language, "-") },
-            { label: t("home.hero.pendingPayments"), value: pendingPayments, tone: pendingPayments > 0 ? "warning" : "accent" },
-          ]}
-        />
-
-        <CTACluster>
+        <div className="pb-overview-hero-actions">
           <Link className="pb-btn pb-btn-primary" to="/feed">
             {t("home.hero.ctaSignals")}
           </Link>
           <Link className="pb-btn pb-btn-secondary" to="/tariffs">
             {t("layout.main.openTariffs")}
           </Link>
-        </CTACluster>
+          <Link className="pb-btn pb-btn-ghost" to="/menu">
+            {t("layout.main.openHub")}
+          </Link>
+        </div>
+      </HeroPanel>
+
+      <section className="pb-premium-panel pb-overview-access pb-reveal">
+        <div className="pb-premium-head">
+          <h3>{t("home.access.title")}</h3>
+          <small>{t("home.access.subtitle")}</small>
+        </div>
+
+        <div className="pb-overview-access-grid">
+          <PremiumRing value={accessProgress} label={t("home.access.openNow")} caption={accessNowLabel(sub.tariff, t)} tone={sub.tariff === "vip" ? "vip" : "accent"} />
+
+          <div className="pb-overview-access-metrics">
+            <PremiumKpi label={t("home.access.tariff")} value={tariffLabel(sub.tariff, t)} tone={sub.tariff === "vip" ? "vip" : "accent"} />
+            <PremiumKpi label={t("home.access.status")} value={statusText} tone={sub.is_active ? "success" : "warning"} />
+            <PremiumKpi label={t("home.access.until")} value={formatDate(sub.ends_at, language, "-")} />
+            <PremiumKpi label={t("home.access.pending")} value={pendingPayments} hint={t("home.hero.pendingPayments")} />
+          </div>
+        </div>
       </section>
 
-      <AppShellSection className="pb-today-panel">
-        <SectionHeader title={t("home.today.title")} subtitle={t("home.today.subtitle")} action={<span className="pb-hint-chip">{predictions.length || stats?.total || 0}</span>} />
+      <section className="pb-premium-panel pb-overview-kpi pb-reveal">
+        <div className="pb-premium-head">
+          <h3>{t("home.today.title")}</h3>
+          <small>{t("home.today.subtitle")}</small>
+        </div>
 
         {summaryLoading ? (
           <>
             <RocketLoader title={t("home.loadingTitle")} subtitle={t("home.loadingSubtitle")} compact />
-            <div className="pb-today-skeleton" aria-hidden="true">
-              <SkeletonBlock className="h-86" />
-              <SkeletonBlock className="h-86" />
-              <SkeletonBlock className="h-86" />
+            <div className="pb-overview-kpi-skeleton" aria-hidden="true">
+              <SkeletonBlock className="h-96" />
+              <SkeletonBlock className="h-84" />
+              <SkeletonBlock className="h-84" />
             </div>
           </>
         ) : null}
@@ -298,209 +343,124 @@ export function HomePage() {
         {!summaryLoading && summaryError ? (
           <div className="pb-error-state">
             <p>{summaryError || t("home.today.error")}</p>
-            <CTACluster>
-              <button className="pb-btn pb-btn-ghost" type="button" onClick={() => setRefreshTick((prev) => prev + 1)}>
-                {t("common.retry")}
-              </button>
-            </CTACluster>
+            <button className="pb-btn pb-btn-ghost" type="button" onClick={() => setRefreshTick((prev) => prev + 1)}>
+              {t("common.retry")}
+            </button>
           </div>
         ) : null}
-
-        {!summaryLoading && !summaryError && today.activeSignals === 0 && today.settledToday === 0 ? <p className="pb-empty-state">{t("home.today.empty")}</p> : null}
 
         {!summaryLoading && !summaryError ? (
-          <div className="pb-today-composer">
-            <article className="pb-today-main pb-today-main-hero">
-              <span>{t("home.today.active")}</span>
-              <AnimatedNumber value={today.activeSignals} />
-              <small>{t("home.today.liveNow")}: {today.liveNow}</small>
-            </article>
-
-            <div className="pb-today-stripe">
-              <article>
-                <span>{t("home.today.free")}</span>
-                <AnimatedNumber value={today.freeCount} />
-              </article>
-              <article>
-                <span>{t("home.today.premium")}</span>
-                <AnimatedNumber value={today.premiumCount} />
-              </article>
-              <article>
-                <span>{t("home.today.vip")}</span>
-                <AnimatedNumber value={today.vipCount} />
-              </article>
-              <article>
-                <span>{t("home.today.settled")}</span>
-                <AnimatedNumber value={today.settledToday} />
-              </article>
+          <>
+            <div className="pb-overview-kpi-grid">
+              <PremiumKpi label={t("home.today.active")} value={today.activeSignals} tone="accent" emphasized />
+              <PremiumKpi label={t("home.today.liveNow")} value={today.liveNow} hint={t("common.live")} />
+              <PremiumKpi label={t("home.today.free")} value={today.freeCount} />
+              <PremiumKpi label={t("home.today.premium")} value={today.premiumCount} tone="accent" />
+              <PremiumKpi label={t("home.today.vip")} value={today.vipCount} tone="vip" />
+              <PremiumKpi label={t("home.today.settled")} value={today.settledToday} />
             </div>
-
-            <p className="pb-today-source">{today.source === "realtime" ? t("home.today.dataRealtime") : t("home.today.dataFallback")}</p>
-          </div>
+            <p className="pb-overview-kpi-source">{today.source === "realtime" ? t("home.today.dataRealtime") : t("home.today.dataFallback")}</p>
+          </>
         ) : null}
-      </AppShellSection>
+      </section>
 
-      <AppShellSection>
-        <SectionHeader title={t("home.story.title")} subtitle={t("home.story.subtitle")} />
-        <div className="pb-story-grid">
+      <section className="pb-premium-panel pb-overview-story pb-reveal">
+        <div className="pb-premium-head">
+          <h3>{t("home.story.title")}</h3>
+          <small>{t("home.story.subtitle")}</small>
+        </div>
+
+        <div className="pb-overview-story-grid">
           <article>
-            <h3>{t("home.story.p1.title")}</h3>
+            <span className="pb-overview-story-icon">{storyIcon("line")}</span>
+            <strong>{t("home.story.p1.title")}</strong>
             <p>{t("home.story.p1.text")}</p>
           </article>
           <article>
-            <h3>{t("home.story.p2.title")}</h3>
+            <span className="pb-overview-story-icon">{storyIcon("odds")}</span>
+            <strong>{t("home.story.p2.title")}</strong>
             <p>{t("home.story.p2.text")}</p>
           </article>
           <article>
-            <h3>{t("home.story.p3.title")}</h3>
+            <span className="pb-overview-story-icon">{storyIcon("pattern")}</span>
+            <strong>{t("home.story.p3.title")}</strong>
             <p>{t("home.story.p3.text")}</p>
           </article>
           <article>
-            <h3>{t("home.story.p4.title")}</h3>
+            <span className="pb-overview-story-icon">{storyIcon("selection")}</span>
+            <strong>{t("home.story.p4.title")}</strong>
             <p>{t("home.story.p4.text")}</p>
           </article>
         </div>
-      </AppShellSection>
+      </section>
 
-      <div className="pb-home-split">
-        <AppShellSection>
-          <SectionHeader title={t("home.access.title")} subtitle={t("home.access.subtitle")} />
-          <div className="pb-access-level-panel">
-            <div className="pb-access-ring" style={accessRingStyle}>
-              <div>
-                <small>{t("home.access.openNow")}</small>
-                <strong>{accessProgress}%</strong>
-              </div>
-            </div>
-            <div className="pb-access-cluster">
-              <span className={sub.tariff === "free" ? "active" : ""}>{t("common.free")}</span>
-              <span className={sub.tariff === "premium" || sub.tariff === "vip" ? "active" : ""}>{t("common.premium")}</span>
-              <span className={sub.tariff === "vip" ? "active" : ""}>{t("common.vip")}</span>
-            </div>
-          </div>
-          <div className="pb-info-list">
-            <div>
-              <span>{t("home.access.tariff")}</span>
-              <strong>{tariffLabel(sub.tariff, t)}</strong>
-            </div>
-            <div>
-              <span>{t("home.access.status")}</span>
-              <strong>{statusLabel(sub.status, t)}</strong>
-            </div>
-            <div>
-              <span>{t("home.access.until")}</span>
-              <strong>{formatDate(sub.ends_at, language, "-")}</strong>
-            </div>
-            <div>
-              <span>{t("home.access.bonus")}</span>
-              <strong>{referral?.bonus_days ?? 0}</strong>
-            </div>
-            <div>
-              <span>{t("home.access.openNow")}</span>
-              <strong>{accessNowLabel(sub.tariff, t)}</strong>
-            </div>
-            <div>
-              <span>{t("home.access.pending")}</span>
-              <strong>{pendingPayments}</strong>
-            </div>
-          </div>
-          <CTACluster>
-            <Link className="pb-btn pb-btn-secondary" to="/profile">
-              {t("home.access.action")}
-            </Link>
-          </CTACluster>
-        </AppShellSection>
+      <section className="pb-premium-panel pb-overview-performance pb-reveal">
+        <div className="pb-premium-head">
+          <h3>{t("home.performance.title")}</h3>
+          <small>{t("home.performance.subtitle")}</small>
+        </div>
 
-        <AppShellSection>
-          <SectionHeader title={t("home.performance.title")} subtitle={t("home.performance.subtitle")} />
-          <div className="pb-metric-grid">
-            <article>
-              <span>{t("common.roi")}</span>
-              <AnimatedNumber value={stats?.roi ?? 0} suffix="%" decimals={1} />
-            </article>
-            <article>
-              <span>{t("home.performance.hit")}</span>
-              <AnimatedNumber value={stats?.hit_rate ?? 0} suffix="%" decimals={1} />
-            </article>
-            <article>
-              <span>{t("home.performance.total")}</span>
-              <AnimatedNumber value={stats?.total ?? 0} />
-            </article>
-            <article>
-              <span>{t("home.performance.ratio")}</span>
-              <strong>{`${stats?.wins ?? 0}/${stats?.loses ?? 0}/${stats?.refunds ?? 0}`}</strong>
-            </article>
-          </div>
-          <div className="pb-sparkline-panel">
-            <Sparkline values={performanceWave} className="pb-sparkline-band" />
-          </div>
-          <CTACluster>
-            <Link className="pb-btn pb-btn-ghost" to="/stats">
-              {t("home.performance.action")}
-            </Link>
-          </CTACluster>
-        </AppShellSection>
-      </div>
+        <div className="pb-overview-performance-grid">
+          <PremiumKpi label={t("common.roi")} value={`${(stats?.roi ?? 0).toFixed(1)}%`} tone="accent" />
+          <PremiumKpi label={t("home.performance.hit")} value={`${(stats?.hit_rate ?? 0).toFixed(1)}%`} tone="success" />
+          <PremiumKpi label={t("home.performance.total")} value={stats?.total ?? 0} />
+          <PremiumKpi label={t("home.performance.ratio")} value={`${stats?.wins ?? 0}/${stats?.loses ?? 0}/${stats?.refunds ?? 0}`} />
+        </div>
 
-      <AppShellSection>
-        <SectionHeader title={t("home.ref.title")} subtitle={t("home.ref.subtitle")} />
-        <ActivityBand
-          items={[
-            { label: t("home.ref.invited"), value: referral?.invited ?? 0 },
-            { label: t("home.ref.activated"), value: referral?.activated ?? 0, tone: "accent" },
-            { label: t("home.ref.bonus"), value: referral?.bonus_days ?? 0, tone: "success" },
-          ]}
-        />
-        <CTACluster>
+        <Sparkline values={performanceWave} className="pb-overview-performance-wave" />
+      </section>
+
+      <div className="pb-overview-duo pb-reveal">
+        <section className="pb-premium-panel pb-overview-referral">
+          <div className="pb-premium-head">
+            <h3>{t("home.ref.title")}</h3>
+            <small>{t("home.ref.subtitle")}</small>
+          </div>
+
+          <div className="pb-overview-referral-grid">
+            <PremiumKpi label={t("home.ref.invited")} value={referral?.invited ?? 0} />
+            <PremiumKpi label={t("home.ref.activated")} value={referral?.activated ?? 0} tone="accent" />
+            <PremiumKpi label={t("home.ref.bonus")} value={`${referral?.bonus_days ?? 0} ${t("common.daysShort")}`} tone="success" />
+          </div>
+
           <Link className="pb-btn pb-btn-ghost" to="/profile#referral">
             {t("home.ref.action")}
           </Link>
-        </CTACluster>
-      </AppShellSection>
+        </section>
 
-      <AppShellSection>
-        <SectionHeader title={t("home.news.title")} subtitle={t("home.news.subtitle")} />
-
-        {loading ? (
-          <div className="pb-news-grid" aria-hidden="true">
-            <article className="pb-news-card pb-skeleton-card">
-              <SkeletonBlock className="w-60" />
-              <SkeletonBlock className="w-96 h-66" />
-              <SkeletonBlock className="w-35" />
-            </article>
-            <article className="pb-news-card pb-skeleton-card">
-              <SkeletonBlock className="w-50" />
-              <SkeletonBlock className="w-90 h-66" />
-              <SkeletonBlock className="w-30" />
-            </article>
-            <article className="pb-news-card pb-skeleton-card">
-              <SkeletonBlock className="w-55" />
-              <SkeletonBlock className="w-94 h-66" />
-              <SkeletonBlock className="w-33" />
-            </article>
+        <section className="pb-premium-panel pb-overview-news">
+          <div className="pb-premium-head">
+            <h3>{t("home.news.title")}</h3>
+            <small>{t("home.news.subtitle")}</small>
           </div>
-        ) : null}
 
-        {!loading && previewNews.length === 0 ? <p className="pb-empty-state">{t("home.news.empty")}</p> : null}
+          {coreLoading ? (
+            <div className="pb-overview-news-skeleton" aria-hidden="true">
+              <SkeletonBlock className="h-72" />
+              <SkeletonBlock className="h-72" />
+              <SkeletonBlock className="h-72" />
+            </div>
+          ) : null}
 
-        {previewNews.length > 0 ? (
-          <div className="pb-home-news-preview">
-            {previewNews.map((item) => (
-              <Link key={item.id} className="pb-home-news-item" to={`/news/${item.id}`}>
-                <h3>{item.title}</h3>
-                <p>{buildNewsPreview(item.body)}</p>
-                <small>{formatDate(item.published_at, language, t("common.noDate"))}</small>
-              </Link>
-            ))}
-          </div>
-        ) : null}
+          {!coreLoading && previewNews.length === 0 ? <p className="pb-empty-state">{coreError || t("home.news.empty")}</p> : null}
 
-        <CTACluster>
-          <Link className="pb-btn pb-btn-ghost" to="/news">
+          {!coreLoading && previewNews.length > 0 ? (
+            <div className="pb-overview-news-list">
+              {previewNews.map((item) => (
+                <Link key={item.id} className="pb-overview-news-item" to={`/news/${item.id}`}>
+                  <h4>{item.title}</h4>
+                  <p>{buildNewsPreview(item.body, 140)}</p>
+                  <small>{formatDate(item.published_at, language, t("common.noDate"))}</small>
+                </Link>
+              ))}
+            </div>
+          ) : null}
+
+          <Link className="pb-btn pb-btn-secondary" to="/news">
             {t("home.news.openAll")}
           </Link>
-        </CTACluster>
-      </AppShellSection>
+        </section>
+      </div>
 
       <AppDisclaimer />
     </Layout>

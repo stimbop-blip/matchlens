@@ -2,6 +2,7 @@ import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from "re
 
 import { useLanguage } from "../app/language";
 import { Layout } from "../components/Layout";
+import { triggerHaptic } from "../services/telegram";
 import {
   api,
   type AdminPayment,
@@ -351,7 +352,7 @@ function AdminSheet({
         <div className="admin-sheet-head">
           <strong>{title}</strong>
           <button type="button" className="admin-sheet-close" onClick={onClose}>
-            x
+            ×
           </button>
         </div>
         <div className="admin-sheet-body">{children}</div>
@@ -617,6 +618,15 @@ export function AdminPage() {
       return base.includes(q);
     });
   }, [paymentMethods, methodQuery, methodStatusFilter]);
+
+  const pendingReviewPayments = useMemo(
+    () => payments.filter((payment) => payment.status === "pending_manual_review" || payment.status === "requires_clarification").length,
+    [payments]
+  );
+
+  const activePromoCodes = useMemo(() => promoCodes.filter((promo) => promo.is_active).length, [promoCodes]);
+
+  const draftNewsCount = useMemo(() => news.filter((post) => !post.is_published).length, [news]);
 
   const onUpdatePrediction = async (id: string, payload: Record<string, unknown>) => {
     try {
@@ -1161,7 +1171,7 @@ export function AdminPage() {
   if (!roleChecked) {
     return (
       <Layout>
-        <section className="card">
+        <section className="pb-premium-panel pb-reveal">
           <p className="muted">{tx("Проверяем доступ...", "Checking access...")}</p>
         </section>
       </Layout>
@@ -1171,7 +1181,7 @@ export function AdminPage() {
   if (!isAdmin) {
     return (
       <Layout>
-        <section className="card">
+        <section className="pb-premium-panel pb-reveal">
           <h2>{tx("Админка", "Admin")}</h2>
           <p className="empty-state">{tx("Доступ открыт только администраторам PIT BET.", "Access is available to PIT BET admins only.")}</p>
         </section>
@@ -1181,7 +1191,7 @@ export function AdminPage() {
 
   return (
     <Layout>
-      <section className="card pb-admin-shell pb-admin-mobile">
+      <section className="pb-premium-panel pb-admin-shell pb-admin-mobile pb-admin-v4 pb-reveal">
         <div className="section-head">
           <h2>{tx("Админка PIT BET", "PIT BET admin panel")}</h2>
           <span className="muted">{tx("Мобильная control panel для контента, пользователей и платежей", "Mobile control panel for content, users, and payments")}</span>
@@ -1191,7 +1201,17 @@ export function AdminPage() {
         <div className="admin-tabs-wrap admin-tabs-mobile">
           <div className="admin-tabs" role="tablist" aria-label={tx("Разделы админки", "Admin sections")}>
             {visibleTabs.map((item) => (
-              <button type="button" key={item.key} className={tab === item.key ? "tab active" : "tab"} onClick={() => setTab(item.key)}>
+              <button
+                type="button"
+                key={item.key}
+                role="tab"
+                aria-selected={tab === item.key}
+                className={tab === item.key ? "tab active" : "tab"}
+                onClick={() => {
+                  triggerHaptic("selection");
+                  setTab(item.key);
+                }}
+              >
                 {isRu ? item.ru : item.en}
               </button>
             ))}
@@ -1200,6 +1220,27 @@ export function AdminPage() {
 
         {message ? <p className={`notice admin-toast ${messageTone}`}>{message}</p> : null}
         {loading ? <p className="muted">{tx("Обновляем данные...", "Refreshing data...")}</p> : null}
+
+        <div className="pb-admin-v4-kpis">
+          <article>
+            <span>{tx("Пользователи", "Users")}</span>
+            <strong>{stats?.users_total ?? users.length}</strong>
+          </article>
+          <article>
+            <span>{tx("Активные подписки", "Active subscriptions")}</span>
+            <strong>{stats?.active_subscriptions ?? 0}</strong>
+          </article>
+          <article>
+            <span>{tx("Платежи на проверке", "Payments in review")}</span>
+            <strong>{pendingReviewPayments}</strong>
+          </article>
+          <article>
+            <span>{tx("Черновики / Промо", "Drafts / Promo")}</span>
+            <strong>
+              {draftNewsCount} / {activePromoCodes}
+            </strong>
+          </article>
+        </div>
 
         {tab === "predictions" && isAdmin ? (
           <div className="admin-panel">
@@ -1374,6 +1415,7 @@ export function AdminPage() {
                   ) : null}
                 </article>
               ))}
+              {!loading && visiblePredictions.length === 0 ? <p className="admin-empty">{tx("По текущим фильтрам прогнозов нет", "No predictions match current filters")}</p> : null}
             </div>
           </div>
         ) : null}
@@ -1519,6 +1561,7 @@ export function AdminPage() {
                   </article>
                 );
               })}
+              {!loading && visibleUsers.length === 0 ? <p className="admin-empty">{tx("Пользователи не найдены", "No users found")}</p> : null}
             </div>
           </div>
         ) : null}
@@ -1570,6 +1613,7 @@ export function AdminPage() {
                   </div>
                 </article>
               ))}
+              {!loading && visibleSubscriptions.length === 0 ? <p className="admin-empty">{tx("Подписки не найдены", "No subscriptions found")}</p> : null}
             </div>
           </div>
         ) : null}
@@ -1657,6 +1701,7 @@ export function AdminPage() {
                   </article>
                 );
               })}
+              {!loading && visiblePayments.length === 0 ? <p className="admin-empty">{tx("Платежи не найдены", "No payments found")}</p> : null}
             </div>
           </div>
         ) : null}
@@ -1711,6 +1756,7 @@ export function AdminPage() {
                   </div>
                 </article>
               ))}
+              {!loading && visiblePaymentMethods.length === 0 ? <p className="admin-empty">{tx("Способы оплаты не найдены", "No payment methods found")}</p> : null}
             </div>
           </div>
         ) : null}
@@ -1759,6 +1805,7 @@ export function AdminPage() {
                   </article>
                 );
               })}
+              {!loading && visibleNews.length === 0 ? <p className="admin-empty">{tx("Новости не найдены", "No news found")}</p> : null}
             </div>
           </div>
         ) : null}
@@ -1809,6 +1856,7 @@ export function AdminPage() {
                   </div>
                 </article>
               ))}
+              {!loading && visiblePromos.length === 0 ? <p className="admin-empty">{tx("Промокоды не найдены", "No promo codes found")}</p> : null}
             </div>
           </div>
         ) : null}

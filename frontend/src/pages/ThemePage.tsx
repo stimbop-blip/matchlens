@@ -2,8 +2,9 @@ import { useNavigate } from "react-router-dom";
 
 import { useI18n } from "../app/i18n";
 import { useTheme } from "../app/language";
+import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
-import { AppShellSection, SectionHeader, SettingsRow, SettingsSection } from "../components/ui";
+import { AppShellSection, SectionHeader } from "../components/ui";
 import type { AppTheme } from "../services/telegram";
 
 export function ThemePage() {
@@ -18,26 +19,37 @@ export function ThemePage() {
 
   return (
     <Layout>
-      <AppShellSection>
-        <SectionHeader title={t("theme.title")} subtitle={t("theme.subtitle")} />
+      <section className="pb-hero-panel pb-reveal">
+        <div className="pb-hero-top">
+          <span className="pb-eyebrow">PIT BET</span>
+          <span className="pb-live-pill">{theme === "dark" ? "DK" : "LT"}</span>
+        </div>
+        <h2>{t("theme.title")}</h2>
+        <p>{t("theme.subtitle")}</p>
+      </section>
 
-        <SettingsSection title={t("layout.title.theme")}>
-          <SettingsRow
-            icon="DK"
-            title={t("theme.dark")}
-            subtitle={t("theme.darkDesc")}
-            onClick={() => apply("dark")}
-            right={theme === "dark" ? <span className="pb-check">*</span> : undefined}
-          />
-          <SettingsRow
-            icon="LT"
-            title={t("theme.light")}
-            subtitle={t("theme.lightDesc")}
-            onClick={() => apply("light")}
-            right={theme === "light" ? <span className="pb-check">*</span> : undefined}
-          />
-        </SettingsSection>
+      <AppShellSection>
+        <SectionHeader title={t("layout.title.theme")} subtitle={t("theme.subtitle")} />
+
+        <div className="pb-choice-grid">
+          <button type="button" className={theme === "dark" ? "pb-choice-card active" : "pb-choice-card"} onClick={() => apply("dark")}>
+            <span className="pb-choice-flag" aria-hidden="true">
+              DK
+            </span>
+            <strong>{t("theme.dark")}</strong>
+            <p>{t("theme.darkDesc")}</p>
+          </button>
+          <button type="button" className={theme === "light" ? "pb-choice-card active" : "pb-choice-card"} onClick={() => apply("light")}>
+            <span className="pb-choice-flag" aria-hidden="true">
+              LT
+            </span>
+            <strong>{t("theme.light")}</strong>
+            <p>{t("theme.lightDesc")}</p>
+          </button>
+        </div>
       </AppShellSection>
+
+      <AppDisclaimer />
     </Layout>
   );
 }

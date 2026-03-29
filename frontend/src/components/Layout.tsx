@@ -1,7 +1,8 @@
 import { type PropsWithChildren, useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import { useI18n } from "../app/i18n";
+import { PremiumDock } from "./premium/PremiumDock";
 import { api } from "../services/api";
 import {
   configureTelegramBackButton,
@@ -38,18 +39,19 @@ function isMorePath(pathname: string): boolean {
   return pathname.startsWith("/menu") || pathname.startsWith("/news") || pathname.startsWith("/tariffs") || pathname.startsWith("/admin") || pathname.startsWith("/support");
 }
 
-function DockGlyph({ type }: { type: "home" | "feed" | "stats" | "profile" | "more" }) {
-  if (type === "home") {
+function DockGlyph({ type }: { type: "overview" | "signals" | "stats" | "account" | "center" }) {
+  if (type === "overview") {
     return (
       <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M12 4 4 10.2V20h6.2v-5.2h3.6V20H20v-9.8z" />
+        <path d="M3.8 5.2h16.4v4.3H3.8zm0 6.2h7.1v7.4H3.8zm8.9 0h7.5v3.1h-7.5zm0 4.3h7.5v3.1h-7.5z" />
       </svg>
     );
   }
-  if (type === "feed") {
+  if (type === "signals") {
     return (
       <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M4 5.8h16v3H4zm0 5.6h16v3H4zm0 5.6h10.4v3H4z" />
+        <path d="M4 6.6h16v2.2H4zm0 4.5h13.4v2.2H4zm0 4.5h16v2.2H4z" />
+        <circle cx="18.2" cy="12.2" r="2" />
       </svg>
     );
   }
@@ -60,7 +62,7 @@ function DockGlyph({ type }: { type: "home" | "feed" | "stats" | "profile" | "mo
       </svg>
     );
   }
-  if (type === "profile") {
+  if (type === "account") {
     return (
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path d="M12 4.6a4.2 4.2 0 1 1 0 8.4 4.2 4.2 0 0 1 0-8.4m0 10.6c4.7 0 7.8 2.4 8.2 4.9H3.8c.4-2.5 3.5-4.9 8.2-4.9" />
@@ -69,8 +71,8 @@ function DockGlyph({ type }: { type: "home" | "feed" | "stats" | "profile" | "mo
   }
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M5.2 10.8a2 2 0 1 0 0-4 2 2 0 0 0 0 4m6.8 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4m6.8 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4" />
-      <path d="M5.2 17.2a2 2 0 1 0 0-4 2 2 0 0 0 0 4m6.8 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4m6.8 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4" />
+      <path d="M12 3.6a8.4 8.4 0 1 0 8.4 8.4A8.4 8.4 0 0 0 12 3.6m0 2.6a5.8 5.8 0 1 1-5.8 5.8A5.8 5.8 0 0 1 12 6.2" />
+      <path d="M11 8.1h2v4.1h3.5v2H11z" />
     </svg>
   );
 }
@@ -107,6 +109,46 @@ export function Layout({ children }: PropsWithChildren) {
   }, []);
 
   const meta = useMemo(() => pageMeta(location.pathname), [location.pathname]);
+  const dockItems = useMemo(
+    () => [
+      {
+        key: "overview",
+        label: t("layout.nav.home"),
+        to: "/",
+        active: location.pathname === "/",
+        glyph: <DockGlyph type="overview" />,
+      },
+      {
+        key: "signals",
+        label: t("layout.nav.feed"),
+        to: "/feed",
+        active: location.pathname.startsWith("/feed"),
+        glyph: <DockGlyph type="signals" />,
+      },
+      {
+        key: "stats",
+        label: t("layout.nav.stats"),
+        to: "/stats",
+        active: location.pathname.startsWith("/stats"),
+        glyph: <DockGlyph type="stats" />,
+      },
+      {
+        key: "account",
+        label: t("layout.nav.profile"),
+        to: "/profile",
+        active: location.pathname.startsWith("/profile"),
+        glyph: <DockGlyph type="account" />,
+      },
+      {
+        key: "center",
+        label: t("layout.nav.center"),
+        to: "/menu",
+        active: isMorePath(location.pathname),
+        glyph: <DockGlyph type="center" />,
+      },
+    ],
+    [location.pathname, t],
+  );
 
   useEffect(() => {
     const atHome = location.pathname === "/";
@@ -147,38 +189,7 @@ export function Layout({ children }: PropsWithChildren) {
         {children}
       </main>
 
-      <nav className="pb-bottom-nav pb-floating-dock" aria-label={t("layout.nav.aria")}>
-        <Link className={location.pathname === "/" ? "active" : ""} to="/" aria-current={location.pathname === "/" ? "page" : undefined}>
-          <span className="pb-dock-icon">
-            <DockGlyph type="home" />
-          </span>
-          <span>{t("layout.nav.home")}</span>
-        </Link>
-        <Link className={location.pathname.startsWith("/feed") ? "active" : ""} to="/feed" aria-current={location.pathname.startsWith("/feed") ? "page" : undefined}>
-          <span className="pb-dock-icon">
-            <DockGlyph type="feed" />
-          </span>
-          <span>{t("layout.nav.feed")}</span>
-        </Link>
-        <Link className={location.pathname.startsWith("/stats") ? "active" : ""} to="/stats" aria-current={location.pathname.startsWith("/stats") ? "page" : undefined}>
-          <span className="pb-dock-icon">
-            <DockGlyph type="stats" />
-          </span>
-          <span>{t("layout.nav.stats")}</span>
-        </Link>
-        <Link className={location.pathname.startsWith("/profile") ? "active" : ""} to="/profile" aria-current={location.pathname.startsWith("/profile") ? "page" : undefined}>
-          <span className="pb-dock-icon">
-            <DockGlyph type="profile" />
-          </span>
-          <span>{t("layout.nav.profile")}</span>
-        </Link>
-        <Link className={isMorePath(location.pathname) ? "active" : ""} to="/menu" aria-current={isMorePath(location.pathname) ? "page" : undefined}>
-          <span className="pb-dock-icon">
-            <DockGlyph type="more" />
-          </span>
-          <span>{t("layout.nav.more")}</span>
-        </Link>
-      </nav>
+      <PremiumDock items={dockItems} ariaLabel={t("layout.nav.aria")} />
     </div>
   );
 }

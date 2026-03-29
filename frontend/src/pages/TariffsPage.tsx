@@ -4,7 +4,7 @@ import { useI18n } from "../app/i18n";
 import { resolveSubscriptionSnapshot } from "../app/subscription";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
-import { AppShellSection, CTACluster, MarketPulse, MembershipCard, RocketLoader, SectionHeader, SkeletonBlock, StatusPill } from "../components/ui";
+import { ActivityBand, AppShellSection, CTACluster, RocketLoader, SectionHeader, SkeletonBlock, StatusPill } from "../components/ui";
 import { api, type PaymentCreateResult, type PaymentMethod, type PaymentQuote, type Tariff } from "../services/api";
 
 type PlanCode = "premium" | "vip";
@@ -19,6 +19,10 @@ const DEFAULT_OPTIONS: Array<{ duration_days: Duration; price_rub: number }> = [
 function parseErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error && error.message.trim()) return error.message;
   return fallback;
+}
+
+function formatRub(value: number): string {
+  return `${value} RUB`;
 }
 
 export function TariffsPage() {
@@ -142,8 +146,8 @@ export function TariffsPage() {
         return;
       }
       setMessage({ tone: "info", text: t("tariffs.manual.hint") });
-    } catch (e) {
-      setMessage({ tone: "error", text: e instanceof Error ? e.message : t("tariffs.pay.createFail") });
+    } catch (error) {
+      setMessage({ tone: "error", text: error instanceof Error ? error.message : t("tariffs.pay.createFail") });
     } finally {
       setLoadingPay(false);
     }
@@ -154,8 +158,8 @@ export function TariffsPage() {
     try {
       const result = await api.confirmManualPayment(paymentResult.payment_id, manualMeta);
       setMessage({ tone: "success", text: result.status === "pending_manual_review" ? t("tariffs.manual.review") : t("tariffs.manual.confirmed") });
-    } catch (e) {
-      setMessage({ tone: "error", text: e instanceof Error ? e.message : t("tariffs.manual.confirmFail") });
+    } catch (error) {
+      setMessage({ tone: "error", text: error instanceof Error ? error.message : t("tariffs.manual.confirmFail") });
     }
   };
 
@@ -164,21 +168,16 @@ export function TariffsPage() {
       <Layout>
         <AppShellSection>
           <RocketLoader title={t("tariffs.loadingTitle")} subtitle={t("tariffs.loadingSubtitle")} />
-          <div className="pb-membership-grid" aria-hidden="true">
-            <article className="pb-membership-card pb-skeleton-card">
+          <div className="pb-plan-grid" aria-hidden="true">
+            <article className="pb-plan-card pb-skeleton-card">
               <SkeletonBlock className="w-44" />
               <SkeletonBlock className="w-88 h-84" />
               <SkeletonBlock className="w-35" />
             </article>
-            <article className="pb-membership-card pb-skeleton-card">
+            <article className="pb-plan-card pb-skeleton-card">
               <SkeletonBlock className="w-55" />
               <SkeletonBlock className="w-90 h-84" />
               <SkeletonBlock className="w-45" />
-            </article>
-            <article className="pb-membership-card pb-skeleton-card">
-              <SkeletonBlock className="w-52" />
-              <SkeletonBlock className="w-92 h-84" />
-              <SkeletonBlock className="w-40" />
             </article>
           </div>
         </AppShellSection>
@@ -193,21 +192,19 @@ export function TariffsPage() {
         <div className="pb-hero-top">
           <span className="pb-eyebrow">PIT BET</span>
           <StatusPill
-            label={
-              subscription.tariff === "vip"
-                ? t("common.vip")
-                : subscription.tariff === "premium"
-                  ? t("common.premium")
-                  : t("common.free")
-            }
+            label={subscription.tariff === "vip" ? t("common.vip") : subscription.tariff === "premium" ? t("common.premium") : t("common.free")}
             tone="accent"
           />
         </div>
-
         <h2>{t("tariffs.hero.title")}</h2>
         <p>{t("tariffs.hero.subtitle")}</p>
-
-        <MarketPulse label={t("tariffs.hero.pulse")} values={[78, 73, 69, 66, 63, 59, 54, 49, 45, 40]} tag={t("common.vip")} />
+        <ActivityBand
+          items={[
+            { label: t("tariffs.summary.plan"), value: selectedPlan === "premium" ? t("common.premium") : t("common.vip"), tone: "accent" },
+            { label: t("tariffs.summary.period"), value: `${selectedDuration} ${t("common.days")}` },
+            { label: t("tariffs.summary.final"), value: quote ? formatRub(quote.final_amount_rub) : "-", tone: "success" },
+          ]}
+        />
       </section>
 
       <AppShellSection>
@@ -224,16 +221,21 @@ export function TariffsPage() {
           </div>
         ) : null}
 
-        <div className="pb-membership-grid">
+        <div className="pb-plan-grid">
           {freePlan ? (
-            <MembershipCard
-              title={t("common.free")}
-              description={t("tariffs.free.entry")}
-              price="0 RUB"
-              features={features.free}
-              active={subscription.tariff === "free"}
-              action={<span className="pb-btn pb-btn-ghost disabled">{t("tariffs.selected")}</span>}
-            />
+            <article className="pb-plan-card free">
+              <div className="pb-plan-head">
+                <h3>{t("common.free")}</h3>
+                {subscription.tariff === "free" ? <StatusPill label={t("tariffs.currentPlan")} tone="success" /> : null}
+              </div>
+              <p>{t("tariffs.free.entry")}</p>
+              <strong className="pb-plan-price">0 RUB</strong>
+              <ul>
+                {features.free.map((feature) => (
+                  <li key={feature}>{feature}</li>
+                ))}
+              </ul>
+            </article>
           ) : null}
 
           {(["premium", "vip"] as PlanCode[]).map((plan) => {
@@ -242,23 +244,26 @@ export function TariffsPage() {
             const active = selectedPlan === plan;
             const current = subscription.tariff === plan;
             return (
-              <MembershipCard
-                key={plan}
-                title={plan === "premium" ? t("common.premium") : t("common.vip")}
-                badge={plan === "premium" ? t("tariffs.premium.badge") : t("tariffs.vip.badge")}
-                description={tariff.description || ""}
-                price={`${tariff.price_rub} RUB`}
-                features={plan === "premium" ? features.premium : features.vip}
-                active={active}
-                action={
-                  <div className="pb-membership-actions">
-                    {current ? <StatusPill label={t("tariffs.currentPlan")} tone="success" /> : null}
-                    <button className={active ? "pb-btn pb-btn-secondary" : "pb-btn pb-btn-ghost"} type="button" onClick={() => setSelectedPlan(plan)}>
-                      {active ? t("tariffs.selected") : t("tariffs.select")}
-                    </button>
-                  </div>
-                }
-              />
+              <article key={plan} className={active ? "pb-plan-card active" : "pb-plan-card"}>
+                <div className="pb-plan-head">
+                  <h3>{plan === "premium" ? t("common.premium") : t("common.vip")}</h3>
+                  <span className="pb-plan-badge">{plan === "premium" ? t("tariffs.premium.badge") : t("tariffs.vip.badge")}</span>
+                </div>
+                <p>{tariff.description || "-"}</p>
+                <strong className="pb-plan-price">{formatRub(tariff.price_rub)}</strong>
+                <ul>
+                  {(plan === "premium" ? features.premium : features.vip).map((feature) => (
+                    <li key={feature}>{feature}</li>
+                  ))}
+                </ul>
+
+                <div className="pb-plan-actions">
+                  {current ? <StatusPill label={t("tariffs.currentPlan")} tone="success" /> : null}
+                  <button className={active ? "pb-btn pb-btn-secondary" : "pb-btn pb-btn-ghost"} type="button" onClick={() => setSelectedPlan(plan)}>
+                    {active ? t("tariffs.selected") : t("tariffs.select")}
+                  </button>
+                </div>
+              </article>
             );
           })}
         </div>
@@ -267,36 +272,49 @@ export function TariffsPage() {
       <AppShellSection>
         <SectionHeader title={t("tariffs.setup.title")} subtitle={t("tariffs.setup.subtitle")} />
 
-        <div className="pb-duration-row">
-          {(durationOptions.length > 0 ? durationOptions : DEFAULT_OPTIONS).map((option) => {
-            const active = selectedDuration === option.duration_days;
-            return (
-              <button key={option.duration_days} type="button" className={active ? "pb-duration-pill active" : "pb-duration-pill"} onClick={() => setSelectedDuration(option.duration_days)}>
-                <strong>
-                  {option.duration_days} {t("common.days")}
-                </strong>
-                <span>{option.price_rub} RUB</span>
-                <small>{("badge" in option && option.badge) || durationBadges[option.duration_days]}</small>
-              </button>
-            );
-          })}
-        </div>
+        <div className="pb-pay-grid">
+          <article className="pb-pay-card">
+            <h3>{t("tariffs.duration")}</h3>
+            <div className="pb-duration-row">
+              {(durationOptions.length > 0 ? durationOptions : DEFAULT_OPTIONS).map((option) => {
+                const active = selectedDuration === option.duration_days;
+                return (
+                  <button
+                    key={option.duration_days}
+                    type="button"
+                    className={active ? "pb-duration-pill active" : "pb-duration-pill"}
+                    onClick={() => setSelectedDuration(option.duration_days)}
+                  >
+                    <strong>
+                      {option.duration_days} {t("common.days")}
+                    </strong>
+                    <span>{formatRub(option.price_rub)}</span>
+                    <small>{("badge" in option && option.badge) || durationBadges[option.duration_days]}</small>
+                  </button>
+                );
+              })}
+            </div>
 
-        <div className="pb-method-grid">
-          {methods.map((method) => {
-            const active = selectedMethod === method.code;
-            return (
-              <button key={method.code} type="button" className={active ? "pb-method-card active" : "pb-method-card"} onClick={() => setSelectedMethod(method.code)}>
-                <strong>{method.name}</strong>
-                <span>{method.method_type === "manual" ? t("tariffs.method.manual") : t("tariffs.method.auto")}</span>
-                {method.instructions ? <p>{method.instructions}</p> : null}
-              </button>
-            );
-          })}
-        </div>
+            <div className="pb-input-stack">
+              <input value={promoCode} onChange={(event) => setPromoCode(event.target.value.toUpperCase())} placeholder={t("tariffs.promo.placeholder")} />
+            </div>
+          </article>
 
-        <div className="pb-input-stack">
-          <input value={promoCode} onChange={(event) => setPromoCode(event.target.value.toUpperCase())} placeholder={t("tariffs.promo.placeholder")} />
+          <article className="pb-pay-card">
+            <h3>{t("tariffs.summary.method")}</h3>
+            <div className="pb-method-grid">
+              {methods.map((method) => {
+                const active = selectedMethod === method.code;
+                return (
+                  <button key={method.code} type="button" className={active ? "pb-method-card active" : "pb-method-card"} onClick={() => setSelectedMethod(method.code)}>
+                    <strong>{method.name}</strong>
+                    <span>{method.method_type === "manual" ? t("tariffs.method.manual") : t("tariffs.method.auto")}</span>
+                    {method.instructions ? <p>{method.instructions}</p> : null}
+                  </button>
+                );
+              })}
+            </div>
+          </article>
         </div>
 
         <article className="pb-summary-card">
@@ -317,15 +335,15 @@ export function TariffsPage() {
           </div>
           <div>
             <span>{t("tariffs.summary.base")}</span>
-            <strong>{quote?.original_amount_rub ?? "-"} RUB</strong>
+            <strong>{quote ? formatRub(quote.original_amount_rub) : "-"}</strong>
           </div>
           <div>
             <span>{t("tariffs.summary.discount")}</span>
-            <strong>{quote ? `${quote.discount_rub} RUB` : "-"}</strong>
+            <strong>{quote ? formatRub(quote.discount_rub) : "-"}</strong>
           </div>
           <div className="total">
             <span>{t("tariffs.summary.final")}</span>
-            <strong>{quote?.final_amount_rub ?? "-"} RUB</strong>
+            <strong>{quote ? formatRub(quote.final_amount_rub) : "-"}</strong>
           </div>
           {loadingQuote ? <p>{t("tariffs.summary.refresh")}</p> : null}
           {quote?.message ? <p>{quote.message}</p> : null}
@@ -362,7 +380,7 @@ export function TariffsPage() {
               ) : null}
               <div>
                 <span>{t("tariffs.manual.amount")}</span>
-                <strong>{paymentResult.amount_rub} RUB</strong>
+                <strong>{formatRub(paymentResult.amount_rub)}</strong>
               </div>
             </div>
 
@@ -372,17 +390,8 @@ export function TariffsPage() {
                 onChange={(event) => setManualMeta((prev) => ({ ...prev, transfer_reference: event.target.value }))}
                 placeholder={t("tariffs.manual.ref")}
               />
-              <textarea
-                rows={3}
-                value={manualMeta.note}
-                onChange={(event) => setManualMeta((prev) => ({ ...prev, note: event.target.value }))}
-                placeholder={t("tariffs.manual.note")}
-              />
-              <input
-                value={manualMeta.proof}
-                onChange={(event) => setManualMeta((prev) => ({ ...prev, proof: event.target.value }))}
-                placeholder={t("tariffs.manual.proof")}
-              />
+              <textarea rows={3} value={manualMeta.note} onChange={(event) => setManualMeta((prev) => ({ ...prev, note: event.target.value }))} placeholder={t("tariffs.manual.note")} />
+              <input value={manualMeta.proof} onChange={(event) => setManualMeta((prev) => ({ ...prev, proof: event.target.value }))} placeholder={t("tariffs.manual.proof")} />
 
               <button className="pb-btn pb-btn-secondary" type="button" onClick={confirmManual}>
                 {t("tariffs.manual.confirm")}

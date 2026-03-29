@@ -1,18 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 
 import { useI18n } from "../app/i18n";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
-import {
-  AccessBadge,
-  AppShellSection,
-  CTACluster,
-  RocketLoader,
-  SectionHeader,
-  SignalCardSkeleton,
-  SignalCardV3,
-} from "../components/ui";
+import { HeroPanel } from "../components/premium/HeroPanel";
+import { SignalCard } from "../components/premium/SignalCard";
+import { PremiumKpi } from "../components/premium/PremiumKpi";
+import { RocketLoader, SkeletonBlock } from "../components/ui";
 import { api, type Prediction } from "../services/api";
+import { triggerHaptic } from "../services/telegram";
 
 type AccessFilter = "all" | "free" | "premium" | "vip";
 type ModeFilter = "all" | "live" | "prematch";
@@ -112,6 +109,11 @@ export function FeedPage() {
   const [risk, setRisk] = useState<RiskFilter>("all");
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
+  const onFilterSelect = <T,>(setter: (value: T) => void, value: T) => {
+    triggerHaptic("selection");
+    setter(value);
+  };
+
   useEffect(() => {
     let alive = true;
     setLoading(true);
@@ -189,136 +191,174 @@ export function FeedPage() {
     { value: "high", label: t("common.risk.high") },
   ];
 
+  const liveCount = items.filter((item) => item.mode === "live").length;
+  const premiumCount = items.filter((item) => item.access_level === "premium" || item.access_level === "vip").length;
+
   return (
     <Layout>
-      <AppShellSection>
-        <SectionHeader
-          title={t("feed.hero.title")}
-          subtitle={t("feed.hero.subtitle")}
-          action={<span className="pb-hint-chip">{items.length}</span>}
-        />
+      <HeroPanel eyebrow="Signal Desk" title={t("feed.hero.title")} subtitle={t("feed.hero.subtitle")} right={<span className="pb-feed-v4-total">{items.length}</span>}>
+        <div className="pb-feed-v4-kpi">
+          <PremiumKpi label={t("common.live")} value={liveCount} tone="accent" />
+          <PremiumKpi label={t("common.premium")} value={premiumCount} tone="vip" />
+          <PremiumKpi label={t("feed.status.pending")} value={items.filter((item) => item.status === "pending").length} />
+        </div>
+      </HeroPanel>
 
-        <div className="pb-feed-filter-shell pb-feed-filter-shell-v2">
-          <div className="pb-filter-row sticky primary">
+      <section className="pb-premium-panel pb-feed-v4-sticky pb-reveal">
+        <div className="pb-feed-v4-filter-stack">
+          <div className="pb-feed-v4-pill-row primary">
             {modeOptions.map((item) => (
-              <button key={item.value} type="button" className={item.value === mode ? "pb-filter-chip active" : "pb-filter-chip"} onClick={() => setMode(item.value)}>
+              <button
+                key={item.value}
+                type="button"
+                className={item.value === mode ? "pb-feed-v4-pill active" : "pb-feed-v4-pill"}
+                onClick={() => onFilterSelect(setMode, item.value)}
+              >
                 {item.label}
               </button>
             ))}
           </div>
 
-          <div className="pb-filter-row sticky secondary">
+          <div className="pb-feed-v4-pill-row secondary">
             {statusOptions.map((item) => (
               <button
                 key={item.value}
                 type="button"
-                className={item.value === status ? "pb-filter-chip soft active" : "pb-filter-chip soft"}
-                onClick={() => setStatus(item.value)}
+                className={item.value === status ? "pb-feed-v4-pill soft active" : "pb-feed-v4-pill soft"}
+                onClick={() => onFilterSelect(setStatus, item.value)}
               >
                 {item.label}
               </button>
             ))}
             <button
               type="button"
-              className={showAdvancedFilters ? "pb-filter-chip subtle active" : "pb-filter-chip subtle"}
-              onClick={() => setShowAdvancedFilters((prev) => !prev)}
+              className={showAdvancedFilters ? "pb-feed-v4-pill subtle active" : "pb-feed-v4-pill subtle"}
+              onClick={() => {
+                triggerHaptic("selection");
+                setShowAdvancedFilters((prev) => !prev);
+              }}
             >
               {showAdvancedFilters ? t("feed.filter.advanced.hide") : t("feed.filter.advanced.show")}
             </button>
           </div>
 
-          {showAdvancedFilters ? (
-            <div className="pb-feed-advanced-filters">
-              <div>
-                <small>{t("feed.filter.access")}</small>
-                <div className="pb-filter-row">
-                  {accessOptions.map((item) => (
-                    <button key={item.value} type="button" className={item.value === access ? "pb-filter-chip soft active" : "pb-filter-chip soft"} onClick={() => setAccess(item.value)}>
-                      {item.label}
-                    </button>
-                  ))}
+          <AnimatePresence initial={false}>
+            {showAdvancedFilters ? (
+              <motion.div
+                className="pb-feed-v4-advanced-sheet"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+              >
+                <div>
+                  <small>{t("feed.filter.access")}</small>
+                  <div className="pb-feed-v4-pill-row">
+                    {accessOptions.map((item) => (
+                      <button
+                        key={item.value}
+                        type="button"
+                        className={item.value === access ? "pb-feed-v4-pill soft active" : "pb-feed-v4-pill soft"}
+                        onClick={() => onFilterSelect(setAccess, item.value)}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              <div>
-                <small>{t("feed.filter.risk")}</small>
-                <div className="pb-filter-row">
-                  {riskOptions.map((item) => (
-                    <button key={item.value} type="button" className={item.value === risk ? "pb-filter-chip subtle active" : "pb-filter-chip subtle"} onClick={() => setRisk(item.value)}>
-                      {item.label}
-                    </button>
-                  ))}
+                <div>
+                  <small>{t("feed.filter.risk")}</small>
+                  <div className="pb-feed-v4-pill-row">
+                    {riskOptions.map((item) => (
+                      <button
+                        key={item.value}
+                        type="button"
+                        className={item.value === risk ? "pb-feed-v4-pill subtle active" : "pb-feed-v4-pill subtle"}
+                        onClick={() => onFilterSelect(setRisk, item.value)}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            </div>
-          ) : null}
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
         </div>
+      </section>
 
-        {loading ? (
-          <>
-            <RocketLoader title={t("feed.loadingTitle")} subtitle={t("feed.loadingSubtitle")} compact />
-            <div className="pb-feed-grid">
-              <SignalCardSkeleton />
-              <SignalCardSkeleton />
-              <SignalCardSkeleton />
-            </div>
-          </>
-        ) : null}
+      {loading ? (
+        <section className="pb-premium-panel pb-feed-v4-loading pb-reveal">
+          <RocketLoader title={t("feed.loadingTitle")} subtitle={t("feed.loadingSubtitle")} compact />
+          <div className="pb-feed-v4-skeleton-grid" aria-hidden="true">
+            <article className="pb-feed-v4-skeleton-card">
+              <SkeletonBlock className="w-70" />
+              <SkeletonBlock className="w-40" />
+              <SkeletonBlock className="h-72" />
+            </article>
+            <article className="pb-feed-v4-skeleton-card">
+              <SkeletonBlock className="w-65" />
+              <SkeletonBlock className="w-35" />
+              <SkeletonBlock className="h-72" />
+            </article>
+            <article className="pb-feed-v4-skeleton-card">
+              <SkeletonBlock className="w-60" />
+              <SkeletonBlock className="w-45" />
+              <SkeletonBlock className="h-72" />
+            </article>
+          </div>
+        </section>
+      ) : null}
 
-        {!loading && error ? (
+      {!loading && error ? (
+        <section className="pb-premium-panel pb-reveal">
           <div className="pb-error-state">
             <p>{error || t("feed.error")}</p>
-            <CTACluster>
-              <button className="pb-btn pb-btn-ghost" type="button" onClick={() => setReloadKey((prev) => prev + 1)}>
-                {t("common.retry")}
-              </button>
-            </CTACluster>
+            <button className="pb-btn pb-btn-ghost" type="button" onClick={() => setReloadKey((prev) => prev + 1)}>
+              {t("common.retry")}
+            </button>
           </div>
-        ) : null}
+        </section>
+      ) : null}
 
-        {!loading && !error && items.length === 0 ? <p className="pb-empty-state">{t("feed.empty")}</p> : null}
+      {!loading && !error && items.length === 0 ? (
+        <section className="pb-premium-panel pb-reveal">
+          <p className="pb-empty-state">{t("feed.empty")}</p>
+        </section>
+      ) : null}
 
-        {!loading && !error ? (
-          <div className="pb-feed-groups">
-            {groups.map((group) => (
-              <section key={group.key}>
-                <h3 className="pb-day-title">{dayHeading(group.key, language, t)}</h3>
-                <div className="pb-feed-grid">
-                  {group.list.map((item, index) => {
-                    const tags = [item.mode === "live" ? t("common.live") : t("common.prematch")];
-                    if (item.status === "pending" && item.access_level === "vip") tags.push(t("feed.tag.strong"));
-                    if (item.status === "pending" && item.odds >= 2.2) tags.push(t("feed.tag.hot"));
-                    if (item.status === "pending" && index === 0) tags.push(t("feed.tag.pick"));
-
-                    return (
-                      <SignalCardV3
-                        key={item.id}
-                        to={`/feed/${item.id}`}
-                        match={item.match_name}
-                        league={item.league || t("feed.noLeague")}
-                        sport={item.sport_type}
-                        accessLevel={item.access_level}
-                        mode={item.mode === "live" ? t("common.live") : t("common.prematch")}
-                        modeKey={item.mode}
-                        access={<AccessBadge level={item.access_level} label={accessLabel(item.access_level, t)} />}
-                        status={statusLabel(item.status, t)}
-                        statusKey={item.status}
-                        kickoff={formatDate(item.event_start_at, language)}
-                        odds={item.odds}
-                        risk={riskLabel(item.risk_level, t)}
-                        signal={item.signal_type}
-                        teaser={teaser(item.short_description, t("feed.teaserFallback"))}
-                        tags={tags}
-                        hint={t("feed.detailsHint")}
-                      />
-                    );
-                  })}
-                </div>
-              </section>
-            ))}
-          </div>
-        ) : null}
-      </AppShellSection>
+      {!loading && !error ? (
+        <div className="pb-feed-v4-groups pb-reveal">
+          {groups.map((group) => (
+            <section key={group.key} className="pb-feed-v4-day-group">
+              <h3>{dayHeading(group.key, language, t)}</h3>
+              <div className="pb-feed-v4-grid">
+                {group.list.map((item) => (
+                  <SignalCard
+                    key={item.id}
+                    to={`/feed/${item.id}`}
+                    title={item.match_name}
+                    league={item.league || t("feed.noLeague")}
+                    sport={item.sport_type}
+                    mode={item.mode === "live" ? t("common.live") : t("common.prematch")}
+                    kickoff={formatDate(item.event_start_at, language)}
+                    signal={item.signal_type}
+                    odds={item.odds}
+                    oddsLabel={t("feed.label.odds")}
+                    risk={riskLabel(item.risk_level, t)}
+                    status={item.status}
+                    statusLabel={statusLabel(item.status, t)}
+                    accessLabel={accessLabel(item.access_level, t)}
+                    note={teaser(item.short_description, t("feed.teaserFallback"))}
+                    language={language}
+                  />
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
+      ) : null}
 
       <AppDisclaimer />
     </Layout>

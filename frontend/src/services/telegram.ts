@@ -11,6 +11,11 @@ declare global {
         setHeaderColor?: (value: string) => void;
         setBackgroundColor?: (value: string) => void;
         close?: () => void;
+        HapticFeedback?: {
+          impactOccurred?: (style?: "light" | "medium" | "heavy" | "rigid" | "soft") => void;
+          notificationOccurred?: (type?: "error" | "success" | "warning") => void;
+          selectionChanged?: () => void;
+        };
         MainButton?: {
           setText: (text: string) => void;
           show: () => void;
@@ -139,4 +144,26 @@ export function configureTelegramSettingsButton(visible: boolean, onClick: () =>
   }
   button.hide();
   return () => undefined;
+}
+
+export function triggerHaptic(kind: "selection" | "impact-light" | "impact-medium" | "impact-heavy" = "selection"): void {
+  const haptic = window.Telegram?.WebApp?.HapticFeedback;
+  if (!haptic) return;
+
+  if (kind === "selection") {
+    haptic.selectionChanged?.();
+    return;
+  }
+
+  if (kind === "impact-medium") {
+    haptic.impactOccurred?.("medium");
+    return;
+  }
+
+  if (kind === "impact-heavy") {
+    haptic.impactOccurred?.("heavy");
+    return;
+  }
+
+  haptic.impactOccurred?.("light");
 }

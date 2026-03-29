@@ -5,6 +5,7 @@ import { isConsentAccepted, writeConsentCache } from "../app/consent";
 import { LEGAL_ACCEPTED_VERSION, LEGAL_TEXTS } from "../app/legal";
 import { useI18n } from "../app/i18n";
 import { api, type UserConsent } from "../services/api";
+import { triggerHaptic } from "../services/telegram";
 
 type GatePageProps = {
   consent: UserConsent | null;
@@ -12,9 +13,9 @@ type GatePageProps = {
   onAccepted: (value: UserConsent) => void;
 };
 
-function parseError(error: unknown): string {
+function parseError(error: unknown, fallback: string): string {
   if (error instanceof Error && error.message.trim()) return error.message;
-  return "Failed to save consent";
+  return fallback;
 }
 
 export function GatePage({ consent, checkingRemote = false, onAccepted }: GatePageProps) {
@@ -34,10 +35,33 @@ export function GatePage({ consent, checkingRemote = false, onAccepted }: GatePa
     setAcceptedPayment(Boolean(consent?.accepted_payment_terms));
   }, [consent?.accepted_18_plus, consent?.accepted_rules, consent?.accepted_payment_terms]);
 
+  const acceptedCount = Number(accepted18) + Number(acceptedRules) + Number(acceptedPayment);
+  const acceptedProgress = Math.round((acceptedCount / 3) * 100);
   const canContinue = accepted18 && acceptedRules && acceptedPayment && !submitting && !checkingRemote;
+  const gateStateText = checkingRemote
+    ? locale === "ru"
+      ? "Проверяем согласия..."
+      : "Checking consent..."
+    : submitting
+      ? locale === "ru"
+        ? "Сохраняем..."
+        : "Saving..."
+      : canContinue
+        ? locale === "ru"
+          ? "Готово"
+          : "Ready"
+        : locale === "ru"
+          ? "Требуется подтверждение"
+          : "Confirmation required";
+
+  const onToggle = (setter: (next: boolean) => void, next: boolean) => {
+    triggerHaptic("selection");
+    setter(next);
+  };
 
   const onContinue = async () => {
     if (!accepted18 || !acceptedRules || !acceptedPayment) return;
+    triggerHaptic("impact-medium");
     setError(null);
     setSubmitting(true);
     try {
@@ -52,7 +76,7 @@ export function GatePage({ consent, checkingRemote = false, onAccepted }: GatePa
         onAccepted(next);
       }
     } catch (nextError) {
-      setError(parseError(nextError));
+      setError(parseError(nextError, copy.saveError));
     } finally {
       setSubmitting(false);
     }
@@ -70,24 +94,30 @@ export function GatePage({ consent, checkingRemote = false, onAccepted }: GatePa
 
   return (
     <main className="pb-gate-root">
-      <section className="pb-gate-card pb-reveal">
+      <section className="pb-gate-card pb-gate-cinematic pb-reveal">
+        <div className="pb-gate-orbit" aria-hidden="true">
+          <span className="ring ring-a" />
+          <span className="ring ring-b" />
+          <span className="core" />
+        </div>
+
         <span className="pb-brand-chip large">PIT BET</span>
         <h1>{copy.title}</h1>
         <p className="pb-gate-subtitle">{copy.subtitle}</p>
         <p className="pb-gate-body">{copy.body}</p>
 
         <div className="pb-gate-checks">
-          <label className="pb-gate-check-row">
-            <input type="checkbox" checked={accepted18} onChange={(event) => setAccepted18(event.target.checked)} />
-            <span>{copy.checkbox18}</span>
+          <label className="pb-gate-check-row pb-gate-switch">
+            <input type="checkbox" checked={accepted18} onChange={(event) => onToggle(setAccepted18, event.target.checked)} />
+            <span className="pb-gate-check-copy">{copy.checkbox18}</span>
           </label>
-          <label className="pb-gate-check-row">
-            <input type="checkbox" checked={acceptedRules} onChange={(event) => setAcceptedRules(event.target.checked)} />
-            <span>{copy.checkboxRules}</span>
+          <label className="pb-gate-check-row pb-gate-switch">
+            <input type="checkbox" checked={acceptedRules} onChange={(event) => onToggle(setAcceptedRules, event.target.checked)} />
+            <span className="pb-gate-check-copy">{copy.checkboxRules}</span>
           </label>
-          <label className="pb-gate-check-row">
-            <input type="checkbox" checked={acceptedPayment} onChange={(event) => setAcceptedPayment(event.target.checked)} />
-            <span>{copy.checkboxPayment}</span>
+          <label className="pb-gate-check-row pb-gate-switch">
+            <input type="checkbox" checked={acceptedPayment} onChange={(event) => onToggle(setAcceptedPayment, event.target.checked)} />
+            <span className="pb-gate-check-copy">{copy.checkboxPayment}</span>
           </label>
         </div>
 
@@ -103,12 +133,24 @@ export function GatePage({ consent, checkingRemote = false, onAccepted }: GatePa
           </Link>
         </div>
 
-        <p className="pb-gate-blocked">{copy.blockedText}</p>
+        <div className="pb-gate-progress">
+          <div className="pb-gate-progress-head">
+            <span>{copy.blockedText}</span>
+            <strong>{acceptedCount}/3</strong>
+          </div>
+          <div className="pb-gate-progress-track" role="presentation" aria-hidden="true">
+            <span style={{ width: `${acceptedProgress}%` }} />
+          </div>
+          <p className="pb-gate-progress-note">{gateStateText}</p>
+        </div>
 
         {error ? <p className="pb-notice error">{error}</p> : null}
 
         <div className="pb-gate-actions">
           <button className="pb-btn pb-btn-primary" type="button" onClick={onContinue} disabled={!canContinue}>
+            <span className="pb-gate-launch-icon" aria-hidden="true">
+              >
+            </span>
             {copy.buttonContinue}
           </button>
           <button className="pb-btn pb-btn-secondary" type="button" onClick={onClose}>

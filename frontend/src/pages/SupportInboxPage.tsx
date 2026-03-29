@@ -3,7 +3,7 @@ import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { useI18n } from "../app/i18n";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
-import { AppShellSection, SectionHeader } from "../components/ui";
+import { ActivityBand, AppShellSection, SectionHeader, StatusPill } from "../components/ui";
 import {
   api,
   type Me,
@@ -207,7 +207,7 @@ export function SupportInboxPage() {
 
   const sortedDialogs = useMemo(
     () => [...dialogs].sort((a, b) => (new Date(b.last_message_at || b.updated_at).getTime() || 0) - (new Date(a.last_message_at || a.updated_at).getTime() || 0)),
-    [dialogs]
+    [dialogs],
   );
   const openedDialog = detail?.dialog || null;
 
@@ -239,10 +239,17 @@ export function SupportInboxPage() {
       <section className="pb-hero-panel pb-reveal">
         <div className="pb-hero-top">
           <span className="pb-eyebrow">PIT BET</span>
-          <span className="pb-live-pill">{isAdmin ? t("layout.role.admin") : t("layout.role.support")}</span>
+          <StatusPill label={isAdmin ? t("layout.role.admin") : t("layout.role.support")} tone="accent" />
         </div>
         <h2>{t("support.inbox.title")}</h2>
         <p>{t("support.inbox.subtitle")}</p>
+        <ActivityBand
+          items={[
+            { label: t("support.inbox.listTitle"), value: sortedDialogs.length, tone: "accent" },
+            { label: t("support.inbox.filter.unread"), value: sortedDialogs.filter((item) => item.unread_for_staff > 0).length, tone: "warning" },
+            { label: t("layout.role.support"), value: isAdmin ? t("layout.role.admin") : t("layout.role.support") },
+          ]}
+        />
       </section>
 
       {selectedDialogId && detail && openedDialog ? (
@@ -252,7 +259,15 @@ export function SupportInboxPage() {
               title={openedDialog.user_first_name || openedDialog.user_username || String(openedDialog.user_telegram_id)}
               subtitle={`@${openedDialog.user_username || "-"} • tg ${openedDialog.user_telegram_id}`}
               action={
-                <button className="pb-btn pb-btn-ghost" type="button" onClick={() => { setSelectedDialogId(null); setDetail(null); setLogs([]); }}>
+                <button
+                  className="pb-btn pb-btn-ghost"
+                  type="button"
+                  onClick={() => {
+                    setSelectedDialogId(null);
+                    setDetail(null);
+                    setLogs([]);
+                  }}
+                >
                   {t("support.inbox.back")}
                 </button>
               }
@@ -281,14 +296,9 @@ export function SupportInboxPage() {
           <AppShellSection>
             <SectionHeader title={t("support.inbox.replyTitle")} />
             <form className="pb-support-reply-box" onSubmit={onReply}>
-              <textarea
-                value={replyText}
-                onChange={(event) => setReplyText(event.target.value)}
-                rows={4}
-                placeholder={t("support.inbox.replyPlaceholder")}
-              />
+              <textarea value={replyText} onChange={(event) => setReplyText(event.target.value)} rows={4} placeholder={t("support.inbox.replyPlaceholder")} />
               <div className="pb-support-reply-actions">
-                <button className="pb-btn pb-btn-secondary" type="button" onClick={() => void openDialog(selectedDialogId)} disabled={busy || detailLoading}>
+                <button className="pb-btn pb-btn-ghost" type="button" onClick={() => void openDialog(selectedDialogId)} disabled={busy || detailLoading}>
                   {t("support.user.refresh")}
                 </button>
                 <button className="pb-btn pb-btn-primary" type="submit" disabled={busy || !replyText.trim()}>
@@ -299,13 +309,7 @@ export function SupportInboxPage() {
 
             <div className="pb-support-status-actions">
               {(["open", "waiting_support", "waiting_user", "closed"] as const).map((status) => (
-                <button
-                  key={status}
-                  className={openedDialog.status === status ? "active" : ""}
-                  type="button"
-                  onClick={() => void onStatusChange(status)}
-                  disabled={busy}
-                >
+                <button key={status} className={openedDialog.status === status ? "active" : ""} type="button" onClick={() => void onStatusChange(status)} disabled={busy}>
                   {statusLabel(status, t)}
                 </button>
               ))}
@@ -335,9 +339,15 @@ export function SupportInboxPage() {
               {detail.context?.recent_payments.length ? (
                 detail.context.recent_payments.map((item) => (
                   <article key={item.id} className="pb-support-payment-card">
-                    <strong>{item.amount_rub} RUB • {item.access_level}</strong>
-                    <p>{item.status} • {item.duration_days} {t("common.days")}</p>
-                    <small>{formatDate(item.created_at, language)} • {item.method_name || t("common.notAvailable")}</small>
+                    <strong>
+                      {item.amount_rub} RUB • {item.access_level}
+                    </strong>
+                    <p>
+                      {item.status} • {item.duration_days} {t("common.days")}
+                    </p>
+                    <small>
+                      {formatDate(item.created_at, language)} • {item.method_name || t("common.notAvailable")}
+                    </small>
                     {item.review_comment ? <p>{item.review_comment}</p> : null}
                   </article>
                 ))
@@ -357,7 +367,9 @@ export function SupportInboxPage() {
                   {logs.map((item) => (
                     <article key={item.id} className="pb-support-log-item">
                       <strong>{logLabel(item.action_type, t)}</strong>
-                      <p>{actorName(me, item, t)} • {formatDate(item.created_at, language)}</p>
+                      <p>
+                        {actorName(me, item, t)} • {formatDate(item.created_at, language)}
+                      </p>
                       <small>
                         {item.dialog_id ? `dialog ${item.dialog_id}` : "-"}
                         {item.target_name ? ` • ${item.target_name}` : ""}
@@ -403,7 +415,9 @@ export function SupportInboxPage() {
                   <strong>{item.user_first_name || item.user_username || String(item.user_telegram_id)}</strong>
                   <span className={`pb-status-pill ${item.status === "closed" ? "warning" : "accent"}`}>{statusLabel(item.status, t)}</span>
                 </div>
-                <p className="pb-support-dialog-meta">@{item.user_username || "-"} • tg {item.user_telegram_id}</p>
+                <p className="pb-support-dialog-meta">
+                  @{item.user_username || "-"} • tg {item.user_telegram_id}
+                </p>
                 {item.subject ? <p className="pb-support-dialog-topic">{topicLabel(item.subject, t)}</p> : null}
                 <p className="pb-support-dialog-preview">{item.last_message_preview || t("support.inbox.noPreview")}</p>
                 <div className="pb-support-dialog-foot">

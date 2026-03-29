@@ -19,13 +19,17 @@ type LegalDocumentViewProps = {
 function LegalBody({ title, intro, sections }: { title: string; intro: string; sections: LegalSection[] }) {
   return (
     <section className="pb-legal-panel pb-reveal">
-      <span className="pb-brand-chip">PIT BET</span>
+      <div className="pb-legal-head">
+        <span className="pb-brand-chip">PIT BET</span>
+        <span className="pb-legal-chip">{sections.length}</span>
+      </div>
       <h2>{title}</h2>
       <p className="pb-legal-intro">{intro}</p>
 
       <div className="pb-legal-sections">
-        {sections.map((section) => (
+        {sections.map((section, index) => (
           <article key={section.title} className="pb-legal-section">
+            <small className="pb-legal-section-index">#{index + 1}</small>
             <h3>{section.title}</h3>
             <p>{section.body}</p>
           </article>

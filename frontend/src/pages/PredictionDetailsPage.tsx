@@ -5,16 +5,12 @@ import { useI18n } from "../app/i18n";
 import { resolveSportLabel } from "../app/sport";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
+import { HeroPanel } from "../components/premium/HeroPanel";
+import { PremiumKpi } from "../components/premium/PremiumKpi";
 import {
-  AccessBadge,
-  ActivityBand,
-  AppShellSection,
-  CTACluster,
-  MarketPulse,
   RocketLoader,
-  SectionHeader,
   SkeletonBlock,
-  StatusPill,
+  Sparkline,
   SportIcon,
 } from "../components/ui";
 import { api, type Prediction } from "../services/api";
@@ -61,10 +57,21 @@ function outcomeText(status: Prediction["status"], t: (key: string) => string) {
   return t("prediction.outcome.pending");
 }
 
-function statusTone(status: Prediction["status"]): "default" | "success" | "warning" | "danger" {
+function statusTone(status: Prediction["status"]): "default" | "success" | "warning" {
   if (status === "won") return "success";
-  if (status === "lost") return "danger";
+  if (status === "lost") return "warning";
   if (status === "refund") return "warning";
+  return "default";
+}
+
+function accessTone(level: Prediction["access_level"]): "default" | "accent" | "vip" {
+  if (level === "premium") return "accent";
+  if (level === "vip") return "vip";
+  return "default";
+}
+
+function riskTone(level: string): "default" | "warning" {
+  if (level === "high") return "warning";
   return "default";
 }
 
@@ -79,11 +86,13 @@ export function PredictionDetailsPage() {
 
   useEffect(() => {
     if (!predictionId) {
+      setItem(null);
       setError("missing");
       setLoading(false);
       return;
     }
 
+    setItem(null);
     setLoading(true);
     setError("");
     api
@@ -96,6 +105,8 @@ export function PredictionDetailsPage() {
       .finally(() => setLoading(false));
   }, [predictionId, reloadKey]);
 
+  const modeLabel = item ? (item.mode === "live" ? t("common.live") : t("common.prematch")) : "";
+
   const pulseValues = useMemo(() => {
     if (!item) return [58, 55, 57, 54, 51, 48, 45, 42, 39, 36];
     const base = item.mode === "live" ? 64 : 52;
@@ -103,118 +114,147 @@ export function PredictionDetailsPage() {
     return [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((step) => base + oddsImpact - step * 2 + (step % 2 === 0 ? 1 : -1));
   }, [item]);
 
+  const snapshotItems = useMemo(() => {
+    if (!item) return [];
+    return [
+      {
+        label: t("prediction.field.kickoff"),
+        value: formatDate(item.event_start_at, language),
+        tone: "default" as const,
+      },
+      {
+        label: t("prediction.field.signal"),
+        value: item.signal_type,
+        tone: "accent" as const,
+      },
+      {
+        label: t("prediction.field.mode"),
+        value: modeLabel,
+        tone: item.mode === "live" ? ("accent" as const) : ("default" as const),
+      },
+      {
+        label: t("prediction.field.status"),
+        value: statusLabel(item.status, t),
+        tone: statusTone(item.status),
+      },
+      {
+        label: t("prediction.field.access"),
+        value: accessLabel(item.access_level, t),
+        tone: accessTone(item.access_level),
+      },
+      {
+        label: t("prediction.field.risk"),
+        value: riskLabel(item.risk_level, t),
+        tone: riskTone(item.risk_level),
+      },
+    ];
+  }, [item, language, modeLabel, t]);
+
   return (
     <Layout>
-      {item ? (
-        <section className="pb-hero-panel pb-reveal">
-          <div className="pb-hero-top">
-            <span className="pb-eyebrow">{t("prediction.hero.eyebrow")}</span>
-            <AccessBadge level={item.access_level} label={accessLabel(item.access_level, t)} />
+      {loading ? (
+        <section className="pb-premium-panel pb-reveal">
+          <RocketLoader title={t("prediction.loadingTitle")} subtitle={t("prediction.loadingSubtitle")} compact />
+          <div className="pb-overview-kpi-skeleton" aria-hidden="true">
+            <SkeletonBlock className="h-96" />
+            <SkeletonBlock className="h-86" />
+            <SkeletonBlock className="h-86" />
           </div>
-
-          <h2>{item.match_name}</h2>
-          <p>{item.league || t("feed.noLeague")}</p>
-
-          <div className="pb-meta-line">
-            <StatusPill label={item.mode === "live" ? t("common.live") : t("common.prematch")} tone="accent" />
-            <StatusPill label={statusLabel(item.status, t)} tone={statusTone(item.status)} />
-            <StatusPill label={`${t("prediction.field.odds")}: ${item.odds}`} />
-            <StatusPill label={`${t("prediction.field.risk")}: ${riskLabel(item.risk_level, t)}`} tone="warning" />
-          </div>
-
-          <MarketPulse label={t("prediction.section.context")} values={pulseValues} tag={item.mode === "live" ? t("common.live") : t("common.prematch")} />
-
-          <ActivityBand
-            items={[
-              { label: t("prediction.field.kickoff"), value: formatDate(item.event_start_at, language) },
-              { label: t("prediction.field.status"), value: statusLabel(item.status, t), tone: item.status === "won" ? "success" : "default" },
-              { label: t("prediction.field.access"), value: accessLabel(item.access_level, t), tone: "accent" },
-            ]}
-          />
         </section>
       ) : null}
 
-      <AppShellSection>
-        <SectionHeader title={t("prediction.section.snapshot")} subtitle={t("prediction.section.why")} />
-
-        {loading ? (
-          <>
-            <RocketLoader title={t("prediction.loadingTitle")} subtitle={t("prediction.loadingSubtitle")} compact />
-            <article className="pb-panel pb-skeleton-card" aria-hidden="true">
-              <SkeletonBlock className="w-45" />
-              <SkeletonBlock className="w-95 h-74" />
-            </article>
-          </>
-        ) : null}
-
-        {!loading && error ? (
+      {!loading && error ? (
+        <section className="pb-premium-panel pb-reveal">
           <div className="pb-error-state">
             <p>{error === "missing" ? t("prediction.error") : error || t("prediction.error")}</p>
-            <CTACluster>
-              <button className="pb-btn pb-btn-ghost" type="button" onClick={() => setReloadKey((prev) => prev + 1)}>
-                {t("common.retry")}
-              </button>
-            </CTACluster>
+            <button className="pb-btn pb-btn-ghost" type="button" onClick={() => setReloadKey((prev) => prev + 1)}>
+              {t("common.retry")}
+            </button>
           </div>
-        ) : null}
+        </section>
+      ) : null}
 
-        {!loading && item ? (
-          <div className="pb-info-list">
-            <div>
-              <span>{t("prediction.field.sport")}</span>
-              <strong className="pb-sport-value">
-                <SportIcon sport={item.sport_type} />
-                <span>{resolveSportLabel(item.sport_type, language)}</span>
-              </strong>
-            </div>
-            <div>
-              <span>{t("prediction.field.kickoff")}</span>
-              <strong>{formatDate(item.event_start_at, language)}</strong>
-            </div>
-            <div>
-              <span>{t("prediction.field.signal")}</span>
-              <strong>{item.signal_type}</strong>
-            </div>
-            <div>
-              <span>{t("prediction.field.mode")}</span>
-              <strong>{item.mode === "live" ? t("common.live") : t("common.prematch")}</strong>
-            </div>
-            <div>
-              <span>{t("prediction.field.status")}</span>
-              <strong>{statusLabel(item.status, t)}</strong>
-            </div>
-            <div>
-              <span>{t("prediction.field.access")}</span>
-              <strong>{accessLabel(item.access_level, t)}</strong>
-            </div>
-          </div>
-        ) : null}
-      </AppShellSection>
-
-      {item ? (
+      {!loading && item ? (
         <>
-          <AppShellSection>
-            <SectionHeader title={t("prediction.section.why")} />
-            <p className="pb-article-text">{item.short_description || t("prediction.whyFallback")}</p>
-          </AppShellSection>
+          <HeroPanel
+            eyebrow={t("prediction.hero.eyebrow")}
+            title={item.match_name}
+            subtitle={item.league || t("feed.noLeague")}
+            right={<span className={`pb-tier-pill ${item.access_level}`}>{accessLabel(item.access_level, t)}</span>}
+          >
+            <div className="pb-details-v4-chip-row">
+              <span className={`pb-details-v4-chip mode ${item.mode}`}>{modeLabel}</span>
+              <span className={`pb-details-v4-chip status ${item.status}`}>{statusLabel(item.status, t)}</span>
+              <span className="pb-details-v4-chip">{t("prediction.field.risk")}: {riskLabel(item.risk_level, t)}</span>
+            </div>
 
-          <AppShellSection>
-            <SectionHeader title={t("prediction.section.context")} subtitle={t("prediction.section.snapshot")} />
-            <div className="pb-story-grid single">
+            <div className="pb-details-v4-core">
+              <div className="pb-details-v4-odds">
+                <small>{t("prediction.field.odds")}</small>
+                <strong>{item.odds}</strong>
+              </div>
+
+              <div className="pb-details-v4-spark-wrap">
+                <div className="pb-details-v4-spark-head">
+                  <span>{t("prediction.section.context")}</span>
+                  <span className="pb-overview-live-tag">{modeLabel}</span>
+                </div>
+                <Sparkline values={pulseValues} className="pb-details-v4-sparkline" />
+                <p>{t("prediction.context.line", { mode: modeLabel, access: accessLabel(item.access_level, t) })}</p>
+              </div>
+            </div>
+          </HeroPanel>
+
+          <section className="pb-premium-panel pb-details-v4-snapshot pb-reveal">
+            <div className="pb-premium-head">
+              <h3>{t("prediction.section.snapshot")}</h3>
+              <small>{t("prediction.section.why")}</small>
+            </div>
+
+            <div className="pb-details-v4-snapshot-grid">
+              <article className="pb-details-v4-sport">
+                <span>{t("prediction.field.sport")}</span>
+                <strong>
+                  <SportIcon sport={item.sport_type} />
+                  <em>{resolveSportLabel(item.sport_type, language)}</em>
+                </strong>
+              </article>
+
+              <div className="pb-details-v4-kpi-grid">
+                {snapshotItems.map((metric) => (
+                  <PremiumKpi key={metric.label} label={metric.label} value={metric.value} tone={metric.tone} />
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <section className="pb-premium-panel pb-details-v4-analysis pb-reveal">
+            <div className="pb-premium-head">
+              <h3>{t("prediction.section.why")}</h3>
+              <small>{t("prediction.section.context")}</small>
+            </div>
+
+            <p className="pb-details-v4-text">{item.short_description || t("prediction.whyFallback")}</p>
+
+            <div className="pb-details-v4-story-grid">
               <article>
-                <h3>{t("prediction.field.mode")}</h3>
-                <p>{t("prediction.context.line", { mode: item.mode === "live" ? t("common.live") : t("common.prematch"), access: accessLabel(item.access_level, t) })}</p>
+                <h4>{t("prediction.field.mode")}</h4>
+                <p>{t("prediction.context.line", { mode: modeLabel, access: accessLabel(item.access_level, t) })}</p>
               </article>
               <article>
-                <h3>{t("prediction.section.why")}</h3>
+                <h4>{t("prediction.section.context")}</h4>
                 <p>{t("prediction.context.pattern")}</p>
               </article>
             </div>
-          </AppShellSection>
+          </section>
 
           {item.bet_screenshot || item.result_screenshot ? (
-            <AppShellSection>
-              <SectionHeader title={t("prediction.section.screenshot")} subtitle={t("prediction.section.screenshotSubtitle")} />
+            <section className="pb-premium-panel pb-details-v4-shots pb-reveal">
+              <div className="pb-premium-head">
+                <h3>{t("prediction.section.screenshot")}</h3>
+                <small>{t("prediction.section.screenshotSubtitle")}</small>
+              </div>
+
               <div className="pb-prediction-screenshot-grid">
                 {item.bet_screenshot ? (
                   <article className="pb-prediction-screenshot-block">
@@ -233,21 +273,25 @@ export function PredictionDetailsPage() {
                   </article>
                 ) : null}
               </div>
-            </AppShellSection>
+            </section>
           ) : null}
 
-          <AppShellSection>
-            <SectionHeader title={t("prediction.section.outcome")} />
-            <p className="pb-article-text">{outcomeText(item.status, t)}</p>
-            <CTACluster>
+          <section className="pb-premium-panel pb-details-v4-outcome pb-reveal">
+            <div className="pb-premium-head">
+              <h3>{t("prediction.section.outcome")}</h3>
+            </div>
+
+            <p className="pb-details-v4-text">{outcomeText(item.status, t)}</p>
+
+            <div className="pb-details-v4-actions">
               <Link className="pb-btn pb-btn-secondary" to="/feed">
                 {t("prediction.cta.feed")}
               </Link>
               <Link className="pb-btn pb-btn-ghost" to="/tariffs">
                 {t("prediction.cta.tariffs")}
               </Link>
-            </CTACluster>
-          </AppShellSection>
+            </div>
+          </section>
         </>
       ) : null}
 

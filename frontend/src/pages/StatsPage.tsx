@@ -4,20 +4,10 @@ import { Link } from "react-router-dom";
 import { useI18n } from "../app/i18n";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
-import {
-  ActivityBand,
-  AnimatedNumber,
-  AppShellSection,
-  CTACluster,
-  InsightCard,
-  MarketPulse,
-  ProgressMeter,
-  RingStat,
-  RocketLoader,
-  SectionHeader,
-  SkeletonBlock,
-  Sparkline,
-} from "../components/ui";
+import { HeroPanel } from "../components/premium/HeroPanel";
+import { PremiumKpi } from "../components/premium/PremiumKpi";
+import { PremiumRing } from "../components/premium/PremiumRing";
+import { RocketLoader, SkeletonBlock, Sparkline } from "../components/ui";
 import { api, type PublicStats } from "../services/api";
 
 function parseErrorMessage(error: unknown, fallback: string): string {
@@ -26,7 +16,7 @@ function parseErrorMessage(error: unknown, fallback: string): string {
 }
 
 export function StatsPage() {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
 
   const [stats, setStats] = useState<PublicStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -67,14 +57,16 @@ export function StatsPage() {
 
   const ringItems = useMemo(
     () => [
-      { label: t("common.free"), value: Number(stats?.by_access?.free ?? 0), color: "#57a3ff" },
-      { label: t("common.premium"), value: Number(stats?.by_access?.premium ?? 0), color: "#1dd7c2" },
-      { label: t("common.vip"), value: Number(stats?.by_access?.vip ?? 0), color: "#f9be6f" },
+      { label: t("common.free"), value: Number(stats?.by_access?.free ?? 0), tone: "free" as const },
+      { label: t("common.premium"), value: Number(stats?.by_access?.premium ?? 0), tone: "premium" as const },
+      { label: t("common.vip"), value: Number(stats?.by_access?.vip ?? 0), tone: "vip" as const },
     ],
-    [stats, t]
+    [stats, t],
   );
 
-  const trendValues = useMemo(() => {
+  const ringTotal = Math.max(1, ringItems.reduce((acc, item) => acc + item.value, 0));
+
+  const trendValues = useMemo<number[]>(() => {
     const slices = [pending, refunds, loses, wins];
     let running = 0;
     return slices.map((value) => {
@@ -83,121 +75,145 @@ export function StatsPage() {
     });
   }, [pending, refunds, loses, wins, total]);
 
+  const heroWave = useMemo<number[]>(() => {
+    const roi = stats?.roi ?? 0;
+    const hit = stats?.hit_rate ?? 0;
+    return [56, 59, 58, 62, 65, 63, 68, 66, 71, 74].map((value, index) => value + Math.round(roi / 12) + Math.round(hit / 22) + (index % 2));
+  }, [stats?.roi, stats?.hit_rate]);
+
+  const insightPending =
+    language === "ru"
+      ? `Сейчас в работе ${pending} сигналов. Это нормальная нагрузка для текущего ритма публикаций.`
+      : `${pending} signals are still in play. This is a healthy load for the current publishing rhythm.`;
+
   return (
     <Layout>
-      <section className="pb-hero-panel pb-reveal">
-        <div className="pb-hero-top">
-          <span className="pb-eyebrow">PIT BET</span>
-          <span className="pb-live-pill">{t("stats.hero.pulse")}</span>
+      <HeroPanel eyebrow="Performance Center" title={t("stats.hero.title")} subtitle={t("stats.hero.subtitle")} right={<span className="pb-stats-v4-live">{t("stats.hero.pulse")}</span>}>
+        <div className="pb-stats-v4-hero-grid">
+          <PremiumRing value={stats?.hit_rate ?? 0} label={t("home.performance.hit")} caption={`${stats?.total ?? 0} ${t("stats.kpi.total")}`} />
+
+          <div className="pb-stats-v4-kpi-grid">
+            <PremiumKpi label={t("common.roi")} value={`${(stats?.roi ?? 0).toFixed(1)}%`} tone="accent" emphasized />
+            <PremiumKpi label={t("stats.kpi.wins")} value={wins} tone="success" />
+            <PremiumKpi label={t("stats.kpi.loses")} value={loses} tone="warning" />
+            <PremiumKpi label={t("stats.kpi.pending")} value={pending} />
+          </div>
         </div>
 
-        <h2>{t("stats.hero.title")}</h2>
-        <p>{t("stats.hero.subtitle")}</p>
-
-        <MarketPulse label={t("stats.visual.title")} values={trendValues.length ? trendValues : [0, 0, 0, 0]} tag={t("common.roi")} />
-
-        <div className="pb-metric-grid tight pb-stats-kpi-grid">
-          <article>
-            <span>{t("common.roi")}</span>
-            <AnimatedNumber value={stats?.roi ?? 0} suffix="%" decimals={1} />
-          </article>
-          <article>
-            <span>{t("home.performance.hit")}</span>
-            <AnimatedNumber value={stats?.hit_rate ?? 0} suffix="%" decimals={1} />
-          </article>
-          <article>
-            <span>{t("stats.kpi.total")}</span>
-            <AnimatedNumber value={stats?.total ?? 0} />
-          </article>
-          <article>
-            <span>{t("stats.kpi.pending")}</span>
-            <AnimatedNumber value={stats?.pending ?? 0} />
-          </article>
-        </div>
-      </section>
-
-      <AppShellSection className="pb-stats-section">
-        <SectionHeader title={t("stats.kpi.title")} />
-        <div className="pb-stats-band-wrap">
-          <ActivityBand
-            items={[
-              { label: t("stats.kpi.wins"), value: wins, tone: "success" },
-              { label: t("stats.kpi.loses"), value: loses, tone: "warning" },
-              { label: t("stats.kpi.refunds"), value: refunds },
-              { label: t("stats.kpi.pending"), value: pending },
-              { label: t("stats.kpi.total"), value: stats?.total ?? 0, tone: "accent" },
-            ]}
-          />
-        </div>
-      </AppShellSection>
+        <Sparkline values={heroWave} className="pb-stats-v4-hero-wave" />
+      </HeroPanel>
 
       {loading ? (
-        <AppShellSection>
+        <section className="pb-premium-panel pb-reveal">
           <RocketLoader title={t("stats.loadingTitle")} subtitle={t("stats.loadingSubtitle")} compact />
-          <div className="pb-insight-grid" aria-hidden="true">
-            <article className="pb-insight-card pb-skeleton-card">
-              <SkeletonBlock className="w-55" />
-              <SkeletonBlock className="w-96 h-56" />
-            </article>
-            <article className="pb-insight-card pb-skeleton-card">
-              <SkeletonBlock className="w-45" />
-              <SkeletonBlock className="w-90 h-56" />
-            </article>
+          <div className="pb-stats-v4-skeleton" aria-hidden="true">
+            <SkeletonBlock className="h-96" />
+            <SkeletonBlock className="h-88" />
+            <SkeletonBlock className="h-84" />
           </div>
-        </AppShellSection>
+        </section>
       ) : null}
 
       {!loading && error ? (
-        <AppShellSection>
-          <p className="pb-error-state">{error || t("stats.error")}</p>
-          <CTACluster>
+        <section className="pb-premium-panel pb-reveal">
+          <div className="pb-error-state">
+            <p>{error || t("stats.error")}</p>
             <button className="pb-btn pb-btn-ghost" type="button" onClick={() => setReloadKey((prev) => prev + 1)}>
               {t("common.retry")}
             </button>
-          </CTACluster>
-        </AppShellSection>
+          </div>
+        </section>
       ) : null}
 
       {!loading && !stats && !error ? (
-        <AppShellSection>
-          <SectionHeader title={t("stats.empty.title")} subtitle={t("stats.empty.subtitle")} />
-        </AppShellSection>
+        <section className="pb-premium-panel pb-reveal">
+          <h3>{t("stats.empty.title")}</h3>
+          <p className="pb-empty-state">{t("stats.empty.subtitle")}</p>
+        </section>
       ) : null}
 
       {stats && !loading ? (
         <>
-          <AppShellSection className="pb-stats-section">
-            <SectionHeader title={t("stats.breakdown.title")} subtitle={t("stats.breakdown.subtitle")} />
-            <RingStat title={t("stats.breakdown.title")} subtitle={t("stats.kpi.total")} items={ringItems} />
-          </AppShellSection>
-
-          <AppShellSection className="pb-stats-section">
-            <SectionHeader title={t("stats.visual.title")} subtitle={t("stats.visual.subtitle")} />
-            <Sparkline values={trendValues} className="pb-sparkline-band" />
-            <div className="pb-progress-list">
-              <ProgressMeter label={t("stats.kpi.wins")} value={wins} total={total} tone="success" />
-              <ProgressMeter label={t("stats.kpi.loses")} value={loses} total={total} tone="danger" />
-              <ProgressMeter label={t("stats.kpi.refunds")} value={refunds} total={total} tone="warning" />
-              <ProgressMeter label={t("stats.kpi.pending")} value={pending} total={total} tone="accent" />
-            </div>
-          </AppShellSection>
-
-          <AppShellSection className="pb-stats-section">
-            <SectionHeader title={t("stats.insights.title")} />
-            <div className="pb-insight-grid pb-stats-insight-grid">
-              <InsightCard title={t("common.roi")} text={t("stats.insight.one", { hit: `${stats.hit_rate}%`, roi: `${stats.roi}%` })} tone="accent" />
-              <InsightCard title={t("stats.breakdown.title")} text={t("stats.insight.two")} />
+          <section className="pb-premium-panel pb-stats-v4-distribution pb-reveal">
+            <div className="pb-premium-head">
+              <h3>{t("stats.kpi.title")}</h3>
+              <small>{t("stats.visual.subtitle")}</small>
             </div>
 
-            <CTACluster>
+            <Sparkline values={trendValues} className="pb-stats-v4-main-wave" />
+
+            <div className="pb-stats-v4-bars">
+              {[
+                { label: t("stats.kpi.wins"), value: wins, tone: "success" },
+                { label: t("stats.kpi.loses"), value: loses, tone: "danger" },
+                { label: t("stats.kpi.refunds"), value: refunds, tone: "warning" },
+                { label: t("stats.kpi.pending"), value: pending, tone: "accent" },
+              ].map((item) => {
+                const width = `${Math.max(4, Math.round((item.value / total) * 100))}%`;
+                return (
+                  <article key={item.label} className="pb-stats-v4-bar-item">
+                    <div>
+                      <span>{item.label}</span>
+                      <strong>{item.value}</strong>
+                    </div>
+                    <div className="pb-stats-v4-track">
+                      <span className={`pb-stats-v4-fill ${item.tone}`} style={{ width }} />
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+
+          <section className="pb-premium-panel pb-stats-v4-access pb-reveal">
+            <div className="pb-premium-head">
+              <h3>{t("stats.breakdown.title")}</h3>
+              <small>{t("stats.breakdown.subtitle")}</small>
+            </div>
+
+            <div className="pb-stats-v4-access-grid">
+              {ringItems.map((item) => {
+                const ratio = Math.round((item.value / ringTotal) * 100);
+                return (
+                  <article key={item.label} className={`pb-stats-v4-access-item ${item.tone}`}>
+                    <span>{item.label}</span>
+                    <strong>{item.value}</strong>
+                    <small>{ratio}%</small>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+
+          <section className="pb-premium-panel pb-stats-v4-insights pb-reveal">
+            <div className="pb-premium-head">
+              <h3>{t("stats.insights.title")}</h3>
+            </div>
+
+            <div className="pb-stats-v4-insight-grid">
+              <article>
+                <h4>{t("common.roi")}</h4>
+                <p>{t("stats.insight.one", { hit: `${stats.hit_rate}%`, roi: `${stats.roi}%` })}</p>
+              </article>
+              <article>
+                <h4>{t("stats.breakdown.title")}</h4>
+                <p>{t("stats.insight.two")}</p>
+              </article>
+              <article>
+                <h4>{t("stats.kpi.pending")}</h4>
+                <p>{insightPending}</p>
+              </article>
+            </div>
+
+            <div className="pb-stats-v4-actions">
               <Link className="pb-btn pb-btn-secondary" to="/feed">
                 {t("stats.cta.feed")}
               </Link>
               <Link className="pb-btn pb-btn-ghost" to="/tariffs">
                 {t("stats.cta.tariffs")}
               </Link>
-            </CTACluster>
-          </AppShellSection>
+            </div>
+          </section>
         </>
       ) : null}
 

@@ -1,9 +1,9 @@
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
 
 import { useI18n } from "../app/i18n";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
-import { ActivityBand, AppShellSection, SectionHeader } from "../components/ui";
+import { ActivityBand, AppShellSection, SectionHeader, StatusPill } from "../components/ui";
 import { api, type SupportDialogDetail, type SupportDialogStatus } from "../services/api";
 
 function formatDate(value: string | null, language: "ru" | "en"): string {
@@ -93,29 +93,29 @@ export function SupportPage() {
   const dialog = detail?.dialog;
   const messages = detail?.messages || [];
   const canSetSubject = Boolean(!dialog?.subject);
+  const unread = dialog?.unread_for_user ?? 0;
+  const threadSubtitle = useMemo(() => topicLabel(dialog?.subject, t), [dialog?.subject, t]);
 
   return (
     <Layout>
       <section className="pb-hero-panel pb-reveal">
         <div className="pb-hero-top">
           <span className="pb-eyebrow">PIT BET</span>
-          <span className={`pb-status-pill ${dialog?.status === "closed" ? "warning" : "accent"}`}>
-            {statusLabel(dialog?.status || "open", t)}
-          </span>
+          <StatusPill label={statusLabel(dialog?.status || "open", t)} tone={dialog?.status === "closed" ? "warning" : "accent"} />
         </div>
         <h2>{t("support.user.title")}</h2>
         <p>{t("support.user.subtitle")}</p>
         <ActivityBand
           items={[
             { label: t("support.user.status"), value: statusLabel(dialog?.status || "open", t), tone: "accent" },
-            { label: t("support.user.unread"), value: dialog?.unread_for_user ?? 0, tone: (dialog?.unread_for_user || 0) > 0 ? "warning" : "default" },
+            { label: t("support.user.unread"), value: unread, tone: unread > 0 ? "warning" : "default" },
             { label: t("support.user.lastUpdate"), value: formatDate(dialog?.last_message_at || null, language) },
           ]}
         />
       </section>
 
       <AppShellSection>
-        <SectionHeader title={t("support.user.threadTitle")} subtitle={t("support.user.threadSubtitle")} />
+        <SectionHeader title={t("support.user.threadTitle")} subtitle={threadSubtitle} />
 
         {loading ? <p className="pb-empty-state">{t("common.loading")}</p> : null}
         {!loading && messages.length === 0 ? <p className="pb-empty-state">{t("support.user.empty")}</p> : null}
@@ -139,24 +139,21 @@ export function SupportPage() {
       </AppShellSection>
 
       <AppShellSection>
-        <SectionHeader title={t("support.user.replyTitle")} subtitle={topicLabel(dialog?.subject, t)} />
+        <SectionHeader title={t("support.user.replyTitle")} subtitle={threadSubtitle} />
         <form className="pb-support-reply-box" onSubmit={onSend}>
           {canSetSubject ? (
-            <select value={topic} onChange={(event) => setTopic(event.target.value as (typeof TOPIC_VALUES)[number])}>
-              <option value="payment">{t("support.topic.payment")}</option>
-              <option value="subscription">{t("support.topic.subscription")}</option>
-              <option value="technical">{t("support.topic.technical")}</option>
-              <option value="other">{t("support.topic.other")}</option>
-            </select>
+            <div className="pb-support-topic-grid">
+              {TOPIC_VALUES.map((item) => (
+                <button key={item} type="button" className={topic === item ? "active" : ""} onClick={() => setTopic(item)}>
+                  {topicLabel(item, t)}
+                </button>
+              ))}
+            </div>
           ) : null}
-          <textarea
-            value={messageText}
-            onChange={(event) => setMessageText(event.target.value)}
-            rows={4}
-            placeholder={t("support.user.inputPlaceholder")}
-          />
+
+          <textarea value={messageText} onChange={(event) => setMessageText(event.target.value)} rows={4} placeholder={t("support.user.inputPlaceholder")} />
           <div className="pb-support-reply-actions">
-            <button className="pb-btn pb-btn-secondary" type="button" onClick={() => void loadDialog()} disabled={sending || loading}>
+            <button className="pb-btn pb-btn-ghost" type="button" onClick={() => void loadDialog()} disabled={sending || loading}>
               {t("support.user.refresh")}
             </button>
             <button className="pb-btn pb-btn-primary" type="submit" disabled={sending || !messageText.trim()}>

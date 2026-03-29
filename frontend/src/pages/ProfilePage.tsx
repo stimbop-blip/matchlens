@@ -5,11 +5,14 @@ import { useI18n } from "../app/i18n";
 import { countPendingPayments, paymentStatusTone, resolveSubscriptionSnapshot } from "../app/subscription";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
-import { AccessBadge, ActivityBand, AppShellSection, CTACluster, RocketLoader, SectionHeader, SkeletonBlock, ToggleRow } from "../components/ui";
+import { HeroPanel } from "../components/premium/HeroPanel";
+import { PremiumKpi } from "../components/premium/PremiumKpi";
+import { PremiumRing } from "../components/premium/PremiumRing";
+import { RocketLoader, SkeletonBlock } from "../components/ui";
 import { api, type Me, type MyPayment, type NotificationSettings, type PromoApplyResult, type ReferralStats } from "../services/api";
 import { waitForTelegramInitData } from "../services/telegram";
 
-function formatDate(value: string | null | undefined, language: "ru" | "en") {
+function formatDate(value: string | null | undefined, language: "ru" | "en"): string {
   if (!value) return "-";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "-";
@@ -22,13 +25,13 @@ function normalizeTariff(value: string): "free" | "premium" | "vip" {
   return "free";
 }
 
-function tariffLabel(level: "free" | "premium" | "vip", t: (key: string) => string) {
+function tariffLabel(level: "free" | "premium" | "vip", t: (key: string) => string): string {
   if (level === "premium") return t("common.premium");
   if (level === "vip") return t("common.vip");
   return t("common.free");
 }
 
-function statusLabel(status: "active" | "expired" | "canceled" | "inactive" | "unknown", t: (key: string) => string) {
+function statusLabel(status: "active" | "expired" | "canceled" | "inactive" | "unknown", t: (key: string) => string): string {
   if (status === "active") return t("common.status.active");
   if (status === "expired") return t("common.status.expired");
   if (status === "canceled") return t("common.status.canceled");
@@ -36,13 +39,19 @@ function statusLabel(status: "active" | "expired" | "canceled" | "inactive" | "u
   return t("common.status.unknown");
 }
 
-function paymentStatusLabel(status: string, t: (key: string) => string) {
+function paymentStatusLabel(status: string, t: (key: string) => string): string {
   if (status === "pending_manual_review") return t("common.payment.pending_manual_review");
   if (status === "requires_clarification") return t("common.payment.requires_clarification");
   if (status === "succeeded") return t("common.payment.succeeded");
   if (status === "failed") return t("common.payment.failed");
   if (status === "canceled") return t("common.payment.canceled");
   return t("common.payment.pending");
+}
+
+function buildAccessProgress(tariff: "free" | "premium" | "vip", isActive: boolean): number {
+  const base = tariff === "vip" ? 100 : tariff === "premium" ? 70 : 34;
+  if (isActive) return base;
+  return Math.max(10, base - 24);
 }
 
 const TARIFF_WEIGHT: Record<"free" | "premium" | "vip", number> = {
@@ -110,10 +119,10 @@ export function ProfilePage() {
 
   const sub = resolveSubscriptionSnapshot(subscriptionRaw);
   const pendingPayments = countPendingPayments(payments);
-  const referralStatus = `${referral?.invited ?? 0}/${referral?.activated ?? 0}`;
   const isAdmin = Boolean(me?.is_admin || me?.role === "admin");
   const isSupport = Boolean(me?.is_support || me?.role === "support");
   const isStaff = isAdmin || isSupport;
+  const accessProgress = buildAccessProgress(sub.tariff, sub.is_active);
 
   const availableNotificationControls = useMemo(() => {
     const currentWeight = TARIFF_WEIGHT[sub.tariff];
@@ -123,27 +132,17 @@ export function ProfilePage() {
     }));
   }, [sub.tariff]);
 
+  const enabledNotifications = notify
+    ? [notify.notifications_enabled, notify.notify_free, notify.notify_premium, notify.notify_vip, notify.notify_results, notify.notify_news].filter(Boolean).length
+    : 0;
+
+  const roleText = isAdmin ? t("profile.hero.roleAdmin") : isSupport ? t("profile.hero.roleSupport") : t("profile.hero.roleUser");
+
   const lockText = (minTariff: "free" | "premium" | "vip") => {
     if (minTariff === "vip") return t("profile.notifications.lockVip");
     if (minTariff === "premium") return t("profile.notifications.lockPremium");
     return t("profile.notifications.lockFree");
   };
-
-  if (loading) {
-    return (
-      <Layout>
-        <AppShellSection>
-          <RocketLoader title={t("profile.loadingTitle")} subtitle={t("profile.loadingSubtitle")} />
-          <div className="pb-profile-skeleton" aria-hidden="true">
-            <SkeletonBlock className="w-55 h-56" />
-            <SkeletonBlock className="w-44 h-56" />
-            <SkeletonBlock className="w-90 h-64" />
-          </div>
-        </AppShellSection>
-        <AppDisclaimer />
-      </Layout>
-    );
-  }
 
   const updateNotify = async (payload: Partial<NotificationSettings>) => {
     try {
@@ -200,171 +199,178 @@ export function ProfilePage() {
     }
   };
 
+  if (loading) {
+    return (
+      <Layout>
+        <section className="pb-premium-panel pb-reveal">
+          <RocketLoader title={t("profile.loadingTitle")} subtitle={t("profile.loadingSubtitle")} />
+          <div className="pb-overview-kpi-skeleton" aria-hidden="true">
+            <SkeletonBlock className="h-96" />
+            <SkeletonBlock className="h-86" />
+            <SkeletonBlock className="h-86" />
+          </div>
+        </section>
+        <AppDisclaimer />
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
-      <section className="pb-hero-panel pb-reveal">
-        <div className="pb-hero-top">
-          <span className="pb-eyebrow">{t("profile.hero.title")}</span>
-          <AccessBadge level={sub.tariff} label={tariffLabel(sub.tariff, t)} />
+      <HeroPanel
+        eyebrow={t("profile.hero.title")}
+        title={me?.first_name || (me?.username ? `@${me.username}` : "PIT BET")}
+        subtitle={t("profile.hero.subtitle")}
+        right={<span className={`pb-tier-pill ${sub.tariff}`}>{tariffLabel(sub.tariff, t)}</span>}
+      >
+        <div className="pb-profile-v4-hero-grid">
+          <PremiumKpi label={t("profile.hero.role")} value={roleText} tone={isStaff ? "accent" : "default"} />
+          <PremiumKpi label={t("profile.hero.accessUntil")} value={formatDate(sub.ends_at, language)} />
+          <PremiumKpi label={t("profile.snapshot.pending")} value={pendingPayments} tone={pendingPayments > 0 ? "warning" : "default"} />
+          <PremiumKpi label={t("profile.notifications.title")} value={enabledNotifications} hint={notify ? "" : t("common.notAvailable")} />
         </div>
 
-        <h2>{me?.first_name || (me?.username ? `@${me.username}` : "PIT BET")}</h2>
-        <p>{t("profile.hero.subtitle")}</p>
-
-        <ActivityBand
-          items={[
-            {
-              label: t("profile.hero.role"),
-              value: isAdmin ? t("profile.hero.roleAdmin") : isSupport ? t("profile.hero.roleSupport") : t("profile.hero.roleUser"),
-            },
-            { label: t("profile.hero.accessUntil"), value: formatDate(sub.ends_at, language) },
-            { label: t("common.status.pending"), value: pendingPayments, tone: pendingPayments > 0 ? "warning" : "accent" },
-          ]}
-        />
-
-        <CTACluster>
+        <div className="pb-overview-hero-actions pb-profile-v4-actions">
           <Link className="pb-btn pb-btn-secondary" to="/tariffs">
             {t("profile.quick.tariffs")}
           </Link>
           <Link className="pb-btn pb-btn-ghost" to="/profile#referral">
             {t("profile.quick.referral")}
           </Link>
-          <Link className="pb-btn pb-btn-ghost" to="/profile#notifications">
-            {t("profile.quick.notifications")}
-          </Link>
           <Link className="pb-btn pb-btn-ghost" to="/support">
             {t("profile.quick.support")}
           </Link>
-        </CTACluster>
-
-        {isStaff ? (
-          <CTACluster>
+          {isStaff ? (
             <Link className="pb-btn pb-btn-ghost" to="/support/inbox">
               {t("profile.support.inboxOpen")}
             </Link>
-            {isAdmin ? (
-              <Link className="pb-btn pb-btn-ghost" to="/admin">
-                {t("profile.admin.open")}
-              </Link>
-            ) : null}
-          </CTACluster>
-        ) : null}
+          ) : null}
+          {isAdmin ? (
+            <Link className="pb-btn pb-btn-ghost" to="/admin">
+              {t("profile.admin.open")}
+            </Link>
+          ) : null}
+        </div>
+      </HeroPanel>
+
+      <section className="pb-premium-panel pb-profile-v4-snapshot pb-reveal">
+        <div className="pb-premium-head">
+          <h3>{t("profile.snapshot.title")}</h3>
+          <small>{t("profile.snapshot.subtitle")}</small>
+        </div>
+
+        <div className="pb-overview-access-grid">
+          <PremiumRing value={accessProgress} label={t("home.access.openNow")} caption={statusLabel(sub.status, t)} tone={sub.tariff === "vip" ? "vip" : "accent"} />
+
+          <div className="pb-overview-access-metrics">
+            <PremiumKpi label={t("profile.snapshot.tariff")} value={tariffLabel(sub.tariff, t)} tone={sub.tariff === "vip" ? "vip" : "accent"} />
+            <PremiumKpi label={t("profile.snapshot.status")} value={statusLabel(sub.status, t)} tone={sub.is_active ? "success" : "warning"} />
+            <PremiumKpi label={t("profile.snapshot.bonus")} value={`${referral?.bonus_days ?? 0} ${t("common.daysShort")}`} tone="success" />
+            <PremiumKpi label={t("profile.snapshot.pending")} value={pendingPayments} />
+          </div>
+        </div>
       </section>
 
-      <AppShellSection>
-        <SectionHeader title={t("profile.snapshot.title")} subtitle={t("profile.snapshot.subtitle")} />
-        <ActivityBand
-          items={[
-            { label: t("profile.snapshot.tariff"), value: tariffLabel(sub.tariff, t), tone: "accent" },
-            { label: t("profile.snapshot.status"), value: statusLabel(sub.status, t), tone: sub.is_active ? "success" : "warning" },
-            { label: t("profile.snapshot.bonus"), value: referral?.bonus_days ?? 0 },
-            { label: t("profile.snapshot.pending"), value: pendingPayments, tone: pendingPayments > 0 ? "warning" : "default" },
-            { label: t("profile.snapshot.referral"), value: referralStatus },
-            { label: t("profile.snapshot.promo"), value: promoResult?.ok ? t("common.status.active") : t("common.status.inactive") },
-          ]}
-        />
-      </AppShellSection>
+      <section className="pb-premium-panel pb-profile-v4-payments pb-reveal" id="subscription">
+        <div className="pb-premium-head">
+          <h3>{t("profile.subscription.title")}</h3>
+          <small>{t("profile.subscription.subtitle")}</small>
+        </div>
 
-      <AppShellSection id="subscription">
-        <SectionHeader title={t("profile.subscription.title")} subtitle={t("profile.subscription.subtitle")} />
+        {!me ? <p className="pb-empty-state">{t("profile.unavailable")}</p> : null}
+        {payments.length === 0 ? <p className="pb-empty-state">{t("profile.subscription.historyEmpty")}</p> : null}
 
-        {!loading && !me ? <p className="pb-empty-state">{t("profile.unavailable")}</p> : null}
-        {!loading && payments.length === 0 ? <p className="pb-empty-state">{t("profile.subscription.historyEmpty")}</p> : null}
+        <div className="pb-profile-v4-payment-list">
+          {payments.slice(0, 6).map((payment) => (
+            <article key={payment.id} className={`pb-profile-v4-payment ${paymentStatusTone(payment.status)}`}>
+              <div>
+                <strong>
+                  {tariffLabel(normalizeTariff(payment.tariff_code), t)} · {payment.duration_days} {t("common.daysShort")} · {payment.amount_rub} RUB
+                </strong>
+                <p>
+                  {t("profile.payment.method")}: {payment.payment_method_name || payment.payment_method_code || t("common.notAvailable")}
+                </p>
+                {payment.review_comment ? <p>{t("profile.payment.comment")}: {payment.review_comment}</p> : null}
+              </div>
+              <span>{paymentStatusLabel(payment.status, t)}</span>
+            </article>
+          ))}
+        </div>
+      </section>
 
-        {payments.slice(0, 6).map((payment) => (
-          <article key={payment.id} className={"pb-payment-row " + paymentStatusTone(payment.status)}>
-            <div>
-              <strong>
-                {tariffLabel(normalizeTariff(payment.tariff_code), t)} · {payment.duration_days} {t("common.daysShort")} · {payment.amount_rub} RUB
-              </strong>
-              <p>
-                {t("profile.payment.method")}: {payment.payment_method_name || payment.payment_method_code || t("common.notAvailable")}
-              </p>
-              {payment.review_comment ? <p>{t("profile.payment.comment")}: {payment.review_comment}</p> : null}
-            </div>
-            <span>{paymentStatusLabel(payment.status, t)}</span>
-          </article>
-        ))}
-      </AppShellSection>
-
-      <AppShellSection id="referral">
-        <SectionHeader title={t("profile.referral.title")} subtitle={t("profile.referral.subtitle")} />
+      <section className="pb-premium-panel pb-profile-v4-referral pb-reveal" id="referral">
+        <div className="pb-premium-head">
+          <h3>{t("profile.referral.title")}</h3>
+          <small>{t("profile.referral.subtitle")}</small>
+        </div>
 
         {!referral ? <p className="pb-empty-state">{t("profile.referral.empty")}</p> : null}
 
         {referral ? (
           <>
-            <div className="pb-info-list">
-              <div>
-                <span>{t("profile.referral.code")}</span>
-                <strong>{referral.referral_code}</strong>
-              </div>
-              <div>
-                <span>{t("profile.referral.invited")}</span>
-                <strong>{referral.invited}</strong>
-              </div>
-              <div>
-                <span>{t("profile.referral.activated")}</span>
-                <strong>{referral.activated}</strong>
-              </div>
-              <div>
-                <span>{t("profile.referral.bonus")}</span>
-                <strong>{referral.bonus_days}</strong>
-              </div>
+            <div className="pb-profile-v4-ref-grid">
+              <PremiumKpi label={t("profile.referral.code")} value={referral.referral_code} tone="accent" />
+              <PremiumKpi label={t("profile.referral.invited")} value={referral.invited} />
+              <PremiumKpi label={t("profile.referral.activated")} value={referral.activated} tone="accent" />
+              <PremiumKpi label={t("profile.referral.bonus")} value={`${referral.bonus_days} ${t("common.daysShort")}`} tone="success" />
             </div>
 
-            <div className="pb-input-stack">
+            <div className="pb-profile-v4-linkbox">
               <label>{t("profile.referral.link")}</label>
               <input value={referral.referral_link} readOnly />
-              <CTACluster>
+              <div className="pb-overview-hero-actions">
                 <button className="pb-btn pb-btn-secondary" type="button" onClick={copyReferral}>
                   {t("profile.referral.copy")}
                 </button>
                 <button className="pb-btn pb-btn-ghost" type="button" onClick={shareReferral}>
                   {t("profile.referral.share")}
                 </button>
-              </CTACluster>
+              </div>
             </div>
           </>
         ) : null}
-      </AppShellSection>
+      </section>
 
-      <AppShellSection id="promo">
-        <SectionHeader title={t("profile.promo.title")} subtitle={t("profile.promo.subtitle")} />
-        <div className="pb-input-stack">
+      <section className="pb-premium-panel pb-profile-v4-promo pb-reveal" id="promo">
+        <div className="pb-premium-head">
+          <h3>{t("profile.promo.title")}</h3>
+          <small>{t("profile.promo.subtitle")}</small>
+        </div>
+
+        <div className="pb-profile-v4-promo-grid">
           <input value={promoCode} onChange={(e) => setPromoCode(e.target.value.toUpperCase())} placeholder={t("profile.promo.placeholder")} />
           <select value={promoTariff} onChange={(e) => setPromoTariff(e.target.value as "free" | "premium" | "vip")}>
             <option value="free">{t("common.free")}</option>
             <option value="premium">{t("common.premium")}</option>
             <option value="vip">{t("common.vip")}</option>
           </select>
-
-          <CTACluster>
-            <button className="pb-btn pb-btn-primary" type="button" onClick={applyPromo}>
-              {t("profile.promo.apply")}
-            </button>
-          </CTACluster>
-
-          {promoResult ? (
-            <p className={promoResult.ok ? "pb-notice success" : "pb-notice error"}>
-              {promoResult.message}
-              {promoResult.final_price_rub !== undefined && promoResult.final_price_rub !== null ? ` ${t("profile.promo.final")}: ${promoResult.final_price_rub} RUB.` : ""}
-            </p>
-          ) : null}
+          <button className="pb-btn pb-btn-primary" type="button" onClick={applyPromo}>
+            {t("profile.promo.apply")}
+          </button>
         </div>
-      </AppShellSection>
 
-      <AppShellSection id="notifications">
-        <SectionHeader title={t("profile.notifications.title")} subtitle={t("profile.notifications.subtitle")} />
+        {promoResult ? (
+          <p className={promoResult.ok ? "pb-notice success" : "pb-notice error"}>
+            {promoResult.message}
+            {promoResult.final_price_rub !== undefined && promoResult.final_price_rub !== null ? ` ${t("profile.promo.final")}: ${promoResult.final_price_rub} RUB.` : ""}
+          </p>
+        ) : null}
+      </section>
+
+      <section className="pb-premium-panel pb-profile-v4-notify pb-reveal" id="notifications">
+        <div className="pb-premium-head">
+          <h3>{t("profile.notifications.title")}</h3>
+          <small>{t("profile.notifications.subtitle")}</small>
+        </div>
 
         {!notify ? <p className="pb-empty-state">{t("profile.notifications.empty")}</p> : null}
 
         {notify ? (
-          <div className="pb-toggle-list">
+          <div className="pb-profile-v4-toggle-list">
             {availableNotificationControls.map((control) => {
               if (!control.unlocked) {
                 return (
-                  <div key={control.key} className="pb-toggle-row locked">
+                  <div key={control.key} className="pb-profile-v4-toggle locked">
                     <span>
                       <strong>{t(control.labelKey)}</strong>
                       <small>{lockText(control.minTariff)}</small>
@@ -374,19 +380,21 @@ export function ProfilePage() {
                 );
               }
               return (
-                <ToggleRow
-                  key={control.key}
-                  label={t(control.labelKey)}
-                  checked={Boolean(notify[control.key])}
-                  onChange={(next) => void updateNotify({ [control.key]: next } as Partial<NotificationSettings>)}
-                />
+                <label key={control.key} className="pb-profile-v4-toggle">
+                  <span>{t(control.labelKey)}</span>
+                  <input
+                    type="checkbox"
+                    checked={Boolean(notify[control.key])}
+                    onChange={(event) => void updateNotify({ [control.key]: event.target.checked } as Partial<NotificationSettings>)}
+                  />
+                </label>
               );
             })}
           </div>
         ) : null}
 
         {notifyMessage ? <p className={notifyMessage.tone === "success" ? "pb-notice success" : "pb-notice error"}>{notifyMessage.text}</p> : null}
-      </AppShellSection>
+      </section>
 
       <AppDisclaimer />
     </Layout>

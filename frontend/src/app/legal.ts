@@ -26,6 +26,7 @@ export type GateCopy = {
   buttonContinue: string;
   buttonClose: string;
   blockedText: string;
+  saveError: string;
 };
 
 export type MoreLinksCopy = {
@@ -62,6 +63,7 @@ export const LEGAL_TEXTS: Record<LegalLocale, LegalBundle> = {
       buttonContinue: "Продолжить",
       buttonClose: "Закрыть приложение",
       blockedText: "Доступ к PIT BET возможен только после подтверждения возраста и ознакомления с правилами и условиями оплаты сервиса.",
+      saveError: "Не удалось сохранить согласия",
     },
     rules: {
       title: "Правила использования PIT BET",
@@ -224,6 +226,7 @@ export const LEGAL_TEXTS: Record<LegalLocale, LegalBundle> = {
       buttonContinue: "Continue",
       buttonClose: "Close app",
       blockedText: "Access to PIT BET is available only after confirming your age and reviewing the service rules and payment terms.",
+      saveError: "Failed to save consent",
     },
     rules: {
       title: "PIT BET Terms of Use",

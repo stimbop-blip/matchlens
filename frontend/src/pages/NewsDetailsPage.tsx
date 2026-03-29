@@ -4,7 +4,9 @@ import { Link, useParams } from "react-router-dom";
 import { useI18n } from "../app/i18n";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
-import { AppShellSection, CTACluster, RocketLoader, SectionHeader, SkeletonBlock } from "../components/ui";
+import { HeroPanel } from "../components/premium/HeroPanel";
+import { PremiumKpi } from "../components/premium/PremiumKpi";
+import { RocketLoader, SkeletonBlock } from "../components/ui";
 import { api, type NewsPost } from "../services/api";
 
 function parseErrorMessage(error: unknown, fallback: string): string {
@@ -59,57 +61,123 @@ export function NewsDetailsPage() {
     };
   }, [reloadKey]);
 
-  const post = useMemo(() => items.find((item) => item.id === newsId), [items, newsId]);
+  const orderedItems = useMemo(
+    () =>
+      [...items].sort((a, b) => {
+        const left = new Date(a.published_at || 0).getTime() || 0;
+        const right = new Date(b.published_at || 0).getTime() || 0;
+        return right - left;
+      }),
+    [items],
+  );
+
+  const post = useMemo(() => orderedItems.find((item) => item.id === newsId), [orderedItems, newsId]);
+  const related = useMemo(() => orderedItems.filter((item) => item.id !== newsId).slice(0, 3), [orderedItems, newsId]);
+
+  const wordsCount = useMemo(() => {
+    if (!post) return 0;
+    return post.body.trim().split(/\s+/).filter(Boolean).length;
+  }, [post]);
+
+  const readMinutes = Math.max(1, Math.round(wordsCount / 190));
+  const wordsLabel = t("news.article.words");
+  const readLabel = t("news.article.readTime");
+  const readValue = `${readMinutes} ${t("news.article.minutes")}`;
+  const relatedTitle = t("news.article.related");
 
   return (
     <Layout>
-      {post ? (
-        <section className="pb-hero-panel pb-reveal">
-          <span className="pb-eyebrow">PIT BET</span>
-          <h2>{post.title}</h2>
-          <p>{post.category || t("layout.title.news")}</p>
-          <div className="pb-meta-line">
-            <span>{formatDate(post.published_at, language, t("common.noDate"))}</span>
+      {loading ? (
+        <section className="pb-premium-panel pb-reveal">
+          <RocketLoader title={t("news.article.loadingTitle")} subtitle={t("news.article.loadingSubtitle")} compact />
+          <div className="pb-overview-kpi-skeleton" aria-hidden="true">
+            <SkeletonBlock className="h-96" />
+            <SkeletonBlock className="h-110" />
+            <SkeletonBlock className="h-74" />
           </div>
         </section>
       ) : null}
 
-      <AppShellSection>
-        <SectionHeader title={t("news.article.title")} />
-        {loading ? (
-          <>
-            <RocketLoader title={t("news.article.loadingTitle")} subtitle={t("news.article.loadingSubtitle")} compact />
-            <article className="pb-news-card pb-skeleton-card" aria-hidden="true">
-              <SkeletonBlock className="w-45" />
-              <SkeletonBlock className="w-96 h-110" />
-              <SkeletonBlock className="w-34" />
-            </article>
-          </>
-        ) : null}
-
-        {!loading && error ? (
+      {!loading && error ? (
+        <section className="pb-premium-panel pb-reveal">
           <div className="pb-error-state">
             <p>{error || t("news.error")}</p>
-            <CTACluster>
-              <button className="pb-btn pb-btn-ghost" type="button" onClick={() => setReloadKey((prev) => prev + 1)}>
-                {t("common.retry")}
-              </button>
-            </CTACluster>
+            <button className="pb-btn pb-btn-ghost" type="button" onClick={() => setReloadKey((prev) => prev + 1)}>
+              {t("common.retry")}
+            </button>
           </div>
-        ) : null}
+        </section>
+      ) : null}
 
-        {!loading && !error && !post ? <p className="pb-empty-state">{t("news.article.empty")}</p> : null}
-        {post ? <article className="pb-article-text long">{post.body}</article> : null}
+      {!loading && !error && !post ? (
+        <section className="pb-premium-panel pb-reveal">
+          <p className="pb-empty-state">{t("news.article.empty")}</p>
+          <div className="pb-news-v4-actions">
+            <Link className="pb-btn pb-btn-secondary" to="/news">
+              {t("news.article.back")}
+            </Link>
+            <Link className="pb-btn pb-btn-ghost" to="/">
+              {t("news.article.home")}
+            </Link>
+          </div>
+        </section>
+      ) : null}
 
-        <CTACluster>
-          <Link className="pb-btn pb-btn-secondary" to="/news">
-            {t("news.article.back")}
-          </Link>
-          <Link className="pb-btn pb-btn-ghost" to="/">
-            {t("news.article.home")}
-          </Link>
-        </CTACluster>
-      </AppShellSection>
+      {!loading && post ? (
+        <>
+          <HeroPanel
+            eyebrow="PIT BET"
+            title={post.title}
+            subtitle={post.category || t("layout.title.news")}
+            right={<span className="pb-news-v4-chip">{post.category || t("layout.title.news")}</span>}
+          >
+            <div className="pb-news-v4-kpi">
+              <PremiumKpi label={t("layout.title.news")} value={formatDate(post.published_at, language, t("common.noDate"))} />
+              <PremiumKpi label={wordsLabel} value={wordsCount} tone="accent" />
+              <PremiumKpi label={readLabel} value={readValue} tone="vip" />
+            </div>
+          </HeroPanel>
+
+          <section className="pb-premium-panel pb-reveal">
+            <div className="pb-premium-head">
+              <h3>{t("news.article.title")}</h3>
+            </div>
+            <article className="pb-news-v4-article">{post.body}</article>
+          </section>
+
+          {related.length > 0 ? (
+            <section className="pb-premium-panel pb-reveal">
+              <div className="pb-premium-head">
+                <h3>{relatedTitle}</h3>
+                <small>{t("news.stream.subtitle")}</small>
+              </div>
+
+              <div className="pb-overview-news-list">
+                {related.map((item) => (
+                  <Link key={item.id} className="pb-overview-news-item" to={`/news/${item.id}`}>
+                    <div className="pb-news-v4-row">
+                      <h4>{item.title}</h4>
+                      <span className="pb-news-v4-chip">{item.category || t("layout.title.news")}</span>
+                    </div>
+                    <small>{formatDate(item.published_at, language, t("common.noDate"))}</small>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          <section className="pb-premium-panel pb-reveal">
+            <div className="pb-news-v4-actions">
+              <Link className="pb-btn pb-btn-secondary" to="/news">
+                {t("news.article.back")}
+              </Link>
+              <Link className="pb-btn pb-btn-ghost" to="/">
+                {t("news.article.home")}
+              </Link>
+            </div>
+          </section>
+        </>
+      ) : null}
 
       <AppDisclaimer />
     </Layout>
