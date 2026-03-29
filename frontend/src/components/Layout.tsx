@@ -134,7 +134,9 @@ export function Layout({ children }: PropsWithChildren) {
       <header className="pb-app-header">
         <div className="pb-brand-row">
           <span className="pb-brand-chip">PIT BET</span>
-          {staffRole ? <span className="pb-role-chip">{staffRole === "admin" ? t("layout.role.admin") : t("layout.role.support")}</span> : null}
+          {staffRole && location.pathname !== "/menu" ? (
+            <span className="pb-role-chip">{staffRole === "admin" ? t("layout.role.admin") : t("layout.role.support")}</span>
+          ) : null}
         </div>
         <h1>{t(meta.titleKey)}</h1>
         <p>{t(meta.subtitleKey)}</p>

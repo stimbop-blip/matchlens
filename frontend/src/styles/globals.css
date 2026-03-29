@@ -6194,3 +6194,527 @@ a:focus {
     grid-template-columns: 1fr;
   }
 }
+
+/* PIT BET more screen: service center redesign */
+
+.pb-more-delay-1 {
+  animation-delay: 0.05s;
+}
+
+.pb-more-delay-2 {
+  animation-delay: 0.1s;
+}
+
+.pb-more-delay-3 {
+  animation-delay: 0.16s;
+}
+
+.pb-more-delay-4 {
+  animation-delay: 0.22s;
+}
+
+.pb-more-hero-panel {
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 30%, var(--border-soft));
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 100% -18%, color-mix(in srgb, var(--accent-soft) 78%, transparent), transparent 44%),
+    radial-gradient(circle at -10% 120%, color-mix(in srgb, var(--info) 16%, transparent), transparent 56%),
+    linear-gradient(160deg, color-mix(in srgb, var(--surface-2) 92%, transparent), color-mix(in srgb, var(--surface-1) 96%, transparent));
+  box-shadow: 0 20px 36px rgba(0, 0, 0, 0.24);
+  padding: 16px;
+  display: grid;
+  gap: 14px;
+}
+
+.pb-more-hero-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+}
+
+.pb-more-hero-copy h2 {
+  margin-top: 9px;
+  font-size: clamp(24px, 6vw, 30px);
+  line-height: 1.14;
+  letter-spacing: -0.25px;
+}
+
+.pb-more-hero-copy p {
+  margin-top: 8px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.pb-more-hero-badges {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+}
+
+.pb-more-hero-access {
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.pb-more-role-pill {
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--warning) 46%, transparent);
+  background: color-mix(in srgb, var(--warning) 14%, transparent);
+  color: color-mix(in srgb, var(--warning) 76%, var(--text-primary));
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.28px;
+}
+
+.pb-more-hero-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.pb-more-hero-item {
+  border: 1px solid color-mix(in srgb, var(--border-soft) 90%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface-1) 76%, transparent);
+  padding: 9px 10px;
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.pb-more-hero-item span {
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.24px;
+  text-transform: uppercase;
+}
+
+.pb-more-hero-item strong {
+  font-size: 14px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.pb-more-hero-item.accent strong {
+  color: var(--accent-primary);
+}
+
+.pb-more-hero-item.success strong {
+  color: var(--success);
+}
+
+.pb-more-hero-item.warning strong {
+  color: var(--warning);
+}
+
+.pb-more-section {
+  display: grid;
+  gap: 10px;
+}
+
+.pb-more-section-head {
+  display: grid;
+  gap: 3px;
+  padding: 0 2px;
+}
+
+.pb-more-section-head h3 {
+  font-size: 17px;
+  line-height: 1.25;
+}
+
+.pb-more-section-head p {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.pb-more-account-grid,
+.pb-more-account-secondary,
+.pb-more-services-grid,
+.pb-more-rows {
+  display: grid;
+  gap: 9px;
+}
+
+.pb-more-card {
+  border: 1px solid color-mix(in srgb, var(--border-soft) 92%, transparent);
+  border-radius: 18px;
+  background: linear-gradient(165deg, color-mix(in srgb, var(--surface-2) 90%, transparent), color-mix(in srgb, var(--surface-3) 64%, transparent));
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.2);
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+  color: inherit;
+  text-decoration: none;
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.pb-more-card:hover {
+  border-color: color-mix(in srgb, var(--accent-primary) 44%, var(--border-soft));
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.24);
+  transform: translateY(-1px);
+}
+
+.pb-more-card:active {
+  transform: translateY(1px) scale(0.995);
+}
+
+.pb-more-card.accent {
+  background:
+    radial-gradient(circle at 100% -30%, color-mix(in srgb, var(--accent-soft) 78%, transparent), transparent 44%),
+    linear-gradient(165deg, color-mix(in srgb, var(--surface-2) 92%, transparent), color-mix(in srgb, var(--surface-3) 68%, transparent));
+}
+
+.pb-more-card.warm {
+  background:
+    radial-gradient(circle at 100% -30%, color-mix(in srgb, var(--warning) 18%, transparent), transparent 44%),
+    linear-gradient(165deg, color-mix(in srgb, var(--surface-2) 92%, transparent), color-mix(in srgb, var(--surface-3) 66%, transparent));
+}
+
+.pb-more-card.cool {
+  background:
+    radial-gradient(circle at 100% -34%, color-mix(in srgb, var(--info) 18%, transparent), transparent 44%),
+    linear-gradient(165deg, color-mix(in srgb, var(--surface-2) 92%, transparent), color-mix(in srgb, var(--surface-3) 68%, transparent));
+}
+
+.pb-more-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.pb-more-card-badge {
+  display: inline-flex;
+  align-items: center;
+}
+
+.pb-more-card-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 46%, transparent);
+  background: color-mix(in srgb, var(--accent-soft) 64%, transparent);
+  display: grid;
+  place-items: center;
+  color: color-mix(in srgb, var(--accent-primary) 90%, var(--text-primary));
+}
+
+.pb-more-card.warm .pb-more-card-icon {
+  border-color: color-mix(in srgb, var(--warning) 42%, transparent);
+  background: color-mix(in srgb, var(--warning) 16%, transparent);
+  color: color-mix(in srgb, var(--warning) 80%, var(--text-primary));
+}
+
+.pb-more-card.cool .pb-more-card-icon {
+  border-color: color-mix(in srgb, var(--info) 42%, transparent);
+  background: color-mix(in srgb, var(--info) 14%, transparent);
+  color: color-mix(in srgb, var(--info) 84%, var(--text-primary));
+}
+
+.pb-more-card-icon svg {
+  width: 17px;
+  height: 17px;
+  fill: currentColor;
+}
+
+.pb-more-card-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.pb-more-card-copy strong {
+  font-size: 16px;
+  line-height: 1.25;
+}
+
+.pb-more-card-copy p {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.pb-more-card-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.pb-more-card-metrics.triple {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.pb-more-card-metrics span {
+  border: 1px solid color-mix(in srgb, var(--border-soft) 90%, transparent);
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--surface-1) 76%, transparent);
+  padding: 7px;
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pb-more-card-metrics small {
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.pb-more-card-metrics b {
+  font-size: 12px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.pb-more-card-extra {
+  display: grid;
+  gap: 8px;
+}
+
+.pb-more-card-note {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.48;
+}
+
+.pb-more-card-foot {
+  border-top: 1px solid color-mix(in srgb, var(--border-soft) 90%, transparent);
+  padding-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.pb-more-card-foot span {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.pb-more-card-foot em {
+  font-style: normal;
+  font-size: 14px;
+  color: var(--accent-primary);
+  line-height: 1;
+}
+
+.pb-service-status-pill {
+  border-radius: 999px;
+  border: 1px solid var(--border-soft);
+  background: color-mix(in srgb, var(--surface-1) 76%, transparent);
+  color: var(--text-secondary);
+  padding: 4px 9px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+
+.pb-service-status-pill.accent {
+  border-color: color-mix(in srgb, var(--accent-primary) 42%, transparent);
+  background: color-mix(in srgb, var(--accent-soft) 66%, transparent);
+  color: color-mix(in srgb, var(--accent-primary) 88%, var(--text-primary));
+}
+
+.pb-service-status-pill.success {
+  border-color: color-mix(in srgb, var(--success) 42%, transparent);
+  background: color-mix(in srgb, var(--success) 16%, transparent);
+  color: color-mix(in srgb, var(--success) 82%, var(--text-primary));
+}
+
+.pb-service-status-pill.warning {
+  border-color: color-mix(in srgb, var(--warning) 44%, transparent);
+  background: color-mix(in srgb, var(--warning) 14%, transparent);
+  color: color-mix(in srgb, var(--warning) 78%, var(--text-primary));
+}
+
+.pb-news-mini-list {
+  display: grid;
+  gap: 7px;
+}
+
+.pb-news-mini-item {
+  border: 1px solid color-mix(in srgb, var(--border-soft) 90%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface-1) 76%, transparent);
+  padding: 8px;
+  display: grid;
+  gap: 3px;
+  animation: pb-news-mini-reveal 0.28s ease both;
+}
+
+.pb-news-mini-item strong {
+  font-size: 12px;
+  line-height: 1.38;
+}
+
+.pb-news-mini-item small {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.pb-news-mini-empty {
+  border: 1px dashed color-mix(in srgb, var(--border-soft) 92%, transparent);
+  border-radius: 10px;
+  padding: 10px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  background: color-mix(in srgb, var(--surface-1) 74%, transparent);
+}
+
+.pb-news-mini-more {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.pb-more-settings-row {
+  width: 100%;
+  border: 1px solid color-mix(in srgb, var(--border-soft) 92%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface-3) 56%, transparent);
+  color: inherit;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 11px;
+  transition: transform 0.16s ease, border-color 0.16s ease, background-color 0.16s ease;
+}
+
+.pb-more-settings-row:hover {
+  border-color: color-mix(in srgb, var(--accent-primary) 40%, var(--border-soft));
+}
+
+.pb-more-settings-row:active {
+  transform: translateY(1px) scale(0.996);
+}
+
+.pb-more-settings-row.disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.pb-more-settings-row.staff {
+  border-color: color-mix(in srgb, var(--warning) 26%, var(--border-soft));
+  background:
+    radial-gradient(circle at 100% -34%, color-mix(in srgb, var(--warning) 15%, transparent), transparent 48%),
+    color-mix(in srgb, var(--surface-3) 58%, transparent);
+}
+
+.pb-more-settings-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.pb-more-settings-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 42%, transparent);
+  background: color-mix(in srgb, var(--accent-soft) 62%, transparent);
+  color: color-mix(in srgb, var(--accent-primary) 88%, var(--text-primary));
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.pb-more-settings-row.staff .pb-more-settings-icon {
+  border-color: color-mix(in srgb, var(--warning) 38%, transparent);
+  background: color-mix(in srgb, var(--warning) 15%, transparent);
+  color: color-mix(in srgb, var(--warning) 80%, var(--text-primary));
+}
+
+.pb-more-settings-icon svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+.pb-more-settings-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pb-more-settings-text strong {
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.pb-more-settings-text small {
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.pb-more-settings-side {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+}
+
+.pb-more-settings-side span {
+  color: var(--text-secondary);
+  font-size: 12px;
+  text-align: right;
+}
+
+.pb-more-settings-side em {
+  color: var(--text-muted);
+  font-style: normal;
+  font-size: 14px;
+  line-height: 1;
+}
+
+@keyframes pb-news-mini-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (min-width: 560px) {
+  .pb-more-account-secondary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pb-more-card-metrics.triple {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .pb-more-hero-top {
+    grid-template-columns: 1fr;
+  }
+
+  .pb-more-hero-badges {
+    justify-items: start;
+    grid-auto-flow: column;
+    justify-content: start;
+  }
+
+  .pb-more-hero-summary,
+  .pb-more-card-metrics,
+  .pb-more-card-metrics.triple {
+    grid-template-columns: 1fr;
+  }
+}

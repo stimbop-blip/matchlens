@@ -418,29 +418,223 @@ export function MoreFeatureCard({
   to,
   title,
   subtitle,
+  icon,
+  badge,
   metrics,
+  ctaLabel,
+  tone = "default",
+  wide = false,
+  children,
 }: {
   to: string;
   title: string;
   subtitle: string;
-  metrics: Array<{ label: string; value: string | number }>;
+  icon: ReactNode;
+  badge?: ReactNode;
+  metrics?: Array<{ label: string; value: string | number }>;
+  ctaLabel: string;
+  tone?: "default" | "accent" | "warm" | "cool";
+  wide?: boolean;
+  children?: ReactNode;
 }) {
   return (
-    <Link to={to} className="pb-more-feature-card">
-      <div className="pb-more-feature-head">
+    <Link to={to} className={cx("pb-more-card", tone, wide && "wide")}>
+      <div className="pb-more-card-head">
+        <span className="pb-more-card-icon" aria-hidden="true">
+          {icon}
+        </span>
+        {badge ? <span className="pb-more-card-badge">{badge}</span> : null}
+      </div>
+      <div className="pb-more-card-copy">
         <strong>{title}</strong>
+        <p>{subtitle}</p>
+      </div>
+
+      {metrics?.length ? (
+        <div className={cx("pb-more-card-metrics", metrics.length > 2 && "triple")}>
+          {metrics.map((metric) => (
+            <span key={metric.label}>
+              <small>{metric.label}</small>
+              <b>{metric.value}</b>
+            </span>
+          ))}
+        </div>
+      ) : null}
+
+      {children ? <div className="pb-more-card-extra">{children}</div> : null}
+
+      <div className="pb-more-card-foot">
+        <span>{ctaLabel}</span>
         <em>&gt;</em>
       </div>
-      <p>{subtitle}</p>
-      <div className="pb-more-feature-metrics">
-        {metrics.map((metric) => (
-          <span key={metric.label}>
-            <small>{metric.label}</small>
-            <b>{metric.value}</b>
-          </span>
+    </Link>
+  );
+}
+
+export function MoreHeroCard({
+  eyebrow,
+  title,
+  subtitle,
+  accessLevel,
+  accessLabel,
+  roleLabel,
+  summary,
+  className,
+}: {
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  accessLevel: "free" | "premium" | "vip";
+  accessLabel: string;
+  roleLabel?: string;
+  summary: Array<{ label: string; value: string | number; tone?: "default" | "accent" | "success" | "warning" }>;
+  className?: string;
+}) {
+  return (
+    <section className={cx("pb-more-hero-panel", "pb-reveal", className)}>
+      <div className="pb-more-hero-top">
+        <div className="pb-more-hero-copy">
+          <span className="pb-eyebrow">{eyebrow}</span>
+          <h2>{title}</h2>
+          <p>{subtitle}</p>
+        </div>
+        <div className="pb-more-hero-badges">
+          <AccessBadge level={accessLevel} label={accessLabel} className="pb-more-hero-access" />
+          {roleLabel ? <span className="pb-more-role-pill">{roleLabel}</span> : null}
+        </div>
+      </div>
+
+      <div className="pb-more-hero-summary">
+        {summary.map((item) => (
+          <article key={item.label} className={cx("pb-more-hero-item", item.tone || "default")}>
+            <span>{item.label}</span>
+            <strong>{item.value}</strong>
+          </article>
         ))}
       </div>
-    </Link>
+    </section>
+  );
+}
+
+export function MoreSection({
+  title,
+  subtitle,
+  children,
+  className,
+}: {
+  title: string;
+  subtitle?: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <section className={cx("pb-more-section", "pb-reveal", className)}>
+      <div className="pb-more-section-head">
+        <h3>{title}</h3>
+        {subtitle ? <p>{subtitle}</p> : null}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+export function ServiceStatusPill({
+  label,
+  tone = "default",
+}: {
+  label: string;
+  tone?: "default" | "success" | "warning" | "accent";
+}) {
+  return <span className={cx("pb-service-status-pill", tone)}>{label}</span>;
+}
+
+type MoreSettingsRowProps = {
+  icon: ReactNode;
+  title: string;
+  subtitle?: string;
+  value?: string;
+  to?: string;
+  href?: string;
+  onClick?: () => void;
+  right?: ReactNode;
+  disabled?: boolean;
+  staff?: boolean;
+};
+
+function MoreSettingsRowBody({ icon, title, subtitle, value, right }: Omit<MoreSettingsRowProps, "to" | "href" | "onClick" | "disabled" | "staff">) {
+  return (
+    <>
+      <div className="pb-more-settings-main">
+        <span className="pb-more-settings-icon" aria-hidden="true">
+          {icon}
+        </span>
+        <span className="pb-more-settings-text">
+          <strong>{title}</strong>
+          {subtitle ? <small>{subtitle}</small> : null}
+        </span>
+      </div>
+
+      <div className="pb-more-settings-side">
+        {value ? <span>{value}</span> : null}
+        {right || <em>&gt;</em>}
+      </div>
+    </>
+  );
+}
+
+export function MoreSettingsRow(props: MoreSettingsRowProps) {
+  const className = cx("pb-more-settings-row", props.staff && "staff", props.disabled && "disabled");
+  const body = <MoreSettingsRowBody icon={props.icon} title={props.title} subtitle={props.subtitle} value={props.value} right={props.right} />;
+
+  if (props.disabled) return <div className={className}>{body}</div>;
+  if (props.onClick)
+    return (
+      <button className={className} type="button" onClick={props.onClick}>
+        {body}
+      </button>
+    );
+  if (props.href)
+    return (
+      <a className={className} href={props.href} target="_blank" rel="noreferrer">
+        {body}
+      </a>
+    );
+  if (props.to)
+    return (
+      <Link className={className} to={props.to}>
+        {body}
+      </Link>
+    );
+  return <div className={className}>{body}</div>;
+}
+
+export function MoreStaffRow(props: Omit<MoreSettingsRowProps, "staff">) {
+  return <MoreSettingsRow {...props} staff />;
+}
+
+export function NewsPreviewMiniList({
+  items,
+  emptyLabel,
+  overflowLabel,
+}: {
+  items: Array<{ id: string; title: string; meta: string }>;
+  emptyLabel: string;
+  overflowLabel?: string;
+}) {
+  if (!items.length) {
+    return <div className="pb-news-mini-empty">{emptyLabel}</div>;
+  }
+
+  return (
+    <div className="pb-news-mini-list">
+      {items.map((item, index) => (
+        <article key={item.id} className="pb-news-mini-item" style={{ animationDelay: `${index * 0.05}s` }}>
+          <strong>{item.title}</strong>
+          <small>{item.meta}</small>
+        </article>
+      ))}
+      {overflowLabel ? <p className="pb-news-mini-more">{overflowLabel}</p> : null}
+    </div>
   );
 }
 
