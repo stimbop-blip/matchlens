@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import String, and_, cast, desc, func, select
 from sqlalchemy.orm import Session
 
-from app.api.deps import require_admin, require_admin_or_support
+from app.api.deps import require_admin
 from app.core.db import get_db
 from app.models.enums import SubscriptionStatus, UserRole
 from app.models.payment import Payment
@@ -13,6 +13,7 @@ from app.models.referral_bonus import ReferralBonus
 from app.models.subscription import Subscription
 from app.models.tariff import Tariff
 from app.models.user import User
+from app.services.support_service import log_support_action
 
 router = APIRouter(prefix="/admin/users", tags=["admin"])
 
@@ -24,7 +25,7 @@ class AdminUserRoleUpdateIn(BaseModel):
 @router.get("")
 def admin_list_users(
     db: Session = Depends(get_db),
-    _: User = Depends(require_admin_or_support),
+    _: User = Depends(require_admin),
     q: str | None = Query(default=None),
     role: str | None = Query(default=None),
 ) -> list[dict]:
@@ -109,16 +110,38 @@ def admin_update_user_role(
     user_id: str,
     payload: AdminUserRoleUpdateIn,
     db: Session = Depends(get_db),
-    _: User = Depends(require_admin),
+    current_admin: User = Depends(require_admin),
 ) -> dict:
     user = db.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
+    previous_role = user.role
     user.role = UserRole(payload.role)
     db.add(user)
     db.commit()
     db.refresh(user)
+
+    if previous_role != user.role:
+        if user.role == UserRole.support:
+            log_support_action(
+                db,
+                action_type="support_role_granted",
+                actor=current_admin,
+                target_user_id=str(user.id),
+                meta={"from": previous_role.value, "to": user.role.value},
+                commit=True,
+            )
+        elif previous_role == UserRole.support:
+            log_support_action(
+                db,
+                action_type="support_role_revoked",
+                actor=current_admin,
+                target_user_id=str(user.id),
+                meta={"from": previous_role.value, "to": user.role.value},
+                commit=True,
+            )
+
     return {"ok": True, "id": str(user.id), "role": user.role.value}
 
 

@@ -111,6 +111,9 @@ export function ProfilePage() {
   const sub = resolveSubscriptionSnapshot(subscriptionRaw);
   const pendingPayments = countPendingPayments(payments);
   const referralStatus = `${referral?.invited ?? 0}/${referral?.activated ?? 0}`;
+  const isAdmin = Boolean(me?.is_admin || me?.role === "admin");
+  const isSupport = Boolean(me?.is_support || me?.role === "support");
+  const isStaff = isAdmin || isSupport;
 
   const availableNotificationControls = useMemo(() => {
     const currentWeight = TARIFF_WEIGHT[sub.tariff];
@@ -210,7 +213,10 @@ export function ProfilePage() {
 
         <ActivityBand
           items={[
-            { label: t("profile.hero.role"), value: me?.is_admin || me?.role === "admin" ? t("profile.hero.roleAdmin") : t("profile.hero.roleUser") },
+            {
+              label: t("profile.hero.role"),
+              value: isAdmin ? t("profile.hero.roleAdmin") : isSupport ? t("profile.hero.roleSupport") : t("profile.hero.roleUser"),
+            },
             { label: t("profile.hero.accessUntil"), value: formatDate(sub.ends_at, language) },
             { label: t("common.status.pending"), value: pendingPayments, tone: pendingPayments > 0 ? "warning" : "accent" },
           ]}
@@ -226,13 +232,21 @@ export function ProfilePage() {
           <Link className="pb-btn pb-btn-ghost" to="/profile#notifications">
             {t("profile.quick.notifications")}
           </Link>
+          <Link className="pb-btn pb-btn-ghost" to="/support">
+            {t("profile.quick.support")}
+          </Link>
         </CTACluster>
 
-        {me?.is_admin || me?.role === "admin" ? (
+        {isStaff ? (
           <CTACluster>
-            <Link className="pb-btn pb-btn-ghost" to="/admin">
-              {t("profile.admin.open")}
+            <Link className="pb-btn pb-btn-ghost" to="/support/inbox">
+              {t("profile.support.inboxOpen")}
             </Link>
+            {isAdmin ? (
+              <Link className="pb-btn pb-btn-ghost" to="/admin">
+                {t("profile.admin.open")}
+              </Link>
+            ) : null}
           </CTACluster>
         ) : null}
       </section>

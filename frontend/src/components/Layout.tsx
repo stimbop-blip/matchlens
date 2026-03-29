@@ -26,13 +26,15 @@ function pageMeta(pathname: string): PageMeta {
   if (pathname.startsWith("/menu/theme")) return { titleKey: "layout.title.theme", subtitleKey: "layout.subtitle.settings" };
   if (pathname.startsWith("/menu/rules")) return { titleKey: "layout.title.rules", subtitleKey: "layout.subtitle.legal" };
   if (pathname.startsWith("/menu/responsible")) return { titleKey: "layout.title.responsible", subtitleKey: "layout.subtitle.legal" };
+  if (pathname.startsWith("/support/inbox")) return { titleKey: "layout.title.supportInbox", subtitleKey: "layout.subtitle.supportInbox" };
+  if (pathname.startsWith("/support")) return { titleKey: "layout.title.support", subtitleKey: "layout.subtitle.support" };
   if (pathname.startsWith("/menu")) return { titleKey: "layout.title.hub", subtitleKey: "layout.subtitle.hub" };
   if (pathname.startsWith("/admin")) return { titleKey: "layout.title.admin", subtitleKey: "layout.subtitle.admin" };
   return { titleKey: "layout.title.home", subtitleKey: "layout.subtitle.home" };
 }
 
 function isMorePath(pathname: string): boolean {
-  return pathname.startsWith("/menu") || pathname.startsWith("/news") || pathname.startsWith("/tariffs") || pathname.startsWith("/admin");
+  return pathname.startsWith("/menu") || pathname.startsWith("/news") || pathname.startsWith("/tariffs") || pathname.startsWith("/admin") || pathname.startsWith("/support");
 }
 
 function DockGlyph({ type }: { type: "home" | "feed" | "stats" | "profile" | "more" }) {
@@ -77,7 +79,7 @@ export function Layout({ children }: PropsWithChildren) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [staffRole, setStaffRole] = useState<"admin" | "support" | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -85,10 +87,16 @@ export function Layout({ children }: PropsWithChildren) {
       try {
         const me = await api.me();
         if (!alive) return;
-        setIsAdmin(Boolean(me.is_admin || me.role === "admin"));
+        if (me.role === "admin") {
+          setStaffRole("admin");
+        } else if (me.role === "support") {
+          setStaffRole("support");
+        } else {
+          setStaffRole(null);
+        }
       } catch {
         if (!alive) return;
-        setIsAdmin(false);
+        setStaffRole(null);
       }
     };
     void loadRole();
@@ -126,7 +134,7 @@ export function Layout({ children }: PropsWithChildren) {
       <header className="pb-app-header">
         <div className="pb-brand-row">
           <span className="pb-brand-chip">PIT BET</span>
-          {isAdmin ? <span className="pb-role-chip">{t("layout.role.admin")}</span> : null}
+          {staffRole ? <span className="pb-role-chip">{staffRole === "admin" ? t("layout.role.admin") : t("layout.role.support")}</span> : null}
         </div>
         <h1>{t(meta.titleKey)}</h1>
         <p>{t(meta.subtitleKey)}</p>

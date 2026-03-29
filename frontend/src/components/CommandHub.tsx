@@ -20,11 +20,8 @@ type HubEntry = {
   disabled?: boolean;
 };
 
-const SUPPORT_URL = import.meta.env.VITE_SUPPORT_URL || "https://t.me/your_support";
-
 export function CommandHub({ open, isAdmin, onClose }: CommandHubProps) {
   const { t } = useI18n();
-  const supportConfigured = !SUPPORT_URL.includes("your_support");
 
   const entries: HubEntry[] = [
     { id: "signals", to: "/feed", titleKey: "hub.item.signals.title", descKey: "hub.item.signals.desc", section: "core" },
@@ -34,14 +31,8 @@ export function CommandHub({ open, isAdmin, onClose }: CommandHubProps) {
     { id: "news", to: "/news", titleKey: "hub.item.news.title", descKey: "hub.item.news.desc", section: "service" },
     { id: "referrals", to: "/profile#referral", titleKey: "hub.item.referrals.title", descKey: "hub.item.referrals.desc", section: "service" },
     { id: "notifications", to: "/profile#notifications", titleKey: "hub.item.notifications.title", descKey: "hub.item.notifications.desc", section: "service" },
-    {
-      id: "support",
-      href: supportConfigured ? SUPPORT_URL : undefined,
-      titleKey: "hub.item.support.title",
-      descKey: supportConfigured ? "hub.item.support.desc" : "hub.support.notSet",
-      section: "service",
-      disabled: !supportConfigured,
-    },
+    { id: "support", to: "/support", titleKey: "hub.item.support.title", descKey: "hub.item.support.desc", section: "service" },
+    { id: "support-inbox", to: "/support/inbox", titleKey: "menu.support.inboxTitle", descKey: "menu.support.inboxDesc", section: "service", adminOnly: true },
     { id: "language", to: "/menu/language", titleKey: "hub.item.language.title", descKey: "hub.item.language.desc", section: "settings" },
     { id: "theme", to: "/menu/theme", titleKey: "hub.item.theme.title", descKey: "hub.item.theme.desc", section: "settings" },
     { id: "rules", to: "/menu/rules", titleKey: "hub.item.rules.title", descKey: "hub.item.rules.desc", section: "legal" },

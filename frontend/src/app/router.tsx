@@ -12,6 +12,8 @@ import { ProfilePage } from "../pages/ProfilePage";
 import { ResponsiblePage } from "../pages/ResponsiblePage";
 import { RulesPage } from "../pages/RulesPage";
 import { StatsPage } from "../pages/StatsPage";
+import { SupportInboxPage } from "../pages/SupportInboxPage";
+import { SupportPage } from "../pages/SupportPage";
 import { TariffsPage } from "../pages/TariffsPage";
 import { ThemePage } from "../pages/ThemePage";
 
@@ -31,6 +33,8 @@ export function AppRouter() {
       <Route path="/news/:newsId" element={<NewsDetailsPage />} />
       <Route path="/menu/rules" element={<RulesPage />} />
       <Route path="/menu/responsible" element={<ResponsiblePage />} />
+      <Route path="/support" element={<SupportPage />} />
+      <Route path="/support/inbox" element={<SupportInboxPage />} />
       <Route path="/admin" element={<AdminPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

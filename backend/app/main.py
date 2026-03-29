@@ -7,7 +7,23 @@ from sqlalchemy import text
 from app.api.v1.router import api_router
 from app.core.config import settings
 from app.core.db import Base, SessionLocal, engine
-from app.models import NewsPost, Notification, Payment, PaymentMethod, Prediction, PromoCode, PromoCodeActivation, ReferralBonus, Subscription, Tariff, User, UserSettings  # noqa: F401
+from app.models import (  # noqa: F401
+    NewsPost,
+    Notification,
+    Payment,
+    PaymentMethod,
+    Prediction,
+    PromoCode,
+    PromoCodeActivation,
+    ReferralBonus,
+    Subscription,
+    SupportActionLog,
+    SupportDialog,
+    SupportMessage,
+    Tariff,
+    User,
+    UserSettings,
+)
 from app.services.seed_service import seed_payment_methods, seed_tariffs
 
 app = FastAPI(title=settings.app_name, debug=settings.debug)
@@ -30,6 +46,10 @@ def on_startup() -> None:
     if settings.auto_create_tables:
         Base.metadata.create_all(bind=engine)
     with engine.begin() as conn:
+        SupportDialog.__table__.create(bind=conn, checkfirst=True)
+        SupportMessage.__table__.create(bind=conn, checkfirst=True)
+        SupportActionLog.__table__.create(bind=conn, checkfirst=True)
+
         users_table_exists = conn.execute(text("SELECT to_regclass('public.users')")).scalar()
         if users_table_exists:
             with contextlib.suppress(Exception):

@@ -7,8 +7,6 @@ import { Layout } from "../components/Layout";
 import { ActivityBand, AppShellSection, MoreFeatureCard, SectionHeader, SettingsRow, SettingsSection } from "../components/ui";
 import { api, type Me, type NotificationSettings, type ReferralStats } from "../services/api";
 
-const SUPPORT_URL = import.meta.env.VITE_SUPPORT_URL || "https://t.me/your_support";
-
 export function MenuPage() {
   const { t } = useI18n();
 
@@ -35,8 +33,9 @@ export function MenuPage() {
     };
   }, []);
 
-  const supportConfigured = !SUPPORT_URL.includes("your_support");
   const isAdmin = Boolean(me?.is_admin || me?.role === "admin");
+  const isSupport = Boolean(me?.is_support || me?.role === "support");
+  const isStaff = isAdmin || isSupport;
   const subscription = resolveSubscriptionSnapshot(subscriptionRaw);
   const accessValue = subscription.tariff === "vip" ? t("common.vip") : subscription.tariff === "premium" ? t("common.premium") : t("common.free");
   const statusValue =
@@ -54,6 +53,7 @@ export function MenuPage() {
         <div className="pb-hero-top">
           <span className="pb-eyebrow">PIT BET</span>
           {isAdmin ? <span className="pb-live-pill">{t("layout.role.admin")}</span> : null}
+          {!isAdmin && isSupport ? <span className="pb-live-pill">{t("layout.role.support")}</span> : null}
         </div>
         <h2>{t("menu.heroTitle")}</h2>
         <p>{t("menu.heroSubtitle")}</p>
@@ -120,6 +120,7 @@ export function MenuPage() {
             <SettingsSection title={t("menu.section.service.tools")}>
               <SettingsRow icon="LN" title={t("hub.item.language.title")} subtitle={t("hub.item.language.desc")} to="/menu/language" />
               <SettingsRow icon="TH" title={t("hub.item.theme.title")} subtitle={t("hub.item.theme.desc")} to="/menu/theme" />
+              {isStaff ? <SettingsRow icon="DI" title={t("menu.support.inboxTitle")} subtitle={t("menu.support.inboxDesc")} to="/support/inbox" /> : null}
               {isAdmin ? <SettingsRow icon="AD" title={t("hub.item.admin.title")} subtitle={t("hub.item.admin.desc")} to="/admin" /> : null}
             </SettingsSection>
           </section>
@@ -127,13 +128,7 @@ export function MenuPage() {
           <section className="pb-more-zone">
             <h3 className="pb-more-zone-title">{t("menu.section.info")}</h3>
             <SettingsSection title={t("menu.section.info.links")}>
-              <SettingsRow
-                icon="SP"
-                title={t("hub.item.support.title")}
-                subtitle={supportConfigured ? t("hub.item.support.desc") : t("hub.support.notSet")}
-                href={supportConfigured ? SUPPORT_URL : undefined}
-                disabled={!supportConfigured}
-              />
+              <SettingsRow icon="SP" title={t("menu.support.userTitle")} subtitle={t("menu.support.userDesc")} to="/support" />
               <SettingsRow icon="RL" title={t("hub.item.rules.title")} subtitle={t("hub.item.rules.desc")} to="/menu/rules" />
               <SettingsRow icon="RG" title={t("hub.item.responsible.title")} subtitle={t("hub.item.responsible.desc")} to="/menu/responsible" />
             </SettingsSection>

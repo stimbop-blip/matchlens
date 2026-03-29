@@ -15,6 +15,7 @@ from app.api.v1.routes.health import router as health_router
 from app.api.v1.routes.payments import router as payments_router
 from app.api.v1.routes.predictions import router as predictions_router
 from app.api.v1.routes.promocodes import router as promocodes_router
+from app.api.v1.routes.support import router as support_router
 from app.api.v1.routes.news import router as news_router
 from app.api.v1.routes.stats import router as stats_router
 from app.api.v1.routes.subscriptions import router as subscriptions_router
@@ -29,6 +30,7 @@ api_router.include_router(users_router)
 api_router.include_router(tariffs_router)
 api_router.include_router(predictions_router)
 api_router.include_router(news_router)
+api_router.include_router(support_router)
 api_router.include_router(promocodes_router)
 api_router.include_router(stats_router)
 api_router.include_router(subscriptions_router)

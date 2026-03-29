@@ -87,7 +87,7 @@ export type Prediction = {
 
 export type Me = {
   id: string;
-  role: string;
+  role: "user" | "support" | "admin";
   is_admin: boolean;
   telegram_id: number;
   username: string | null;
@@ -96,6 +96,73 @@ export type Me = {
   language: "ru" | "en";
   theme: "dark" | "light";
   is_support?: boolean;
+};
+
+export type SupportDialogStatus = "open" | "waiting_user" | "waiting_support" | "closed";
+
+export type SupportMessage = {
+  id: string;
+  dialog_id: string;
+  sender_user_id: string;
+  sender_role: "user" | "support" | "admin";
+  sender_name: string;
+  body: string;
+  created_at: string;
+};
+
+export type SupportDialogPreview = {
+  id: string;
+  user_id: string;
+  user_telegram_id: number;
+  user_username: string | null;
+  user_first_name: string | null;
+  status: SupportDialogStatus;
+  subject: string | null;
+  last_message_preview: string | null;
+  last_message_at: string | null;
+  last_message_by_role: string | null;
+  last_message_by_name: string | null;
+  unread_for_staff: number;
+  unread_for_user: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type SupportDialogContext = {
+  subscription: {
+    tariff: string;
+    status: string;
+    ends_at: string | null;
+  };
+  recent_payments: Array<{
+    id: string;
+    status: string;
+    amount_rub: number;
+    access_level: string;
+    duration_days: number;
+    method_name: string | null;
+    review_comment: string | null;
+    created_at: string | null;
+  }>;
+};
+
+export type SupportDialogDetail = {
+  dialog: SupportDialogPreview | null;
+  messages: SupportMessage[];
+  context: SupportDialogContext | null;
+};
+
+export type SupportActionLog = {
+  id: string;
+  actor_user_id: string | null;
+  actor_role: string | null;
+  actor_name: string | null;
+  action_type: string;
+  dialog_id: string | null;
+  target_user_id: string | null;
+  target_name: string | null;
+  meta: Record<string, unknown> | null;
+  created_at: string;
 };
 
 export type UserPreferences = {
@@ -358,6 +425,43 @@ export const api = {
       body: JSON.stringify(payload),
     }),
   myPayments: () => request<MyPayment[]>("/payments/my"),
+
+  mySupportDialog: () => request<SupportDialogDetail>("/support/my-dialog"),
+  mySupportSendMessage: (payload: { body: string; subject?: string }) =>
+    request<SupportDialogDetail>("/support/my-dialog/messages", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  supportDialogs: (params?: { q?: string; status?: SupportDialogStatus | "all"; unread_only?: boolean; limit?: number }) => {
+    const search = new URLSearchParams();
+    if (params?.q) search.set("q", params.q);
+    if (params?.status && params.status !== "all") search.set("status", params.status);
+    if (params?.unread_only) search.set("unread_only", "true");
+    if (typeof params?.limit === "number") search.set("limit", String(Math.max(1, Math.min(300, Math.trunc(params.limit)))));
+    const suffix = search.toString() ? `?${search.toString()}` : "";
+    return request<SupportDialogPreview[]>(`/support/dialogs${suffix}`);
+  },
+  supportDialog: (dialogId: string) => request<SupportDialogDetail>(`/support/dialogs/${dialogId}`),
+  supportReplyToDialog: (dialogId: string, payload: { body: string }) =>
+    request<SupportDialogDetail>(`/support/dialogs/${dialogId}/messages`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  supportUpdateDialogStatus: (dialogId: string, status: SupportDialogStatus) =>
+    request<SupportDialogDetail>(`/support/dialogs/${dialogId}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    }),
+  supportLogs: (params?: { dialog_id?: string; target_user_id?: string; action_type?: string; limit?: number }) => {
+    const search = new URLSearchParams();
+    if (params?.dialog_id) search.set("dialog_id", params.dialog_id);
+    if (params?.target_user_id) search.set("target_user_id", params.target_user_id);
+    if (params?.action_type) search.set("action_type", params.action_type);
+    if (typeof params?.limit === "number") search.set("limit", String(Math.max(1, Math.min(500, Math.trunc(params.limit)))));
+    const suffix = search.toString() ? `?${search.toString()}` : "";
+    return request<SupportActionLog[]>(`/support/logs${suffix}`);
+  },
 
   adminPredictions: () => request<Prediction[]>("/admin/predictions"),
   adminCreatePrediction: (payload: Record<string, unknown>) =>

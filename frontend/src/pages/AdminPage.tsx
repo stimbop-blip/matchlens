@@ -450,11 +450,7 @@ export function AdminPage() {
   const isAdmin = operatorRole === "admin";
   const isSupport = operatorRole === "support";
 
-  const visibleTabs = useMemo(() => {
-    if (isAdmin) return TABS;
-    if (isSupport) return TABS.filter((item) => ["users", "subscriptions", "payments"].includes(item.key));
-    return [];
-  }, [isAdmin, isSupport]);
+  const visibleTabs = useMemo(() => (isAdmin ? TABS : []), [isAdmin]);
 
   const notifyInfo = (text: string) => {
     setMessageTone("info");
@@ -513,9 +509,6 @@ export function AdminPage() {
         if (me.role === "admin") {
           setOperatorRole("admin");
           setTab("predictions");
-        } else if (me.role === "support") {
-          setOperatorRole("support");
-          setTab("users");
         } else {
           setOperatorRole(null);
           return;
@@ -1175,12 +1168,12 @@ export function AdminPage() {
     );
   }
 
-  if (!isAdmin && !isSupport) {
+  if (!isAdmin) {
     return (
       <Layout>
         <section className="card">
           <h2>{tx("Админка", "Admin")}</h2>
-          <p className="empty-state">{tx("Доступ открыт только команде PIT BET (admin/support).", "Access is available to PIT BET staff only (admin/support).")}</p>
+          <p className="empty-state">{tx("Доступ открыт только администраторам PIT BET.", "Access is available to PIT BET admins only.")}</p>
         </section>
       </Layout>
     );
