@@ -52,6 +52,7 @@ type PredictionDraft = {
   tag_pick: boolean;
   tag_strong: boolean;
   tag_hot: boolean;
+  bet_screenshot: string | null;
   result_screenshot: string | null;
 };
 
@@ -185,6 +186,7 @@ function createEmptyPredictionDraft(): PredictionDraft {
     tag_pick: false,
     tag_strong: false,
     tag_hot: false,
+    bet_screenshot: null,
     result_screenshot: null,
   };
 }
@@ -208,6 +210,7 @@ function createPredictionDraftFromItem(item: Prediction): PredictionDraft {
     tag_pick: false,
     tag_strong: false,
     tag_hot: false,
+    bet_screenshot: item.bet_screenshot,
     result_screenshot: item.result_screenshot,
   };
 }
@@ -363,7 +366,8 @@ export function AdminPage() {
   const tx = (ru: string, en: string) => (isRu ? ru : en);
 
   const [tab, setTab] = useState<TabKey>("predictions");
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const [operatorRole, setOperatorRole] = useState<"admin" | "support" | null>(null);
+  const [roleChecked, setRoleChecked] = useState(false);
   const [message, setMessage] = useState("");
   const [messageTone, setMessageTone] = useState<"success" | "error" | "info">("info");
   const [loading, setLoading] = useState(false);
@@ -443,6 +447,15 @@ export function AdminPage() {
   const [deliveryStats, setDeliveryStats] = useState<{ total: number; sent: number; failed: number; queued: number } | null>(null);
   const [uploadingPredictionId, setUploadingPredictionId] = useState<string | null>(null);
 
+  const isAdmin = operatorRole === "admin";
+  const isSupport = operatorRole === "support";
+
+  const visibleTabs = useMemo(() => {
+    if (isAdmin) return TABS;
+    if (isSupport) return TABS.filter((item) => ["users", "subscriptions", "payments"].includes(item.key));
+    return [];
+  }, [isAdmin, isSupport]);
+
   const notifyInfo = (text: string) => {
     setMessageTone("info");
     setMessage(text);
@@ -459,7 +472,7 @@ export function AdminPage() {
   };
 
   const loadAll = async () => {
-    const [p, u, s, pay, paymentMethodList, n, promos, st] = await Promise.all([
+    const [p, u, s, pay, paymentMethodList, n, promos, st, notifStats] = await Promise.allSettled([
       api.adminPredictions(),
       api.adminUsers(),
       api.adminSubscriptions(),
@@ -468,16 +481,18 @@ export function AdminPage() {
       api.adminNews(),
       api.adminPromoCodes(),
       api.adminStats(),
+      api.adminNotificationStats(),
     ]);
-    setPredictions(p);
-    setUsers(u);
-    setSubscriptions(s);
-    setPayments(pay);
-    setPaymentMethods(paymentMethodList);
-    setNews(n);
-    setPromoCodes(promos);
-    setStats(st);
-    api.adminNotificationStats().then((v) => setDeliveryStats(v)).catch(() => setDeliveryStats(null));
+
+    setPredictions(p.status === "fulfilled" ? p.value : []);
+    setUsers(u.status === "fulfilled" ? u.value : []);
+    setSubscriptions(s.status === "fulfilled" ? s.value : []);
+    setPayments(pay.status === "fulfilled" ? pay.value : []);
+    setPaymentMethods(paymentMethodList.status === "fulfilled" ? paymentMethodList.value : []);
+    setNews(n.status === "fulfilled" ? n.value : []);
+    setPromoCodes(promos.status === "fulfilled" ? promos.value : []);
+    setStats(st.status === "fulfilled" ? st.value : null);
+    setDeliveryStats(notifStats.status === "fulfilled" ? notifStats.value : null);
   };
 
   const refreshAll = async () => {
@@ -495,15 +510,32 @@ export function AdminPage() {
     api
       .me()
       .then(async (me) => {
-        const allowed = Boolean(me.is_admin || me.role === "admin");
-        setIsAdmin(allowed);
-        if (!allowed) return;
+        if (me.role === "admin") {
+          setOperatorRole("admin");
+          setTab("predictions");
+        } else if (me.role === "support") {
+          setOperatorRole("support");
+          setTab("users");
+        } else {
+          setOperatorRole(null);
+          return;
+        }
         setLoading(true);
         await loadAll();
       })
-      .catch(() => setIsAdmin(false))
-      .finally(() => setLoading(false));
+      .catch(() => setOperatorRole(null))
+      .finally(() => {
+        setRoleChecked(true);
+        setLoading(false);
+      });
   }, []);
+
+  useEffect(() => {
+    if (!visibleTabs.length) return;
+    if (!visibleTabs.some((item) => item.key === tab)) {
+      setTab(visibleTabs[0].key);
+    }
+  }, [tab, visibleTabs]);
 
   const latestSubscriptionByUser = useMemo(() => {
     const map = new Map<string, AdminSubscription>();
@@ -614,7 +646,7 @@ export function AdminPage() {
     }
   };
 
-  const onUploadPredictionScreenshot = async (predictionId: string, file: File) => {
+  const onUploadPredictionScreenshot = async (predictionId: string, field: "bet_screenshot" | "result_screenshot", file: File) => {
     if (!file.type.startsWith("image/")) {
       notifyError(tx("Нужен файл изображения", "Please upload an image file"));
       return;
@@ -624,11 +656,11 @@ export function AdminPage() {
       return;
     }
 
-    setUploadingPredictionId(predictionId);
+    setUploadingPredictionId(`${predictionId}:${field}`);
     try {
       const payload = await fileToDataUrl(file);
-      await api.adminUpdatePrediction(predictionId, { result_screenshot: payload });
-      notifySuccess(tx("Скрин прогноза сохранен", "Prediction screenshot saved"));
+      await api.adminUpdatePrediction(predictionId, { [field]: payload });
+      notifySuccess(field === "bet_screenshot" ? tx("Скрин ставки сохранен", "Bet screenshot saved") : tx("Скрин результата сохранен", "Result screenshot saved"));
       await loadAll();
     } catch (e) {
       notifyError(textError(e, tx("Не удалось загрузить скрин", "Failed to upload screenshot")));
@@ -637,10 +669,10 @@ export function AdminPage() {
     }
   };
 
-  const onClearPredictionScreenshot = async (predictionId: string) => {
+  const onClearPredictionScreenshot = async (predictionId: string, field: "bet_screenshot" | "result_screenshot") => {
     try {
-      await api.adminUpdatePrediction(predictionId, { result_screenshot: "" });
-      notifySuccess(tx("Скрин удален", "Screenshot removed"));
+      await api.adminUpdatePrediction(predictionId, { [field]: "" });
+      notifySuccess(field === "bet_screenshot" ? tx("Скрин ставки удален", "Bet screenshot removed") : tx("Скрин результата удален", "Result screenshot removed"));
       await loadAll();
     } catch (e) {
       notifyError(textError(e, tx("Не удалось удалить скрин", "Failed to remove screenshot")));
@@ -665,7 +697,7 @@ export function AdminPage() {
     setPredictionSaving(false);
   };
 
-  const onPredictionDraftScreenshotPick = async (file: File) => {
+  const onPredictionDraftScreenshotPick = async (field: "bet_screenshot" | "result_screenshot", file: File) => {
     if (!file.type.startsWith("image/")) {
       notifyError(tx("Нужен файл изображения", "Please upload an image file"));
       return;
@@ -676,7 +708,7 @@ export function AdminPage() {
     }
     try {
       const payload = await fileToDataUrl(file);
-      setPredictionDraft((prev) => ({ ...prev, result_screenshot: payload }));
+      setPredictionDraft((prev) => ({ ...prev, [field]: payload }));
     } catch (e) {
       notifyError(textError(e, tx("Не удалось прочитать файл", "Failed to read file")));
     }
@@ -696,7 +728,8 @@ export function AdminPage() {
     }
 
     const description = composePredictionDescription(predictionDraft, isRu);
-    const screenshot = predictionDraft.result_screenshot && predictionDraft.result_screenshot.trim() ? predictionDraft.result_screenshot : null;
+    const betScreenshot = predictionDraft.bet_screenshot && predictionDraft.bet_screenshot.trim() ? predictionDraft.bet_screenshot : null;
+    const resultScreenshot = predictionDraft.result_screenshot && predictionDraft.result_screenshot.trim() ? predictionDraft.result_screenshot : null;
 
     const payload = {
       title: predictionDraft.title.trim() || `${matchName} • ${signalType}`,
@@ -707,7 +740,8 @@ export function AdminPage() {
       signal_type: signalType,
       odds,
       short_description: description,
-      result_screenshot: predictionSheetMode === "edit" ? screenshot || "" : screenshot,
+      bet_screenshot: predictionSheetMode === "edit" ? betScreenshot || "" : betScreenshot,
+      result_screenshot: predictionSheetMode === "edit" ? resultScreenshot || "" : resultScreenshot,
       risk_level: predictionDraft.risk_level,
       access_level: predictionDraft.access_level,
       mode: predictionDraft.mode,
@@ -733,10 +767,16 @@ export function AdminPage() {
     }
   };
 
-  const onUpdateRole = async (userId: string, role: "user" | "admin") => {
+  const onUpdateRole = async (userId: string, role: "user" | "support" | "admin") => {
     try {
       await api.adminUpdateUserRole(userId, role);
-      notifySuccess(role === "admin" ? tx("Права администратора выданы", "Admin permissions granted") : tx("Права администратора сняты", "Admin permissions revoked"));
+      if (role === "admin") {
+        notifySuccess(tx("Права администратора выданы", "Admin permissions granted"));
+      } else if (role === "support") {
+        notifySuccess(tx("Роль техподдержки выдана", "Support role granted"));
+      } else {
+        notifySuccess(tx("Роль обновлена", "Role updated"));
+      }
       await loadAll();
     } catch (e) {
       notifyError(textError(e, tx("Не удалось изменить роль", "Failed to update role")));
@@ -1125,12 +1165,22 @@ export function AdminPage() {
     }
   };
 
-  if (isAdmin === false) {
+  if (!roleChecked) {
+    return (
+      <Layout>
+        <section className="card">
+          <p className="muted">{tx("Проверяем доступ...", "Checking access...")}</p>
+        </section>
+      </Layout>
+    );
+  }
+
+  if (!isAdmin && !isSupport) {
     return (
       <Layout>
         <section className="card">
           <h2>{tx("Админка", "Admin")}</h2>
-          <p className="empty-state">{tx("Доступ открыт только администраторам.", "Access is available to admins only.")}</p>
+          <p className="empty-state">{tx("Доступ открыт только команде PIT BET (admin/support).", "Access is available to PIT BET staff only (admin/support).")}</p>
         </section>
       </Layout>
     );
@@ -1142,11 +1192,12 @@ export function AdminPage() {
         <div className="section-head">
           <h2>{tx("Админка PIT BET", "PIT BET admin panel")}</h2>
           <span className="muted">{tx("Мобильная control panel для контента, пользователей и платежей", "Mobile control panel for content, users, and payments")}</span>
+          <span className="admin-role-chip">{isAdmin ? tx("Роль: админ", "Role: admin") : tx("Роль: техподдержка", "Role: support")}</span>
         </div>
 
         <div className="admin-tabs-wrap admin-tabs-mobile">
           <div className="admin-tabs" role="tablist" aria-label={tx("Разделы админки", "Admin sections")}>
-            {TABS.map((item) => (
+            {visibleTabs.map((item) => (
               <button type="button" key={item.key} className={tab === item.key ? "tab active" : "tab"} onClick={() => setTab(item.key)}>
                 {isRu ? item.ru : item.en}
               </button>
@@ -1157,7 +1208,7 @@ export function AdminPage() {
         {message ? <p className={`notice admin-toast ${messageTone}`}>{message}</p> : null}
         {loading ? <p className="muted">{tx("Обновляем данные...", "Refreshing data...")}</p> : null}
 
-        {tab === "predictions" ? (
+        {tab === "predictions" && isAdmin ? (
           <div className="admin-panel">
             <div className="admin-control-bar">
               <div className="admin-control-top">
@@ -1204,9 +1255,24 @@ export function AdminPage() {
                     <span className={`badge ${item.status}`}>{statusLabel(item.status, language)}</span>
                   </div>
 
-                  {item.result_screenshot ? (
-                    <div className="admin-mini-shot">
-                      <img src={item.result_screenshot} alt={tx("Скрин результата", "Result screenshot")} loading="lazy" />
+                  {item.bet_screenshot || item.result_screenshot ? (
+                    <div className="admin-mini-shot-grid">
+                      {item.bet_screenshot ? (
+                        <div className="admin-mini-shot-block">
+                          <small>{tx("Ставка", "Bet")}</small>
+                          <div className="admin-mini-shot">
+                            <img src={item.bet_screenshot} alt={tx("Скрин ставки", "Bet screenshot")} loading="lazy" />
+                          </div>
+                        </div>
+                      ) : null}
+                      {item.result_screenshot ? (
+                        <div className="admin-mini-shot-block">
+                          <small>{tx("Результат", "Result")}</small>
+                          <div className="admin-mini-shot">
+                            <img src={item.result_screenshot} alt={tx("Скрин результата", "Result screenshot")} loading="lazy" />
+                          </div>
+                        </div>
+                      ) : null}
                     </div>
                   ) : null}
 
@@ -1252,31 +1318,64 @@ export function AdminPage() {
 
                   {predictionScreenshotPanelId === item.id ? (
                     <div className="admin-shot-panel">
-                      {item.result_screenshot ? (
-                        <div className="admin-image-preview compact">
-                          <img src={item.result_screenshot} alt={tx("Скрин результата", "Result screenshot")} loading="lazy" />
+                      <div className="admin-shot-block">
+                        <strong>{tx("Скрин ставки", "Bet screenshot")}</strong>
+                        {item.bet_screenshot ? (
+                          <div className="admin-image-preview compact">
+                            <img src={item.bet_screenshot} alt={tx("Скрин ставки", "Bet screenshot")} loading="lazy" />
+                          </div>
+                        ) : (
+                          <p className="muted">{tx("Скрин ставки не загружен", "No bet screenshot")}</p>
+                        )}
+                        <div className="admin-shot-actions-row">
+                          <label className="btn ghost admin-file-btn">
+                            {uploadingPredictionId === `${item.id}:bet_screenshot` ? tx("Загрузка...", "Uploading...") : item.bet_screenshot ? tx("Заменить", "Replace") : tx("Загрузить", "Upload")}
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.currentTarget.files?.[0];
+                                if (!file) return;
+                                void onUploadPredictionScreenshot(item.id, "bet_screenshot", file);
+                                e.currentTarget.value = "";
+                              }}
+                              disabled={uploadingPredictionId === `${item.id}:bet_screenshot`}
+                            />
+                          </label>
+                          <button className="btn ghost" type="button" disabled={!item.bet_screenshot} onClick={() => void onClearPredictionScreenshot(item.id, "bet_screenshot")}>
+                            {tx("Удалить", "Delete")}
+                          </button>
                         </div>
-                      ) : (
-                        <p className="muted">{tx("Скрин пока не загружен", "No screenshot uploaded yet")}</p>
-                      )}
-                      <div className="admin-shot-actions-row">
-                        <label className="btn ghost admin-file-btn">
-                          {uploadingPredictionId === item.id ? tx("Загрузка...", "Uploading...") : item.result_screenshot ? tx("Заменить", "Replace") : tx("Загрузить", "Upload")}
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => {
-                              const file = e.currentTarget.files?.[0];
-                              if (!file) return;
-                              void onUploadPredictionScreenshot(item.id, file);
-                              e.currentTarget.value = "";
-                            }}
-                            disabled={uploadingPredictionId === item.id}
-                          />
-                        </label>
-                        <button className="btn ghost" type="button" disabled={!item.result_screenshot} onClick={() => void onClearPredictionScreenshot(item.id)}>
-                          {tx("Удалить", "Delete")}
-                        </button>
+                      </div>
+
+                      <div className="admin-shot-block">
+                        <strong>{tx("Скрин результата", "Result screenshot")}</strong>
+                        {item.result_screenshot ? (
+                          <div className="admin-image-preview compact">
+                            <img src={item.result_screenshot} alt={tx("Скрин результата", "Result screenshot")} loading="lazy" />
+                          </div>
+                        ) : (
+                          <p className="muted">{tx("Скрин результата не загружен", "No result screenshot")}</p>
+                        )}
+                        <div className="admin-shot-actions-row">
+                          <label className="btn ghost admin-file-btn">
+                            {uploadingPredictionId === `${item.id}:result_screenshot` ? tx("Загрузка...", "Uploading...") : item.result_screenshot ? tx("Заменить", "Replace") : tx("Загрузить", "Upload")}
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.currentTarget.files?.[0];
+                                if (!file) return;
+                                void onUploadPredictionScreenshot(item.id, "result_screenshot", file);
+                                e.currentTarget.value = "";
+                              }}
+                              disabled={uploadingPredictionId === `${item.id}:result_screenshot`}
+                            />
+                          </label>
+                          <button className="btn ghost" type="button" disabled={!item.result_screenshot} onClick={() => void onClearPredictionScreenshot(item.id, "result_screenshot")}>
+                            {tx("Удалить", "Delete")}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ) : null}
@@ -1297,6 +1396,7 @@ export function AdminPage() {
                 <select value={usersRoleFilter} onChange={(e) => setUsersRoleFilter(e.target.value)}>
                   <option value="all">{tx("Все роли", "All roles")}</option>
                   <option value="user">{tx("Пользователь", "User")}</option>
+                  <option value="support">{tx("Техподдержка", "Support")}</option>
                   <option value="admin">{tx("Администратор", "Admin")}</option>
                 </select>
                 <select value={usersTariffFilter} onChange={(e) => setUsersTariffFilter(e.target.value as "all" | "free" | "premium" | "vip")}>
@@ -1315,7 +1415,9 @@ export function AdminPage() {
                   <article key={user.id} className="prediction-card admin-item admin-card-compact">
                     <div className="prediction-top admin-card-title-row">
                       <strong>{user.first_name || tx("Без имени", "No name")}</strong>
-                      <span className={user.role === "admin" ? "badge success" : "badge"}>{user.role === "admin" ? tx("админ", "admin") : tx("user", "user")}</span>
+                      <span className={user.role === "admin" ? "badge success" : user.role === "support" ? "badge warning" : "badge"}>
+                        {user.role === "admin" ? tx("админ", "admin") : user.role === "support" ? tx("поддержка", "support") : tx("user", "user")}
+                      </span>
                     </div>
                     <p className="muted admin-card-sub">@{user.username || "-"} • tg: {user.telegram_id}</p>
                     <div className="admin-meta-row">
@@ -1375,15 +1477,30 @@ export function AdminPage() {
                     </div>
 
                     <div className="admin-quick-actions">
-                      {user.role === "admin" ? (
-                        <button className="btn" type="button" onClick={() => void onUpdateRole(user.id, "user")}>
-                          {tx("Снять админку", "Revoke admin")}
-                        </button>
-                      ) : (
-                        <button className="btn" type="button" onClick={() => void onUpdateRole(user.id, "admin")}>
-                          {tx("Выдать админку", "Grant admin")}
-                        </button>
-                      )}
+                      {isAdmin ? (
+                        <>
+                          {user.role === "admin" ? (
+                            <button className="btn" type="button" onClick={() => void onUpdateRole(user.id, "user")}>
+                              {tx("Снять админку", "Revoke admin")}
+                            </button>
+                          ) : (
+                            <button className="btn" type="button" onClick={() => void onUpdateRole(user.id, "admin")}>
+                              {tx("Выдать админку", "Grant admin")}
+                            </button>
+                          )}
+
+                          {user.role === "support" ? (
+                            <button className="btn ghost" type="button" onClick={() => void onUpdateRole(user.id, "user")}>
+                              {tx("Снять поддержку", "Revoke support")}
+                            </button>
+                          ) : (
+                            <button className="btn ghost" type="button" onClick={() => void onUpdateRole(user.id, "support")}>
+                              {tx("Выдать поддержку", "Grant support")}
+                            </button>
+                          )}
+                        </>
+                      ) : null}
+
                       <button
                         className="btn danger"
                         type="button"
@@ -1400,9 +1517,11 @@ export function AdminPage() {
                       >
                         {tx("Отменить подписку", "Cancel subscription")}
                       </button>
-                      <button className="btn danger" type="button" onClick={() => void onDeleteUser(user.id)}>
-                        {tx("Удалить", "Delete")}
-                      </button>
+                      {isAdmin ? (
+                        <button className="btn danger" type="button" onClick={() => void onDeleteUser(user.id)}>
+                          {tx("Удалить", "Delete")}
+                        </button>
+                      ) : null}
                     </div>
                   </article>
                 );
@@ -1549,7 +1668,7 @@ export function AdminPage() {
           </div>
         ) : null}
 
-        {tab === "payment_methods" ? (
+        {tab === "payment_methods" && isAdmin ? (
           <div className="admin-panel">
             <div className="admin-control-bar">
               <div className="admin-control-top">
@@ -1603,7 +1722,7 @@ export function AdminPage() {
           </div>
         ) : null}
 
-        {tab === "news" ? (
+        {tab === "news" && isAdmin ? (
           <div className="admin-panel">
             <div className="admin-control-bar">
               <div className="admin-control-top">
@@ -1651,7 +1770,7 @@ export function AdminPage() {
           </div>
         ) : null}
 
-        {tab === "promocodes" ? (
+        {tab === "promocodes" && isAdmin ? (
           <div className="admin-panel">
             <div className="admin-control-bar">
               <div className="admin-control-top">
@@ -1701,7 +1820,7 @@ export function AdminPage() {
           </div>
         ) : null}
 
-        {tab === "broadcasts" ? (
+        {tab === "broadcasts" && isAdmin ? (
           <div className="admin-panel">
             <div className="admin-control-bar">
               <div className="admin-control-top">
@@ -1774,7 +1893,7 @@ export function AdminPage() {
           </div>
         ) : null}
 
-        {tab === "events" ? (
+        {tab === "events" && isAdmin ? (
           <div className="admin-panel">
             <div className="metrics-grid">
               <article>
@@ -1897,31 +2016,64 @@ export function AdminPage() {
           </section>
 
           <section className="admin-editor-section">
-            <h4>{tx("Секция 5. Скрин", "Section 5. Screenshot")}</h4>
-            {predictionDraft.result_screenshot ? (
-              <div className="admin-image-preview compact">
-                <img src={predictionDraft.result_screenshot} alt={tx("Скрин результата", "Result screenshot")} loading="lazy" />
+            <h4>{tx("Секция 5. Скрины", "Section 5. Screenshots")}</h4>
+
+            <div className="admin-shot-block">
+              <strong>{tx("Скрин ставки", "Bet screenshot")}</strong>
+              {predictionDraft.bet_screenshot ? (
+                <div className="admin-image-preview compact">
+                  <img src={predictionDraft.bet_screenshot} alt={tx("Скрин ставки", "Bet screenshot")} loading="lazy" />
+                </div>
+              ) : (
+                <p className="muted">{tx("Скрин ставки не добавлен", "No bet screenshot")}</p>
+              )}
+              <div className="admin-shot-actions-row">
+                <label className="btn ghost admin-file-btn">
+                  {predictionDraft.bet_screenshot ? tx("Заменить", "Replace") : tx("Загрузить", "Upload")}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.currentTarget.files?.[0];
+                      if (!file) return;
+                      void onPredictionDraftScreenshotPick("bet_screenshot", file);
+                      e.currentTarget.value = "";
+                    }}
+                  />
+                </label>
+                <button className="btn ghost" type="button" disabled={!predictionDraft.bet_screenshot} onClick={() => setPredictionDraft((prev) => ({ ...prev, bet_screenshot: null }))}>
+                  {tx("Удалить", "Delete")}
+                </button>
               </div>
-            ) : (
-              <p className="muted">{tx("Скрин не добавлен", "No screenshot attached")}</p>
-            )}
-            <div className="admin-shot-actions-row">
-              <label className="btn ghost admin-file-btn">
-                {predictionDraft.result_screenshot ? tx("Заменить", "Replace") : tx("Загрузить", "Upload")}
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.currentTarget.files?.[0];
-                    if (!file) return;
-                    void onPredictionDraftScreenshotPick(file);
-                    e.currentTarget.value = "";
-                  }}
-                />
-              </label>
-              <button className="btn ghost" type="button" disabled={!predictionDraft.result_screenshot} onClick={() => setPredictionDraft((prev) => ({ ...prev, result_screenshot: null }))}>
-                {tx("Удалить", "Delete")}
-              </button>
+            </div>
+
+            <div className="admin-shot-block">
+              <strong>{tx("Скрин результата", "Result screenshot")}</strong>
+              {predictionDraft.result_screenshot ? (
+                <div className="admin-image-preview compact">
+                  <img src={predictionDraft.result_screenshot} alt={tx("Скрин результата", "Result screenshot")} loading="lazy" />
+                </div>
+              ) : (
+                <p className="muted">{tx("Скрин результата не добавлен", "No result screenshot")}</p>
+              )}
+              <div className="admin-shot-actions-row">
+                <label className="btn ghost admin-file-btn">
+                  {predictionDraft.result_screenshot ? tx("Заменить", "Replace") : tx("Загрузить", "Upload")}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.currentTarget.files?.[0];
+                      if (!file) return;
+                      void onPredictionDraftScreenshotPick("result_screenshot", file);
+                      e.currentTarget.value = "";
+                    }}
+                  />
+                </label>
+                <button className="btn ghost" type="button" disabled={!predictionDraft.result_screenshot} onClick={() => setPredictionDraft((prev) => ({ ...prev, result_screenshot: null }))}>
+                  {tx("Удалить", "Delete")}
+                </button>
+              </div>
             </div>
           </section>
 

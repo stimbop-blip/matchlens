@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import String, cast, desc, select
 from sqlalchemy.orm import Session
 
-from app.api.deps import require_admin
+from app.api.deps import require_admin_or_support
 from app.core.db import get_db
 from app.models.enums import SubscriptionStatus
 from app.models.subscription import Subscription
@@ -34,7 +34,7 @@ class AdminChangeTariffIn(BaseModel):
 @router.get("")
 def admin_list_subscriptions(
     db: Session = Depends(get_db),
-    _: User = Depends(require_admin),
+    _: User = Depends(require_admin_or_support),
     status: str | None = Query(default=None),
     q: str | None = Query(default=None),
 ) -> list[dict]:
@@ -74,7 +74,7 @@ def admin_list_subscriptions(
 def admin_grant_subscription(
     payload: AdminGrantSubscriptionIn,
     db: Session = Depends(get_db),
-    _: User = Depends(require_admin),
+    _: User = Depends(require_admin_or_support),
 ) -> dict:
     user: User | None = None
     if payload.user_id:
@@ -127,7 +127,7 @@ def admin_extend_subscription(
     subscription_id: str,
     payload: AdminExtendSubscriptionIn,
     db: Session = Depends(get_db),
-    _: User = Depends(require_admin),
+    _: User = Depends(require_admin_or_support),
 ) -> dict:
     item = db.get(Subscription, subscription_id)
     if not item:
@@ -147,7 +147,7 @@ def admin_change_subscription_tariff(
     subscription_id: str,
     payload: AdminChangeTariffIn,
     db: Session = Depends(get_db),
-    _: User = Depends(require_admin),
+    _: User = Depends(require_admin_or_support),
 ) -> dict:
     item = db.get(Subscription, subscription_id)
     if not item:
@@ -176,7 +176,7 @@ def admin_change_subscription_tariff(
 def admin_cancel_subscription(
     subscription_id: str,
     db: Session = Depends(get_db),
-    _: User = Depends(require_admin),
+    _: User = Depends(require_admin_or_support),
 ) -> dict:
     item = db.get(Subscription, subscription_id)
     if not item:

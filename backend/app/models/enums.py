@@ -4,6 +4,7 @@ from enum import Enum
 class UserRole(str, Enum):
     user = "user"
     admin = "admin"
+    support = "support"
 
 
 class AccessLevel(str, Enum):

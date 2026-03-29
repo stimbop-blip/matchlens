@@ -212,11 +212,26 @@ export function PredictionDetailsPage() {
             </div>
           </AppShellSection>
 
-          {item.result_screenshot ? (
+          {item.bet_screenshot || item.result_screenshot ? (
             <AppShellSection>
               <SectionHeader title={t("prediction.section.screenshot")} subtitle={t("prediction.section.screenshotSubtitle")} />
-              <div className="pb-prediction-screenshot">
-                <img src={item.result_screenshot} alt={t("prediction.screenshot.alt")} loading="lazy" />
+              <div className="pb-prediction-screenshot-grid">
+                {item.bet_screenshot ? (
+                  <article className="pb-prediction-screenshot-block">
+                    <h4>{t("prediction.section.betScreenshot")}</h4>
+                    <div className="pb-prediction-screenshot">
+                      <img src={item.bet_screenshot} alt={t("prediction.screenshot.betAlt")} loading="lazy" />
+                    </div>
+                  </article>
+                ) : null}
+                {item.result_screenshot ? (
+                  <article className="pb-prediction-screenshot-block">
+                    <h4>{t("prediction.section.resultScreenshot")}</h4>
+                    <div className="pb-prediction-screenshot">
+                      <img src={item.result_screenshot} alt={t("prediction.screenshot.resultAlt")} loading="lazy" />
+                    </div>
+                  </article>
+                ) : null}
               </div>
             </AppShellSection>
           ) : null}

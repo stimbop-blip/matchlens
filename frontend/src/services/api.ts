@@ -76,6 +76,7 @@ export type Prediction = {
   signal_type: string;
   odds: number;
   short_description: string | null;
+  bet_screenshot: string | null;
   result_screenshot: string | null;
   risk_level: string;
   access_level: "free" | "premium" | "vip";
@@ -94,6 +95,7 @@ export type Me = {
   last_name: string | null;
   language: "ru" | "en";
   theme: "dark" | "light";
+  is_support?: boolean;
 };
 
 export type UserPreferences = {
@@ -122,7 +124,7 @@ export type AdminUser = {
   telegram_id: number;
   username: string | null;
   first_name: string | null;
-  role: "user" | "admin";
+  role: "user" | "support" | "admin";
   tariff: "free" | "premium" | "vip";
   subscription_ends_at: string | null;
   referral_code?: string | null;
@@ -380,7 +382,7 @@ export const api = {
     const suffix = search.toString() ? `?${search.toString()}` : "";
     return request<AdminUser[]>(`/admin/users${suffix}`);
   },
-  adminUpdateUserRole: (id: string, role: "user" | "admin") =>
+  adminUpdateUserRole: (id: string, role: "user" | "support" | "admin") =>
     request<{ ok: boolean }>(`/admin/users/${id}/role`, {
       method: "PATCH",
       body: JSON.stringify({ role }),

@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import String, cast, desc, select
 from sqlalchemy.orm import Session
 
-from app.api.deps import require_admin
+from app.api.deps import require_admin_or_support
 from app.core.db import get_db
 from app.models.enums import PaymentStatus
 from app.models.payment import Payment
@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 @router.get("")
 def admin_list_payments(
     db: Session = Depends(get_db),
-    _: User = Depends(require_admin),
+    _: User = Depends(require_admin_or_support),
     status: str | None = Query(default=None),
     user_query: str | None = Query(default=None),
 ) -> list[dict]:
@@ -80,7 +80,7 @@ def admin_update_payment_status(
     payment_id: str,
     payload: AdminPaymentStatusUpdateIn,
     db: Session = Depends(get_db),
-    admin_user: User = Depends(require_admin),
+    admin_user: User = Depends(require_admin_or_support),
 ) -> dict:
     payment = db.get(Payment, payment_id)
     if not payment:

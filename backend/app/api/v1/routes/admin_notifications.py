@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.api.deps import require_admin
+from app.api.deps import require_admin, require_admin_or_support
 from app.core.db import get_db
 from app.models.user import User
 from app.schemas.notification import AdminBroadcastIn, AdminCampaignPreviewIn, AdminCampaignSendIn, AdminDirectSendIn
@@ -84,7 +84,7 @@ def admin_campaign_send(
 def admin_direct_send(
     payload: AdminDirectSendIn,
     db: Session = Depends(get_db),
-    _: User = Depends(require_admin),
+    _: User = Depends(require_admin_or_support),
 ) -> dict:
     try:
         result = queue_direct_notification(
@@ -104,7 +104,7 @@ def admin_direct_send(
 @router.get("/stats")
 def admin_notifications_stats(
     db: Session = Depends(get_db),
-    _: User = Depends(require_admin),
+    _: User = Depends(require_admin_or_support),
 ) -> dict:
     stats = notification_delivery_stats(db)
     return {"ok": True, **stats}

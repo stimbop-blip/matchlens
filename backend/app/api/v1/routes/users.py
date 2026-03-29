@@ -39,6 +39,7 @@ def me(
         theme=preferences["theme"],
         role=current_user.role.value,
         is_admin=current_user.role.value == "admin",
+        is_support=current_user.role.value == "support",
     )
 
 

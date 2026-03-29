@@ -178,6 +178,7 @@ def _build_prediction_created_payload(prediction: Prediction) -> tuple[str, str]
         f"Матч: {prediction.match_name}",
         f"Лига: {prediction.league or '-'}",
         f"Старт: {_format_kickoff(prediction.event_start_at)}",
+        f"Статус: {_status_label(prediction.status.value)}",
         f"Сигнал: {prediction.signal_type}",
         f"Коэффициент: {_format_odds(prediction.odds)}",
         f"Формат: {_mode_label(prediction.mode)}",
@@ -202,6 +203,7 @@ def _build_prediction_result_payload(prediction: Prediction) -> tuple[str, str] 
         f"Матч: {prediction.match_name}",
         f"Лига: {prediction.league or '-'}",
         f"Итог: {status_label}",
+        f"Сигнал: {prediction.signal_type}",
         f"Коэффициент: {_format_odds(prediction.odds)}",
         f"Доступ: {_access_label(prediction.access_level.value)}",
         "",
@@ -351,11 +353,18 @@ def queue_broadcast(
     return counters["queued"]
 
 
-def queue_prediction_notification(db: Session, access_level: str, title: str, message: str) -> int:
+def queue_prediction_notification(
+    db: Session,
+    access_level: str,
+    title: str,
+    message: str,
+    image_data: str | None = None,
+) -> int:
     users = db.scalars(select(User)).all()
     level_map = _active_level_map(db)
     settings_map = _user_settings_map(db)
     allowed = _allowed_levels(access_level)
+    normalized_image = _normalize_image_data(image_data)
 
     counters = {
         "total": len(users),
@@ -384,7 +393,16 @@ def queue_prediction_notification(db: Session, access_level: str, title: str, me
             counters["skip_access_pref"] += 1
             continue
 
-        db.add(Notification(user_id=user.id, type="prediction_created", title=title, message=message, status="queued"))
+        db.add(
+            Notification(
+                user_id=user.id,
+                type="prediction_created",
+                title=title,
+                message=message,
+                image_data=normalized_image,
+                status="queued",
+            )
+        )
         counters["queued"] += 1
 
     db.commit()
@@ -408,6 +426,7 @@ def queue_prediction_created_notification(db: Session, prediction: Prediction) -
         access_level=prediction.access_level.value,
         title=title,
         message=message,
+        image_data=prediction.bet_screenshot,
     )
 
 

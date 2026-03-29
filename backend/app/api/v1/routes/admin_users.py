@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import String, and_, cast, desc, func, select
 from sqlalchemy.orm import Session
 
-from app.api.deps import require_admin
+from app.api.deps import require_admin, require_admin_or_support
 from app.core.db import get_db
 from app.models.enums import SubscriptionStatus, UserRole
 from app.models.payment import Payment
@@ -18,13 +18,13 @@ router = APIRouter(prefix="/admin/users", tags=["admin"])
 
 
 class AdminUserRoleUpdateIn(BaseModel):
-    role: str = Field(pattern="^(user|admin)$")
+    role: str = Field(pattern="^(user|support|admin)$")
 
 
 @router.get("")
 def admin_list_users(
     db: Session = Depends(get_db),
-    _: User = Depends(require_admin),
+    _: User = Depends(require_admin_or_support),
     q: str | None = Query(default=None),
     role: str | None = Query(default=None),
 ) -> list[dict]:
@@ -37,7 +37,7 @@ def admin_list_users(
             | (cast(User.telegram_id, String).like(f"%{q}%"))
             | (func.lower(func.coalesce(User.first_name, "")).like(q_like))
         )
-    if role in {"user", "admin"}:
+    if role in {"user", "support", "admin"}:
         conditions.append(User.role == UserRole(role))
     if conditions:
         stmt = stmt.where(and_(*conditions))

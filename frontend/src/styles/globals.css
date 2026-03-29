@@ -5072,6 +5072,23 @@ a:focus {
   border-radius: 10px;
 }
 
+.pb-prediction-screenshot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.pb-prediction-screenshot-block {
+  display: grid;
+  gap: 4px;
+}
+
+.pb-prediction-screenshot-block h4 {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
 /* PIT BET product fixes: stats overlap */
 
 .pb-stats-section .pb-metric-grid,
@@ -5445,6 +5462,19 @@ a:focus {
   font-size: 12px;
 }
 
+.pb-admin-shell.pb-admin-mobile .admin-role-chip {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 38%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent-soft) 64%, transparent);
+  color: color-mix(in srgb, var(--accent-primary) 90%, var(--text-primary));
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 10px;
+}
+
 .admin-tabs-wrap.admin-tabs-mobile {
   position: sticky;
   top: 64px;
@@ -5457,27 +5487,23 @@ a:focus {
 }
 
 .admin-tabs-wrap.admin-tabs-mobile .admin-tabs {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.admin-tabs-wrap.admin-tabs-mobile .admin-tabs::-webkit-scrollbar {
-  display: none;
 }
 
 .admin-tabs-wrap.admin-tabs-mobile .admin-tabs .tab {
-  white-space: nowrap;
+  white-space: normal;
   min-height: 42px;
-  padding: 10px 14px;
-  border-radius: 999px;
+  padding: 8px 10px;
+  border-radius: 12px;
   border: 1px solid color-mix(in srgb, var(--border-soft) 90%, transparent);
   background: color-mix(in srgb, var(--surface-3) 58%, transparent);
   color: var(--text-secondary);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.16px;
+  line-height: 1.25;
 }
 
 .admin-tabs-wrap.admin-tabs-mobile .admin-tabs .tab.active {
@@ -5585,6 +5611,23 @@ a:focus {
   padding: 4px;
 }
 
+.pb-admin-shell.pb-admin-mobile .admin-mini-shot-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.pb-admin-shell.pb-admin-mobile .admin-mini-shot-block {
+  display: grid;
+  gap: 4px;
+}
+
+.pb-admin-shell.pb-admin-mobile .admin-mini-shot-block small {
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+
 .pb-admin-shell.pb-admin-mobile .admin-mini-shot img {
   display: block;
   width: 100%;
@@ -5641,6 +5684,19 @@ a:focus {
   padding: 8px;
   display: grid;
   gap: 8px;
+}
+
+.pb-admin-shell.pb-admin-mobile .admin-shot-block {
+  border: 1px solid color-mix(in srgb, var(--border-soft) 90%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface-1) 82%, transparent);
+  padding: 8px;
+  display: grid;
+  gap: 8px;
+}
+
+.pb-admin-shell.pb-admin-mobile .admin-shot-block > strong {
+  font-size: 12px;
 }
 
 .pb-admin-shell.pb-admin-mobile .admin-shot-actions-row {
@@ -5820,6 +5876,10 @@ a:focus {
     top: 60px;
   }
 
+  .admin-tabs-wrap.admin-tabs-mobile .admin-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .pb-admin-shell.pb-admin-mobile .admin-control-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -5834,6 +5894,10 @@ a:focus {
   .pb-admin-shell.pb-admin-mobile .admin-shot-actions-row,
   .admin-sheet-footer {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pb-admin-shell.pb-admin-mobile .admin-mini-shot-grid {
+    grid-template-columns: 1fr;
   }
 
   .admin-sheet {

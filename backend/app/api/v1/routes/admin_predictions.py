@@ -24,6 +24,7 @@ def _prediction_out(item: Prediction) -> PredictionOut:
         signal_type=item.signal_type,
         odds=float(item.odds),
         short_description=item.short_description,
+        bet_screenshot=item.bet_screenshot,
         result_screenshot=item.result_screenshot,
         risk_level=item.risk_level,
         access_level=item.access_level.value,
@@ -66,7 +67,7 @@ def admin_update_prediction(
         raise HTTPException(status_code=404, detail="Prediction not found")
     previous_published_at = item.published_at
     previous_status = item.status.value
-    previous_has_screenshot = bool((item.result_screenshot or "").strip())
+    previous_has_result_screenshot = bool((item.result_screenshot or "").strip())
     item = update_prediction(db, item, payload.model_dump())
     if previous_published_at is None and item.published_at is not None:
         queue_prediction_created_notification(db, item)
@@ -75,7 +76,7 @@ def admin_update_prediction(
     status_changed_to_result = item.status.value in result_statuses and previous_status != item.status.value
     screenshot_added_for_result = (
         item.status.value in result_statuses
-        and not previous_has_screenshot
+        and not previous_has_result_screenshot
         and bool((item.result_screenshot or "").strip())
     )
     if status_changed_to_result or screenshot_added_for_result:

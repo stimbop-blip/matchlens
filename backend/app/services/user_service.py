@@ -35,7 +35,8 @@ def _normalize_referral_code(value: str | None) -> str | None:
 def upsert_user_by_telegram(db: Session, payload: dict) -> User:
     telegram_id = payload["telegram_id"]
     admin_ids = {item.strip() for item in settings.admin_telegram_ids.split(",") if item.strip()}
-    role = UserRole.admin if str(telegram_id) in admin_ids else UserRole.user
+    is_owner_admin = str(telegram_id) in admin_ids
+    role = UserRole.admin if is_owner_admin else UserRole.user
     referral_code = _normalize_referral_code(payload.get("referral_code"))
     language_code = (payload.get("language_code") or "ru").strip().lower()
     if language_code not in {"ru", "en"}:
@@ -48,7 +49,8 @@ def upsert_user_by_telegram(db: Session, payload: dict) -> User:
         user.last_name = payload.get("last_name")
         if not user.language_code:
             user.language_code = language_code
-        user.role = role
+        if is_owner_admin:
+            user.role = UserRole.admin
 
         if not user.referral_code:
             user.referral_code = _generate_referral_code(db)

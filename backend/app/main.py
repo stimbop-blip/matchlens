@@ -32,6 +32,8 @@ def on_startup() -> None:
     with engine.begin() as conn:
         users_table_exists = conn.execute(text("SELECT to_regclass('public.users')")).scalar()
         if users_table_exists:
+            with contextlib.suppress(Exception):
+                conn.execute(text("ALTER TYPE userrole ADD VALUE IF NOT EXISTS 'support'"))
             user_columns = {row[0] for row in conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name = 'users'"))}
             if "referral_code" not in user_columns:
                 conn.execute(text("ALTER TABLE users ADD COLUMN referral_code VARCHAR(24)"))
@@ -85,6 +87,8 @@ def on_startup() -> None:
                 row[0]
                 for row in conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name = 'predictions'"))
             }
+            if "bet_screenshot" not in prediction_columns:
+                conn.execute(text("ALTER TABLE predictions ADD COLUMN bet_screenshot TEXT"))
             if "result_screenshot" not in prediction_columns:
                 conn.execute(text("ALTER TABLE predictions ADD COLUMN result_screenshot TEXT"))
 

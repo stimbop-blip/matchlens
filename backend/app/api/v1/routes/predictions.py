@@ -24,6 +24,7 @@ def _prediction_out(item) -> PredictionOut:
         signal_type=item.signal_type,
         odds=float(item.odds),
         short_description=item.short_description,
+        bet_screenshot=item.bet_screenshot,
         result_screenshot=item.result_screenshot,
         risk_level=item.risk_level,
         access_level=item.access_level.value,

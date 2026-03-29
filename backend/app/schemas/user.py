@@ -11,6 +11,7 @@ class MeOut(BaseModel):
     theme: str
     role: str
     is_admin: bool
+    is_support: bool
 
 
 class NotificationSettingsOut(BaseModel):
