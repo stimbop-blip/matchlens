@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
@@ -5,6 +7,8 @@ from app.api.deps import get_current_user
 from app.core.db import get_db
 from app.models.user import User
 from app.schemas.user import (
+    ConsentOut,
+    ConsentUpdateIn,
     MeOut,
     NotificationSettingsOut,
     NotificationSettingsUpdateIn,
@@ -40,6 +44,59 @@ def me(
         role=current_user.role.value,
         is_admin=current_user.role.value == "admin",
         is_support=current_user.role.value == "support",
+        accepted_18_plus=current_user.accepted_18_plus,
+        accepted_rules=current_user.accepted_rules,
+        accepted_payment_terms=current_user.accepted_payment_terms,
+        accepted_at=current_user.accepted_at,
+        accepted_version=current_user.accepted_version,
+    )
+
+
+@router.get("/me/consent", response_model=ConsentOut)
+def me_consent(
+    current_user: User = Depends(get_current_user),
+) -> ConsentOut:
+    return ConsentOut(
+        accepted_18_plus=current_user.accepted_18_plus,
+        accepted_rules=current_user.accepted_rules,
+        accepted_payment_terms=current_user.accepted_payment_terms,
+        accepted_at=current_user.accepted_at,
+        accepted_version=current_user.accepted_version,
+    )
+
+
+@router.patch("/me/consent", response_model=ConsentOut)
+def patch_me_consent(
+    payload: ConsentUpdateIn,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> ConsentOut:
+    current_user.accepted_18_plus = payload.accepted_18_plus
+    current_user.accepted_rules = payload.accepted_rules
+    current_user.accepted_payment_terms = payload.accepted_payment_terms
+
+    accepted = bool(
+        current_user.accepted_18_plus
+        and current_user.accepted_rules
+        and current_user.accepted_payment_terms
+    )
+    if accepted:
+        current_user.accepted_at = datetime.now(timezone.utc)
+        current_user.accepted_version = payload.accepted_version
+    else:
+        current_user.accepted_at = None
+        current_user.accepted_version = None
+
+    db.add(current_user)
+    db.commit()
+    db.refresh(current_user)
+
+    return ConsentOut(
+        accepted_18_plus=current_user.accepted_18_plus,
+        accepted_rules=current_user.accepted_rules,
+        accepted_payment_terms=current_user.accepted_payment_terms,
+        accepted_at=current_user.accepted_at,
+        accepted_version=current_user.accepted_version,
     )
 
 

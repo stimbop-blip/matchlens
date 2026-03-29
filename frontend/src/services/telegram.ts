@@ -10,6 +10,7 @@ declare global {
         };
         setHeaderColor?: (value: string) => void;
         setBackgroundColor?: (value: string) => void;
+        close?: () => void;
         MainButton?: {
           setText: (text: string) => void;
           show: () => void;

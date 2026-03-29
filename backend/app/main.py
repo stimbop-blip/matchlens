@@ -59,6 +59,28 @@ def on_startup() -> None:
                 conn.execute(text("ALTER TABLE users ADD COLUMN referral_code VARCHAR(24)"))
             if "referred_by_user_id" not in user_columns:
                 conn.execute(text("ALTER TABLE users ADD COLUMN referred_by_user_id UUID"))
+            if "accepted_18_plus" not in user_columns:
+                conn.execute(text("ALTER TABLE users ADD COLUMN accepted_18_plus BOOLEAN DEFAULT FALSE"))
+            if "accepted_rules" not in user_columns:
+                conn.execute(text("ALTER TABLE users ADD COLUMN accepted_rules BOOLEAN DEFAULT FALSE"))
+            if "accepted_payment_terms" not in user_columns:
+                conn.execute(text("ALTER TABLE users ADD COLUMN accepted_payment_terms BOOLEAN DEFAULT FALSE"))
+            if "accepted_at" not in user_columns:
+                conn.execute(text("ALTER TABLE users ADD COLUMN accepted_at TIMESTAMPTZ"))
+            if "accepted_version" not in user_columns:
+                conn.execute(text("ALTER TABLE users ADD COLUMN accepted_version VARCHAR(16)"))
+
+            conn.execute(text("UPDATE users SET accepted_18_plus = FALSE WHERE accepted_18_plus IS NULL"))
+            conn.execute(text("UPDATE users SET accepted_rules = FALSE WHERE accepted_rules IS NULL"))
+            conn.execute(text("UPDATE users SET accepted_payment_terms = FALSE WHERE accepted_payment_terms IS NULL"))
+            with contextlib.suppress(Exception):
+                conn.execute(text("ALTER TABLE users ALTER COLUMN accepted_18_plus SET DEFAULT FALSE"))
+                conn.execute(text("ALTER TABLE users ALTER COLUMN accepted_18_plus SET NOT NULL"))
+                conn.execute(text("ALTER TABLE users ALTER COLUMN accepted_rules SET DEFAULT FALSE"))
+                conn.execute(text("ALTER TABLE users ALTER COLUMN accepted_rules SET NOT NULL"))
+                conn.execute(text("ALTER TABLE users ALTER COLUMN accepted_payment_terms SET DEFAULT FALSE"))
+                conn.execute(text("ALTER TABLE users ALTER COLUMN accepted_payment_terms SET NOT NULL"))
+
             conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ix_users_referral_code ON users (referral_code) WHERE referral_code IS NOT NULL"))
             conn.execute(text("CREATE INDEX IF NOT EXISTS ix_users_referred_by_user_id ON users (referred_by_user_id)"))
 

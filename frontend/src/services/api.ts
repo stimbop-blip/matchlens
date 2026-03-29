@@ -96,6 +96,19 @@ export type Me = {
   language: "ru" | "en";
   theme: "dark" | "light";
   is_support?: boolean;
+  accepted_18_plus: boolean;
+  accepted_rules: boolean;
+  accepted_payment_terms: boolean;
+  accepted_at: string | null;
+  accepted_version: string | null;
+};
+
+export type UserConsent = {
+  accepted_18_plus: boolean;
+  accepted_rules: boolean;
+  accepted_payment_terms: boolean;
+  accepted_at: string | null;
+  accepted_version: string | null;
 };
 
 export type SupportDialogStatus = "open" | "waiting_user" | "waiting_support" | "closed";
@@ -371,6 +384,12 @@ export type PublicStats = {
 
 export const api = {
   me: () => request<Me>("/users/me"),
+  myConsent: () => request<UserConsent>("/users/me/consent"),
+  updateMyConsent: (payload: { accepted_18_plus: boolean; accepted_rules: boolean; accepted_payment_terms: boolean; accepted_version: string }) =>
+    request<UserConsent>("/users/me/consent", {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
   myPreferences: () => request<UserPreferences>("/users/me/preferences"),
   updateMyPreferences: (payload: Partial<UserPreferences>) =>
     request<UserPreferences>("/users/me/preferences", {

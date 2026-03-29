@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel, Field
 
 
@@ -12,6 +14,26 @@ class MeOut(BaseModel):
     role: str
     is_admin: bool
     is_support: bool
+    accepted_18_plus: bool
+    accepted_rules: bool
+    accepted_payment_terms: bool
+    accepted_at: datetime | None
+    accepted_version: str | None
+
+
+class ConsentOut(BaseModel):
+    accepted_18_plus: bool
+    accepted_rules: bool
+    accepted_payment_terms: bool
+    accepted_at: datetime | None
+    accepted_version: str | None
+
+
+class ConsentUpdateIn(BaseModel):
+    accepted_18_plus: bool
+    accepted_rules: bool
+    accepted_payment_terms: bool
+    accepted_version: str = Field(default="v1", min_length=1, max_length=16)
 
 
 class NotificationSettingsOut(BaseModel):

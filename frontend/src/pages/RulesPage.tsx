@@ -1,22 +1,19 @@
+import { LEGAL_TEXTS } from "../app/legal";
 import { useI18n } from "../app/i18n";
-import { AppDisclaimer } from "../components/AppDisclaimer";
-import { Layout } from "../components/Layout";
-import { AppShellSection, SectionHeader } from "../components/ui";
+import { LegalDocumentView } from "../components/LegalDocumentView";
 
-export function RulesPage() {
-  const { t } = useI18n();
+export function RulesPage({ standalone = false }: { standalone?: boolean }) {
+  const { language } = useI18n();
+  const locale = language === "en" ? "en" : "ru";
+  const copy = LEGAL_TEXTS[locale];
 
   return (
-    <Layout>
-      <AppShellSection>
-        <SectionHeader title={t("rules.title")} subtitle={t("rules.subtitle")} />
-        <div className="pb-article-stack">
-          <p>{t("rules.p1")}</p>
-          <p>{t("rules.p2")}</p>
-          <p>{t("rules.p3")}</p>
-        </div>
-      </AppShellSection>
-      <AppDisclaimer />
-    </Layout>
+    <LegalDocumentView
+      title={copy.rules.title}
+      intro={copy.rules.intro}
+      sections={copy.rules.sections}
+      standalone={standalone}
+      backLabel={copy.gate.buttonContinue}
+    />
   );
 }
