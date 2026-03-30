@@ -149,7 +149,7 @@ export function GatePage({ consent, checkingRemote = false, onAccepted }: GatePa
         <div className="pb-gate-actions">
           <button className="pb-btn pb-btn-primary" type="button" onClick={onContinue} disabled={!canContinue}>
             <span className="pb-gate-launch-icon" aria-hidden="true">
-              >
+              →
             </span>
             {copy.buttonContinue}
           </button>
