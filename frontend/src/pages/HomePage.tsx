@@ -275,6 +275,8 @@ export function HomePage() {
 
   const accessProgress = buildAccessProgress(sub.tariff, sub.is_active);
   const statusText = statusLabel(sub.status, t);
+  const roiText = `${(stats?.roi ?? 0).toFixed(1)}%`;
+  const hitRateText = `${(stats?.hit_rate ?? 0).toFixed(1)}%`;
 
   return (
     <Layout>
@@ -284,6 +286,24 @@ export function HomePage() {
         subtitle={t("home.hero.subheadline")}
         right={<span className={`pb-tier-pill ${sub.tariff}`}>{tariffLabel(sub.tariff, t)}</span>}
       >
+        <div className="pb-overview-hero-3d" aria-hidden="true">
+          <div className="pb-overview-trophy-3d">
+            <span className="pb-overview-trophy-crown" />
+            <span className="pb-overview-trophy-core" />
+            <span className="pb-overview-trophy-base" />
+          </div>
+          <div className="pb-overview-hero-stats">
+            <article>
+              <small>{t("common.roi")}</small>
+              <strong>{roiText}</strong>
+            </article>
+            <article>
+              <small>{t("home.performance.hit")}</small>
+              <strong>{hitRateText}</strong>
+            </article>
+          </div>
+        </div>
+
         <div className="pb-overview-market-shell">
           <div className="pb-overview-market-head">
             <span>{t("home.hero.marketPulse")}</span>
@@ -370,26 +390,33 @@ export function HomePage() {
           <small>{t("home.story.subtitle")}</small>
         </div>
 
-        <div className="pb-overview-story-grid">
-          <article>
+        <div className="pb-overview-story-grid pb-overview-signal3d-grid">
+          <article className="pb-overview-signal3d-card">
             <span className="pb-overview-story-icon">{storyIcon("line")}</span>
             <strong>{t("home.story.p1.title")}</strong>
             <p>{t("home.story.p1.text")}</p>
+            <div className="pb-overview-signal3d-kpi">
+              <span>{t("home.today.active")}</span>
+              <b>{today.activeSignals}</b>
+            </div>
           </article>
-          <article>
+          <article className="pb-overview-signal3d-card">
             <span className="pb-overview-story-icon">{storyIcon("odds")}</span>
             <strong>{t("home.story.p2.title")}</strong>
             <p>{t("home.story.p2.text")}</p>
+            <div className="pb-overview-signal3d-kpi">
+              <span>{t("home.today.premium")}</span>
+              <b>{today.premiumCount + today.vipCount}</b>
+            </div>
           </article>
-          <article>
+          <article className="pb-overview-signal3d-card">
             <span className="pb-overview-story-icon">{storyIcon("pattern")}</span>
             <strong>{t("home.story.p3.title")}</strong>
             <p>{t("home.story.p3.text")}</p>
-          </article>
-          <article>
-            <span className="pb-overview-story-icon">{storyIcon("selection")}</span>
-            <strong>{t("home.story.p4.title")}</strong>
-            <p>{t("home.story.p4.text")}</p>
+            <div className="pb-overview-signal3d-kpi">
+              <span>{t("home.performance.hit")}</span>
+              <b>{hitRateText}</b>
+            </div>
           </article>
         </div>
       </section>
@@ -401,8 +428,8 @@ export function HomePage() {
         </div>
 
         <div className="pb-overview-performance-grid">
-          <PremiumKpi label={t("common.roi")} value={`${(stats?.roi ?? 0).toFixed(1)}%`} tone="accent" />
-          <PremiumKpi label={t("home.performance.hit")} value={`${(stats?.hit_rate ?? 0).toFixed(1)}%`} tone="success" />
+          <PremiumKpi label={t("common.roi")} value={roiText} tone="accent" />
+          <PremiumKpi label={t("home.performance.hit")} value={hitRateText} tone="success" />
           <PremiumKpi label={t("home.performance.total")} value={stats?.total ?? 0} />
           <PremiumKpi label={t("home.performance.ratio")} value={`${stats?.wins ?? 0}/${stats?.loses ?? 0}/${stats?.refunds ?? 0}`} />
         </div>

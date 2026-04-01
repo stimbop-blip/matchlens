@@ -16,6 +16,8 @@ export function PremiumRing({
 
   return (
     <div className={`pb-premium-ring ${tone}`} style={style}>
+      <span className="pb-premium-ring-halo" aria-hidden="true" />
+      <span className="pb-premium-ring-sheen" aria-hidden="true" />
       <div>
         <small>{label}</small>
         <strong>{safe}%</strong>

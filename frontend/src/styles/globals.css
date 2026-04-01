@@ -7155,11 +7155,97 @@ a:focus {
 }
 
 .pb-hero-panel-v2 {
+  position: relative;
+  overflow: hidden;
   border-radius: 32px;
   border: 1px solid var(--border-subtle);
   background:
     radial-gradient(circle at 88% -22%, rgba(19, 224, 197, 0.16), transparent 52%),
     linear-gradient(160deg, rgba(15, 26, 37, 0.94), rgba(10, 18, 26, 0.98));
+}
+
+.pb-overview-hero-3d {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  gap: 12px;
+  margin-top: 2px;
+  perspective: 900px;
+}
+
+.pb-overview-trophy-3d {
+  position: relative;
+  min-height: 108px;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background:
+    radial-gradient(circle at 30% 15%, rgba(255, 255, 255, 0.14), transparent 44%),
+    linear-gradient(150deg, rgba(27, 52, 73, 0.8), rgba(12, 22, 35, 0.92));
+  transform: rotateX(12deg) rotateY(-15deg);
+  transform-style: preserve-3d;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 16px 26px rgba(0, 0, 0, 0.28);
+}
+
+.pb-overview-trophy-crown,
+.pb-overview-trophy-core,
+.pb-overview-trophy-base {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  border-radius: 999px;
+}
+
+.pb-overview-trophy-crown {
+  top: 16px;
+  width: 58px;
+  height: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: linear-gradient(180deg, #ffe4a6, #cf9d54);
+  box-shadow: 0 0 20px rgba(239, 189, 112, 0.35);
+}
+
+.pb-overview-trophy-core {
+  top: 32px;
+  width: 76px;
+  height: 44px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: linear-gradient(160deg, #ffd79d, #b97b32);
+}
+
+.pb-overview-trophy-base {
+  bottom: 16px;
+  width: 66px;
+  height: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: linear-gradient(160deg, #2ac9ab, #1d6b8b);
+}
+
+.pb-overview-hero-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  align-self: end;
+}
+
+.pb-overview-hero-stats article {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 8px;
+}
+
+.pb-overview-hero-stats small {
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.pb-overview-hero-stats strong {
+  margin-top: 4px;
+  display: block;
+  font-size: 18px;
+  line-height: 1;
 }
 
 .pb-hero-v2-head {
@@ -7439,6 +7525,8 @@ a:focus {
 }
 
 .pb-premium-ring {
+  position: relative;
+  overflow: hidden;
   width: 178px;
   height: 178px;
   margin: 0 auto;
@@ -7450,6 +7538,8 @@ a:focus {
 }
 
 .pb-premium-ring > div {
+  position: relative;
+  z-index: 3;
   width: 134px;
   height: 134px;
   border-radius: 999px;
@@ -7461,6 +7551,25 @@ a:focus {
   text-align: center;
   gap: 4px;
   padding: 10px;
+}
+
+.pb-premium-ring-halo {
+  position: absolute;
+  inset: 15px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  opacity: 0.9;
+}
+
+.pb-premium-ring-sheen {
+  position: absolute;
+  top: -24px;
+  left: -32px;
+  width: 90px;
+  height: 90px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.32), transparent 72%);
+  transform: rotate(-10deg);
 }
 
 .pb-premium-ring small {
@@ -7562,6 +7671,92 @@ a:focus {
   padding: 10px;
   display: grid;
   gap: 8px;
+}
+
+.pb-overview-signal3d-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.pb-overview-signal3d-card {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  box-shadow: 0 14px 24px rgba(0, 0, 0, 0.22);
+}
+
+.pb-overview-signal3d-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(130deg, rgba(255, 255, 255, 0.08), transparent 58%);
+  pointer-events: none;
+}
+
+.pb-overview-signal3d-card:nth-child(1) {
+  transform: translateY(2px) rotateX(8deg) rotateY(-10deg);
+}
+
+.pb-overview-signal3d-card:nth-child(2) {
+  transform: translateY(-2px) rotateX(10deg);
+}
+
+.pb-overview-signal3d-card:nth-child(3) {
+  transform: translateY(2px) rotateX(8deg) rotateY(10deg);
+}
+
+.pb-overview-signal3d-kpi {
+  margin-top: auto;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 8px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.pb-overview-signal3d-kpi span {
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.pb-overview-signal3d-kpi b {
+  font-size: 17px;
+  line-height: 1;
+}
+
+:root[data-theme="light"] .pb-hero-panel-v2,
+:root[data-theme="light"] .pb-premium-panel,
+:root[data-theme="light"] .pb-signal-card-v2 {
+  border-color: color-mix(in srgb, var(--accent-primary) 18%, var(--border-subtle));
+  background:
+    radial-gradient(circle at 95% -18%, rgba(26, 184, 151, 0.1), transparent 56%),
+    linear-gradient(160deg, #ffffff, #f4f8ff);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    0 14px 28px rgba(23, 41, 66, 0.1);
+}
+
+:root[data-theme="light"] .pb-overview-market-shell,
+:root[data-theme="light"] .pb-kpi-card,
+:root[data-theme="light"] .pb-overview-story-grid article,
+:root[data-theme="light"] .pb-overview-news-item,
+:root[data-theme="light"] .pb-overview-performance-wave {
+  border-color: color-mix(in srgb, var(--accent-primary) 16%, var(--border-subtle));
+  background: rgba(255, 255, 255, 0.86);
+}
+
+:root[data-theme="light"] .pb-overview-live-tag {
+  color: #0f7f69;
+  background: rgba(15, 186, 149, 0.16);
+}
+
+:root[data-theme="light"] .pb-tier-pill {
+  color: #37536e;
+  border-color: #c8d7ea;
+  background: rgba(227, 236, 248, 0.7);
 }
 
 .pb-overview-story-grid article strong {
@@ -8169,6 +8364,18 @@ a:focus {
 }
 
 @media (max-width: 620px) {
+  .pb-overview-hero-3d {
+    grid-template-columns: 1fr;
+  }
+
+  .pb-overview-trophy-3d {
+    min-height: 86px;
+  }
+
+  .pb-overview-hero-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+
   .pb-overview-access-grid,
   .pb-stats-v4-hero-grid,
   .pb-overview-duo {
@@ -8211,7 +8418,8 @@ a:focus {
   .pb-news-v4-kpi,
   .pb-stats-v4-kpi-grid,
   .pb-stats-v4-access-grid,
-  .pb-overview-story-grid {
+  .pb-overview-story-grid,
+  .pb-overview-hero-stats {
     grid-template-columns: 1fr;
   }
 

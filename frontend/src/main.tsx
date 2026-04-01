@@ -11,13 +11,11 @@ async function bootstrap() {
   await initTelegramWebApp();
 
   ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
-    <React.StrictMode>
-      <LanguageProvider>
-        <BrowserRouter>
-          <AppRouter />
-        </BrowserRouter>
-      </LanguageProvider>
-    </React.StrictMode>
+    <LanguageProvider>
+      <BrowserRouter>
+        <AppRouter />
+      </BrowserRouter>
+    </LanguageProvider>
   );
 }
 
