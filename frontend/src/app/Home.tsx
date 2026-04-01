@@ -1,8 +1,10 @@
+import { Canvas } from "@react-three/fiber";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Bell, Sparkles, TrendingUp } from "lucide-react";
 import { useMemo } from "react";
 
+import { FloatingHeroObject } from "../components/three/FloatingHeroObject";
 import { useHaptics } from "../hooks/useHaptics";
 import { api, type Signal } from "../lib/api";
 import { useI18n } from "../lib/i18n";
@@ -60,8 +62,13 @@ export function Home() {
               <span className="inline-flex items-center gap-1 rounded-full border border-[var(--border)] px-2 py-1 text-[11px] text-[var(--text-secondary)]"><TrendingUp size={12} />{t("home.roiBoosted")}</span>
             </div>
           </div>
-          <div className="h-[120px] w-[120px] shrink-0 overflow-hidden rounded-2xl border border-[var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_78%,transparent)] flex items-center justify-center text-xs text-[var(--text-secondary)]">
-            3D off
+          <div className="h-[120px] w-[120px] shrink-0 overflow-hidden rounded-2xl border border-[var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_78%,transparent)]">
+            <Canvas camera={{ position: [0, 0, 3], fov: 38 }} dpr={[1, 1.8]}>
+              <ambientLight intensity={0.75} />
+              <pointLight position={[2, 2, 3]} intensity={1.35} color="#00ff9d" />
+              <pointLight position={[-2, -1, 2]} intensity={1.0} color="#00b8ff" />
+              <FloatingHeroObject type="trophy" scale={0.95} />
+            </Canvas>
           </div>
         </div>
       </motion.section>
