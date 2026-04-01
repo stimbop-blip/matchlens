@@ -40,6 +40,19 @@ const fallbackSignals: Signal[] = [
     startsAt: new Date().toISOString(),
     status: "new",
   },
+  {
+    id: "s-3",
+    sport: "football",
+    league: "Premier League",
+    teams: "Arsenal vs Tottenham",
+    market: "Both Teams To Score",
+    pick: "Yes",
+    odds: 1.84,
+    confidence: 80,
+    roi: 17,
+    startsAt: new Date().toISOString(),
+    status: "live",
+  },
 ];
 
 export function Home() {
