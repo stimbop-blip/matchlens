@@ -3,13 +3,31 @@ import WebApp from "@twa-dev/sdk";
 type HapticStyle = "light" | "medium" | "heavy" | "rigid" | "soft";
 
 export function bootstrapTelegramApp() {
+  let telegramTheme: "light" | "dark" = "dark";
+
   try {
+    // Perform critical Telegram initialization as early as possible.
     WebApp.ready();
     WebApp.expand();
-    WebApp.setHeaderColor("secondary_bg_color");
-    WebApp.setBackgroundColor(WebApp.colorScheme === "dark" ? "#0a0a0a" : "#f8f9fa");
+    telegramTheme = WebApp.colorScheme === "dark" ? "dark" : "light";
   } catch {
     // safe outside telegram
+  }
+
+  // Non-critical visual sync after app becomes interactive.
+  const setVisuals = () => {
+    try {
+      WebApp.setHeaderColor("secondary_bg_color");
+      WebApp.setBackgroundColor(telegramTheme === "dark" ? "#0a0a0a" : "#f8f9fa");
+    } catch {
+      // noop
+    }
+  };
+
+  if (typeof window !== "undefined") {
+    window.setTimeout(setVisuals, 0);
+  } else {
+    setVisuals();
   }
 }
 
