@@ -1,11 +1,16 @@
+import { Canvas } from "@react-three/fiber";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Bell, Sparkles, TrendingUp } from "lucide-react";
-import { useMemo } from "react";
+import { Suspense, lazy, useMemo } from "react";
 
 import { useHaptics } from "../hooks/useHaptics";
 import { api, type Signal } from "../lib/api";
 import { useI18n } from "../lib/i18n";
+
+const FloatingHeroObject = lazy(() => import("../components/three/FloatingHeroObject").then((m) => ({ default: m.FloatingHeroObject })));
+const SignalCard3D = lazy(() => import("../components/three/SignalCard3D").then((m) => ({ default: m.SignalCard3D })));
+const SubscriptionProgress3D = lazy(() => import("../components/three/SubscriptionProgress3D").then((m) => ({ default: m.SubscriptionProgress3D })));
 
 
 const fallbackSignals: Signal[] = [
@@ -60,13 +65,22 @@ export function Home() {
               <span className="inline-flex items-center gap-1 rounded-full border border-[var(--border)] px-2 py-1 text-[11px] text-[var(--text-secondary)]"><TrendingUp size={12} />{t("home.roiBoosted")}</span>
             </div>
           </div>
-          <div className="h-[120px] w-[120px] shrink-0 overflow-hidden rounded-2xl border border-[var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_78%,transparent)] flex items-center justify-center text-xs text-[var(--text-secondary)]">
-            3D off
+          <div className="h-[120px] w-[120px] shrink-0 overflow-hidden rounded-2xl border border-[var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_78%,transparent)]">
+            <Canvas camera={{ position: [0, 0, 3], fov: 38 }} dpr={[1, 1.8]}>
+              <ambientLight intensity={0.75} />
+              <pointLight position={[2, 2, 3]} intensity={1.35} color="#00ff9d" />
+              <pointLight position={[-2, -1, 2]} intensity={1.0} color="#00b8ff" />
+              <Suspense fallback={null}>
+                <FloatingHeroObject type="trophy" scale={0.95} />
+              </Suspense>
+            </Canvas>
           </div>
         </div>
       </motion.section>
 
-      <section className="glass p-4 text-sm text-[var(--text-secondary)]">3D subscription progress disabled</section>
+      <Suspense fallback={<section className="glass p-4 text-sm text-[var(--text-secondary)]">{t("common.loading3d")}</section>}>
+        <SubscriptionProgress3D percent={progress} label="Subscription status" caption={t("profile.premiumActive")} height={210} />
+      </Suspense>
 
       <section className="glass p-3">
         <div className="mb-2 flex items-center justify-between">
@@ -78,10 +92,9 @@ export function Home() {
         </div>
         <div className="space-y-2.5">
           {signals.map((signal) => (
-            <section key={signal.id} className="glass p-4">
-              <p className="text-sm font-semibold text-[var(--text-primary)]">{signal.teams}</p>
-              <p className="text-xs text-[var(--text-secondary)]">{signal.market} • {signal.pick} • {t("signal.odds")} {signal.odds.toFixed(2)}</p>
-            </section>
+            <Suspense key={signal.id} fallback={<section className="glass p-4 text-sm text-[var(--text-secondary)]">{t("common.loadingSignal")}</section>}>
+              <SignalCard3D signal={signal} onOpen={() => h.soft()} />
+            </Suspense>
           ))}
         </div>
       </section>
