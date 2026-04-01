@@ -8,6 +8,7 @@ import { Layout } from "../components/Layout";
 import { HeroPanel } from "../components/premium/HeroPanel";
 import { PremiumKpi } from "../components/premium/PremiumKpi";
 import { PremiumRing } from "../components/premium/PremiumRing";
+import { SignalCard } from "../components/premium/SignalCard";
 import { RocketLoader, SkeletonBlock, Sparkline } from "../components/ui";
 import { api, type MyPayment, type NewsPost, type Prediction, type PublicStats, type ReferralStats } from "../services/api";
 
@@ -120,6 +121,39 @@ function buildNewsPreview(body: string, maxLength = 170): string {
   const compact = body.replace(/\s+/g, " ").trim();
   if (compact.length <= maxLength) return compact;
   return `${compact.slice(0, Math.max(0, maxLength - 1)).trim()}...`;
+}
+
+function predictionStatusLabel(status: Prediction["status"], t: (key: string) => string): string {
+  if (status === "won") return t("feed.status.won");
+  if (status === "lost") return t("feed.status.lost");
+  if (status === "refund") return t("feed.status.refund");
+  return t("feed.status.pending");
+}
+
+function predictionRiskLabel(level: string, t: (key: string) => string): string {
+  if (level === "low") return t("common.risk.low");
+  if (level === "high") return t("common.risk.high");
+  return t("common.risk.medium");
+}
+
+function predictionModeLabel(mode: Prediction["mode"], t: (key: string) => string): string {
+  if (mode === "live") return t("common.live");
+  return t("common.prematch");
+}
+
+function predictionTeaser(value: string | null | undefined, fallback: string): string {
+  const source = (value || "").replace(/\s+/g, " ").trim();
+  if (!source) return fallback;
+  if (source.length <= 150) return source;
+  return `${source.slice(0, 147).trim()}...`;
+}
+
+function byEventStartAt(left: Prediction, right: Prediction): number {
+  const leftDate = new Date(left.event_start_at).getTime();
+  const rightDate = new Date(right.event_start_at).getTime();
+  const safeLeft = Number.isNaN(leftDate) ? Number.MAX_SAFE_INTEGER : leftDate;
+  const safeRight = Number.isNaN(rightDate) ? Number.MAX_SAFE_INTEGER : rightDate;
+  return safeLeft - safeRight;
 }
 
 function storyIcon(type: "line" | "odds" | "pattern" | "selection") {
@@ -253,6 +287,13 @@ export function HomePage() {
 
   const previewNews = useMemo(() => news.filter((item) => item.is_published).slice(0, 3), [news]);
 
+  const featuredSignals = useMemo(() => {
+    const sorted = [...predictions].sort(byEventStartAt);
+    const pending = sorted.filter((item) => item.status === "pending");
+    if (pending.length >= 2) return pending.slice(0, 2);
+    return sorted.slice(0, 2);
+  }, [predictions]);
+
   const pulseValues = useMemo(() => {
     const roi = stats?.roi ?? 0;
     const pending = stats?.pending ?? 0;
@@ -324,6 +365,81 @@ export function HomePage() {
           </Link>
         </div>
       </HeroPanel>
+
+      <section className="pb-premium-panel pb-overview-featured pb-reveal">
+        <div className="pb-premium-head">
+          <h3>{t("home.hero.ctaSignals")}</h3>
+          <small>{t("feed.hero.subtitle")}</small>
+        </div>
+
+        {summaryLoading ? (
+          <div className="pb-overview-featured-skeleton" aria-hidden="true">
+            <SkeletonBlock className="h-84" />
+            <SkeletonBlock className="h-84" />
+          </div>
+        ) : null}
+
+        {!summaryLoading && featuredSignals.length === 0 ? <p className="pb-empty-state">{summaryError || t("feed.empty")}</p> : null}
+
+        {!summaryLoading && featuredSignals.length > 0 ? (
+          <div className="pb-overview-featured-grid">
+            {featuredSignals.map((item, index) => (
+              <div key={item.id} className={`pb-overview-featured-card ${index === 0 ? "left" : "right"}`}>
+                <SignalCard
+                  to={`/feed/${item.id}`}
+                  title={item.match_name}
+                  league={item.league || t("feed.noLeague")}
+                  sport={item.sport_type}
+                  mode={predictionModeLabel(item.mode, t)}
+                  kickoff={formatDate(item.event_start_at, language, t("common.noDate"))}
+                  signal={item.signal_type}
+                  odds={item.odds}
+                  oddsLabel={t("feed.label.odds")}
+                  risk={predictionRiskLabel(item.risk_level, t)}
+                  status={item.status}
+                  statusLabel={predictionStatusLabel(item.status, t)}
+                  accessLabel={tariffLabel(item.access_level, t)}
+                  note={predictionTeaser(item.short_description, t("feed.teaserFallback"))}
+                  language={language}
+                />
+              </div>
+            ))}
+          </div>
+        ) : null}
+      </section>
+
+      <section className="pb-premium-panel pb-overview-news pb-reveal">
+        <div className="pb-premium-head">
+          <h3>{t("home.news.title")}</h3>
+          <small>{t("home.news.subtitle")}</small>
+        </div>
+
+        {coreLoading ? (
+          <div className="pb-overview-news-skeleton" aria-hidden="true">
+            <SkeletonBlock className="h-72" />
+            <SkeletonBlock className="h-72" />
+            <SkeletonBlock className="h-72" />
+          </div>
+        ) : null}
+
+        {!coreLoading && previewNews.length === 0 ? <p className="pb-empty-state">{coreError || t("home.news.empty")}</p> : null}
+
+        {!coreLoading && previewNews.length > 0 ? (
+          <div className="pb-overview-news-list">
+            {previewNews.map((item) => (
+              <Link key={item.id} className="pb-overview-news-item" to={`/news/${item.id}`}>
+                <h4>{item.title}</h4>
+                <p>{buildNewsPreview(item.body, 140)}</p>
+                <small>{formatDate(item.published_at, language, t("common.noDate"))}</small>
+              </Link>
+            ))}
+          </div>
+        ) : null}
+
+        <Link className="pb-btn pb-btn-secondary" to="/news">
+          {t("home.news.openAll")}
+        </Link>
+      </section>
 
       <section className="pb-premium-panel pb-overview-access pb-reveal">
         <div className="pb-premium-head">
@@ -437,57 +553,22 @@ export function HomePage() {
         <Sparkline values={performanceWave} className="pb-overview-performance-wave" />
       </section>
 
-      <div className="pb-overview-duo pb-reveal">
-        <section className="pb-premium-panel pb-overview-referral">
-          <div className="pb-premium-head">
-            <h3>{t("home.ref.title")}</h3>
-            <small>{t("home.ref.subtitle")}</small>
-          </div>
+      <section className="pb-premium-panel pb-overview-referral pb-reveal">
+        <div className="pb-premium-head">
+          <h3>{t("home.ref.title")}</h3>
+          <small>{t("home.ref.subtitle")}</small>
+        </div>
 
-          <div className="pb-overview-referral-grid">
-            <PremiumKpi label={t("home.ref.invited")} value={referral?.invited ?? 0} />
-            <PremiumKpi label={t("home.ref.activated")} value={referral?.activated ?? 0} tone="accent" />
-            <PremiumKpi label={t("home.ref.bonus")} value={`${referral?.bonus_days ?? 0} ${t("common.daysShort")}`} tone="success" />
-          </div>
+        <div className="pb-overview-referral-grid">
+          <PremiumKpi label={t("home.ref.invited")} value={referral?.invited ?? 0} />
+          <PremiumKpi label={t("home.ref.activated")} value={referral?.activated ?? 0} tone="accent" />
+          <PremiumKpi label={t("home.ref.bonus")} value={`${referral?.bonus_days ?? 0} ${t("common.daysShort")}`} tone="success" />
+        </div>
 
-          <Link className="pb-btn pb-btn-ghost" to="/profile#referral">
-            {t("home.ref.action")}
-          </Link>
-        </section>
-
-        <section className="pb-premium-panel pb-overview-news">
-          <div className="pb-premium-head">
-            <h3>{t("home.news.title")}</h3>
-            <small>{t("home.news.subtitle")}</small>
-          </div>
-
-          {coreLoading ? (
-            <div className="pb-overview-news-skeleton" aria-hidden="true">
-              <SkeletonBlock className="h-72" />
-              <SkeletonBlock className="h-72" />
-              <SkeletonBlock className="h-72" />
-            </div>
-          ) : null}
-
-          {!coreLoading && previewNews.length === 0 ? <p className="pb-empty-state">{coreError || t("home.news.empty")}</p> : null}
-
-          {!coreLoading && previewNews.length > 0 ? (
-            <div className="pb-overview-news-list">
-              {previewNews.map((item) => (
-                <Link key={item.id} className="pb-overview-news-item" to={`/news/${item.id}`}>
-                  <h4>{item.title}</h4>
-                  <p>{buildNewsPreview(item.body, 140)}</p>
-                  <small>{formatDate(item.published_at, language, t("common.noDate"))}</small>
-                </Link>
-              ))}
-            </div>
-          ) : null}
-
-          <Link className="pb-btn pb-btn-secondary" to="/news">
-            {t("home.news.openAll")}
-          </Link>
-        </section>
-      </div>
+        <Link className="pb-btn pb-btn-ghost" to="/profile#referral">
+          {t("home.ref.action")}
+        </Link>
+      </section>
 
       <AppDisclaimer />
     </Layout>
