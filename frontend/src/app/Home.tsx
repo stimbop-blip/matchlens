@@ -11,11 +11,12 @@ import { PageTransition } from "../components/motion/PageTransition";
 import { HeroPanel } from "../components/premium/HeroPanel";
 import { PremiumKpi } from "../components/premium/PremiumKpi";
 import { RocketLoader } from "../components/ui";
-import { api, type Prediction, type PublicStats } from "../services/api";
+import { api, type NewsPost, type Prediction, type PublicStats } from "../services/api";
 
 const FloatingHeroObject = lazy(() => import("../components/three/FloatingHeroObject").then((module) => ({ default: module.FloatingHeroObject })));
 const SubscriptionProgress3D = lazy(() => import("../components/three/SubscriptionProgress3D").then((module) => ({ default: module.SubscriptionProgress3D })));
 const SignalCard3D = lazy(() => import("../components/three/SignalCard3D").then((module) => ({ default: module.SignalCard3D })));
+const NewsCard3D = lazy(() => import("../components/three/NewsCard3D").then((module) => ({ default: module.NewsCard3D })));
 
 function formatDate(value: string, language: "ru" | "en"): string {
   const date = new Date(value);
@@ -25,6 +26,16 @@ function formatDate(value: string, language: "ru" | "en"): string {
     month: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
+  });
+}
+
+function formatNewsDate(value: string | null, language: "ru" | "en"): string {
+  if (!value) return language === "ru" ? "Сейчас" : "Now";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return language === "ru" ? "Сейчас" : "Now";
+  return date.toLocaleDateString(language === "ru" ? "ru-RU" : "en-US", {
+    day: "2-digit",
+    month: "short",
   });
 }
 
@@ -52,6 +63,13 @@ function teaser(value: string | null | undefined, fallback: string): string {
   if (!compact) return fallback;
   if (compact.length <= 140) return compact;
   return `${compact.slice(0, 137).trim()}...`;
+}
+
+function newsPreview(value: string, language: "ru" | "en"): string {
+  const compact = value.replace(/\s+/g, " ").trim();
+  if (!compact) return language === "ru" ? "Свежий апдейт по продукту PIT BET" : "Fresh PIT BET product update";
+  if (compact.length <= 120) return compact;
+  return `${compact.slice(0, 117).trim()}...`;
 }
 
 function fallbackSignals(language: "ru" | "en"): Prediction[] {
@@ -137,6 +155,48 @@ function fallbackSignals(language: "ru" | "en"): Prediction[] {
   ];
 }
 
+function fallbackNews(language: "ru" | "en"): NewsPost[] {
+  if (language === "ru") {
+    return [
+      {
+        id: "news-fallback-1",
+        title: "Апдейт модели: улучшен live-scout",
+        body: "Увеличили скорость обновления live-метрик и добавили новые фильтры матчей.",
+        category: "product",
+        is_published: true,
+        published_at: new Date().toISOString(),
+      },
+      {
+        id: "news-fallback-2",
+        title: "Новые сценарии risk-control",
+        body: "Добавлены улучшенные ограничения и рекомендации по управлению банком.",
+        category: "safety",
+        is_published: true,
+        published_at: new Date().toISOString(),
+      },
+    ];
+  }
+
+  return [
+    {
+      id: "news-fallback-1",
+      title: "Model update: improved live scout",
+      body: "We increased live metric refresh speed and added match filtering upgrades.",
+      category: "product",
+      is_published: true,
+      published_at: new Date().toISOString(),
+    },
+    {
+      id: "news-fallback-2",
+      title: "New risk-control scenarios",
+      body: "Enhanced bankroll guidance and safer session control presets are now available.",
+      category: "safety",
+      is_published: true,
+      published_at: new Date().toISOString(),
+    },
+  ];
+}
+
 export function Home() {
   const { t, language } = useI18n();
 
@@ -144,17 +204,18 @@ export function Home() {
   const [subscriptionRaw, setSubscriptionRaw] = useState<{ tariff: string; status: string; ends_at: string | null } | null>(null);
   const [stats, setStats] = useState<PublicStats | null>(null);
   const [signals, setSignals] = useState<Prediction[]>([]);
+  const [news, setNews] = useState<NewsPost[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let alive = true;
     setLoading(true);
 
-    Promise.allSettled([api.me(), api.mySubscription(), api.stats(), api.predictions({ status: "pending", limit: 8 })])
+    Promise.allSettled([api.me(), api.mySubscription(), api.stats(), api.predictions({ status: "pending", limit: 8 }), api.news()])
       .then((results) => {
         if (!alive) return;
 
-        const [meRes, subRes, statsRes, signalsRes] = results;
+        const [meRes, subRes, statsRes, signalsRes, newsRes] = results;
 
         if (meRes.status === "fulfilled") {
           setDisplayName(meRes.value.first_name || meRes.value.username || "PIT BET");
@@ -163,6 +224,7 @@ export function Home() {
         setSubscriptionRaw(subRes.status === "fulfilled" ? subRes.value : null);
         setStats(statsRes.status === "fulfilled" ? statsRes.value : null);
         setSignals(signalsRes.status === "fulfilled" ? signalsRes.value : []);
+        setNews(newsRes.status === "fulfilled" ? newsRes.value : []);
       })
       .finally(() => {
         if (!alive) return;
@@ -177,6 +239,10 @@ export function Home() {
   const sub = resolveSubscriptionSnapshot(subscriptionRaw);
   const accessProgress = sub.tariff === "vip" ? 100 : sub.tariff === "premium" ? 72 : 36;
   const activeSignals = useMemo(() => (signals.length > 0 ? signals.slice(0, 3) : fallbackSignals(language)), [language, signals]);
+  const latestNews = useMemo(() => {
+    const published = news.filter((item) => item.is_published).slice(0, 3);
+    return published.length > 0 ? published : fallbackNews(language);
+  }, [language, news]);
 
   const subtitleText =
     language === "ru"
@@ -281,6 +347,29 @@ export function Home() {
                     accessLabel={accessLabel(signal.access_level, t)}
                     note={teaser(signal.short_description, t("feed.teaserFallback"))}
                     language={language}
+                  />
+                </Suspense>
+              </ErrorBoundary>
+            ))}
+          </div>
+        </section>
+
+        <section className="pb-premium-panel pb-home-r3f-news pb-reveal">
+          <div className="pb-premium-head">
+            <h3>{language === "ru" ? "Новости" : "News"}</h3>
+            <small>{language === "ru" ? "3D-лента обновлений PIT BET" : "PIT BET 3D update stream"}</small>
+          </div>
+
+          <div className="pb-home-r3f-news-grid">
+            {latestNews.map((item, index) => (
+              <ErrorBoundary key={item.id} fallback={<div className="pb-home-r3f-fallback">3D</div>}>
+                <Suspense fallback={<div className="pb-home-r3f-fallback">3D</div>}>
+                  <NewsCard3D
+                    to={item.id.startsWith("news-fallback-") ? "/news" : `/news/${item.id}`}
+                    title={item.title}
+                    preview={newsPreview(item.body, language)}
+                    date={formatNewsDate(item.published_at, language)}
+                    variant={index % 3}
                   />
                 </Suspense>
               </ErrorBoundary>

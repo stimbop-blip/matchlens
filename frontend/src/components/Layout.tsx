@@ -43,36 +43,36 @@ function DockGlyph({ type }: { type: "overview" | "signals" | "stats" | "account
   if (type === "overview") {
     return (
       <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M3.8 5.2h16.4v4.3H3.8zm0 6.2h7.1v7.4H3.8zm8.9 0h7.5v3.1h-7.5zm0 4.3h7.5v3.1h-7.5z" />
+        <path d="M4 5.3h16v5.1H4zm0 7h7.2v6.4H4zm8.8 0H20v2.8h-7.2zm0 3.8H20v2.6h-7.2z" />
       </svg>
     );
   }
   if (type === "signals") {
     return (
       <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M4 6.6h16v2.2H4zm0 4.5h13.4v2.2H4zm0 4.5h16v2.2H4z" />
-        <circle cx="18.2" cy="12.2" r="2" />
+        <path d="M4 6.2h16v2H4zm0 4.1h10.8v2H4zm0 4.1h16v2H4z" />
+        <path d="M17.1 10.3h2.8v2h-2.8z" />
       </svg>
     );
   }
   if (type === "stats") {
     return (
       <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M4 18.6h16v1.8H4zm1.8-2.4h2.8V8.9H5.8zm4.8 0h2.8V5.3h-2.8zm4.8 0h2.8v-6h-2.8z" />
+        <path d="M4 18.4h16v1.6H4zm2-2.2h2.6V9.4H6zm4.5 0h2.6V6.2h-2.6zm4.5 0h2.6v-4.6H15z" />
       </svg>
     );
   }
   if (type === "account") {
     return (
       <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M12 4.6a4.2 4.2 0 1 1 0 8.4 4.2 4.2 0 0 1 0-8.4m0 10.6c4.7 0 7.8 2.4 8.2 4.9H3.8c.4-2.5 3.5-4.9 8.2-4.9" />
+        <path d="M12 4.5a4.1 4.1 0 1 1 0 8.2 4.1 4.1 0 0 1 0-8.2m0 10.4c4.7 0 7.7 2.3 8.1 4.8H3.9c.4-2.5 3.4-4.8 8.1-4.8" />
       </svg>
     );
   }
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M12 3.6a8.4 8.4 0 1 0 8.4 8.4A8.4 8.4 0 0 0 12 3.6m0 2.6a5.8 5.8 0 1 1-5.8 5.8A5.8 5.8 0 0 1 12 6.2" />
-      <path d="M11 8.1h2v4.1h3.5v2H11z" />
+      <path d="M12 3.7a8.3 8.3 0 1 0 8.3 8.3A8.3 8.3 0 0 0 12 3.7m0 2.4a5.9 5.9 0 1 1-5.9 5.9A5.9 5.9 0 0 1 12 6.1" />
+      <path d="M11.2 8.3h1.6v3.1h3.1V13h-4.7z" />
     </svg>
   );
 }

@@ -10594,3 +10594,289 @@ h4 {
     height: 72px;
   }
 }
+
+/* PIT BET visual refresh 2026 */
+
+:root {
+  --app-bg: #050d16;
+  --app-bg-elevated: #07131d;
+  --surface-1: #0d1b29;
+  --surface-2: #132436;
+  --surface-3: #172c40;
+  --text-primary: #f6fbff;
+  --text-secondary: #a4bece;
+  --text-muted: #6f8798;
+  --accent-primary: #22d7b7;
+  --info: #3295ff;
+}
+
+:root[data-theme="light"] {
+  --app-bg: #f2f7ff;
+  --app-bg-elevated: #ecf3fd;
+  --surface-1: #ffffff;
+  --surface-2: #f6faff;
+  --surface-3: #edf4fc;
+  --text-primary: #11253e;
+  --text-secondary: #526982;
+  --text-muted: #7f8ea4;
+  --accent-primary: #0ab899;
+  --info: #2b84db;
+}
+
+.pb-nav-dock-v2 {
+  width: min(780px, calc(100vw - 14px));
+  padding: 8px;
+  border-radius: 24px;
+  border-color: color-mix(in srgb, var(--accent-primary) 18%, var(--border-subtle));
+  background:
+    radial-gradient(circle at 50% -90%, color-mix(in srgb, var(--accent-primary) 28%, transparent), transparent 58%),
+    color-mix(in srgb, var(--surface-1) 88%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 20px 42px rgba(0, 0, 0, 0.34);
+  backdrop-filter: blur(26px);
+}
+
+.pb-nav-dock-v2 a {
+  min-height: 60px;
+  border-radius: 16px;
+  gap: 4px;
+}
+
+.pb-nav-dock-v2 a.center {
+  transform: translateY(-8px);
+}
+
+.pb-nav-pill {
+  position: absolute;
+  inset: 4px;
+  border-radius: 14px;
+  border: 1px solid transparent;
+  background: linear-gradient(140deg, rgba(255, 255, 255, 0.06), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.2s ease, border-color 0.2s ease;
+}
+
+.pb-nav-dock-v2 a.active .pb-nav-pill,
+.pb-nav-dock-v2 a:hover .pb-nav-pill {
+  opacity: 1;
+  border-color: color-mix(in srgb, var(--accent-primary) 44%, transparent);
+}
+
+.pb-nav-dock-v2 a.active {
+  color: color-mix(in srgb, var(--accent-primary) 78%, #e8fffa);
+}
+
+.pb-nav-dock-v2 a.center .pb-orb-icon-wrap {
+  width: 26px;
+  height: 26px;
+}
+
+.pb-nav-dock-v2 a.center .pb-orb-icon-wrap svg {
+  width: 21px;
+  height: 21px;
+}
+
+:root[data-theme="light"] .pb-nav-dock-v2 {
+  background:
+    radial-gradient(circle at 50% -90%, rgba(13, 182, 151, 0.2), transparent 62%),
+    rgba(255, 255, 255, 0.94);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 16px 28px rgba(25, 43, 67, 0.14);
+}
+
+.pb-home-r3f-news-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.pb-news3d-card {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at 96% -20%, rgba(34, 215, 183, 0.16), transparent 56%),
+    linear-gradient(160deg, rgba(16, 29, 42, 0.92), rgba(10, 18, 28, 0.98));
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+  min-height: 226px;
+}
+
+.pb-news3d-canvas {
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  height: 88px;
+}
+
+.pb-news3d-copy {
+  display: grid;
+  gap: 5px;
+}
+
+.pb-news3d-copy small {
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.pb-news3d-copy h4 {
+  font-size: 14px;
+  line-height: 1.32;
+}
+
+.pb-news3d-copy p {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.pb-news3d-card.variant-1 {
+  background:
+    radial-gradient(circle at 92% -16%, rgba(50, 149, 255, 0.16), transparent 58%),
+    linear-gradient(160deg, rgba(16, 28, 41, 0.92), rgba(10, 18, 28, 0.98));
+}
+
+.pb-news3d-card.variant-2 {
+  background:
+    radial-gradient(circle at 92% -16%, rgba(216, 187, 136, 0.18), transparent 58%),
+    linear-gradient(160deg, rgba(16, 28, 41, 0.92), rgba(10, 18, 28, 0.98));
+}
+
+:root[data-theme="light"] .pb-news3d-card,
+:root[data-theme="light"] .pb-news3d-canvas {
+  border-color: color-mix(in srgb, var(--accent-primary) 18%, var(--border-subtle));
+  background:
+    radial-gradient(circle at 92% -20%, rgba(10, 184, 153, 0.14), transparent 58%),
+    linear-gradient(160deg, #ffffff, #f2f8ff);
+  box-shadow: 0 12px 24px rgba(22, 40, 64, 0.1);
+}
+
+.pb-home-r3f-signal-list .pb-signal3d-card {
+  border-color: color-mix(in srgb, var(--accent-primary) 20%, var(--border-subtle));
+  background:
+    radial-gradient(circle at 96% -16%, color-mix(in srgb, var(--accent-primary) 16%, transparent), transparent 56%),
+    linear-gradient(160deg, color-mix(in srgb, var(--surface-1) 92%, transparent), color-mix(in srgb, var(--surface-2) 94%, transparent));
+}
+
+.pb-signal3d-title {
+  letter-spacing: 0.01em;
+}
+
+.pb-signal3d-meta span {
+  border-color: color-mix(in srgb, var(--accent-primary) 16%, var(--border-subtle));
+}
+
+.pb-signal3d-foot p {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.pb-feed-v4-filter-stack,
+.pb-feed-v4-day-group,
+.pb-feed-v4-skeleton-card,
+.pb-plan-card,
+.pb-pay-card,
+.pb-summary-card,
+.pb-manual-card,
+.pb-profile-v4-payment,
+.pb-profile-v4-linkbox,
+.pb-profile-v4-toggle,
+.pb-admin-v4 .section-head,
+.pb-admin-v4 .admin-control-bar,
+.pb-admin-v4 .admin-card-compact,
+.pb-admin-v4 .admin-broadcast-compact,
+.pb-admin-v4 .metrics-grid article,
+.pb-admin-v4 .card-lite,
+.pb-admin-v4 .admin-tabs-wrap.admin-tabs-mobile {
+  border-color: color-mix(in srgb, var(--accent-primary) 14%, var(--border-subtle));
+  background:
+    radial-gradient(circle at 96% -22%, color-mix(in srgb, var(--accent-primary) 10%, transparent), transparent 60%),
+    linear-gradient(160deg, color-mix(in srgb, var(--surface-1) 93%, transparent), color-mix(in srgb, var(--surface-2) 95%, transparent));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 14px 28px rgba(0, 0, 0, 0.22);
+}
+
+.pb-feed-v4-day-group h3,
+.pb-plan-card h3,
+.pb-pay-card h3,
+.pb-summary-card h3,
+.pb-admin-v4 .section-head h2 {
+  letter-spacing: 0.01em;
+}
+
+.pb-feed-v4-pill {
+  border-radius: 12px;
+}
+
+.pb-feed-v4-pill.active {
+  box-shadow: 0 8px 16px rgba(14, 157, 132, 0.24);
+}
+
+.pb-admin-v4 .admin-tabs-wrap.admin-tabs-mobile .admin-tabs .tab {
+  border-radius: 11px;
+}
+
+.pb-admin-v4 .admin-tabs-wrap.admin-tabs-mobile .admin-tabs .tab.active {
+  box-shadow: 0 8px 14px rgba(14, 157, 132, 0.24);
+}
+
+.pb-profile-three-grid .pb-three-progress,
+.pb-profile-three-grid .pb-three-chart {
+  min-height: 210px;
+}
+
+:root[data-theme="light"] .pb-feed-v4-filter-stack,
+:root[data-theme="light"] .pb-feed-v4-day-group,
+:root[data-theme="light"] .pb-feed-v4-skeleton-card,
+:root[data-theme="light"] .pb-plan-card,
+:root[data-theme="light"] .pb-pay-card,
+:root[data-theme="light"] .pb-summary-card,
+:root[data-theme="light"] .pb-manual-card,
+:root[data-theme="light"] .pb-profile-v4-payment,
+:root[data-theme="light"] .pb-profile-v4-linkbox,
+:root[data-theme="light"] .pb-profile-v4-toggle,
+:root[data-theme="light"] .pb-admin-v4 .section-head,
+:root[data-theme="light"] .pb-admin-v4 .admin-control-bar,
+:root[data-theme="light"] .pb-admin-v4 .admin-card-compact,
+:root[data-theme="light"] .pb-admin-v4 .admin-broadcast-compact,
+:root[data-theme="light"] .pb-admin-v4 .metrics-grid article,
+:root[data-theme="light"] .pb-admin-v4 .card-lite,
+:root[data-theme="light"] .pb-admin-v4 .admin-tabs-wrap.admin-tabs-mobile {
+  background:
+    radial-gradient(circle at 96% -22%, rgba(10, 184, 153, 0.1), transparent 60%),
+    linear-gradient(160deg, #ffffff, #f4f9ff);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.86),
+    0 12px 24px rgba(22, 40, 64, 0.1);
+}
+
+@media (max-width: 780px) {
+  .pb-home-r3f-news-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .pb-nav-dock-v2 {
+    border-radius: 20px;
+    padding: 7px;
+  }
+
+  .pb-nav-dock-v2 a {
+    min-height: 56px;
+  }
+
+  .pb-nav-dock-v2 a.center {
+    transform: translateY(-4px);
+  }
+
+  .pb-home-r3f-news-grid {
+    grid-template-columns: 1fr;
+  }
+}

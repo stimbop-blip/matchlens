@@ -64,7 +64,7 @@ export function SignalCard3D({
           </div>
         </div>
 
-        <h3>{title}</h3>
+        <h3 className="pb-signal3d-title">{title}</h3>
 
         <div className="pb-signal3d-core">
           <div className="pb-signal3d-canvas" aria-hidden="true">
@@ -82,13 +82,13 @@ export function SignalCard3D({
           </div>
         </div>
 
-        <div className="pb-signal-v2-meta">
+        <div className="pb-signal-v2-meta pb-signal3d-meta">
           <span>{mode}</span>
           <span>{risk}</span>
           <span>{kickoff}</span>
         </div>
 
-        <div className="pb-signal-v2-foot">
+        <div className="pb-signal-v2-foot pb-signal3d-foot">
           <small>{signal}</small>
           <p>{note}</p>
         </div>

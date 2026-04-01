@@ -23,17 +23,18 @@ export function PremiumDock({ items, ariaLabel }: { items: DockItem[]; ariaLabel
   };
 
   return (
-    <nav className="pb-orb-dock" aria-label={ariaLabel}>
+    <nav className="pb-orb-dock pb-nav-dock-v2" aria-label={ariaLabel}>
       {items.map((item) => (
         <MotionLink
           key={item.key}
           to={item.to}
-          className={item.active ? "active" : ""}
+          className={`${item.active ? "active" : ""}${item.key === "center" ? " center" : ""}`}
           aria-current={item.active ? "page" : undefined}
           onClick={() => onPress(item.key)}
           whileTap={{ scale: 0.96 }}
           transition={{ type: "spring", stiffness: 420, damping: 28, mass: 0.64 }}
         >
+          <span className="pb-nav-pill" aria-hidden="true" />
           <motion.span
             className="pb-orb-icon-wrap"
             animate={item.active ? { scale: 1.08, y: -1 } : { scale: 1, y: 0 }}
