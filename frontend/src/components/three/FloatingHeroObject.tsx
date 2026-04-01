@@ -1,6 +1,7 @@
 import { Html, useGLTF } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { Suspense, useMemo, useRef } from "react";
+import { Component, Suspense, useMemo, useRef } from "react";
+import type { ReactNode } from "react";
 import * as THREE from "three";
 
 type HeroObjectType = "trophy" | "football" | "tennis";
@@ -17,13 +18,80 @@ const MODEL_MAP: Record<HeroObjectType, string> = {
   tennis: "/models/tennis.glb",
 };
 
-useGLTF.preload(MODEL_MAP.trophy);
-useGLTF.preload(MODEL_MAP.football);
-useGLTF.preload(MODEL_MAP.tennis);
+let preloadScheduled = false;
+
+function scheduleSafePreload() {
+  if (preloadScheduled || typeof window === "undefined") return;
+  preloadScheduled = true;
+
+  const run = () => {
+    const paths = [MODEL_MAP.trophy, MODEL_MAP.football, MODEL_MAP.tennis];
+    for (const path of paths) {
+      try {
+        useGLTF.preload(path);
+      } catch {
+        // Ignore preload errors; runtime fallback mesh will be shown.
+      }
+    }
+  };
+
+  const withIdle = window as typeof window & {
+    requestIdleCallback?: (cb: () => void) => number;
+  };
+
+  if (typeof withIdle.requestIdleCallback === "function") {
+    withIdle.requestIdleCallback(run);
+    return;
+  }
+  window.setTimeout(run, 0);
+}
+
+scheduleSafePreload();
 
 function Model({ type }: { type: HeroObjectType }) {
   const gltf = useGLTF(MODEL_MAP[type]);
   return <primitive object={gltf.scene.clone()} />;
+}
+
+function FallbackMesh({ color = "#00ff9d" }: { color?: string }) {
+  return (
+    <group>
+      <mesh>
+        <icosahedronGeometry args={[0.55, 1]} />
+        <meshStandardMaterial color="#f0f4f7" metalness={0.35} roughness={0.45} />
+      </mesh>
+      <mesh scale={1.35}>
+        <sphereGeometry args={[0.6, 24, 24]} />
+        <meshBasicMaterial color={color} transparent opacity={0.08} />
+      </mesh>
+    </group>
+  );
+}
+
+type ModelBoundaryProps = {
+  children: ReactNode;
+  fallback: ReactNode;
+};
+
+type ModelBoundaryState = {
+  hasError: boolean;
+};
+
+class ModelBoundary extends Component<ModelBoundaryProps, ModelBoundaryState> {
+  state: ModelBoundaryState = { hasError: false };
+
+  static getDerivedStateFromError(): ModelBoundaryState {
+    return { hasError: true };
+  }
+
+  componentDidCatch(): void {
+    // Swallow model load/render errors and keep app alive.
+  }
+
+  render() {
+    if (this.state.hasError) return this.props.fallback;
+    return this.props.children;
+  }
 }
 
 function LoaderFallback() {
@@ -56,9 +124,11 @@ export function FloatingHeroObject({ type = "trophy", scale = 1, glow = "#00ff9d
 
   return (
     <group ref={groupRef} scale={scale}>
-      <Suspense fallback={<LoaderFallback />}>
-        <Model type={type} />
-      </Suspense>
+      <ModelBoundary fallback={<FallbackMesh color={glow} />}>
+        <Suspense fallback={<LoaderFallback />}>
+          <Model type={type} />
+        </Suspense>
+      </ModelBoundary>
 
       <mesh ref={glowRef} scale={1.5}>
         <sphereGeometry args={[1, 28, 28]} />
