@@ -193,14 +193,41 @@ export function FeedPage() {
 
   const liveCount = items.filter((item) => item.mode === "live").length;
   const premiumCount = items.filter((item) => item.access_level === "premium" || item.access_level === "vip").length;
+  const pendingCount = items.filter((item) => item.status === "pending").length;
+  const wonCount = items.filter((item) => item.status === "won").length;
+  const hitRate = items.length > 0 ? Math.round((wonCount / items.length) * 100) : 0;
 
   return (
     <Layout>
       <HeroPanel eyebrow="Signal Desk" title={t("feed.hero.title")} subtitle={t("feed.hero.subtitle")} right={<span className="pb-feed-v4-total">{items.length}</span>}>
+        <div className="pb-feed-v4-hero-scene" aria-hidden="true">
+          <span className="pb-feed-v4-hero-floor" />
+          <div className="pb-feed-v4-hero-columns">
+            <span />
+            <span />
+            <span />
+            <span />
+            <span />
+          </div>
+          <span className="pb-feed-v4-hero-orbit" />
+        </div>
+
+        <div className="pb-feed-v4-hero-status">
+          <span>
+            {t("feed.status.won")}: <b>{wonCount}</b>
+          </span>
+          <span>
+            {t("feed.status.pending")}: <b>{pendingCount}</b>
+          </span>
+          <span>
+            {t("home.performance.hit")}: <b>{hitRate}%</b>
+          </span>
+        </div>
+
         <div className="pb-feed-v4-kpi">
           <PremiumKpi label={t("common.live")} value={liveCount} tone="accent" />
           <PremiumKpi label={t("common.premium")} value={premiumCount} tone="vip" />
-          <PremiumKpi label={t("feed.status.pending")} value={items.filter((item) => item.status === "pending").length} />
+          <PremiumKpi label={t("feed.status.pending")} value={pendingCount} />
         </div>
       </HeroPanel>
 
@@ -333,26 +360,27 @@ export function FeedPage() {
           {groups.map((group) => (
             <section key={group.key} className="pb-feed-v4-day-group">
               <h3>{dayHeading(group.key, language, t)}</h3>
-              <div className="pb-feed-v4-grid">
+              <div className="pb-feed-v4-grid pb-feed-v4-grid-3d">
                 {group.list.map((item) => (
-                  <SignalCard
-                    key={item.id}
-                    to={`/feed/${item.id}`}
-                    title={item.match_name}
-                    league={item.league || t("feed.noLeague")}
-                    sport={item.sport_type}
-                    mode={item.mode === "live" ? t("common.live") : t("common.prematch")}
-                    kickoff={formatDate(item.event_start_at, language)}
-                    signal={item.signal_type}
-                    odds={item.odds}
-                    oddsLabel={t("feed.label.odds")}
-                    risk={riskLabel(item.risk_level, t)}
-                    status={item.status}
-                    statusLabel={statusLabel(item.status, t)}
-                    accessLabel={accessLabel(item.access_level, t)}
-                    note={teaser(item.short_description, t("feed.teaserFallback"))}
-                    language={language}
-                  />
+                  <div key={item.id} className="pb-feed-v4-card-depth">
+                    <SignalCard
+                      to={`/feed/${item.id}`}
+                      title={item.match_name}
+                      league={item.league || t("feed.noLeague")}
+                      sport={item.sport_type}
+                      mode={item.mode === "live" ? t("common.live") : t("common.prematch")}
+                      kickoff={formatDate(item.event_start_at, language)}
+                      signal={item.signal_type}
+                      odds={item.odds}
+                      oddsLabel={t("feed.label.odds")}
+                      risk={riskLabel(item.risk_level, t)}
+                      status={item.status}
+                      statusLabel={statusLabel(item.status, t)}
+                      accessLabel={accessLabel(item.access_level, t)}
+                      note={teaser(item.short_description, t("feed.teaserFallback"))}
+                      language={language}
+                    />
+                  </div>
                 ))}
               </div>
             </section>

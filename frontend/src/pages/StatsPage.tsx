@@ -65,6 +65,8 @@ export function StatsPage() {
   );
 
   const ringTotal = Math.max(1, ringItems.reduce((acc, item) => acc + item.value, 0));
+  const roiText = `${(stats?.roi ?? 0).toFixed(1)}%`;
+  const hitRateText = `${(stats?.hit_rate ?? 0).toFixed(1)}%`;
 
   const trendValues = useMemo<number[]>(() => {
     const slices = [pending, refunds, loses, wins];
@@ -89,11 +91,34 @@ export function StatsPage() {
   return (
     <Layout>
       <HeroPanel eyebrow="Performance Center" title={t("stats.hero.title")} subtitle={t("stats.hero.subtitle")} right={<span className="pb-stats-v4-live">{t("stats.hero.pulse")}</span>}>
+        <div className="pb-stats-v4-hero-scene" aria-hidden="true">
+          <span className="pb-stats-v4-hero-disc" />
+          <div className="pb-stats-v4-hero-pillars">
+            <span />
+            <span />
+            <span />
+            <span />
+          </div>
+          <span className="pb-stats-v4-hero-glow" />
+        </div>
+
+        <div className="pb-stats-v4-hero-badges">
+          <span>
+            {t("common.roi")} <b>{roiText}</b>
+          </span>
+          <span>
+            {t("home.performance.hit")} <b>{hitRateText}</b>
+          </span>
+          <span>
+            {t("stats.kpi.total")} <b>{stats?.total ?? 0}</b>
+          </span>
+        </div>
+
         <div className="pb-stats-v4-hero-grid">
           <PremiumRing value={stats?.hit_rate ?? 0} label={t("home.performance.hit")} caption={`${stats?.total ?? 0} ${t("stats.kpi.total")}`} />
 
           <div className="pb-stats-v4-kpi-grid">
-            <PremiumKpi label={t("common.roi")} value={`${(stats?.roi ?? 0).toFixed(1)}%`} tone="accent" emphasized />
+            <PremiumKpi label={t("common.roi")} value={roiText} tone="accent" emphasized />
             <PremiumKpi label={t("stats.kpi.wins")} value={wins} tone="success" />
             <PremiumKpi label={t("stats.kpi.loses")} value={loses} tone="warning" />
             <PremiumKpi label={t("stats.kpi.pending")} value={pending} />
@@ -142,7 +167,7 @@ export function StatsPage() {
 
             <Sparkline values={trendValues} className="pb-stats-v4-main-wave" />
 
-            <div className="pb-stats-v4-bars">
+            <div className="pb-stats-v4-bars pb-stats-v4-bars-3d">
               {[
                 { label: t("stats.kpi.wins"), value: wins, tone: "success" },
                 { label: t("stats.kpi.loses"), value: loses, tone: "danger" },

@@ -1196,6 +1196,12 @@ export function AdminPage() {
           <h2>{tx("Админка PIT BET", "PIT BET admin panel")}</h2>
           <span className="muted">{tx("Мобильная control panel для контента, пользователей и платежей", "Mobile control panel for content, users, and payments")}</span>
           <span className="admin-role-chip">{isAdmin ? tx("Роль: админ", "Role: admin") : tx("Роль: техподдержка", "Role: support")}</span>
+          <div className="pb-admin-v4-scene" aria-hidden="true">
+            <span className="pb-admin-v4-scene-grid" />
+            <span className="pb-admin-v4-scene-beam beam-a" />
+            <span className="pb-admin-v4-scene-beam beam-b" />
+            <span className="pb-admin-v4-scene-core" />
+          </div>
         </div>
 
         <div className="admin-tabs-wrap admin-tabs-mobile">
@@ -1221,7 +1227,7 @@ export function AdminPage() {
         {message ? <p className={`notice admin-toast ${messageTone}`}>{message}</p> : null}
         {loading ? <p className="muted">{tx("Обновляем данные...", "Refreshing data...")}</p> : null}
 
-        <div className="pb-admin-v4-kpis">
+        <div className="pb-admin-v4-kpis pb-admin-v4-kpis-3d">
           <article>
             <span>{tx("Пользователи", "Users")}</span>
             <strong>{stats?.users_total ?? users.length}</strong>

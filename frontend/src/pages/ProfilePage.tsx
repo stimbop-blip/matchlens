@@ -223,6 +223,28 @@ export function ProfilePage() {
         subtitle={t("profile.hero.subtitle")}
         right={<span className={`pb-tier-pill ${sub.tariff}`}>{tariffLabel(sub.tariff, t)}</span>}
       >
+        <div className="pb-profile-v4-hero-scene">
+          <div className="pb-profile-v4-user-prism" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </div>
+          <div className="pb-profile-v4-tier-stack">
+            <article>
+              <small>{t("profile.snapshot.tariff")}</small>
+              <strong>{tariffLabel(sub.tariff, t)}</strong>
+            </article>
+            <article>
+              <small>{t("profile.snapshot.status")}</small>
+              <strong>{statusLabel(sub.status, t)}</strong>
+            </article>
+            <article>
+              <small>{t("profile.snapshot.pending")}</small>
+              <strong>{pendingPayments}</strong>
+            </article>
+          </div>
+        </div>
+
         <div className="pb-profile-v4-hero-grid">
           <PremiumKpi label={t("profile.hero.role")} value={roleText} tone={isStaff ? "accent" : "default"} />
           <PremiumKpi label={t("profile.hero.accessUntil")} value={formatDate(sub.ends_at, language)} />
