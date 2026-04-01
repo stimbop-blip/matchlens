@@ -1,20 +1,17 @@
+import { MobileShell } from "../components/layout/MobileShell";
+import { PageTransition } from "../components/motion/PageTransition";
 import { AppProviders } from "./providers";
+import { AppRouter } from "./router";
 
 export default function App() {
   return (
     <AppProviders>
-      <div
-        style={{
-          minHeight: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: "var(--text-primary)",
-          background: "var(--background)",
-          fontFamily: "Inter, sans-serif",
-        }}
-      >
-        Mini App loaded
+      <div className="app-bg min-h-screen">
+        <MobileShell withNav>
+          <PageTransition>
+            <AppRouter />
+          </PageTransition>
+        </MobileShell>
       </div>
     </AppProviders>
   );
