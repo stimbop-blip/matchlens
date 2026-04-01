@@ -47,6 +47,9 @@
   --text-tertiary: var(--text-muted);
   --info: #67adff;
   --shadow-card: 0 18px 36px rgba(0, 0, 0, 0.24);
+  --radius-xl: 22px;
+  --radius-2xl: 28px;
+  --glass-surface: color-mix(in srgb, var(--surface-1) 82%, transparent);
 }
 
 :root[data-theme="light"] {
@@ -97,6 +100,7 @@
   --text-tertiary: var(--text-muted);
   --info: #2d78cb;
   --shadow-card: 0 14px 30px rgba(18, 34, 62, 0.1);
+  --glass-surface: color-mix(in srgb, #ffffff 88%, transparent);
 }
 
 * {
@@ -9756,6 +9760,265 @@ h4 {
   .pb-admin-v4 .admin-status-switch,
   .pb-admin-v4 .admin-sheet-footer {
     grid-template-columns: 1fr;
+  }
+}
+
+/* PIT BET R3F premium layer */
+
+.pb-three-app-root {
+  position: relative;
+  min-height: 100vh;
+}
+
+.pb-three-app-layer {
+  position: relative;
+  z-index: 2;
+}
+
+.pb-three-global-canvas,
+.pb-three-bg-fallback {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.pb-three-global-canvas {
+  opacity: 0.35;
+  mix-blend-mode: screen;
+}
+
+.pb-three-bg-fallback {
+  background:
+    radial-gradient(circle at 12% -20%, rgba(44, 216, 183, 0.16), transparent 52%),
+    radial-gradient(circle at 94% -14%, rgba(47, 140, 255, 0.16), transparent 48%);
+}
+
+.pb-home-r3f-hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 140px;
+  gap: 10px;
+  align-items: center;
+}
+
+.pb-home-r3f-hero-copy h3 {
+  font-size: 18px;
+  line-height: 1.25;
+}
+
+.pb-home-r3f-hero-copy p {
+  margin-top: 6px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.pb-home-r3f-hero-object {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 78% 20%, rgba(44, 216, 183, 0.22), transparent 56%),
+    linear-gradient(160deg, rgba(16, 29, 41, 0.92), rgba(10, 18, 27, 0.98));
+  overflow: hidden;
+  min-height: 122px;
+}
+
+.pb-home-r3f-canvas-wrap {
+  width: 100%;
+  height: 122px;
+}
+
+.pb-home-r3f-fallback {
+  min-height: 120px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at 24% 16%, rgba(255, 255, 255, 0.12), transparent 48%),
+    radial-gradient(circle at 78% 18%, rgba(44, 216, 183, 0.2), transparent 56%),
+    linear-gradient(150deg, rgba(26, 46, 65, 0.86), rgba(12, 22, 32, 0.96));
+  display: grid;
+  place-items: center;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.pb-home-r3f-subscription,
+.pb-home-r3f-signals {
+  margin-top: 10px;
+}
+
+.pb-home-r3f-signal-list {
+  display: grid;
+  gap: 10px;
+}
+
+.pb-three-progress,
+.pb-three-chart {
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 22px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 84% 18%, rgba(44, 216, 183, 0.2), transparent 54%),
+    linear-gradient(160deg, rgba(14, 27, 38, 0.92), rgba(10, 18, 27, 0.98));
+}
+
+.pb-three-progress-canvas,
+.pb-three-chart-canvas {
+  position: absolute;
+  inset: 0;
+}
+
+.pb-three-progress-copy {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 12px;
+  display: grid;
+  gap: 4px;
+  background: linear-gradient(180deg, transparent, rgba(5, 11, 17, 0.8));
+}
+
+.pb-three-progress-copy small,
+.pb-three-progress-copy p,
+.pb-three-chart-caption {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.pb-three-progress-copy strong {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.pb-three-chart-caption {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 8px;
+  text-align: center;
+  font-weight: 700;
+}
+
+.pb-signal3d-card {
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background:
+    radial-gradient(circle at 96% -18%, rgba(44, 216, 183, 0.2), transparent 56%),
+    linear-gradient(160deg, rgba(15, 27, 39, 0.92), rgba(10, 18, 27, 0.98));
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.24);
+  padding: 12px;
+  display: grid;
+  gap: 9px;
+}
+
+.pb-signal3d-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.pb-signal3d-head small {
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.pb-signal3d-head p {
+  margin-top: 3px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.pb-signal3d-card h3 {
+  font-size: 17px;
+  line-height: 1.28;
+}
+
+.pb-signal3d-core {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+}
+
+.pb-signal3d-canvas {
+  height: 88px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  overflow: hidden;
+}
+
+.pb-profile-three-grid {
+  display: grid;
+  grid-template-columns: 130px repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  align-items: stretch;
+}
+
+.pb-profile-three-trophy {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 78% 18%, rgba(44, 216, 183, 0.2), transparent 56%),
+    linear-gradient(160deg, rgba(14, 26, 37, 0.92), rgba(10, 18, 27, 0.98));
+  overflow: hidden;
+  min-height: 210px;
+}
+
+.pb-admin-v4-chart-block {
+  margin-top: 10px;
+}
+
+:root[data-theme="light"] .pb-three-global-canvas {
+  opacity: 0.3;
+  mix-blend-mode: multiply;
+}
+
+:root[data-theme="light"] .pb-home-r3f-hero-object,
+:root[data-theme="light"] .pb-three-progress,
+:root[data-theme="light"] .pb-three-chart,
+:root[data-theme="light"] .pb-signal3d-card,
+:root[data-theme="light"] .pb-signal3d-canvas,
+:root[data-theme="light"] .pb-profile-three-trophy {
+  border-color: color-mix(in srgb, var(--accent-primary) 18%, var(--border-subtle));
+  background:
+    radial-gradient(circle at 86% 18%, rgba(15, 186, 149, 0.13), transparent 58%),
+    linear-gradient(160deg, #ffffff, #f2f7ff);
+  box-shadow: 0 12px 24px rgba(19, 37, 61, 0.1);
+}
+
+:root[data-theme="light"] .pb-home-r3f-fallback {
+  border-color: #ccdaeb;
+  background:
+    radial-gradient(circle at 20% 16%, rgba(255, 255, 255, 0.7), transparent 48%),
+    radial-gradient(circle at 80% 22%, rgba(15, 186, 149, 0.18), transparent 56%),
+    linear-gradient(150deg, #f8fcff, #edf4fd);
+  color: #4f637d;
+}
+
+:root[data-theme="light"] .pb-three-progress-copy {
+  background: linear-gradient(180deg, transparent, rgba(233, 241, 251, 0.96));
+}
+
+@media (max-width: 760px) {
+  .pb-home-r3f-hero-grid,
+  .pb-profile-three-grid,
+  .pb-signal3d-core {
+    grid-template-columns: 1fr;
+  }
+
+  .pb-home-r3f-hero-object,
+  .pb-home-r3f-canvas-wrap {
+    min-height: 104px;
+    height: 104px;
+  }
+
+  .pb-profile-three-trophy {
+    min-height: 140px;
   }
 }
 

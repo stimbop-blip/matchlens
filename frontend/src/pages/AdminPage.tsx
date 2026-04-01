@@ -1,7 +1,8 @@
-import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, type FormEvent, type ReactNode, useEffect, useMemo, useState } from "react";
 
 import { useLanguage } from "../app/language";
 import { Layout } from "../components/Layout";
+import { ErrorBoundary } from "../components/motion/ErrorBoundary";
 import { triggerHaptic } from "../services/telegram";
 import {
   api,
@@ -14,6 +15,8 @@ import {
   type PaymentMethod,
   type Prediction,
 } from "../services/api";
+
+const ROIChart3D = lazy(() => import("../components/three/ROIChart3D").then((module) => ({ default: module.ROIChart3D })));
 
 type TabKey = "predictions" | "users" | "subscriptions" | "payments" | "payment_methods" | "news" | "promocodes" | "broadcasts" | "events";
 
@@ -361,7 +364,7 @@ function AdminSheet({
   );
 }
 
-export function AdminPage() {
+export function AdminPage({ withThree = false }: { withThree?: boolean } = {}) {
   const { language } = useLanguage();
   const isRu = language === "ru";
   const tx = (ru: string, en: string) => (isRu ? ru : en);
@@ -1247,6 +1250,25 @@ export function AdminPage() {
             </strong>
           </article>
         </div>
+
+        {withThree ? (
+          <div className="pb-admin-v4-chart-block">
+            <ErrorBoundary fallback={<div className="pb-home-r3f-fallback">3D</div>}>
+              <Suspense fallback={<div className="pb-home-r3f-fallback">3D</div>}>
+                <ROIChart3D
+                  title={tx("ROI / KPI в реальном времени", "Realtime ROI / KPI")}
+                  values={[
+                    Math.max(1, stats?.users_total ?? users.length),
+                    Math.max(1, stats?.active_subscriptions ?? 0),
+                    Math.max(1, pendingReviewPayments),
+                    Math.max(1, activePromoCodes),
+                  ]}
+                  height={210}
+                />
+              </Suspense>
+            </ErrorBoundary>
+          </div>
+        ) : null}
 
         {tab === "predictions" && isAdmin ? (
           <div className="admin-panel">

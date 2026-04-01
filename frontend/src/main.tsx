@@ -1,9 +1,8 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { BrowserRouter } from "react-router-dom";
 
+import { App } from "./app/App";
 import { LanguageProvider } from "./app/language";
-import { AppRouter } from "./app/router";
 import { initTelegramWebApp } from "./services/telegram";
 import "./styles/globals.css";
 
@@ -12,9 +11,7 @@ async function bootstrap() {
 
   ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
     <LanguageProvider>
-      <BrowserRouter>
-        <AppRouter />
-      </BrowserRouter>
+      <App />
     </LanguageProvider>
   );
 }

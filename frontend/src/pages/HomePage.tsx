@@ -6,6 +6,7 @@ import { resolveSportLabel } from "../app/sport";
 import { countPendingPayments, resolveSubscriptionSnapshot } from "../app/subscription";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
+import { ErrorBoundary } from "../components/motion/ErrorBoundary";
 import { HeroPanel } from "../components/premium/HeroPanel";
 import { PremiumKpi } from "../components/premium/PremiumKpi";
 import { PremiumRing } from "../components/premium/PremiumRing";
@@ -432,9 +433,11 @@ export function HomePage() {
       >
         <div className="pb-overview-hero-3d">
           <div className="pb-overview-trophy-3d" aria-hidden="true">
-            <Suspense fallback={<div className="pb-home3d-canvas-fallback" />}>
-              <HomeHeroScene3D />
-            </Suspense>
+            <ErrorBoundary fallback={<div className="pb-home3d-canvas-fallback" />}>
+              <Suspense fallback={<div className="pb-home3d-canvas-fallback" />}>
+                <HomeHeroScene3D />
+              </Suspense>
+            </ErrorBoundary>
           </div>
           <div className="pb-overview-hero-stats">
             <article>
@@ -501,9 +504,11 @@ export function HomePage() {
                 <p>{item.league}</p>
 
                 <div className="pb-home3d-match-scene" aria-hidden="true">
-                  <Suspense fallback={<div className="pb-home3d-canvas-fallback" />}>
-                    <HomeSignalScene3D sport={item.sportType} />
-                  </Suspense>
+                  <ErrorBoundary fallback={<div className="pb-home3d-canvas-fallback" />}>
+                    <Suspense fallback={<div className="pb-home3d-canvas-fallback" />}>
+                      <HomeSignalScene3D sport={item.sportType} />
+                    </Suspense>
+                  </ErrorBoundary>
                 </div>
 
                 <div className="pb-home3d-match-kpi">
@@ -564,9 +569,11 @@ export function HomePage() {
         <div className="pb-overview-access-grid">
           <div className="pb-home3d-access-visual">
             <div className="pb-home3d-access-scene" aria-hidden="true">
-              <Suspense fallback={<div className="pb-home3d-canvas-fallback" />}>
-                <HomeSubscriptionScene3D percent={accessProgress} />
-              </Suspense>
+              <ErrorBoundary fallback={<div className="pb-home3d-canvas-fallback" />}>
+                <Suspense fallback={<div className="pb-home3d-canvas-fallback" />}>
+                  <HomeSubscriptionScene3D percent={accessProgress} />
+                </Suspense>
+              </ErrorBoundary>
             </div>
             <PremiumRing value={accessProgress} label={t("home.access.openNow")} caption={accessNowLabel(sub.tariff, t)} tone={sub.tariff === "vip" ? "vip" : "accent"} />
           </div>

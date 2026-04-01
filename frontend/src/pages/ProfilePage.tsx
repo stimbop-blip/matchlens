@@ -1,16 +1,22 @@
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { Canvas } from "@react-three/fiber";
 
 import { useI18n } from "../app/i18n";
 import { countPendingPayments, paymentStatusTone, resolveSubscriptionSnapshot } from "../app/subscription";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
+import { ErrorBoundary } from "../components/motion/ErrorBoundary";
 import { HeroPanel } from "../components/premium/HeroPanel";
 import { PremiumKpi } from "../components/premium/PremiumKpi";
 import { PremiumRing } from "../components/premium/PremiumRing";
 import { RocketLoader, SkeletonBlock } from "../components/ui";
-import { api, type Me, type MyPayment, type NotificationSettings, type PromoApplyResult, type ReferralStats } from "../services/api";
+import { api, type Me, type MyPayment, type NotificationSettings, type PromoApplyResult, type PublicStats, type ReferralStats } from "../services/api";
 import { waitForTelegramInitData } from "../services/telegram";
+
+const FloatingHeroObject = lazy(() => import("../components/three/FloatingHeroObject").then((module) => ({ default: module.FloatingHeroObject })));
+const ROIChart3D = lazy(() => import("../components/three/ROIChart3D").then((module) => ({ default: module.ROIChart3D })));
+const SubscriptionProgress3D = lazy(() => import("../components/three/SubscriptionProgress3D").then((module) => ({ default: module.SubscriptionProgress3D })));
 
 function formatDate(value: string | null | undefined, language: "ru" | "en"): string {
   if (!value) return "-";
@@ -75,7 +81,7 @@ const NOTIFICATION_CONTROLS: NotificationControl[] = [
   { key: "notify_vip", labelKey: "profile.notifications.vip", minTariff: "vip" },
 ];
 
-export function ProfilePage() {
+export function ProfilePage({ withThree = false }: { withThree?: boolean } = {}) {
   const { t, language } = useI18n();
 
   const [me, setMe] = useState<Me | null>(null);
@@ -83,6 +89,7 @@ export function ProfilePage() {
   const [notify, setNotify] = useState<NotificationSettings | null>(null);
   const [referral, setReferral] = useState<ReferralStats | null>(null);
   const [payments, setPayments] = useState<MyPayment[]>([]);
+  const [stats, setStats] = useState<PublicStats | null>(null);
 
   const [promoCode, setPromoCode] = useState("");
   const [promoTariff, setPromoTariff] = useState<"free" | "premium" | "vip">("premium");
@@ -99,15 +106,16 @@ export function ProfilePage() {
         return;
       }
 
-      const results = await Promise.allSettled([api.me(), api.mySubscription(), api.myNotificationSettings(), api.myReferral(), api.myPayments()]);
+      const results = await Promise.allSettled([api.me(), api.mySubscription(), api.myNotificationSettings(), api.myReferral(), api.myPayments(), api.stats()]);
       if (!alive) return;
 
-      const [meRes, subRes, notifyRes, refRes, payRes] = results;
+      const [meRes, subRes, notifyRes, refRes, payRes, statsRes] = results;
       setMe(meRes.status === "fulfilled" ? meRes.value : null);
       setSubscriptionRaw(subRes.status === "fulfilled" ? subRes.value : null);
       setNotify(notifyRes.status === "fulfilled" ? notifyRes.value : null);
       setReferral(refRes.status === "fulfilled" ? refRes.value : null);
       setPayments(payRes.status === "fulfilled" ? payRes.value : []);
+      setStats(statsRes.status === "fulfilled" ? statsRes.value : null);
       setLoading(false);
     };
 
@@ -123,6 +131,12 @@ export function ProfilePage() {
   const isSupport = Boolean(me?.is_support || me?.role === "support");
   const isStaff = isAdmin || isSupport;
   const accessProgress = buildAccessProgress(sub.tariff, sub.is_active);
+  const roiSeries = useMemo(() => {
+    const hit = Math.max(1, Math.round(stats?.hit_rate ?? 0));
+    const roi = Math.max(1, Math.round((stats?.roi ?? 0) + 20));
+    const settled = Math.max(1, (stats?.wins ?? 0) + (stats?.refunds ?? 0));
+    return [hit, roi, settled, pendingPayments + 1];
+  }, [pendingPayments, stats]);
 
   const availableNotificationControls = useMemo(() => {
     const currentWeight = TARIFF_WEIGHT[sub.tariff];
@@ -274,6 +288,47 @@ export function ProfilePage() {
           ) : null}
         </div>
       </HeroPanel>
+
+      {withThree ? (
+        <section className="pb-premium-panel pb-profile-three pb-reveal">
+          <div className="pb-premium-head">
+            <h3>{language === "ru" ? "3D Аналитика профиля" : "3D profile analytics"}</h3>
+            <small>{language === "ru" ? "Прогресс, ROI и премиум-метрики" : "Progress, ROI and premium metrics"}</small>
+          </div>
+
+          <div className="pb-profile-three-grid">
+            <div className="pb-profile-three-trophy" aria-hidden="true">
+              <ErrorBoundary fallback={<div className="pb-home-r3f-fallback">3D</div>}>
+                <Suspense fallback={<div className="pb-home-r3f-fallback">3D</div>}>
+                  <Canvas camera={{ position: [0, 0, 3], fov: 42 }} dpr={[1, 1.4]} gl={{ alpha: true, antialias: true, powerPreference: "low-power" }}>
+                    <ambientLight intensity={0.82} />
+                    <pointLight position={[2, 2, 3]} intensity={1.1} color="#2cd8b7" />
+                    <pointLight position={[-2, -1.2, 2.6]} intensity={0.82} color="#2f8cff" />
+                    <FloatingHeroObject type="trophy" scale={0.9} />
+                  </Canvas>
+                </Suspense>
+              </ErrorBoundary>
+            </div>
+
+            <ErrorBoundary fallback={<div className="pb-home-r3f-fallback">3D</div>}>
+              <Suspense fallback={<div className="pb-home-r3f-fallback">3D</div>}>
+                <ROIChart3D title={language === "ru" ? "ROI и эффективность" : "ROI and efficiency"} values={roiSeries} height={210} />
+              </Suspense>
+            </ErrorBoundary>
+
+            <ErrorBoundary fallback={<div className="pb-home-r3f-fallback">3D</div>}>
+              <Suspense fallback={<div className="pb-home-r3f-fallback">3D</div>}>
+                <SubscriptionProgress3D
+                  percent={accessProgress}
+                  label={language === "ru" ? "Прогресс подписки" : "Subscription progress"}
+                  caption={statusLabel(sub.status, t)}
+                  height={210}
+                />
+              </Suspense>
+            </ErrorBoundary>
+          </div>
+        </section>
+      ) : null}
 
       <section className="pb-premium-panel pb-profile-v4-snapshot pb-reveal">
         <div className="pb-premium-head">

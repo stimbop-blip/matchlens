@@ -1,15 +1,18 @@
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
 import { useI18n } from "../app/i18n";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
+import { ErrorBoundary } from "../components/motion/ErrorBoundary";
 import { HeroPanel } from "../components/premium/HeroPanel";
 import { SignalCard } from "../components/premium/SignalCard";
 import { PremiumKpi } from "../components/premium/PremiumKpi";
 import { RocketLoader, SkeletonBlock } from "../components/ui";
 import { api, type Prediction } from "../services/api";
 import { triggerHaptic } from "../services/telegram";
+
+const SignalCard3D = lazy(() => import("../components/three/SignalCard3D").then((module) => ({ default: module.SignalCard3D })));
 
 type AccessFilter = "all" | "free" | "premium" | "vip";
 type ModeFilter = "all" | "live" | "prematch";
@@ -95,7 +98,7 @@ function teaser(value: string | null | undefined, fallback: string) {
   return `${source.slice(0, 147).trim()}...`;
 }
 
-export function FeedPage() {
+export function FeedPage({ useThreeCards = false }: { useThreeCards?: boolean } = {}) {
   const { t, language } = useI18n();
 
   const [items, setItems] = useState<Prediction[]>([]);
@@ -363,23 +366,47 @@ export function FeedPage() {
               <div className="pb-feed-v4-grid pb-feed-v4-grid-3d">
                 {group.list.map((item) => (
                   <div key={item.id} className="pb-feed-v4-card-depth">
-                    <SignalCard
-                      to={`/feed/${item.id}`}
-                      title={item.match_name}
-                      league={item.league || t("feed.noLeague")}
-                      sport={item.sport_type}
-                      mode={item.mode === "live" ? t("common.live") : t("common.prematch")}
-                      kickoff={formatDate(item.event_start_at, language)}
-                      signal={item.signal_type}
-                      odds={item.odds}
-                      oddsLabel={t("feed.label.odds")}
-                      risk={riskLabel(item.risk_level, t)}
-                      status={item.status}
-                      statusLabel={statusLabel(item.status, t)}
-                      accessLabel={accessLabel(item.access_level, t)}
-                      note={teaser(item.short_description, t("feed.teaserFallback"))}
-                      language={language}
-                    />
+                    {useThreeCards ? (
+                      <ErrorBoundary fallback={<div className="pb-home-r3f-fallback">3D</div>}>
+                        <Suspense fallback={<div className="pb-home-r3f-fallback">3D</div>}>
+                          <SignalCard3D
+                            to={`/feed/${item.id}`}
+                            title={item.match_name}
+                            league={item.league || t("feed.noLeague")}
+                            sport={item.sport_type}
+                            mode={item.mode === "live" ? t("common.live") : t("common.prematch")}
+                            kickoff={formatDate(item.event_start_at, language)}
+                            signal={item.signal_type}
+                            odds={item.odds}
+                            oddsLabel={t("feed.label.odds")}
+                            risk={riskLabel(item.risk_level, t)}
+                            status={item.status}
+                            statusLabel={statusLabel(item.status, t)}
+                            accessLabel={accessLabel(item.access_level, t)}
+                            note={teaser(item.short_description, t("feed.teaserFallback"))}
+                            language={language}
+                          />
+                        </Suspense>
+                      </ErrorBoundary>
+                    ) : (
+                      <SignalCard
+                        to={`/feed/${item.id}`}
+                        title={item.match_name}
+                        league={item.league || t("feed.noLeague")}
+                        sport={item.sport_type}
+                        mode={item.mode === "live" ? t("common.live") : t("common.prematch")}
+                        kickoff={formatDate(item.event_start_at, language)}
+                        signal={item.signal_type}
+                        odds={item.odds}
+                        oddsLabel={t("feed.label.odds")}
+                        risk={riskLabel(item.risk_level, t)}
+                        status={item.status}
+                        statusLabel={statusLabel(item.status, t)}
+                        accessLabel={accessLabel(item.access_level, t)}
+                        note={teaser(item.short_description, t("feed.teaserFallback"))}
+                        language={language}
+                      />
+                    )}
                   </div>
                 ))}
               </div>

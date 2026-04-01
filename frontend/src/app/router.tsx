@@ -2,24 +2,24 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 
 import { clearConsentCache, isConsentAccepted, readConsentCache, writeConsentCache } from "./consent";
+import { Admin } from "./Admin";
+import { Home } from "./Home";
+import { Profile } from "./Profile";
+import { Signals } from "./Signals";
+import { Tariffs } from "./Tariffs";
 import { api, type UserConsent } from "../services/api";
-import { AdminPage } from "../pages/AdminPage";
-import { FeedPage } from "../pages/FeedPage";
 import { GatePage } from "../pages/GatePage";
-import { HomePage } from "../pages/HomePage";
 import { LanguagePage } from "../pages/LanguagePage";
 import { MenuPage } from "../pages/MenuPage";
 import { NewsDetailsPage } from "../pages/NewsDetailsPage";
 import { NewsPage } from "../pages/NewsPage";
 import { PaymentRefundPage } from "../pages/PaymentRefundPage";
 import { PredictionDetailsPage } from "../pages/PredictionDetailsPage";
-import { ProfilePage } from "../pages/ProfilePage";
 import { ResponsiblePage } from "../pages/ResponsiblePage";
 import { RulesPage } from "../pages/RulesPage";
 import { StatsPage } from "../pages/StatsPage";
 import { SupportInboxPage } from "../pages/SupportInboxPage";
 import { SupportPage } from "../pages/SupportPage";
-import { TariffsPage } from "../pages/TariffsPage";
 import { ThemePage } from "../pages/ThemePage";
 
 export function AppRouter() {
@@ -85,12 +85,12 @@ export function AppRouter() {
   return (
     <Routes>
       <Route path="/gate" element={<Navigate to="/" replace />} />
-      <Route path="/" element={<HomePage />} />
-      <Route path="/feed" element={<FeedPage />} />
+      <Route path="/" element={<Home />} />
+      <Route path="/feed" element={<Signals />} />
       <Route path="/feed/:predictionId" element={<PredictionDetailsPage />} />
       <Route path="/stats" element={<StatsPage />} />
-      <Route path="/tariffs" element={<TariffsPage />} />
-      <Route path="/profile" element={<ProfilePage />} />
+      <Route path="/tariffs" element={<Tariffs />} />
+      <Route path="/profile" element={<Profile />} />
       <Route path="/menu" element={<MenuPage />} />
       <Route path="/menu/language" element={<LanguagePage />} />
       <Route path="/menu/theme" element={<ThemePage />} />
@@ -101,7 +101,7 @@ export function AppRouter() {
       <Route path="/news/:newsId" element={<NewsDetailsPage />} />
       <Route path="/support" element={<SupportPage />} />
       <Route path="/support/inbox" element={<SupportInboxPage />} />
-      <Route path="/admin" element={<AdminPage />} />
+      <Route path="/admin" element={<Admin />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
