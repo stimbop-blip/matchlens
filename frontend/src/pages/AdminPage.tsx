@@ -1194,7 +1194,8 @@ export function AdminPage({ withThree = false }: { withThree?: boolean } = {}) {
 
   return (
     <Layout>
-      <section className="pb-premium-panel pb-admin-shell pb-admin-mobile pb-admin-v4 pb-reveal">
+      <div className="pb-screen pb-screen-admin">
+        <section className="pb-premium-panel pb-admin-shell pb-admin-mobile pb-admin-v4 pb-reveal">
         <div className="section-head">
           <h2>{tx("Админка PIT BET", "PIT BET admin panel")}</h2>
           <span className="muted">{tx("Мобильная control panel для контента, пользователей и платежей", "Mobile control panel for content, users, and payments")}</span>
@@ -2270,7 +2271,7 @@ export function AdminPage({ withThree = false }: { withThree?: boolean } = {}) {
         </form>
       </AdminSheet>
 
-      <AdminSheet open={showGrantSubscriptionSheet} title={tx("Выдать подписку вручную", "Grant subscription manually")} onClose={() => setShowGrantSubscriptionSheet(false)}>
+        <AdminSheet open={showGrantSubscriptionSheet} title={tx("Выдать подписку вручную", "Grant subscription manually")} onClose={() => setShowGrantSubscriptionSheet(false)}>
         <form className="admin-sheet-form" onSubmit={onGrantSubscription}>
           <section className="admin-editor-section">
             <h4>{tx("Параметры подписки", "Subscription settings")}</h4>
@@ -2296,7 +2297,8 @@ export function AdminPage({ withThree = false }: { withThree?: boolean } = {}) {
             </button>
           </div>
         </form>
-      </AdminSheet>
+        </AdminSheet>
+      </div>
     </Layout>
   );
 }

@@ -202,7 +202,8 @@ export function FeedPage({ useThreeCards = false }: { useThreeCards?: boolean } 
 
   return (
     <Layout>
-      <HeroPanel eyebrow="Signal Desk" title={t("feed.hero.title")} subtitle={t("feed.hero.subtitle")} right={<span className="pb-feed-v4-total">{items.length}</span>}>
+      <div className="pb-screen pb-screen-feed">
+        <HeroPanel eyebrow="Signal Desk" title={t("feed.hero.title")} subtitle={t("feed.hero.subtitle")} right={<span className="pb-feed-v4-total">{items.length}</span>}>
         <div className="pb-feed-v4-hero-scene" aria-hidden="true">
           <span className="pb-feed-v4-hero-floor" />
           <div className="pb-feed-v4-hero-columns">
@@ -415,7 +416,8 @@ export function FeedPage({ useThreeCards = false }: { useThreeCards?: boolean } 
         </div>
       ) : null}
 
-      <AppDisclaimer />
+        <AppDisclaimer />
+      </div>
     </Layout>
   );
 }

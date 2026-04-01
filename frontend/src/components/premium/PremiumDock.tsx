@@ -28,6 +28,7 @@ export function PremiumDock({ items, ariaLabel }: { items: DockItem[]; ariaLabel
         <MotionLink
           key={item.key}
           to={item.to}
+          data-key={item.key}
           className={`${item.active ? "active" : ""}${item.key === "center" ? " center" : ""}`}
           aria-current={item.active ? "page" : undefined}
           onClick={() => onPress(item.key)}

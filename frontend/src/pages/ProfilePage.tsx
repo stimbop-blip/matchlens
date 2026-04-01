@@ -231,7 +231,8 @@ export function ProfilePage({ withThree = false }: { withThree?: boolean } = {})
 
   return (
     <Layout>
-      <HeroPanel
+      <div className="pb-screen pb-screen-profile">
+        <HeroPanel
         eyebrow={t("profile.hero.title")}
         title={me?.first_name || (me?.username ? `@${me.username}` : "PIT BET")}
         subtitle={t("profile.hero.subtitle")}
@@ -473,7 +474,8 @@ export function ProfilePage({ withThree = false }: { withThree?: boolean } = {})
         {notifyMessage ? <p className={notifyMessage.tone === "success" ? "pb-notice success" : "pb-notice error"}>{notifyMessage.text}</p> : null}
       </section>
 
-      <AppDisclaimer />
+        <AppDisclaimer />
+      </div>
     </Layout>
   );
 }

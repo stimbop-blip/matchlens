@@ -188,7 +188,8 @@ export function TariffsPage() {
 
   return (
     <Layout>
-      <section className="pb-hero-panel pb-reveal">
+      <div className="pb-screen pb-screen-tariffs">
+        <section className="pb-hero-panel pb-reveal">
         <div className="pb-hero-top">
           <span className="pb-eyebrow">PIT BET</span>
           <StatusPill
@@ -408,7 +409,8 @@ export function TariffsPage() {
         <p className="pb-article-text">{t("tariffs.extra.text")}</p>
       </AppShellSection>
 
-      <AppDisclaimer />
+        <AppDisclaimer />
+      </div>
     </Layout>
   );
 }

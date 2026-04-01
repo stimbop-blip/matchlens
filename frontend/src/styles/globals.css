@@ -10880,3 +10880,47 @@ h4 {
     grid-template-columns: 1fr;
   }
 }
+
+.pb-screen {
+  display: grid;
+  gap: 10px;
+}
+
+.pb-screen-feed .pb-feed-v4-day-group,
+.pb-screen-tariffs .pb-plan-card,
+.pb-screen-profile .pb-profile-v4-payment,
+.pb-screen-admin .pb-admin-v4 .admin-card-compact {
+  border-radius: 20px;
+}
+
+.pb-screen-feed .pb-feed-v4-filter-stack {
+  border-radius: 18px;
+}
+
+.pb-screen-feed .pb-feed-v4-pill-row.primary .pb-feed-v4-pill.active {
+  background: color-mix(in srgb, var(--accent-primary) 18%, transparent);
+}
+
+.pb-screen-tariffs .pb-plan-price,
+.pb-screen-profile .pb-premium-ring strong,
+.pb-screen-admin .pb-admin-v4 .pb-admin-v4-kpis strong {
+  letter-spacing: 0.01em;
+}
+
+.pb-screen-tariffs .pb-summary-card .total strong {
+  color: color-mix(in srgb, var(--accent-primary) 90%, #c9fff4);
+}
+
+.pb-screen-profile .pb-profile-v4-linkbox input,
+.pb-screen-profile .pb-profile-v4-promo-grid input,
+.pb-screen-profile .pb-profile-v4-promo-grid select {
+  border-color: color-mix(in srgb, var(--accent-primary) 16%, var(--input-border));
+}
+
+.pb-screen-admin .pb-admin-v4 .admin-tabs-wrap.admin-tabs-mobile .admin-tabs {
+  gap: 5px;
+}
+
+.pb-screen-admin .pb-admin-v4 .admin-card-compact .admin-quick-actions .btn {
+  border-radius: 10px;
+}

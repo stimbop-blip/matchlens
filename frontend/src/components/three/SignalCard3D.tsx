@@ -7,11 +7,18 @@ import { FloatingHeroObject } from "./FloatingHeroObject";
 
 type CardStatus = "pending" | "won" | "lost" | "refund";
 
-function mapSportToObject(sport: string): "trophy" | "football" | "tennis" {
+function mapSportToObject(sport: string): "trophy" | "football" | "hockey" | "tennis" | "basketball" | "volleyball" | "baseball" | "mma" | "esports" | "darts" | "generic" {
   const kind = resolveSportKind(sport);
   if (kind === "football") return "football";
   if (kind === "tennis" || kind === "table_tennis") return "tennis";
-  return "trophy";
+  if (kind === "hockey") return "hockey";
+  if (kind === "basketball") return "basketball";
+  if (kind === "volleyball") return "volleyball";
+  if (kind === "baseball") return "baseball";
+  if (kind === "mma") return "mma";
+  if (kind === "esports") return "esports";
+  if (kind === "darts") return "darts";
+  return "generic";
 }
 
 export function SignalCard3D({
