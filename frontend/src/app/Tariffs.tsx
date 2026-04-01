@@ -6,7 +6,9 @@ export function Tariffs() {
   return (
     <PageTransition>
       <ErrorBoundary fallback={<TariffsPage />}>
-        <TariffsPage />
+        <div className="pb-app-screen-shell pb-app-screen-tariffs">
+          <TariffsPage />
+        </div>
       </ErrorBoundary>
     </PageTransition>
   );

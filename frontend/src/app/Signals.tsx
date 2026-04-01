@@ -6,7 +6,9 @@ export function Signals() {
   return (
     <PageTransition>
       <ErrorBoundary fallback={<FeedPage />}>
-        <FeedPage useThreeCards />
+        <div className="pb-app-screen-shell pb-app-screen-signals">
+          <FeedPage useThreeCards />
+        </div>
       </ErrorBoundary>
     </PageTransition>
   );

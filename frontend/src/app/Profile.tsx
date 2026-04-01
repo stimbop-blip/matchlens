@@ -6,7 +6,9 @@ export function Profile() {
   return (
     <PageTransition>
       <ErrorBoundary fallback={<ProfilePage />}>
-        <ProfilePage withThree />
+        <div className="pb-app-screen-shell pb-app-screen-profile">
+          <ProfilePage withThree />
+        </div>
       </ErrorBoundary>
     </PageTransition>
   );

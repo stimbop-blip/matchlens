@@ -9912,6 +9912,44 @@ h4 {
   padding: 12px;
   display: grid;
   gap: 9px;
+  position: relative;
+  overflow: hidden;
+}
+
+.pb-signal3d-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(130deg, rgba(255, 255, 255, 0.09), transparent 58%);
+  pointer-events: none;
+}
+
+.pb-signal3d-card.football {
+  background:
+    radial-gradient(circle at 96% -16%, rgba(47, 140, 255, 0.24), transparent 56%),
+    linear-gradient(160deg, rgba(15, 27, 39, 0.92), rgba(10, 18, 27, 0.98));
+}
+
+.pb-signal3d-card.hockey {
+  background:
+    radial-gradient(circle at 96% -16%, rgba(130, 211, 255, 0.22), transparent 56%),
+    linear-gradient(160deg, rgba(15, 27, 39, 0.92), rgba(10, 18, 27, 0.98));
+}
+
+.pb-signal3d-card.tennis,
+.pb-signal3d-card.table_tennis {
+  background:
+    radial-gradient(circle at 96% -16%, rgba(208, 255, 111, 0.2), transparent 56%),
+    linear-gradient(160deg, rgba(15, 27, 39, 0.92), rgba(10, 18, 27, 0.98));
+}
+
+.pb-signal3d-card.basketball,
+.pb-signal3d-card.volleyball,
+.pb-signal3d-card.baseball {
+  background:
+    radial-gradient(circle at 96% -16%, rgba(243, 160, 84, 0.2), transparent 56%),
+    linear-gradient(160deg, rgba(15, 27, 39, 0.92), rgba(10, 18, 27, 0.98));
 }
 
 .pb-signal3d-head {
@@ -9952,6 +9990,12 @@ h4 {
   overflow: hidden;
 }
 
+.pb-signal3d-canvas .pb-home-r3f-fallback {
+  min-height: 100%;
+  border: 0;
+  border-radius: 0;
+}
+
 .pb-profile-three-grid {
   display: grid;
   grid-template-columns: 130px repeat(2, minmax(0, 1fr));
@@ -9989,6 +10033,25 @@ h4 {
     radial-gradient(circle at 86% 18%, rgba(15, 186, 149, 0.13), transparent 58%),
     linear-gradient(160deg, #ffffff, #f2f7ff);
   box-shadow: 0 12px 24px rgba(19, 37, 61, 0.1);
+}
+
+:root[data-theme="light"] .pb-signal3d-card.football {
+  background:
+    radial-gradient(circle at 96% -18%, rgba(47, 140, 255, 0.18), transparent 56%),
+    linear-gradient(160deg, #ffffff, #f2f7ff);
+}
+
+:root[data-theme="light"] .pb-signal3d-card.hockey {
+  background:
+    radial-gradient(circle at 96% -18%, rgba(98, 191, 243, 0.18), transparent 56%),
+    linear-gradient(160deg, #ffffff, #f2f7ff);
+}
+
+:root[data-theme="light"] .pb-signal3d-card.tennis,
+:root[data-theme="light"] .pb-signal3d-card.table_tennis {
+  background:
+    radial-gradient(circle at 96% -18%, rgba(176, 214, 62, 0.18), transparent 56%),
+    linear-gradient(160deg, #ffffff, #f2f7ff);
 }
 
 :root[data-theme="light"] .pb-home-r3f-fallback {
@@ -10647,6 +10710,25 @@ h4 {
   transform: translateY(-8px);
 }
 
+.pb-nav-dock-v2 a[data-key="center"] {
+  border-color: color-mix(in srgb, var(--accent-primary) 36%, transparent);
+  background:
+    radial-gradient(circle at 50% -35%, color-mix(in srgb, var(--accent-primary) 26%, transparent), transparent 62%),
+    linear-gradient(160deg, rgba(255, 255, 255, 0.05), transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 8px 16px color-mix(in srgb, var(--accent-primary) 26%, transparent);
+}
+
+.pb-nav-dock-v2 a[data-key="center"] .pb-orb-icon-wrap::before {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border-radius: 999px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent-primary) 42%, transparent), transparent 72%);
+  opacity: 0.95;
+}
+
 .pb-nav-pill {
   position: absolute;
   inset: 4px;
@@ -10923,4 +11005,15 @@ h4 {
 
 .pb-screen-admin .pb-admin-v4 .admin-card-compact .admin-quick-actions .btn {
   border-radius: 10px;
+}
+
+.pb-app-screen-shell {
+  isolation: isolate;
+}
+
+.pb-app-screen-signals,
+.pb-app-screen-tariffs,
+.pb-app-screen-profile,
+.pb-app-screen-admin {
+  position: relative;
 }

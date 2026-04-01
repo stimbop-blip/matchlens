@@ -1,5 +1,6 @@
+import { Suspense, useMemo, useRef } from "react";
+
 import { useFrame } from "@react-three/fiber";
-import { useRef } from "react";
 import type { Group } from "three";
 
 type FloatingHeroType =
@@ -30,6 +31,14 @@ function Trophy() {
         <cylinderGeometry args={[0.34, 0.4, 0.14, 22]} />
         <meshStandardMaterial color="#2f8cff" metalness={0.56} roughness={0.32} />
       </mesh>
+      <mesh position={[0.24, 0.42, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <torusGeometry args={[0.14, 0.03, 12, 28, Math.PI]} />
+        <meshStandardMaterial color="#f6c77a" metalness={0.64} roughness={0.36} />
+      </mesh>
+      <mesh position={[-0.24, 0.42, 0]} rotation={[0, 0, -Math.PI / 2]}>
+        <torusGeometry args={[0.14, 0.03, 12, 28, Math.PI]} />
+        <meshStandardMaterial color="#f6c77a" metalness={0.64} roughness={0.36} />
+      </mesh>
       <mesh scale={1.42}>
         <sphereGeometry args={[0.78, 26, 26]} />
         <meshBasicMaterial color="#2cd8b7" transparent opacity={0.09} />
@@ -48,6 +57,10 @@ function Football() {
       <mesh scale={0.74}>
         <dodecahedronGeometry args={[0.25, 0]} />
         <meshStandardMaterial color="#152434" metalness={0.2} roughness={0.6} />
+      </mesh>
+      <mesh rotation={[0, 0, Math.PI / 2]}>
+        <torusGeometry args={[0.52, 0.012, 10, 70]} />
+        <meshStandardMaterial color="#dce5f3" metalness={0.12} roughness={0.74} />
       </mesh>
       <mesh scale={1.38}>
         <sphereGeometry args={[0.7, 24, 24]} />
@@ -98,6 +111,10 @@ function Tennis() {
       <mesh position={[0.42, -0.42, 0]} rotation={[0, 0, Math.PI / 5]}>
         <cylinderGeometry args={[0.04, 0.05, 0.62, 16]} />
         <meshStandardMaterial color="#5c3b2a" metalness={0.16} roughness={0.72} />
+      </mesh>
+      <mesh position={[0.08, -0.12, 0.04]} rotation={[0, 0, Math.PI / 5]}>
+        <torusGeometry args={[0.34, 0.013, 10, 56]} />
+        <meshStandardMaterial color="#d7dde8" metalness={0.3} roughness={0.6} />
       </mesh>
       <mesh scale={1.35}>
         <sphereGeometry args={[0.68, 22, 22]} />
@@ -205,6 +222,22 @@ function Darts() {
   );
 }
 
+function FallbackObject({ type }: { type: FloatingHeroType }) {
+  const tone = useMemo(() => {
+    if (type === "tennis") return "#e0ff76";
+    if (type === "hockey") return "#c9f0ff";
+    if (type === "football") return "#2f8cff";
+    return "#2cd8b7";
+  }, [type]);
+
+  return (
+    <mesh>
+      <sphereGeometry args={[0.48, 24, 24]} />
+      <meshStandardMaterial color={tone} emissive={tone} emissiveIntensity={0.22} metalness={0.38} roughness={0.4} />
+    </mesh>
+  );
+}
+
 export function FloatingHeroObject({ type = "trophy", scale = 1 }: { type?: FloatingHeroType; scale?: number }) {
   const groupRef = useRef<Group>(null);
 
@@ -219,17 +252,19 @@ export function FloatingHeroObject({ type = "trophy", scale = 1 }: { type?: Floa
 
   return (
     <group ref={groupRef} scale={scale}>
-      {type === "generic" ? <Trophy /> : null}
-      {type === "football" ? <Football /> : null}
-      {type === "hockey" ? <Hockey /> : null}
-      {type === "tennis" ? <Tennis /> : null}
-      {type === "basketball" ? <Basketball /> : null}
-      {type === "volleyball" ? <Volleyball /> : null}
-      {type === "baseball" ? <Baseball /> : null}
-      {type === "mma" ? <MMA /> : null}
-      {type === "esports" ? <Esports /> : null}
-      {type === "darts" ? <Darts /> : null}
-      {type === "trophy" ? <Trophy /> : null}
+      <Suspense fallback={<FallbackObject type={type} />}>
+        {type === "generic" ? <Trophy /> : null}
+        {type === "football" ? <Football /> : null}
+        {type === "hockey" ? <Hockey /> : null}
+        {type === "tennis" ? <Tennis /> : null}
+        {type === "basketball" ? <Basketball /> : null}
+        {type === "volleyball" ? <Volleyball /> : null}
+        {type === "baseball" ? <Baseball /> : null}
+        {type === "mma" ? <MMA /> : null}
+        {type === "esports" ? <Esports /> : null}
+        {type === "darts" ? <Darts /> : null}
+        {type === "trophy" ? <Trophy /> : null}
+      </Suspense>
     </group>
   );
 }

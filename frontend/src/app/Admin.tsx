@@ -6,7 +6,9 @@ export function Admin() {
   return (
     <PageTransition>
       <ErrorBoundary fallback={<AdminPage />}>
-        <AdminPage withThree />
+        <div className="pb-app-screen-shell pb-app-screen-admin">
+          <AdminPage withThree />
+        </div>
       </ErrorBoundary>
     </PageTransition>
   );

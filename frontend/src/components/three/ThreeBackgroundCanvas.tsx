@@ -1,5 +1,6 @@
+import { Suspense, useMemo, useRef } from "react";
+
 import { Canvas, useFrame } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
 import type { Group, Points } from "three";
 import * as THREE from "three";
 
@@ -8,8 +9,8 @@ function ParticleCloud() {
   const ringRef = useRef<Group>(null);
 
   const positions = useMemo(() => {
-    const array = new Float32Array(420 * 3);
-    for (let i = 0; i < 420; i += 1) {
+    const array = new Float32Array(280 * 3);
+    for (let i = 0; i < 280; i += 1) {
       const radius = 1.8 + Math.random() * 3.4;
       const theta = Math.random() * Math.PI * 2;
       const y = (Math.random() - 0.5) * 3.2;
@@ -55,6 +56,37 @@ function ParticleCloud() {
   );
 }
 
+function FloatingShapes() {
+  const groupRef = useRef<Group>(null);
+
+  useFrame(({ clock }) => {
+    const group = groupRef.current;
+    if (!group) return;
+    const t = clock.elapsedTime;
+    group.rotation.y = t * 0.08;
+    group.rotation.x = Math.sin(t * 0.26) * 0.06;
+  });
+
+  return (
+    <group ref={groupRef}>
+      <mesh position={[2.9, 1.2, -3.5]}>
+        <icosahedronGeometry args={[0.42, 0]} />
+        <meshStandardMaterial color="#2cd8b7" emissive="#2cd8b7" emissiveIntensity={0.18} metalness={0.56} roughness={0.4} transparent opacity={0.55} />
+      </mesh>
+
+      <mesh position={[-2.8, -1, -3.2]} rotation={[0.3, 0.2, 0.2]}>
+        <octahedronGeometry args={[0.38, 0]} />
+        <meshStandardMaterial color="#2f8cff" emissive="#2f8cff" emissiveIntensity={0.14} metalness={0.5} roughness={0.44} transparent opacity={0.52} />
+      </mesh>
+
+      <mesh position={[0, 1.8, -4.2]} rotation={[0.2, 0.4, 0.1]}>
+        <torusKnotGeometry args={[0.32, 0.08, 70, 12]} />
+        <meshStandardMaterial color="#8effe9" emissive="#2cd8b7" emissiveIntensity={0.22} metalness={0.62} roughness={0.34} transparent opacity={0.36} />
+      </mesh>
+    </group>
+  );
+}
+
 export function ThreeBackgroundCanvas() {
   return (
     <div className="pb-three-global-canvas" aria-hidden="true">
@@ -64,7 +96,10 @@ export function ThreeBackgroundCanvas() {
         <ambientLight intensity={0.36} />
         <pointLight position={[2.6, 2.1, 4]} intensity={0.9} color="#2cd8b7" />
         <pointLight position={[-2.3, -1.4, 3]} intensity={0.65} color="#2f8cff" />
-        <ParticleCloud />
+        <Suspense fallback={null}>
+          <ParticleCloud />
+          <FloatingShapes />
+        </Suspense>
       </Canvas>
     </div>
   );

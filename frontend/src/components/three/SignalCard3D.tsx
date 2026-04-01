@@ -1,8 +1,11 @@
+import { Suspense } from "react";
+
 import { Canvas } from "@react-three/fiber";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 
 import { resolveSportKind, resolveSportLabel, type SportLanguage } from "../../app/sport";
+import { ErrorBoundary } from "../motion/ErrorBoundary";
 import { FloatingHeroObject } from "./FloatingHeroObject";
 
 type CardStatus = "pending" | "won" | "lost" | "refund";
@@ -56,10 +59,11 @@ export function SignalCard3D({
 }) {
   const oddsText = Number.isFinite(odds) ? odds.toFixed(2) : String(odds);
   const modelType = mapSportToObject(sport);
+  const kind = resolveSportKind(sport);
 
   return (
-    <motion.article whileHover={{ y: -4 }} whileTap={{ scale: 0.995 }} transition={{ duration: 0.16, ease: "easeOut" }}>
-      <Link to={to} className="pb-signal3d-card">
+    <motion.article whileHover={{ y: -4, rotateX: 1.6, rotateY: -2.2 }} whileTap={{ scale: 0.992 }} transition={{ duration: 0.16, ease: "easeOut" }} style={{ transformPerspective: 900 }}>
+      <Link to={to} className={`pb-signal3d-card ${kind}`}>
         <div className="pb-signal3d-head">
           <div>
             <small>{resolveSportLabel(sport, language)}</small>
@@ -75,12 +79,16 @@ export function SignalCard3D({
 
         <div className="pb-signal3d-core">
           <div className="pb-signal3d-canvas" aria-hidden="true">
-            <Canvas camera={{ position: [0, 0, 3], fov: 42 }} dpr={[1, 1.3]} gl={{ alpha: true, antialias: true, powerPreference: "low-power" }}>
-              <ambientLight intensity={0.8} />
-              <pointLight position={[2, 1.8, 3]} intensity={1.1} color="#2cd8b7" />
-              <pointLight position={[-2, -1.2, 2.6]} intensity={0.8} color="#2f8cff" />
-              <FloatingHeroObject type={modelType} scale={0.85} />
-            </Canvas>
+            <ErrorBoundary fallback={<div className="pb-home-r3f-fallback">3D</div>}>
+              <Suspense fallback={<div className="pb-home-r3f-fallback">3D</div>}>
+                <Canvas camera={{ position: [0, 0, 3], fov: 42 }} dpr={[1, 1.3]} gl={{ alpha: true, antialias: true, powerPreference: "low-power" }}>
+                  <ambientLight intensity={0.8} />
+                  <pointLight position={[2, 1.8, 3]} intensity={1.1} color="#2cd8b7" />
+                  <pointLight position={[-2, -1.2, 2.6]} intensity={0.8} color="#2f8cff" />
+                  <FloatingHeroObject type={modelType} scale={0.85} />
+                </Canvas>
+              </Suspense>
+            </ErrorBoundary>
           </div>
 
           <div className="pb-signal-v2-odds">

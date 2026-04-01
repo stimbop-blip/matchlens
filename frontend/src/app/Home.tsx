@@ -177,13 +177,13 @@ export function Home() {
       <Layout>
         <HeroPanel
           eyebrow="PIT BET 3D"
-          title={`${language === "ru" ? "Добро пожаловать" : "Welcome back"}, ${displayName}`}
+          title={language === "ru" ? `Добро пожаловать, ${displayName}` : `Welcome, ${displayName}`}
           subtitle={subtitleText}
           right={<span className={`pb-tier-pill ${sub.tariff}`}>{accessLabel(sub.tariff, t)}</span>}
         >
           <div className="pb-home-r3f-hero-grid">
             <div className="pb-home-r3f-hero-copy">
-              <h3>{language === "ru" ? "Командный premium-режим активен" : "Command premium mode is active"}</h3>
+              <h3>{language === "ru" ? "Премиум-панель аналитики активна" : "Premium analytics cockpit is active"}</h3>
               <p>{t("home.hero.subheadline")}</p>
             </div>
 
