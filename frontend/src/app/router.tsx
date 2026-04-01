@@ -1,108 +1,56 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { Suspense, lazy } from "react";
 
-import { clearConsentCache, isConsentAccepted, readConsentCache, writeConsentCache } from "./consent";
-import { api, type UserConsent } from "../services/api";
-import { AdminPage } from "../pages/AdminPage";
-import { FeedPage } from "../pages/FeedPage";
-import { GatePage } from "../pages/GatePage";
-import { HomePage } from "../pages/HomePage";
-import { LanguagePage } from "../pages/LanguagePage";
-import { MenuPage } from "../pages/MenuPage";
-import { NewsDetailsPage } from "../pages/NewsDetailsPage";
-import { NewsPage } from "../pages/NewsPage";
-import { PaymentRefundPage } from "../pages/PaymentRefundPage";
-import { PredictionDetailsPage } from "../pages/PredictionDetailsPage";
-import { ProfilePage } from "../pages/ProfilePage";
-import { ResponsiblePage } from "../pages/ResponsiblePage";
-import { RulesPage } from "../pages/RulesPage";
-import { StatsPage } from "../pages/StatsPage";
-import { SupportInboxPage } from "../pages/SupportInboxPage";
-import { SupportPage } from "../pages/SupportPage";
-import { TariffsPage } from "../pages/TariffsPage";
-import { ThemePage } from "../pages/ThemePage";
+import { useQuery } from "@tanstack/react-query";
+import { Navigate, Route, Routes } from "react-router-dom";
 
-export function AppRouter() {
-  const location = useLocation();
-  const [consent, setConsent] = useState<UserConsent | null>(() => readConsentCache());
-  const [checking, setChecking] = useState(true);
-  const [remoteVerified, setRemoteVerified] = useState(false);
+import { api } from "../lib/api";
 
-  const syncConsent = useCallback(async () => {
-    try {
-      const remote = await api.myConsent();
-      setConsent(remote);
-      writeConsentCache(remote);
-      setRemoteVerified(true);
-      if (!isConsentAccepted(remote)) {
-        clearConsentCache();
-      }
-    } catch {
-      setConsent((prev) => prev ?? readConsentCache());
-    } finally {
-      setChecking(false);
-    }
-  }, []);
+const Home = lazy(() => import("./Home").then((m) => ({ default: m.Home })));
+const Signals = lazy(() => import("./Signals").then((m) => ({ default: m.Signals })));
+const Tariffs = lazy(() => import("./Tariffs").then((m) => ({ default: m.Tariffs })));
+const Profile = lazy(() => import("./Profile").then((m) => ({ default: m.Profile })));
+const Admin = lazy(() => import("./Admin").then((m) => ({ default: m.Admin })));
 
-  useEffect(() => {
-    void syncConsent();
-  }, [syncConsent]);
+function RequireAdmin({ children }: { children: React.ReactNode }) {
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["profile", "guard-admin"],
+    queryFn: api.getProfile,
+    staleTime: 30_000,
+  });
 
-  useEffect(() => {
-    if (checking) return;
-    void syncConsent();
-  }, [location.pathname, checking, syncConsent]);
-
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      void syncConsent();
-    }, 45000);
-    return () => {
-      window.clearInterval(timer);
-    };
-  }, [syncConsent]);
-
-  const canEnterApp = useMemo(() => remoteVerified && isConsentAccepted(consent), [remoteVerified, consent]);
-
-  const handleAccepted = (value: UserConsent) => {
-    setConsent(value);
-    writeConsentCache(value);
-    setRemoteVerified(true);
-  };
-
-  if (!canEnterApp) {
+  if (isLoading) {
     return (
-      <Routes>
-        <Route path="/gate" element={<GatePage consent={consent} checkingRemote={checking && !remoteVerified} onAccepted={handleAccepted} />} />
-        <Route path="/menu/rules" element={<RulesPage standalone />} />
-        <Route path="/menu/responsible" element={<ResponsiblePage standalone />} />
-        <Route path="/menu/payment-refund" element={<PaymentRefundPage standalone />} />
-        <Route path="*" element={<Navigate to="/gate" replace />} />
-      </Routes>
+      <div className="glass rounded-2xl border border-[var(--border)] p-4 text-sm text-[var(--text-secondary)]">
+        Checking admin access...
+      </div>
     );
   }
 
+  if (isError || !data || data.role !== "admin") {
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
+}
+
+export function AppRouter() {
   return (
-    <Routes>
-      <Route path="/gate" element={<Navigate to="/" replace />} />
-      <Route path="/" element={<HomePage />} />
-      <Route path="/feed" element={<FeedPage />} />
-      <Route path="/feed/:predictionId" element={<PredictionDetailsPage />} />
-      <Route path="/stats" element={<StatsPage />} />
-      <Route path="/tariffs" element={<TariffsPage />} />
-      <Route path="/profile" element={<ProfilePage />} />
-      <Route path="/menu" element={<MenuPage />} />
-      <Route path="/menu/language" element={<LanguagePage />} />
-      <Route path="/menu/theme" element={<ThemePage />} />
-      <Route path="/menu/rules" element={<RulesPage />} />
-      <Route path="/menu/responsible" element={<ResponsiblePage />} />
-      <Route path="/menu/payment-refund" element={<PaymentRefundPage />} />
-      <Route path="/news" element={<NewsPage />} />
-      <Route path="/news/:newsId" element={<NewsDetailsPage />} />
-      <Route path="/support" element={<SupportPage />} />
-      <Route path="/support/inbox" element={<SupportInboxPage />} />
-      <Route path="/admin" element={<AdminPage />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <Suspense fallback={<div className="glass rounded-2xl p-4 text-sm text-[var(--text-secondary)]">Loading...</div>}>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/signals" element={<Signals />} />
+        <Route path="/tariffs" element={<Tariffs />} />
+        <Route path="/profile/*" element={<Profile />} />
+        <Route
+          path="/admin"
+          element={
+            <RequireAdmin>
+              <Admin />
+            </RequireAdmin>
+          }
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
   );
 }

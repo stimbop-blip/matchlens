@@ -2,21 +2,18 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 
-import { LanguageProvider } from "./app/language";
-import { AppRouter } from "./app/router";
-import { initTelegramWebApp } from "./services/telegram";
+import App from "./app/App";
+import { bootstrapTelegramApp } from "./lib/telegram";
 import "./styles/globals.css";
 
 async function bootstrap() {
-  await initTelegramWebApp();
+  bootstrapTelegramApp();
 
   ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
     <React.StrictMode>
-      <LanguageProvider>
-        <BrowserRouter>
-          <AppRouter />
-        </BrowserRouter>
-      </LanguageProvider>
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
     </React.StrictMode>
   );
 }
