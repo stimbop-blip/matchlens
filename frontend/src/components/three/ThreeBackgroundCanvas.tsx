@@ -64,9 +64,12 @@ export function ThreeBackgroundCanvas() {
 
   return (
     <div className="canvas-root">
-      <Canvas camera={{ position: [0, 0, 6], fov: 54 }} dpr={dpr}>
-        <color attach="background" args={[isDark ? "#0a0a0a" : "#f8f9fa"]} />
-        <fog attach="fog" args={[isDark ? "#0a0a0a" : "#f8f9fa", 7, 16]} />
+      <Canvas
+        camera={{ position: [0, 0, 6], fov: 54 }}
+        dpr={dpr}
+        gl={{ alpha: true, antialias: true, powerPreference: "low-power" }}
+        onCreated={({ gl }) => gl.setClearColor(0x000000, 0)}
+      >
         <ambientLight intensity={isDark ? 0.45 : 0.7} />
         <pointLight position={[3, 4, 4]} intensity={isDark ? 1.5 : 1.25} color={isDark ? "#00ff9d" : "#00cc7a"} />
         <pointLight position={[-4, -2, 5]} intensity={1.1} color="#00b8ff" />

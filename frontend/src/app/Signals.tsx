@@ -6,6 +6,7 @@ import { Suspense, lazy, useMemo, useState } from "react";
 import { useHaptics } from "../hooks/useHaptics";
 import { api, type Signal } from "../lib/api";
 import { useI18n } from "../lib/i18n";
+import { ThreeFallbackBoundary } from "../components/three/ThreeFallbackBoundary";
 
 const SignalCard3D = lazy(() => import("../components/three/SignalCard3D").then((m) => ({ default: m.SignalCard3D })));
 
@@ -173,9 +174,11 @@ export function Signals() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.34, delay: 0.05 + idx * 0.05 }}
           >
-            <Suspense fallback={<section className="glass p-4 text-sm text-[var(--text-secondary)]">{t("common.loadingSignal")}</section>}>
-              <SignalCard3D signal={signal} onOpen={() => h.soft()} />
-            </Suspense>
+            <ThreeFallbackBoundary fallback={<section className="glass p-4 text-sm text-[var(--text-secondary)]">Signal unavailable</section>}>
+              <Suspense fallback={<section className="glass p-4 text-sm text-[var(--text-secondary)]">{t("common.loadingSignal")}</section>}>
+                <SignalCard3D signal={signal} onOpen={() => h.soft()} />
+              </Suspense>
+            </ThreeFallbackBoundary>
           </motion.div>
         ))}
       </section>

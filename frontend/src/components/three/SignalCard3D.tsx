@@ -6,6 +6,7 @@ import { useHaptics } from "../../hooks/useHaptics";
 import { type Signal } from "../../lib/api";
 import { useI18n } from "../../lib/i18n";
 import { FloatingHeroObject } from "./FloatingHeroObject";
+import { ThreeFallbackBoundary } from "./ThreeFallbackBoundary";
 
 type Props = {
   signal: Signal;
@@ -87,14 +88,21 @@ export function SignalCard3D({ signal, onOpen }: Props) {
         </motion.div>
 
         <div className="h-[110px] w-[110px] self-center overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]/50">
-          <Canvas camera={{ position: [0, 0, 3.2], fov: 42 }} dpr={[1, 1.8]}>
-            <ambientLight intensity={0.6} />
-            <pointLight position={[2, 2, 3]} intensity={1.2} color="#00ff9d" />
-            <pointLight position={[-2, -1, 2]} intensity={0.8} color="#00b8ff" />
-            <Suspense fallback={null}>
-              <FloatingHeroObject type={toSportObject(signal.sport)} scale={0.85} />
-            </Suspense>
-          </Canvas>
+          <ThreeFallbackBoundary fallback={<div className="flex h-full items-center justify-center text-[10px] text-[var(--text-secondary)]">3D</div>}>
+            <Canvas
+              camera={{ position: [0, 0, 3.2], fov: 42 }}
+              dpr={[1, 1.6]}
+              gl={{ alpha: true, antialias: true, powerPreference: "low-power" }}
+              onCreated={({ gl }) => gl.setClearColor(0x000000, 0)}
+            >
+              <ambientLight intensity={0.6} />
+              <pointLight position={[2, 2, 3]} intensity={1.2} color="#00ff9d" />
+              <pointLight position={[-2, -1, 2]} intensity={0.8} color="#00b8ff" />
+              <Suspense fallback={null}>
+                <FloatingHeroObject type={toSportObject(signal.sport)} scale={0.85} />
+              </Suspense>
+            </Canvas>
+          </ThreeFallbackBoundary>
         </div>
       </div>
 

@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import * as THREE from "three";
 
 import { useAppTheme } from "../../lib/theme";
+import { ThreeFallbackBoundary } from "./ThreeFallbackBoundary";
 
 type ROIChart3DProps = {
   values: number[];
@@ -63,9 +64,16 @@ export function ROIChart3D({ values, height = 220, className }: ROIChart3DProps)
 
   return (
     <div className={className} style={{ height, borderRadius: 22, overflow: "hidden", border: "1px solid var(--border)", background: "color-mix(in srgb, var(--card) 86%, transparent)" }}>
-      <Canvas camera={{ position: [0, 1, 6], fov: 40 }} dpr={[1, 1.8]}>
-        <Scene values={safeValues} />
-      </Canvas>
+      <ThreeFallbackBoundary fallback={<div className="flex h-full items-center justify-center text-xs text-[var(--text-secondary)]">3D chart unavailable</div>}>
+        <Canvas
+          camera={{ position: [0, 1, 6], fov: 40 }}
+          dpr={[1, 1.6]}
+          gl={{ alpha: true, antialias: true, powerPreference: "low-power" }}
+          onCreated={({ gl }) => gl.setClearColor(0x000000, 0)}
+        >
+          <Scene values={safeValues} />
+        </Canvas>
+      </ThreeFallbackBoundary>
     </div>
   );
 }

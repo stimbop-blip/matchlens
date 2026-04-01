@@ -1,4 +1,4 @@
-import { Html, useGLTF } from "@react-three/drei";
+import { useGLTF } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { Component, Suspense, useMemo, useRef } from "react";
 import type { ReactNode } from "react";
@@ -50,7 +50,8 @@ scheduleSafePreload();
 
 function Model({ type }: { type: HeroObjectType }) {
   const gltf = useGLTF(MODEL_MAP[type]);
-  return <primitive object={gltf.scene.clone()} />;
+  const scene = useMemo(() => gltf.scene.clone(true), [gltf.scene]);
+  return <primitive object={scene} />;
 }
 
 function FallbackMesh({ color = "#00ff9d" }: { color?: string }) {
@@ -94,16 +95,6 @@ class ModelBoundary extends Component<ModelBoundaryProps, ModelBoundaryState> {
   }
 }
 
-function LoaderFallback() {
-  return (
-    <Html center>
-      <div className="rounded-full border border-[var(--border)] bg-[var(--surface)]/90 px-3 py-1 text-[11px] text-[var(--text-secondary)]">
-        Loading 3D...
-      </div>
-    </Html>
-  );
-}
-
 export function FloatingHeroObject({ type = "trophy", scale = 1, glow = "#00ff9d" }: Props) {
   const groupRef = useRef<THREE.Group>(null);
   const glowRef = useRef<THREE.Mesh>(null);
@@ -125,7 +116,7 @@ export function FloatingHeroObject({ type = "trophy", scale = 1, glow = "#00ff9d
   return (
     <group ref={groupRef} scale={scale}>
       <ModelBoundary fallback={<FallbackMesh color={glow} />}>
-        <Suspense fallback={<LoaderFallback />}>
+        <Suspense fallback={<FallbackMesh color={glow} />}>
           <Model type={type} />
         </Suspense>
       </ModelBoundary>

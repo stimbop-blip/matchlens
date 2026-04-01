@@ -7,6 +7,7 @@ import { Suspense, lazy, useMemo } from "react";
 import { useHaptics } from "../hooks/useHaptics";
 import { api, type Signal } from "../lib/api";
 import { useI18n } from "../lib/i18n";
+import { ThreeFallbackBoundary } from "../components/three/ThreeFallbackBoundary";
 
 const FloatingHeroObject = lazy(() => import("../components/three/FloatingHeroObject").then((m) => ({ default: m.FloatingHeroObject })));
 const SignalCard3D = lazy(() => import("../components/three/SignalCard3D").then((m) => ({ default: m.SignalCard3D })));
@@ -62,7 +63,7 @@ export function Home() {
   const signalsQuery = useQuery({ queryKey: ["signals", "home-latest"], queryFn: () => api.getSignals({ status: "new" }) });
 
   const signals = useMemo(() => (signalsQuery.data?.length ? signalsQuery.data : fallbackSignals).slice(0, 3), [signalsQuery.data]);
-  const progress = profileQuery.data?.subscription.progressPercent ?? 64;
+  const progress = profileQuery.data?.subscription?.progressPercent ?? 64;
   const titleName = profileQuery.data?.firstName || profileQuery.data?.username || "Member";
 
   return (
@@ -92,27 +93,31 @@ export function Home() {
             </div>
           </div>
           <div className="h-[128px] w-[128px] shrink-0 overflow-hidden rounded-2xl border border-[var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_78%,transparent)]">
-            <Canvas
-              camera={{ position: [0, 0, 3], fov: 38 }}
-              dpr={[1, 1.8]}
-              gl={{ alpha: true, antialias: true }}
-              onCreated={({ gl }) => gl.setClearColor(0x000000, 0)}
-            >
-              <ambientLight intensity={0.75} />
-              <pointLight position={[2, 2, 3]} intensity={1.35} color="#00ff9d" />
-              <pointLight position={[-2, -1, 2]} intensity={1.0} color="#00b8ff" />
-              <Suspense fallback={null}>
-                <FloatingHeroObject type="trophy" scale={0.95} />
-              </Suspense>
-            </Canvas>
+            <ThreeFallbackBoundary fallback={<div className="flex h-full items-center justify-center text-[10px] text-[var(--text-secondary)]">3D</div>}>
+              <Canvas
+                camera={{ position: [0, 0, 3], fov: 38 }}
+                dpr={[1, 1.6]}
+                gl={{ alpha: true, antialias: true, powerPreference: "low-power" }}
+                onCreated={({ gl }) => gl.setClearColor(0x000000, 0)}
+              >
+                <ambientLight intensity={0.75} />
+                <pointLight position={[2, 2, 3]} intensity={1.35} color="#00ff9d" />
+                <pointLight position={[-2, -1, 2]} intensity={1.0} color="#00b8ff" />
+                <Suspense fallback={null}>
+                  <FloatingHeroObject type="trophy" scale={0.95} />
+                </Suspense>
+              </Canvas>
+            </ThreeFallbackBoundary>
           </div>
         </div>
       </motion.section>
 
       <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.04 }}>
-        <Suspense fallback={<section className="glass p-4 text-sm text-[var(--text-secondary)]">{t("common.loading3d")}</section>}>
-          <SubscriptionProgress3D percent={progress} label="Premium subscription" caption={t("profile.premiumActive")} height={220} />
-        </Suspense>
+        <ThreeFallbackBoundary fallback={<section className="glass p-4 text-sm text-[var(--text-secondary)]">3D unavailable</section>}>
+          <Suspense fallback={<section className="glass p-4 text-sm text-[var(--text-secondary)]">{t("common.loading3d")}</section>}>
+            <SubscriptionProgress3D percent={progress} label="Premium subscription" caption={t("profile.premiumActive")} height={220} />
+          </Suspense>
+        </ThreeFallbackBoundary>
       </motion.section>
 
       <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }} className="glass p-3">
@@ -141,9 +146,11 @@ export function Home() {
 
         <div className="space-y-2.5">
           {signals.slice(0, 3).map((signal) => (
-            <Suspense key={signal.id} fallback={<section className="glass p-4 text-sm text-[var(--text-secondary)]">{t("common.loadingSignal")}</section>}>
-              <SignalCard3D signal={signal} onOpen={() => h.soft()} />
-            </Suspense>
+            <ThreeFallbackBoundary key={signal.id} fallback={<section className="glass p-4 text-sm text-[var(--text-secondary)]">Signal unavailable</section>}>
+              <Suspense fallback={<section className="glass p-4 text-sm text-[var(--text-secondary)]">{t("common.loadingSignal")}</section>}>
+                <SignalCard3D signal={signal} onOpen={() => h.soft()} />
+              </Suspense>
+            </ThreeFallbackBoundary>
           ))}
         </div>
       </motion.section>

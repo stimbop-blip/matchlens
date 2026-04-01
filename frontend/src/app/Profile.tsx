@@ -8,6 +8,7 @@ import { useHaptics } from "../hooks/useHaptics";
 import { api } from "../lib/api";
 import { useI18n } from "../lib/i18n";
 import { useAppTheme } from "../lib/theme";
+import { ThreeFallbackBoundary } from "../components/three/ThreeFallbackBoundary";
 
 const FloatingHeroObject = lazy(() => import("../components/three/FloatingHeroObject").then((m) => ({ default: m.FloatingHeroObject })));
 const ROIChart3D = lazy(() => import("../components/three/ROIChart3D").then((m) => ({ default: m.ROIChart3D })));
@@ -32,14 +33,21 @@ export function Profile() {
       <motion.section initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="glass neon p-4">
         <div className="flex items-center gap-3">
           <div className="h-[84px] w-[84px] overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]/80">
-            <Canvas camera={{ position: [0, 0, 3.2], fov: 40 }} dpr={[1, 1.8]}>
-              <ambientLight intensity={0.8} />
-              <pointLight position={[2, 2, 3]} intensity={1.2} color="#00ff9d" />
-              <pointLight position={[-2, -1, 2]} intensity={1.0} color="#00b8ff" />
-              <Suspense fallback={null}>
-                <FloatingHeroObject type="trophy" scale={0.72} />
-              </Suspense>
-            </Canvas>
+            <ThreeFallbackBoundary fallback={<div className="flex h-full items-center justify-center text-[10px] text-[var(--text-secondary)]">3D</div>}>
+              <Canvas
+                camera={{ position: [0, 0, 3.2], fov: 40 }}
+                dpr={[1, 1.6]}
+                gl={{ alpha: true, antialias: true, powerPreference: "low-power" }}
+                onCreated={({ gl }) => gl.setClearColor(0x000000, 0)}
+              >
+                <ambientLight intensity={0.8} />
+                <pointLight position={[2, 2, 3]} intensity={1.2} color="#00ff9d" />
+                <pointLight position={[-2, -1, 2]} intensity={1.0} color="#00b8ff" />
+                <Suspense fallback={null}>
+                  <FloatingHeroObject type="trophy" scale={0.72} />
+                </Suspense>
+              </Canvas>
+            </ThreeFallbackBoundary>
           </div>
           <div className="min-w-0">
             <p className="text-[11px] uppercase tracking-[0.14em] text-[var(--text-secondary)]">{t("profile.title")}</p>
@@ -49,9 +57,11 @@ export function Profile() {
         </div>
       </motion.section>
 
-      <Suspense fallback={<section className="glass p-4 text-sm text-[var(--text-secondary)]">{t("common.loading3d")}</section>}>
-        <SubscriptionProgress3D percent={p?.subscription.progressPercent ?? 72} label={t("profile.accessLevel")} caption={t("profile.premiumActive")} height={195} />
-      </Suspense>
+      <ThreeFallbackBoundary fallback={<section className="glass p-4 text-sm text-[var(--text-secondary)]">3D unavailable</section>}>
+        <Suspense fallback={<section className="glass p-4 text-sm text-[var(--text-secondary)]">{t("common.loading3d")}</section>}>
+          <SubscriptionProgress3D percent={p?.subscription?.progressPercent ?? 72} label={t("profile.accessLevel")} caption={t("profile.premiumActive")} height={195} />
+        </Suspense>
+      </ThreeFallbackBoundary>
 
       <section className="glass p-2">
         <div className="grid grid-cols-3 gap-2">
@@ -77,9 +87,11 @@ export function Profile() {
             <h2 className="text-base font-semibold text-[var(--text-primary)]">{t("profile.roiAnalytics")}</h2>
             <span className="inline-flex items-center gap-1 text-xs text-[var(--text-secondary)]"><TrendingUp size={13} />{t("profile.live")}</span>
           </div>
-          <Suspense fallback={<div className="rounded-xl border border-[var(--border)] p-3 text-xs text-[var(--text-secondary)]">{t("common.loadingChart")}</div>}>
-            <ROIChart3D values={roiValues} height={220} />
-          </Suspense>
+          <ThreeFallbackBoundary fallback={<div className="rounded-xl border border-[var(--border)] p-3 text-xs text-[var(--text-secondary)]">Chart unavailable</div>}>
+            <Suspense fallback={<div className="rounded-xl border border-[var(--border)] p-3 text-xs text-[var(--text-secondary)]">{t("common.loadingChart")}</div>}>
+              <ROIChart3D values={roiValues} height={220} />
+            </Suspense>
+          </ThreeFallbackBoundary>
         </section>
       ) : null}
 

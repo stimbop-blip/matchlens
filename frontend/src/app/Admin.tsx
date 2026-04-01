@@ -5,6 +5,7 @@ import { Suspense, lazy } from "react";
 
 import { api } from "../lib/api";
 import { useI18n } from "../lib/i18n";
+import { ThreeFallbackBoundary } from "../components/three/ThreeFallbackBoundary";
 
 const ROIChart3D = lazy(() => import("../components/three/ROIChart3D").then((m) => ({ default: m.ROIChart3D })));
 
@@ -35,9 +36,11 @@ export function Admin() {
 
       <section className="glass p-3">
         <h2 className="text-base font-semibold text-[var(--text-primary)]">{t("admin.roiTrend")}</h2>
-        <Suspense fallback={<div className="rounded-xl border border-[var(--border)] p-3 text-xs text-[var(--text-secondary)]">{t("common.loadingChart")}</div>}>
-          <ROIChart3D values={[6, 8, 10, 9, 12, 13, 15, 14, 17, 18, 21, 23]} height={220} />
-        </Suspense>
+        <ThreeFallbackBoundary fallback={<div className="rounded-xl border border-[var(--border)] p-3 text-xs text-[var(--text-secondary)]">Chart unavailable</div>}>
+          <Suspense fallback={<div className="rounded-xl border border-[var(--border)] p-3 text-xs text-[var(--text-secondary)]">{t("common.loadingChart")}</div>}>
+            <ROIChart3D values={[6, 8, 10, 9, 12, 13, 15, 14, 17, 18, 21, 23]} height={220} />
+          </Suspense>
+        </ThreeFallbackBoundary>
       </section>
     </div>
   );

@@ -1,5 +1,6 @@
 import { Canvas } from "@react-three/fiber";
 import { motion } from "framer-motion";
+import { ThreeFallbackBoundary } from "./ThreeFallbackBoundary";
 
 type SubscriptionProgress3DProps = {
   percent: number;
@@ -32,12 +33,19 @@ export function SubscriptionProgress3D({ percent, label = "Subscription", captio
   return (
     <div className="glass neon relative overflow-hidden" style={{ height, borderRadius: 22 }}>
       <div className="absolute inset-0">
-        <Canvas camera={{ position: [0, 0, 2.6], fov: 44 }} dpr={[1, 1.8]}>
-          <ambientLight intensity={0.9} />
-          <pointLight position={[2, 2, 3]} intensity={1.4} color="#00ff9d" />
-          <pointLight position={[-2, -1, 2]} intensity={1.0} color="#00b8ff" />
-          <Ring progress={clamped} />
-        </Canvas>
+        <ThreeFallbackBoundary fallback={<div className="flex h-full items-center justify-center text-xs text-[var(--text-secondary)]">3D progress unavailable</div>}>
+          <Canvas
+            camera={{ position: [0, 0, 2.6], fov: 44 }}
+            dpr={[1, 1.6]}
+            gl={{ alpha: true, antialias: true, powerPreference: "low-power" }}
+            onCreated={({ gl }) => gl.setClearColor(0x000000, 0)}
+          >
+            <ambientLight intensity={0.9} />
+            <pointLight position={[2, 2, 3]} intensity={1.4} color="#00ff9d" />
+            <pointLight position={[-2, -1, 2]} intensity={1.0} color="#00b8ff" />
+            <Ring progress={clamped} />
+          </Canvas>
+        </ThreeFallbackBoundary>
       </div>
 
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 p-4">
