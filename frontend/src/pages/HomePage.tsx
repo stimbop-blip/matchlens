@@ -1,14 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { useI18n } from "../app/i18n";
+import { resolveSportLabel } from "../app/sport";
 import { countPendingPayments, resolveSubscriptionSnapshot } from "../app/subscription";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
 import { HeroPanel } from "../components/premium/HeroPanel";
 import { PremiumKpi } from "../components/premium/PremiumKpi";
 import { PremiumRing } from "../components/premium/PremiumRing";
-import { SignalCard } from "../components/premium/SignalCard";
 import { RocketLoader, SkeletonBlock, Sparkline } from "../components/ui";
 import { api, type MyPayment, type NewsPost, type Prediction, type PublicStats, type ReferralStats } from "../services/api";
 
@@ -21,6 +21,24 @@ type TodaySummary = {
   settledToday: number;
   source: "realtime" | "fallback";
 };
+
+type FeaturedSignal = {
+  id: string;
+  to: string;
+  matchName: string;
+  league: string;
+  sportType: string;
+  signal: string;
+  odds: number;
+  mode: "live" | "prematch";
+  accessLevel: "free" | "premium" | "vip";
+  kickoff: string;
+  note: string;
+};
+
+const HomeHeroScene3D = lazy(() => import("../components/three/HomeScenes").then((module) => ({ default: module.HomeHeroScene3D })));
+const HomeSignalScene3D = lazy(() => import("../components/three/HomeScenes").then((module) => ({ default: module.HomeSignalScene3D })));
+const HomeSubscriptionScene3D = lazy(() => import("../components/three/HomeScenes").then((module) => ({ default: module.HomeSubscriptionScene3D })));
 
 function parseErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error && error.message.trim()) return error.message;
@@ -123,19 +141,6 @@ function buildNewsPreview(body: string, maxLength = 170): string {
   return `${compact.slice(0, Math.max(0, maxLength - 1)).trim()}...`;
 }
 
-function predictionStatusLabel(status: Prediction["status"], t: (key: string) => string): string {
-  if (status === "won") return t("feed.status.won");
-  if (status === "lost") return t("feed.status.lost");
-  if (status === "refund") return t("feed.status.refund");
-  return t("feed.status.pending");
-}
-
-function predictionRiskLabel(level: string, t: (key: string) => string): string {
-  if (level === "low") return t("common.risk.low");
-  if (level === "high") return t("common.risk.high");
-  return t("common.risk.medium");
-}
-
 function predictionModeLabel(mode: Prediction["mode"], t: (key: string) => string): string {
   if (mode === "live") return t("common.live");
   return t("common.prematch");
@@ -154,6 +159,86 @@ function byEventStartAt(left: Prediction, right: Prediction): number {
   const safeLeft = Number.isNaN(leftDate) ? Number.MAX_SAFE_INTEGER : leftDate;
   const safeRight = Number.isNaN(rightDate) ? Number.MAX_SAFE_INTEGER : rightDate;
   return safeLeft - safeRight;
+}
+
+function featuredFallbackSignals(language: "ru" | "en"): FeaturedSignal[] {
+  const now = new Date();
+  const inTwoHours = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+  const inFiveHours = new Date(now.getTime() + 5 * 60 * 60 * 1000);
+
+  const fallbackKickoffOne = inTwoHours.toLocaleString(language === "ru" ? "ru-RU" : "en-US", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  const fallbackKickoffTwo = inFiveHours.toLocaleString(language === "ru" ? "ru-RU" : "en-US", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  if (language === "ru") {
+    return [
+      {
+        id: "featured-fallback-1",
+        to: "/feed",
+        matchName: "Real Madrid - Inter",
+        league: "UEFA Champions League",
+        sportType: "football",
+        signal: "Тотал Больше 2.5",
+        odds: 1.88,
+        mode: "prematch",
+        accessLevel: "premium",
+        kickoff: fallbackKickoffOne,
+        note: "Линия растет по обеим сторонам, приоритетный прематч сетап.",
+      },
+      {
+        id: "featured-fallback-2",
+        to: "/feed",
+        matchName: "Sinner - Rublev",
+        league: "ATP 500",
+        sportType: "tennis",
+        signal: "Победа Sinner",
+        odds: 1.72,
+        mode: "live",
+        accessLevel: "vip",
+        kickoff: fallbackKickoffTwo,
+        note: "Темп розыгрышей и прием подают сильный live сигнал.",
+      },
+    ];
+  }
+
+  return [
+    {
+      id: "featured-fallback-1",
+      to: "/feed",
+      matchName: "Real Madrid - Inter",
+      league: "UEFA Champions League",
+      sportType: "football",
+      signal: "Total Over 2.5",
+      odds: 1.88,
+      mode: "prematch",
+      accessLevel: "premium",
+      kickoff: fallbackKickoffOne,
+      note: "Line pressure builds on both sides, premium pre-match setup.",
+    },
+    {
+      id: "featured-fallback-2",
+      to: "/feed",
+      matchName: "Sinner - Rublev",
+      league: "ATP 500",
+      sportType: "tennis",
+      signal: "Sinner to win",
+      odds: 1.72,
+      mode: "live",
+      accessLevel: "vip",
+      kickoff: fallbackKickoffTwo,
+      note: "Rally tempo and return profile indicate a strong live edge.",
+    },
+  ];
 }
 
 function storyIcon(type: "line" | "odds" | "pattern" | "selection") {
@@ -287,12 +372,30 @@ export function HomePage() {
 
   const previewNews = useMemo(() => news.filter((item) => item.is_published).slice(0, 3), [news]);
 
-  const featuredSignals = useMemo(() => {
+  const featuredSignals = useMemo<FeaturedSignal[]>(() => {
     const sorted = [...predictions].sort(byEventStartAt);
     const pending = sorted.filter((item) => item.status === "pending");
-    if (pending.length >= 2) return pending.slice(0, 2);
-    return sorted.slice(0, 2);
-  }, [predictions]);
+    const source = pending.length >= 2 ? pending : sorted;
+
+    const selected = source.slice(0, 2).map((item) => ({
+      id: item.id,
+      to: `/feed/${item.id}`,
+      matchName: item.match_name,
+      league: item.league || t("feed.noLeague"),
+      sportType: item.sport_type,
+      signal: item.signal_type,
+      odds: item.odds,
+      mode: item.mode,
+      accessLevel: item.access_level,
+      kickoff: formatDate(item.event_start_at, language, t("common.noDate")),
+      note: predictionTeaser(item.short_description, t("feed.teaserFallback")),
+    }));
+
+    if (selected.length >= 2) return selected;
+
+    const fallback = featuredFallbackSignals(language);
+    return [...selected, ...fallback.slice(selected.length, 2)];
+  }, [language, predictions, t]);
 
   const pulseValues = useMemo(() => {
     const roi = stats?.roi ?? 0;
@@ -327,11 +430,11 @@ export function HomePage() {
         subtitle={t("home.hero.subheadline")}
         right={<span className={`pb-tier-pill ${sub.tariff}`}>{tariffLabel(sub.tariff, t)}</span>}
       >
-        <div className="pb-overview-hero-3d" aria-hidden="true">
-          <div className="pb-overview-trophy-3d">
-            <span className="pb-overview-trophy-crown" />
-            <span className="pb-overview-trophy-core" />
-            <span className="pb-overview-trophy-base" />
+        <div className="pb-overview-hero-3d">
+          <div className="pb-overview-trophy-3d" aria-hidden="true">
+            <Suspense fallback={<div className="pb-home3d-canvas-fallback" />}>
+              <HomeHeroScene3D />
+            </Suspense>
           </div>
           <div className="pb-overview-hero-stats">
             <article>
@@ -341,6 +444,10 @@ export function HomePage() {
             <article>
               <small>{t("home.performance.hit")}</small>
               <strong>{hitRateText}</strong>
+            </article>
+            <article>
+              <small>{t("home.today.active")}</small>
+              <strong>{today.activeSignals}</strong>
             </article>
           </div>
         </div>
@@ -373,7 +480,7 @@ export function HomePage() {
         </div>
 
         {summaryLoading ? (
-          <div className="pb-overview-featured-skeleton" aria-hidden="true">
+          <div className="pb-home3d-featured-skeleton" aria-hidden="true">
             <SkeletonBlock className="h-84" />
             <SkeletonBlock className="h-84" />
           </div>
@@ -382,27 +489,34 @@ export function HomePage() {
         {!summaryLoading && featuredSignals.length === 0 ? <p className="pb-empty-state">{summaryError || t("feed.empty")}</p> : null}
 
         {!summaryLoading && featuredSignals.length > 0 ? (
-          <div className="pb-overview-featured-grid">
+          <div className="pb-home3d-featured-grid">
             {featuredSignals.map((item, index) => (
-              <div key={item.id} className={`pb-overview-featured-card ${index === 0 ? "left" : "right"}`}>
-                <SignalCard
-                  to={`/feed/${item.id}`}
-                  title={item.match_name}
-                  league={item.league || t("feed.noLeague")}
-                  sport={item.sport_type}
-                  mode={predictionModeLabel(item.mode, t)}
-                  kickoff={formatDate(item.event_start_at, language, t("common.noDate"))}
-                  signal={item.signal_type}
-                  odds={item.odds}
-                  oddsLabel={t("feed.label.odds")}
-                  risk={predictionRiskLabel(item.risk_level, t)}
-                  status={item.status}
-                  statusLabel={predictionStatusLabel(item.status, t)}
-                  accessLabel={tariffLabel(item.access_level, t)}
-                  note={predictionTeaser(item.short_description, t("feed.teaserFallback"))}
-                  language={language}
-                />
-              </div>
+              <Link key={item.id} className={`pb-home3d-match-card ${index === 0 ? "left" : "right"}`} to={item.to}>
+                <div className="pb-home3d-match-head">
+                  <span>{resolveSportLabel(item.sportType, language)}</span>
+                  <span className={`pb-home3d-match-mode ${item.mode}`}>{predictionModeLabel(item.mode, t)}</span>
+                </div>
+
+                <h4>{item.matchName}</h4>
+                <p>{item.league}</p>
+
+                <div className="pb-home3d-match-scene" aria-hidden="true">
+                  <Suspense fallback={<div className="pb-home3d-canvas-fallback" />}>
+                    <HomeSignalScene3D sport={item.sportType} />
+                  </Suspense>
+                </div>
+
+                <div className="pb-home3d-match-kpi">
+                  <span>
+                    {t("feed.label.odds")}: <b>{item.odds.toFixed(2)}</b>
+                  </span>
+                  <span>{tariffLabel(item.accessLevel, t)}</span>
+                  <span>{item.kickoff}</span>
+                </div>
+
+                <small>{item.signal}</small>
+                <small>{item.note}</small>
+              </Link>
             ))}
           </div>
         ) : null}
@@ -448,7 +562,14 @@ export function HomePage() {
         </div>
 
         <div className="pb-overview-access-grid">
-          <PremiumRing value={accessProgress} label={t("home.access.openNow")} caption={accessNowLabel(sub.tariff, t)} tone={sub.tariff === "vip" ? "vip" : "accent"} />
+          <div className="pb-home3d-access-visual">
+            <div className="pb-home3d-access-scene" aria-hidden="true">
+              <Suspense fallback={<div className="pb-home3d-canvas-fallback" />}>
+                <HomeSubscriptionScene3D percent={accessProgress} />
+              </Suspense>
+            </div>
+            <PremiumRing value={accessProgress} label={t("home.access.openNow")} caption={accessNowLabel(sub.tariff, t)} tone={sub.tariff === "vip" ? "vip" : "accent"} />
+          </div>
 
           <div className="pb-overview-access-metrics">
             <PremiumKpi label={t("home.access.tariff")} value={tariffLabel(sub.tariff, t)} tone={sub.tariff === "vip" ? "vip" : "accent"} />
