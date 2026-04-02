@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { Grid2x2, ListChecks, Newspaper, ShieldCheck, Sparkles, Wallet } from "lucide-react";
 
 import { useI18n } from "./i18n";
 import { resolveSportLabel } from "./sport";
@@ -9,17 +10,6 @@ import { Layout } from "../components/Layout";
 import { PageTransition } from "../components/motion/PageTransition";
 import { RocketLoader } from "../components/ui";
 import { api, type NewsPost, type Prediction, type PublicStats } from "../services/api";
-
-function formatDate(value: string, language: "ru" | "en"): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString(language === "ru" ? "ru-RU" : "en-US", {
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 function predictionRecency(prediction: Prediction): number {
   const publishedMs = prediction.published_at ? new Date(prediction.published_at).getTime() : 0;
@@ -51,12 +41,6 @@ function statusLabel(status: Prediction["status"], t: (key: string) => string): 
   if (status === "lost") return t("feed.status.lost");
   if (status === "refund") return t("feed.status.refund");
   return t("feed.status.pending");
-}
-
-function riskLabel(level: string, t: (key: string) => string): string {
-  if (level === "low") return t("common.risk.low");
-  if (level === "high") return t("common.risk.high");
-  return t("common.risk.medium");
 }
 
 function accessLabel(level: Prediction["access_level"], t: (key: string) => string): string {
@@ -99,6 +83,7 @@ export function Home() {
   const [signals, setSignals] = useState<Prediction[]>([]);
   const [signalSource, setSignalSource] = useState<"pending" | "won">("pending");
   const [newsItems, setNewsItems] = useState<NewsPost[]>([]);
+  const [forecastFilter, setForecastFilter] = useState<"all" | "pending" | "won">("all");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -170,82 +155,90 @@ export function Home() {
         ? "Ожидающих нет - показаны 2 последних выигранных"
         : "No pending matches - showing 2 latest won";
 
+  const filteredSignals = useMemo(() => {
+    if (forecastFilter === "all") return activeSignals;
+    return activeSignals.filter((signal) => signal.status === forecastFilter);
+  }, [activeSignals, forecastFilter]);
+
+  const quickActions = useMemo(
+    () => [
+      { to: "/profile#center", label: language === "ru" ? "Меню" : "Menu", icon: Grid2x2 },
+      { to: "/feed", label: language === "ru" ? "Сигналы" : "Signals", icon: ListChecks },
+      { to: "/tariffs", label: language === "ru" ? "Тарифы" : "Tariffs", icon: Wallet },
+      { to: "/stats", label: language === "ru" ? "Статистика" : "Stats", icon: Sparkles },
+      { to: "/news", label: language === "ru" ? "Новости" : "News", icon: Newspaper },
+      { to: "/support", label: language === "ru" ? "Поддержка" : "Support", icon: ShieldCheck },
+    ],
+    [language],
+  );
+
   const subtitleText = language === "ru" ? "Рабочий центр прогнозов внутри Telegram" : "Working forecast hub inside Telegram";
 
   return (
     <PageTransition>
       <Layout>
-        <section className="pb-premium-panel pb-telegram-hero pb-reveal">
+        <section className="pb-premium-panel pb-telegram-gallery pb-reveal">
           <div className="pb-telegram-hero-top">
             <span className={`pb-tier-pill ${sub.tariff}`}>{accessLabel(sub.tariff, t)}</span>
             <span className="pb-telegram-status-chip">{sub.is_active ? t("common.status.active") : t("common.status.expired")}</span>
           </div>
 
-          <h3>{`${language === "ru" ? "Добро пожаловать" : "Welcome"}, ${displayName}`}</h3>
-          <p>{subtitleText}</p>
+          <h3 className="pb-telegram-gallery-title">{language === "ru" ? "Главная" : "Home"}</h3>
+          <p className="pb-telegram-gallery-subtitle">{`${displayName}. ${subtitleText}`}</p>
 
-          <div className="pb-telegram-hero-metrics">
-            <article>
-              <small>{language === "ru" ? "Сигналы" : "Signals"}</small>
-              <strong>{stats?.total_predictions ?? signals.length}</strong>
-            </article>
-            <article>
-              <small>{language === "ru" ? "В ожидании" : "Pending"}</small>
-              <strong>{stats?.pending ?? signals.length}</strong>
-            </article>
-            <article>
-              <small>{language === "ru" ? "Точность" : "Hit rate"}</small>
-              <strong>{`${(stats?.hit_rate ?? 0).toFixed(1)}%`}</strong>
-            </article>
+          <div className="pb-telegram-tools-grid">
+            {quickActions.map((item) => (
+              <Link key={item.to} to={item.to} className="pb-telegram-tool-card">
+                <item.icon size={28} strokeWidth={1.9} />
+                <span>{item.label}</span>
+              </Link>
+            ))}
           </div>
 
-          <div className="pb-overview-hero-actions pb-telegram-hero-actions">
-            <Link className="pb-btn pb-btn-primary" to="/feed">
-              {t("home.hero.ctaSignals")}
-            </Link>
-            <Link className="pb-btn pb-btn-secondary" to="/tariffs">
-              {t("layout.main.openTariffs")}
-            </Link>
-          </div>
-        </section>
-
-        <section className="pb-premium-panel pb-telegram-predictions pb-reveal">
-          <div className="pb-premium-head">
-            <h3>{language === "ru" ? "Последние прогнозы" : "Latest forecasts"}</h3>
-            <small>{signalModeSubtitle}</small>
+          <div className="pb-telegram-chip-row" role="tablist" aria-label={language === "ru" ? "Фильтр прогнозов" : "Forecast filter"}>
+            <button
+              type="button"
+              className={forecastFilter === "all" ? "active" : ""}
+              onClick={() => setForecastFilter("all")}
+            >
+              {language === "ru" ? "Все" : "All"}
+            </button>
+            <button
+              type="button"
+              className={forecastFilter === "pending" ? "active" : ""}
+              onClick={() => setForecastFilter("pending")}
+            >
+              {language === "ru" ? "В ожидании" : "Pending"}
+            </button>
+            <button
+              type="button"
+              className={forecastFilter === "won" ? "active" : ""}
+              onClick={() => setForecastFilter("won")}
+            >
+              {language === "ru" ? "Выигрыш" : "Won"}
+            </button>
           </div>
 
           {loading ? <RocketLoader title={t("home.loadingTitle")} subtitle={t("home.loadingSubtitle")} compact /> : null}
 
-          {!loading && activeSignals.length > 0 ? (
-            <div className="pb-telegram-predictions-list">
-              {activeSignals.map((signal) => (
-                <Link key={signal.id} to={`/feed/${signal.id}`} className="pb-telegram-prediction-card">
-                  <div className="pb-telegram-prediction-icon" aria-hidden="true">
+          {!loading && filteredSignals.length > 0 ? (
+            <div className="pb-telegram-gallery-grid">
+              {filteredSignals.map((signal, index) => (
+                <Link key={signal.id} to={`/feed/${signal.id}`} className={index % 2 === 0 ? "pb-telegram-gallery-card tall" : "pb-telegram-gallery-card"}>
+                  <span className="pb-telegram-gallery-badge">{statusLabel(signal.status, t)}</span>
+                  <div className="pb-telegram-gallery-icon" aria-hidden="true">
                     {sportEmoji(signal.sport_type)}
                   </div>
-                  <div className="pb-telegram-prediction-main">
-                    <strong>{signal.match_name}</strong>
-                    <p>{signal.league || t("feed.noLeague")}</p>
-                    <div className="pb-telegram-prediction-meta">
-                      <span className={`pb-telegram-status ${signal.status}`}>{statusLabel(signal.status, t)}</span>
-                      <span>{signal.mode === "live" ? t("common.live") : t("common.prematch")}</span>
-                      <span>{resolveSportLabel(signal.sport_type, language)}</span>
-                    </div>
-                    <small>{teaser(signal.short_description, t("feed.teaserFallback"))}</small>
-                  </div>
-                  <div className="pb-telegram-prediction-odds">
-                    <small>{t("feed.label.odds")}</small>
-                    <strong>{Number.isFinite(signal.odds) ? signal.odds.toFixed(2) : String(signal.odds)}</strong>
-                    <span>{riskLabel(signal.risk_level, t)}</span>
-                    <span>{formatDate(signal.event_start_at, language)}</span>
-                  </div>
+                  <strong>{signal.match_name}</strong>
+                  <p>{signal.league || t("feed.noLeague")}</p>
+                  <small>{resolveSportLabel(signal.sport_type, language)}</small>
+                  <span className="pb-telegram-gallery-odds">{Number.isFinite(signal.odds) ? signal.odds.toFixed(2) : String(signal.odds)}</span>
                 </Link>
               ))}
             </div>
           ) : null}
 
-          {!loading && activeSignals.length === 0 ? <p className="pb-empty-state">{t("home.today.empty")}</p> : null}
+          {!loading && filteredSignals.length === 0 ? <p className="pb-empty-state">{t("home.today.empty")}</p> : null}
         </section>
 
         <section className="pb-premium-panel pb-home-news-showcase pb-reveal">
