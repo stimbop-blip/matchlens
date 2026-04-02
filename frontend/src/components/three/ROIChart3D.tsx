@@ -63,7 +63,7 @@ export function ROIChart3D({ values, height = 220, className }: ROIChart3DProps)
 
   return (
     <div className={className} style={{ height, borderRadius: 22, overflow: "hidden", border: "1px solid var(--border)", background: "color-mix(in srgb, var(--card) 86%, transparent)" }}>
-      <Canvas camera={{ position: [0, 1, 6], fov: 40 }} dpr={[1, 1.2]} gl={{ antialias: false, powerPreference: "low-power" }}>
+      <Canvas camera={{ position: [0, 1, 6], fov: 40 }} dpr={[1, 1.05]} gl={{ antialias: false, powerPreference: "low-power" }}>
         <Scene values={safeValues} />
       </Canvas>
     </div>

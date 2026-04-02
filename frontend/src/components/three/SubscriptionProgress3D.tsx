@@ -32,7 +32,7 @@ export function SubscriptionProgress3D({ percent, label = "Subscription", captio
   return (
     <div className="glass neon relative overflow-hidden" style={{ height, borderRadius: 22 }}>
       <div className="absolute inset-0">
-        <Canvas camera={{ position: [0, 0, 2.6], fov: 44 }} dpr={[1, 1.2]} gl={{ antialias: false, powerPreference: "low-power" }}>
+        <Canvas camera={{ position: [0, 0, 2.6], fov: 44 }} dpr={[1, 1.05]} gl={{ antialias: false, powerPreference: "low-power" }}>
           <ambientLight intensity={0.9} />
           <pointLight position={[2, 2, 3]} intensity={1.4} color="#00ff9d" />
           <pointLight position={[-2, -1, 2]} intensity={1.0} color="#00b8ff" />

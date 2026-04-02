@@ -66,7 +66,7 @@ export function Home() {
             </div>
           </div>
           <div className="h-[120px] w-[120px] shrink-0 overflow-hidden rounded-2xl border border-[var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_78%,transparent)]">
-            <Canvas camera={{ position: [0, 0, 3], fov: 38 }} dpr={[1, 1.2]} gl={{ antialias: false, powerPreference: "low-power" }}>
+            <Canvas camera={{ position: [0, 0, 3], fov: 38 }} dpr={[1, 1.05]} gl={{ antialias: false, powerPreference: "low-power" }}>
               <ambientLight intensity={0.75} />
               <pointLight position={[2, 2, 3]} intensity={1.35} color="#00ff9d" />
               <pointLight position={[-2, -1, 2]} intensity={1.0} color="#00b8ff" />
@@ -98,7 +98,7 @@ export function Home() {
           {signals.map((signal) => (
             <ErrorBoundary key={signal.id} fallback={<section className="glass p-4 text-sm text-[var(--text-secondary)]">{t("common.loadingSignal")}</section>}>
               <Suspense fallback={<section className="glass p-4 text-sm text-[var(--text-secondary)]">{t("common.loadingSignal")}</section>}>
-                <SignalCard3D signal={signal} force3D onOpen={() => h.soft()} />
+                <SignalCard3D signal={signal} onOpen={() => h.soft()} />
               </Suspense>
             </ErrorBoundary>
           ))}

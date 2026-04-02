@@ -22,10 +22,11 @@ function toSportObject(sport: Signal["sport"]): "football" | "tennis" | "trophy"
 function shouldUseFullCanvas() {
   if (typeof window === "undefined") return true;
   const nav = navigator as Navigator & { deviceMemory?: number };
-  const lowCpu = typeof nav.hardwareConcurrency === "number" && nav.hardwareConcurrency <= 4;
-  const lowMem = typeof nav.deviceMemory === "number" && nav.deviceMemory <= 4;
+  const lowCpu = typeof nav.hardwareConcurrency === "number" && nav.hardwareConcurrency <= 8;
+  const lowMem = typeof nav.deviceMemory === "number" && nav.deviceMemory <= 8;
   const telegramWebView = /Telegram/i.test(nav.userAgent);
-  return !(lowCpu || lowMem || telegramWebView);
+  const coarsePointer = typeof window.matchMedia === "function" ? window.matchMedia("(pointer: coarse)").matches : false;
+  return !(lowCpu || lowMem || telegramWebView || coarsePointer);
 }
 
 export function SignalCard3D({ signal, onOpen, force3D = false }: Props) {
@@ -33,10 +34,10 @@ export function SignalCard3D({ signal, onOpen, force3D = false }: Props) {
   const h = useHaptics();
 
   const [flipped, setFlipped] = useState(false);
-  const [fullCanvas, setFullCanvas] = useState(force3D);
+  const [fullCanvas, setFullCanvas] = useState(false);
 
   useEffect(() => {
-    setFullCanvas(force3D || shouldUseFullCanvas());
+    setFullCanvas(force3D && shouldUseFullCanvas());
   }, [force3D]);
 
   const sportGlyph = useMemo(() => {
@@ -52,6 +53,7 @@ export function SignalCard3D({ signal, onOpen, force3D = false }: Props) {
   const transform = useMotionTemplate`perspective(1200px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(${scale})`;
 
   const handleMove = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (!fullCanvas) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const px = (e.clientX - rect.left) / rect.width;
     const py = (e.clientY - rect.top) / rect.height;
@@ -60,6 +62,7 @@ export function SignalCard3D({ signal, onOpen, force3D = false }: Props) {
   };
 
   const handleLeave = () => {
+    if (!fullCanvas) return;
     animate(rotateX, 0, { type: "spring", stiffness: 180, damping: 18 });
     animate(rotateY, 0, { type: "spring", stiffness: 180, damping: 18 });
     animate(scale, 1, { type: "spring", stiffness: 200, damping: 18 });
@@ -71,7 +74,10 @@ export function SignalCard3D({ signal, onOpen, force3D = false }: Props) {
       className="group relative w-full overflow-hidden rounded-[22px] border border-[var(--border)] bg-[color:color-mix(in_srgb,var(--card)_84%,transparent)] text-left backdrop-blur-xl"
       style={{ transformStyle: "preserve-3d", transform }}
       onPointerMove={handleMove}
-      onPointerEnter={() => animate(scale, 1.015, { type: "spring", stiffness: 220, damping: 16 })}
+      onPointerEnter={() => {
+        if (!fullCanvas) return;
+        animate(scale, 1.015, { type: "spring", stiffness: 220, damping: 16 });
+      }}
       onPointerLeave={handleLeave}
       onClick={() => {
         h.tap();
