@@ -1,87 +1,139 @@
+import { Html, useGLTF } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { useRef } from "react";
-import type { Group } from "three";
+import { Component, Suspense, useMemo, useRef } from "react";
+import type { ReactNode } from "react";
+import * as THREE from "three";
 
-type FloatingHeroType = "trophy" | "football" | "tennis";
+type HeroObjectType = "trophy" | "football" | "tennis";
 
-function Trophy() {
-  return (
-    <group>
-      <mesh position={[0, 0.42, 0]}>
-        <cylinderGeometry args={[0.28, 0.42, 0.44, 24]} />
-        <meshStandardMaterial color="#f6c77a" metalness={0.72} roughness={0.24} />
-      </mesh>
-      <mesh position={[0, 0.08, 0]}>
-        <cylinderGeometry args={[0.1, 0.1, 0.26, 18]} />
-        <meshStandardMaterial color="#f6c77a" metalness={0.7} roughness={0.28} />
-      </mesh>
-      <mesh position={[0, -0.18, 0]}>
-        <cylinderGeometry args={[0.34, 0.4, 0.14, 22]} />
-        <meshStandardMaterial color="#2f8cff" metalness={0.56} roughness={0.32} />
-      </mesh>
-      <mesh scale={1.42}>
-        <sphereGeometry args={[0.78, 26, 26]} />
-        <meshBasicMaterial color="#2cd8b7" transparent opacity={0.09} />
-      </mesh>
-    </group>
-  );
+type Props = {
+  type?: HeroObjectType;
+  scale?: number;
+  glow?: string;
+};
+
+const MODEL_MAP: Record<HeroObjectType, string> = {
+  trophy: "/models/trophy.glb",
+  football: "/models/football.glb",
+  tennis: "/models/tennis.glb",
+};
+
+let preloadScheduled = false;
+
+function scheduleSafePreload() {
+  if (preloadScheduled || typeof window === "undefined") return;
+  preloadScheduled = true;
+
+  const run = () => {
+    const paths = [MODEL_MAP.trophy, MODEL_MAP.football, MODEL_MAP.tennis];
+    for (const path of paths) {
+      try {
+        useGLTF.preload(path);
+      } catch {
+        // Ignore preload errors; runtime fallback mesh will be shown.
+      }
+    }
+  };
+
+  const withIdle = window as typeof window & {
+    requestIdleCallback?: (cb: () => void) => number;
+  };
+
+  if (typeof withIdle.requestIdleCallback === "function") {
+    withIdle.requestIdleCallback(run);
+    return;
+  }
+  window.setTimeout(run, 0);
 }
 
-function Football() {
+scheduleSafePreload();
+
+function Model({ type }: { type: HeroObjectType }) {
+  const gltf = useGLTF(MODEL_MAP[type]);
+  return <primitive object={gltf.scene.clone()} />;
+}
+
+function FallbackMesh({ color = "#00ff9d" }: { color?: string }) {
   return (
     <group>
       <mesh>
-        <icosahedronGeometry args={[0.52, 1]} />
-        <meshStandardMaterial color="#f4f8ff" metalness={0.2} roughness={0.42} />
-      </mesh>
-      <mesh scale={0.74}>
-        <dodecahedronGeometry args={[0.25, 0]} />
-        <meshStandardMaterial color="#152434" metalness={0.2} roughness={0.6} />
-      </mesh>
-      <mesh scale={1.38}>
-        <sphereGeometry args={[0.7, 24, 24]} />
-        <meshBasicMaterial color="#2f8cff" transparent opacity={0.1} />
-      </mesh>
-    </group>
-  );
-}
-
-function Tennis() {
-  return (
-    <group>
-      <mesh>
-        <sphereGeometry args={[0.5, 26, 26]} />
-        <meshStandardMaterial color="#e0ff76" metalness={0.2} roughness={0.45} />
-      </mesh>
-      <mesh rotation={[0, 0, Math.PI / 2]}>
-        <torusGeometry args={[0.5, 0.015, 12, 60]} />
-        <meshStandardMaterial color="#bfd95f" metalness={0.1} roughness={0.7} />
+        <icosahedronGeometry args={[0.55, 1]} />
+        <meshStandardMaterial color="#f0f4f7" metalness={0.35} roughness={0.45} />
       </mesh>
       <mesh scale={1.35}>
-        <sphereGeometry args={[0.68, 22, 22]} />
-        <meshBasicMaterial color="#e0ff76" transparent opacity={0.11} />
+        <sphereGeometry args={[0.6, 24, 24]} />
+        <meshBasicMaterial color={color} transparent opacity={0.08} />
       </mesh>
     </group>
   );
 }
 
-export function FloatingHeroObject({ type = "trophy", scale = 1 }: { type?: FloatingHeroType; scale?: number }) {
-  const groupRef = useRef<Group>(null);
+type ModelBoundaryProps = {
+  children: ReactNode;
+  fallback: ReactNode;
+};
 
-  useFrame(({ clock }) => {
-    const group = groupRef.current;
-    if (!group) return;
-    const t = clock.elapsedTime;
-    group.rotation.y = t * 0.55;
-    group.rotation.x = Math.sin(t * 0.8) * 0.1;
-    group.position.y = Math.sin(t * 1.8) * 0.09;
+type ModelBoundaryState = {
+  hasError: boolean;
+};
+
+class ModelBoundary extends Component<ModelBoundaryProps, ModelBoundaryState> {
+  state: ModelBoundaryState = { hasError: false };
+
+  static getDerivedStateFromError(): ModelBoundaryState {
+    return { hasError: true };
+  }
+
+  componentDidCatch(): void {
+    // Swallow model load/render errors and keep app alive.
+  }
+
+  render() {
+    if (this.state.hasError) return this.props.fallback;
+    return this.props.children;
+  }
+}
+
+function LoaderFallback() {
+  return (
+    <Html center>
+      <div className="rounded-full border border-[var(--border)] bg-[var(--surface)]/90 px-3 py-1 text-[11px] text-[var(--text-secondary)]">
+        Loading 3D...
+      </div>
+    </Html>
+  );
+}
+
+export function FloatingHeroObject({ type = "trophy", scale = 1, glow = "#00ff9d" }: Props) {
+  const groupRef = useRef<THREE.Group>(null);
+  const glowRef = useRef<THREE.Mesh>(null);
+  const glowColor = useMemo(() => new THREE.Color(glow), [glow]);
+
+  useFrame((state) => {
+    if (!groupRef.current) return;
+    const t = state.clock.elapsedTime;
+    groupRef.current.rotation.y = t * 0.5;
+    groupRef.current.rotation.x = Math.sin(t * 0.9) * 0.08;
+    groupRef.current.position.y = Math.sin(t * 1.8) * 0.12;
+
+    if (glowRef.current) {
+      const s = 1 + Math.sin(t * 2.2) * 0.05;
+      glowRef.current.scale.setScalar(s);
+    }
   });
 
   return (
     <group ref={groupRef} scale={scale}>
-      {type === "football" ? <Football /> : null}
-      {type === "tennis" ? <Tennis /> : null}
-      {type === "trophy" ? <Trophy /> : null}
+      <ModelBoundary fallback={<FallbackMesh color={glow} />}>
+        <Suspense fallback={<LoaderFallback />}>
+          <Model type={type} />
+        </Suspense>
+      </ModelBoundary>
+
+      <mesh ref={glowRef} scale={1.5}>
+        <sphereGeometry args={[1, 28, 28]} />
+        <meshBasicMaterial color={glowColor} transparent opacity={0.1} />
+      </mesh>
     </group>
   );
 }

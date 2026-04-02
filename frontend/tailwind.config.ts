@@ -1,23 +1,24 @@
 import type { Config } from "tailwindcss";
 
-const config: Config = {
+export default {
+  darkMode: ["class", '[data-theme="dark"]'],
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
       colors: {
-        bg: "var(--app-bg)",
-        surface: "var(--surface-1)",
-        accent: "var(--accent-primary)",
+        background: "var(--background)",
+        surface: "var(--surface)",
+        card: "var(--card)",
+        border: "var(--border)",
+        accent: "var(--accent)",
+        "accent-secondary": "var(--accent-secondary)",
+        "text-primary": "var(--text-primary)",
+        "text-secondary": "var(--text-secondary)",
       },
       boxShadow: {
-        premium: "0 18px 36px rgba(0, 0, 0, 0.24)",
-      },
-      borderRadius: {
-        premium: "1.25rem",
+        neon: "0 0 24px color-mix(in srgb, var(--accent) 25%, transparent)",
       },
     },
   },
   plugins: [],
-};
-
-export default config;
+} satisfies Config;

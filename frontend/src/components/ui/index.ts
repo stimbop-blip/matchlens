@@ -1,4 +1,4 @@
-export { Badge } from "./Badge";
+export { cn } from "./cn";
 export { Button } from "./Button";
 export { Card } from "./Card";
-export { cn } from "./cn";
+export { Badge } from "./Badge";

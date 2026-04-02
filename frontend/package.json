@@ -1,27 +1,43 @@
 {
-  "name": "matchlens-miniapp",
+  "name": "pit-bet-frontend",
   "private": true,
-  "version": "0.1.0",
-  "description": "PIT BET Telegram Mini App frontend",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 5173",
-    "build": "vite build",
-    "preview": "vite preview --host 0.0.0.0 --port 5173"
+    "build": "tsc -b && vite build",
+    "preview": "vite preview --host 0.0.0.0 --port 5173",
+    "lint": "eslint ."
   },
   "dependencies": {
-    "@react-three/fiber": "8.17.9",
-    "framer-motion": "11.11.12",
-    "react": "18.3.1",
-    "react-dom": "18.3.1",
-    "react-router-dom": "6.26.2",
-    "three": "0.169.0"
+    "@radix-ui/react-dialog": "^1.1.2",
+    "@radix-ui/react-dropdown-menu": "^2.1.2",
+    "@radix-ui/react-slot": "^1.1.0",
+    "@react-three/drei": "^9.114.0",
+    "@react-three/fiber": "^8.17.9",
+    "@react-three/postprocessing": "^2.16.2",
+    "@tanstack/react-query": "^5.59.16",
+    "@twa-dev/sdk": "^7.7.1",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.1",
+    "framer-motion": "^11.11.12",
+    "lucide-react": "^0.468.0",
+    "postprocessing": "^6.36.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.27.0",
+    "tailwind-merge": "^2.5.4",
+    "three": "^0.169.0"
   },
   "devDependencies": {
-    "@types/react": "18.3.5",
-    "@types/react-dom": "18.3.0",
-    "@vitejs/plugin-react": "4.3.1",
-    "typescript": "5.6.2",
-    "vite": "5.4.8"
+    "@types/node": "^22.8.7",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.3",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.14",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.10"
   }
 }

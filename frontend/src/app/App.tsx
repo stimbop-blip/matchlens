@@ -1,25 +1,25 @@
 import { Suspense, lazy } from "react";
-import { BrowserRouter } from "react-router-dom";
 
-import { ErrorBoundary } from "../components/motion/ErrorBoundary";
+import { MobileShell } from "../components/layout/MobileShell";
+import { PageTransition } from "../components/motion/PageTransition";
+import { AppProviders } from "./providers";
 import { AppRouter } from "./router";
 
-const ThreeBackgroundCanvas = lazy(() => import("../components/three/ThreeBackgroundCanvas").then((module) => ({ default: module.ThreeBackgroundCanvas })));
+const ThreeBackgroundCanvas = lazy(() => import("../components/three/ThreeBackgroundCanvas").then((m) => ({ default: m.ThreeBackgroundCanvas })));
 
-export function App() {
+export default function App() {
   return (
-    <div className="pb-three-app-root">
-      <ErrorBoundary fallback={<div className="pb-three-bg-fallback" aria-hidden="true" />}>
-        <Suspense fallback={<div className="pb-three-bg-fallback" aria-hidden="true" />}>
+    <AppProviders>
+      <div className="app-bg min-h-screen">
+        <Suspense fallback={null}>
           <ThreeBackgroundCanvas />
         </Suspense>
-      </ErrorBoundary>
-
-      <div className="pb-three-app-layer">
-        <BrowserRouter>
-          <AppRouter />
-        </BrowserRouter>
+        <MobileShell withNav>
+          <PageTransition>
+            <AppRouter />
+          </PageTransition>
+        </MobileShell>
       </div>
-    </div>
+    </AppProviders>
   );
 }

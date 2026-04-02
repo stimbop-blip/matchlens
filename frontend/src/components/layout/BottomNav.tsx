@@ -1,69 +1,63 @@
-import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { motion } from "framer-motion";
+import { CreditCard, Home, Shield, Signal, User } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
 
-type BottomNavItem = {
-  key?: string;
-  to: string;
-  label: string;
-  active?: boolean;
-};
+import { useHaptics } from "../../hooks/useHaptics";
+import { api } from "../../lib/api";
+import { useI18n } from "../../lib/i18n";
 
-function glyphByIndex(index: number) {
-  if (index === 0) {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M4.4 10.4 12 4l7.6 6.4V20H14v-5h-4v5H4.4z" />
-      </svg>
-    );
-  }
+export function BottomNav() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const h = useHaptics();
+  const { t } = useI18n();
 
-  if (index === 1) {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M5 16.4 9.6 8h3l-1.8 4h3.5l-5.1 8.6H6.1l2.3-4.2z" />
-      </svg>
-    );
-  }
+  const profileQuery = useQuery({
+    queryKey: ["profile", "nav-role"],
+    queryFn: api.getProfile,
+    staleTime: 60_000,
+  });
 
-  if (index === 2) {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M4 18.4h16v1.6H4zm2-2.2h2.6V9.4H6zm4.5 0h2.6V6.2h-2.6zm4.5 0h2.6v-4.6H15z" />
-      </svg>
-    );
-  }
+  const isAdmin = profileQuery.data?.role === "admin";
 
-  if (index === 3) {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M12 4.5a4.1 4.1 0 1 1 0 8.2 4.1 4.1 0 0 1 0-8.2m0 10.4c4.7 0 7.7 2.3 8.1 4.8H3.9c.4-2.5 3.4-4.8 8.1-4.8" />
-      </svg>
-    );
-  }
+  const items = [
+    { to: "/", label: t("nav.home"), icon: Home },
+    { to: "/signals", label: t("nav.signals"), icon: Signal },
+    { to: "/tariffs", label: t("nav.tariffs"), icon: CreditCard },
+    { to: "/profile", label: t("nav.profile"), icon: User },
+    ...(isAdmin ? [{ to: "/admin", label: t("nav.admin"), icon: Shield }] : []),
+  ];
 
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="m12 3.5 1.4 2.3 2.6-.1.8 2.5 2.2 1.4-1 2.4 1 2.4-2.2 1.4-.8 2.5-2.6-.1L12 20.5l-1.4-2.3-2.6.1-.8-2.5-2.2-1.4 1-2.4-1-2.4 2.2-1.4.8-2.5 2.6.1z" />
-      <circle cx="12" cy="12" r="2.3" />
-    </svg>
-  );
-}
-
-export function BottomNav({ items, ariaLabel }: { items: BottomNavItem[]; ariaLabel: string }) {
-  return (
-    <nav className="pb-orb-dock pb-nav-dock-v2" aria-label={ariaLabel}>
-      {items.map((item, index) => {
-        const key = item.key || (index === 2 ? "tariffs" : `tab-${index}`);
-        const active = item.active ? "active" : "";
-        const center = key === "tariffs" ? " center" : "";
-
-        return (
-          <Link key={`${item.to}-${item.label}`} to={item.to} className={`${active}${center}`} data-key={key}>
-            <span className="pb-nav-pill" aria-hidden="true" />
-            <span className="pb-orb-icon-wrap">{glyphByIndex(index)}</span>
-            <span className="pb-orb-label">{item.label}</span>
-          </Link>
-        );
-      })}
+    <nav className="fixed bottom-3 left-1/2 z-50 w-[calc(100%-16px)] max-w-md -translate-x-1/2 rounded-2xl border border-[var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_88%,transparent)] p-2 backdrop-blur-xl">
+      <div className={`grid gap-2 ${isAdmin ? "grid-cols-5" : "grid-cols-4"}`}>
+        {items.map((item) => {
+          const active = location.pathname === item.to || (item.to !== "/" && location.pathname.startsWith(item.to));
+          const Icon = item.icon;
+          return (
+            <button
+              key={item.to}
+              type="button"
+              onClick={() => {
+                h.tap();
+                navigate(item.to);
+              }}
+              className="relative flex min-h-[56px] flex-col items-center justify-center rounded-xl border border-transparent text-[11px]"
+            >
+              {active ? (
+                <motion.span
+                  layoutId="nav-active"
+                  className="absolute inset-0 rounded-xl border border-[color:color-mix(in_srgb,var(--accent)_50%,transparent)]"
+                  transition={{ type: "spring", stiffness: 360, damping: 28 }}
+                />
+              ) : null}
+              <Icon size={17} className={active ? "text-[var(--text-primary)]" : "text-[var(--text-secondary)]"} />
+              <span className={active ? "text-[var(--text-primary)]" : "text-[var(--text-secondary)]"}>{item.label}</span>
+            </button>
+          );
+        })}
+      </div>
     </nav>
   );
 }
