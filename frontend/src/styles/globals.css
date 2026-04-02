@@ -10940,7 +10940,7 @@ body {
   grid-template-columns: 88px minmax(0, 1fr);
 }
 
-.pb-signal3d-canvas.pb-signal3d-emblem {
+.pb-signal3d-canvas.pb-signal3d-sport-art {
   position: relative;
   display: grid;
   place-items: center;
@@ -10950,36 +10950,88 @@ body {
     linear-gradient(160deg, color-mix(in srgb, var(--surface-2) 78%, transparent), color-mix(in srgb, var(--surface-1) 92%, transparent));
 }
 
-.pb-signal3d-emblem-glow {
+.pb-signal3d-sport-art-glow,
+.pb-signal3d-sport-art-sheen {
   position: absolute;
+  border-radius: 999px;
+}
+
+.pb-signal3d-sport-art-glow {
   width: 56px;
   height: 56px;
-  border-radius: 999px;
   background: radial-gradient(circle, color-mix(in srgb, var(--accent-primary) 24%, transparent), transparent 72%);
 }
 
-.pb-signal3d-emblem svg {
+.pb-signal3d-sport-art-sheen {
+  width: 32px;
+  height: 32px;
+  top: 10px;
+  left: 12px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.24), transparent 70%);
+}
+
+.pb-signal3d-sport-art svg {
   position: relative;
   z-index: 1;
   width: 28px;
   height: 28px;
-  fill: color-mix(in srgb, var(--accent-primary) 78%, var(--text-primary));
+  fill: #e9f4ff;
 }
 
-.pb-signal3d-emblem.football .pb-signal3d-emblem-glow {
-  background: radial-gradient(circle, color-mix(in srgb, #56b3ff 28%, transparent), transparent 72%);
+.pb-signal3d-sport-art.football {
+  background:
+    radial-gradient(circle at 84% 14%, rgba(111, 178, 255, 0.34), transparent 54%),
+    linear-gradient(150deg, #1b3e73, #0f213f);
 }
 
-.pb-signal3d-emblem.tennis .pb-signal3d-emblem-glow {
-  background: radial-gradient(circle, color-mix(in srgb, #83e875 28%, transparent), transparent 72%);
+.pb-signal3d-sport-art.football .pb-signal3d-sport-art-glow {
+  background: radial-gradient(circle, rgba(105, 177, 255, 0.32), transparent 72%);
 }
 
-.pb-signal3d-emblem.tennis svg {
-  fill: color-mix(in srgb, #8ef17f 72%, var(--text-primary));
+.pb-signal3d-sport-art.hockey {
+  background:
+    radial-gradient(circle at 82% 14%, rgba(130, 229, 255, 0.34), transparent 56%),
+    linear-gradient(150deg, #1e4f6a, #102737);
 }
 
-.pb-signal3d-emblem.football svg {
-  fill: color-mix(in srgb, #8fc8ff 76%, var(--text-primary));
+.pb-signal3d-sport-art.hockey .pb-signal3d-sport-art-glow {
+  background: radial-gradient(circle, rgba(130, 229, 255, 0.32), transparent 72%);
+}
+
+.pb-signal3d-sport-art.basketball {
+  background:
+    radial-gradient(circle at 82% 16%, rgba(255, 176, 96, 0.36), transparent 58%),
+    linear-gradient(150deg, #864819, #4f2810);
+}
+
+.pb-signal3d-sport-art.basketball .pb-signal3d-sport-art-glow {
+  background: radial-gradient(circle, rgba(255, 171, 85, 0.34), transparent 72%);
+}
+
+.pb-signal3d-sport-art.tennis {
+  background:
+    radial-gradient(circle at 82% 16%, rgba(163, 239, 121, 0.34), transparent 56%),
+    linear-gradient(150deg, #2c6f2f, #15341a);
+}
+
+.pb-signal3d-sport-art.tennis .pb-signal3d-sport-art-glow {
+  background: radial-gradient(circle, rgba(163, 239, 121, 0.34), transparent 72%);
+}
+
+.pb-signal3d-sport-art.table-tennis {
+  background:
+    radial-gradient(circle at 82% 16%, rgba(255, 154, 220, 0.34), transparent 56%),
+    linear-gradient(150deg, #61306d, #2e1a43);
+}
+
+.pb-signal3d-sport-art.table-tennis .pb-signal3d-sport-art-glow {
+  background: radial-gradient(circle, rgba(255, 154, 220, 0.34), transparent 72%);
+}
+
+.pb-signal3d-sport-art.generic {
+  background:
+    radial-gradient(circle at 82% 16%, rgba(56, 220, 189, 0.34), transparent 56%),
+    linear-gradient(150deg, #2a5a79, #123047);
 }
 
 .pb-profile-three-trophy {
@@ -11026,7 +11078,7 @@ body {
 
 :root[data-theme="light"] .pb-home-r3f-hero-object,
 :root[data-theme="light"] .pb-signal3d-card,
-:root[data-theme="light"] .pb-signal3d-canvas.pb-signal3d-emblem,
+:root[data-theme="light"] .pb-signal3d-canvas.pb-signal3d-sport-art,
 :root[data-theme="light"] .pb-profile-three-trophy {
   border-color: color-mix(in srgb, var(--accent-primary) 22%, var(--border-subtle));
   background:
@@ -11035,16 +11087,28 @@ body {
   box-shadow: 0 14px 30px rgba(22, 39, 63, 0.12);
 }
 
-:root[data-theme="light"] .pb-signal3d-emblem svg {
-  fill: #24608d;
+:root[data-theme="light"] .pb-signal3d-sport-art svg {
+  fill: #18456e;
 }
 
-:root[data-theme="light"] .pb-signal3d-emblem.football svg {
-  fill: #2e7add;
+:root[data-theme="light"] .pb-signal3d-sport-art.football svg {
+  fill: #2a74d8;
 }
 
-:root[data-theme="light"] .pb-signal3d-emblem.tennis svg {
-  fill: #2f9d63;
+:root[data-theme="light"] .pb-signal3d-sport-art.tennis svg {
+  fill: #1f8d53;
+}
+
+:root[data-theme="light"] .pb-signal3d-sport-art.table-tennis svg {
+  fill: #8f3e8a;
+}
+
+:root[data-theme="light"] .pb-signal3d-sport-art.basketball svg {
+  fill: #aa5a1a;
+}
+
+:root[data-theme="light"] .pb-signal3d-sport-art.hockey svg {
+  fill: #1e6f8a;
 }
 
 :root[data-theme="light"] .pb-home-r3f-hero-art-meta small,
@@ -11055,4 +11119,104 @@ body {
 :root[data-theme="light"] .pb-home-r3f-hero-art-core,
 :root[data-theme="light"] .pb-profile-three-emblem-core {
   box-shadow: 0 0 16px rgba(15, 175, 140, 0.3);
+}
+
+.pb-home-news-showcase {
+  margin-top: 10px;
+}
+
+.pb-home-news-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.pb-home-news-card {
+  border-radius: 20px;
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 14%, var(--border-subtle));
+  background:
+    radial-gradient(circle at 92% -18%, color-mix(in srgb, var(--accent-primary) 18%, transparent), transparent 56%),
+    linear-gradient(158deg, color-mix(in srgb, var(--surface-2) 94%, transparent), color-mix(in srgb, var(--surface-1) 98%, transparent));
+  box-shadow: 0 16px 30px color-mix(in srgb, black 20%, transparent);
+  padding: 12px;
+  display: grid;
+  gap: 8px;
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.pb-home-news-card.lead {
+  border-color: color-mix(in srgb, var(--accent-primary) 30%, var(--border-subtle));
+  background:
+    radial-gradient(circle at 92% -20%, color-mix(in srgb, var(--accent-primary) 24%, transparent), transparent 56%),
+    linear-gradient(158deg, color-mix(in srgb, var(--surface-2) 96%, transparent), color-mix(in srgb, var(--surface-1) 99%, transparent));
+}
+
+.pb-home-news-chip {
+  justify-self: start;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 36%, transparent);
+  background: color-mix(in srgb, var(--accent-primary) 12%, transparent);
+  color: color-mix(in srgb, var(--accent-primary) 86%, var(--text-primary));
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  padding: 4px 8px;
+}
+
+.pb-home-news-card h4 {
+  font-size: 15px;
+  line-height: 1.3;
+  text-wrap: balance;
+}
+
+.pb-home-news-card p {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.pb-home-news-card small {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.pb-home-news-actions {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-start;
+}
+
+@media (hover: hover) {
+  .pb-home-news-card:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in srgb, var(--accent-primary) 36%, transparent);
+    box-shadow: 0 20px 34px color-mix(in srgb, black 24%, transparent);
+  }
+}
+
+@media (max-width: 760px) {
+  .pb-home-news-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+:root[data-theme="light"] .pb-home-news-card {
+  border-color: color-mix(in srgb, var(--accent-primary) 20%, var(--border-subtle));
+  background:
+    radial-gradient(circle at 90% -14%, rgba(16, 175, 140, 0.12), transparent 56%),
+    linear-gradient(160deg, #ffffff, #f2f8ff);
+  box-shadow: 0 14px 28px rgba(22, 40, 65, 0.12);
+}
+
+:root[data-theme="light"] .pb-home-news-card h4 {
+  color: #13365c;
+}
+
+:root[data-theme="light"] .pb-home-news-card p {
+  color: #4f6785;
+}
+
+:root[data-theme="light"] .pb-home-news-card small {
+  color: #6c84a3;
 }

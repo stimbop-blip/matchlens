@@ -10,7 +10,7 @@ import { PageTransition } from "../components/motion/PageTransition";
 import { HeroPanel } from "../components/premium/HeroPanel";
 import { PremiumKpi } from "../components/premium/PremiumKpi";
 import { RocketLoader } from "../components/ui";
-import { api, type Prediction, type PublicStats } from "../services/api";
+import { api, type NewsPost, type Prediction, type PublicStats } from "../services/api";
 
 const SubscriptionProgress3D = lazy(() => import("../components/three/SubscriptionProgress3D").then((module) => ({ default: module.SubscriptionProgress3D })));
 const SignalCard3D = lazy(() => import("../components/three/SignalCard3D").then((module) => ({ default: module.SignalCard3D })));
@@ -18,6 +18,31 @@ const SignalCard3D = lazy(() => import("../components/three/SignalCard3D").then(
 function formatDate(value: string, language: "ru" | "en"): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString(language === "ru" ? "ru-RU" : "en-US", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function predictionRecency(prediction: Prediction): number {
+  const publishedMs = prediction.published_at ? new Date(prediction.published_at).getTime() : 0;
+  const eventMs = new Date(prediction.event_start_at).getTime();
+  const safePublishedMs = Number.isNaN(publishedMs) ? 0 : publishedMs;
+  const safeEventMs = Number.isNaN(eventMs) ? 0 : eventMs;
+  return Math.max(safePublishedMs, safeEventMs);
+}
+
+function newsRecency(item: NewsPost): number {
+  const publishedMs = item.published_at ? new Date(item.published_at).getTime() : 0;
+  return Number.isNaN(publishedMs) ? 0 : publishedMs;
+}
+
+function formatNewsDate(value: string | null, language: "ru" | "en", fallback: string): string {
+  if (!value) return fallback;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return fallback;
   return date.toLocaleString(language === "ru" ? "ru-RU" : "en-US", {
     day: "2-digit",
     month: "2-digit",
@@ -52,87 +77,11 @@ function teaser(value: string | null | undefined, fallback: string): string {
   return `${compact.slice(0, 137).trim()}...`;
 }
 
-function fallbackSignals(language: "ru" | "en"): Prediction[] {
-  const now = Date.now();
-  if (language === "ru") {
-    return [
-      {
-        id: "fallback-1",
-        title: "",
-        match_name: "Real Madrid - Inter",
-        league: "UEFA Champions League",
-        sport_type: "football",
-        event_start_at: new Date(now + 2 * 60 * 60 * 1000).toISOString(),
-        signal_type: "Тотал Больше 2.5",
-        odds: 1.88,
-        short_description: "Сильное движение линии и высокий темп матча.",
-        bet_screenshot: null,
-        result_screenshot: null,
-        risk_level: "medium",
-        access_level: "premium",
-        status: "pending",
-        mode: "prematch",
-        published_at: null,
-      },
-      {
-        id: "fallback-2",
-        title: "",
-        match_name: "Sinner - Rublev",
-        league: "ATP 500",
-        sport_type: "tennis",
-        event_start_at: new Date(now + 4 * 60 * 60 * 1000).toISOString(),
-        signal_type: "Победа Sinner",
-        odds: 1.72,
-        short_description: "Устойчивое преимущество на приеме и по розыгрышам.",
-        bet_screenshot: null,
-        result_screenshot: null,
-        risk_level: "low",
-        access_level: "vip",
-        status: "pending",
-        mode: "live",
-        published_at: null,
-      },
-    ];
-  }
-
-  return [
-    {
-      id: "fallback-1",
-      title: "",
-      match_name: "Real Madrid - Inter",
-      league: "UEFA Champions League",
-      sport_type: "football",
-      event_start_at: new Date(now + 2 * 60 * 60 * 1000).toISOString(),
-      signal_type: "Total Over 2.5",
-      odds: 1.88,
-      short_description: "Strong line movement and fast game tempo.",
-      bet_screenshot: null,
-      result_screenshot: null,
-      risk_level: "medium",
-      access_level: "premium",
-      status: "pending",
-      mode: "prematch",
-      published_at: null,
-    },
-    {
-      id: "fallback-2",
-      title: "",
-      match_name: "Sinner - Rublev",
-      league: "ATP 500",
-      sport_type: "tennis",
-      event_start_at: new Date(now + 4 * 60 * 60 * 1000).toISOString(),
-      signal_type: "Sinner to win",
-      odds: 1.72,
-      short_description: "Stable edge on return and rally profile.",
-      bet_screenshot: null,
-      result_screenshot: null,
-      risk_level: "low",
-      access_level: "vip",
-      status: "pending",
-      mode: "live",
-      published_at: null,
-    },
-  ];
+function previewNews(value: string, maxLength = 160): string {
+  const compact = value.replace(/\s+/g, " ").trim();
+  if (!compact) return "";
+  if (compact.length <= maxLength) return compact;
+  return `${compact.slice(0, Math.max(0, maxLength - 1)).trim()}...`;
 }
 
 export function Home() {
@@ -142,17 +91,24 @@ export function Home() {
   const [subscriptionRaw, setSubscriptionRaw] = useState<{ tariff: string; status: string; ends_at: string | null } | null>(null);
   const [stats, setStats] = useState<PublicStats | null>(null);
   const [signals, setSignals] = useState<Prediction[]>([]);
+  const [signalSource, setSignalSource] = useState<"pending" | "won">("pending");
+  const [newsItems, setNewsItems] = useState<NewsPost[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let alive = true;
-    setLoading(true);
+    const load = async () => {
+      setLoading(true);
 
-    Promise.allSettled([api.me(), api.mySubscription(), api.stats(), api.predictions({ status: "pending", limit: 8 })])
-      .then((results) => {
+      try {
+        const [meRes, subRes, statsRes, pendingRes, newsRes] = await Promise.allSettled([
+          api.me(),
+          api.mySubscription(),
+          api.stats(),
+          api.predictions({ status: "pending", limit: 24 }),
+          api.news(),
+        ]);
         if (!alive) return;
-
-        const [meRes, subRes, statsRes, signalsRes] = results;
 
         if (meRes.status === "fulfilled") {
           setDisplayName(meRes.value.first_name || meRes.value.username || "PIT BET");
@@ -160,12 +116,33 @@ export function Home() {
 
         setSubscriptionRaw(subRes.status === "fulfilled" ? subRes.value : null);
         setStats(statsRes.status === "fulfilled" ? statsRes.value : null);
-        setSignals(signalsRes.status === "fulfilled" ? signalsRes.value : []);
-      })
-      .finally(() => {
+        setNewsItems(newsRes.status === "fulfilled" ? newsRes.value : []);
+
+        const pending = pendingRes.status === "fulfilled" ? pendingRes.value : [];
+
+        if (pending.length > 0) {
+          setSignalSource("pending");
+          setSignals([...pending].sort((a, b) => predictionRecency(b) - predictionRecency(a)).slice(0, 2));
+          return;
+        }
+
+        try {
+          const won = await api.predictions({ status: "won", limit: 24 });
+          if (!alive) return;
+          setSignalSource("won");
+          setSignals([...won].sort((a, b) => predictionRecency(b) - predictionRecency(a)).slice(0, 2));
+        } catch {
+          if (!alive) return;
+          setSignalSource("pending");
+          setSignals([]);
+        }
+      } finally {
         if (!alive) return;
         setLoading(false);
-      });
+      }
+    };
+
+    void load();
 
     return () => {
       alive = false;
@@ -174,7 +151,21 @@ export function Home() {
 
   const sub = resolveSubscriptionSnapshot(subscriptionRaw);
   const accessProgress = sub.tariff === "vip" ? 100 : sub.tariff === "premium" ? 72 : 36;
-  const activeSignals = useMemo(() => (signals.length > 0 ? signals.slice(0, 3) : fallbackSignals(language)), [language, signals]);
+  const activeSignals = useMemo(() => signals.slice(0, 2), [signals]);
+  const latestNews = useMemo(
+    () => [...newsItems].filter((item) => item.is_published).sort((a, b) => newsRecency(b) - newsRecency(a)).slice(0, 2),
+    [newsItems],
+  );
+  const signalModeSubtitle =
+    signalSource === "pending"
+      ? language === "ru"
+        ? "2 последних матча в ожидании"
+        : "2 latest pending matches"
+      : language === "ru"
+        ? "Ожидающих нет - показаны 2 последних выигранных"
+        : "No pending matches - showing 2 latest won";
+  const signalChip = signalSource === "pending" ? "LIVE" : "WON";
+  const signalCounter = signalSource === "pending" ? (stats?.pending ?? activeSignals.length) : activeSignals.length;
 
   const subtitleText =
     language === "ru"
@@ -200,10 +191,10 @@ export function Home() {
               <div className="pb-home-r3f-hero-art">
                 <span className="pb-home-r3f-hero-art-halo" />
                 <span className="pb-home-r3f-hero-art-core" />
-                <span className="pb-home-r3f-hero-art-chip">LIVE</span>
+                <span className="pb-home-r3f-hero-art-chip">{signalChip}</span>
                 <div className="pb-home-r3f-hero-art-meta">
-                  <small>{language === "ru" ? "Активные сигналы" : "Active signals"}</small>
-                  <strong>{stats?.pending ?? activeSignals.length}</strong>
+                  <small>{signalSource === "pending" ? (language === "ru" ? "Матчи в ожидании" : "Pending matches") : (language === "ru" ? "Выигранные" : "Won matches")}</small>
+                  <strong>{signalCounter}</strong>
                 </div>
               </div>
             </div>
@@ -253,34 +244,68 @@ export function Home() {
         <section className="pb-premium-panel pb-home-r3f-signals pb-reveal">
           <div className="pb-premium-head">
             <h3>{language === "ru" ? "Последние сигналы" : "Latest signals"}</h3>
-            <small>{language === "ru" ? "3D-карточки с ключевыми метриками" : "3D cards with key metrics"}</small>
+            <small>{signalModeSubtitle}</small>
           </div>
 
-          <div className="pb-home-r3f-signal-list">
-            {activeSignals.map((signal) => (
-              <ErrorBoundary key={signal.id} fallback={<div className="pb-home-r3f-fallback">3D</div>}>
-                <Suspense fallback={<div className="pb-home-r3f-fallback">3D</div>}>
-                  <SignalCard3D
-                    to={signal.id.startsWith("fallback-") ? "/feed" : `/feed/${signal.id}`}
-                    title={signal.match_name}
-                    league={signal.league || t("feed.noLeague")}
-                    sport={signal.sport_type}
-                    mode={signal.mode === "live" ? t("common.live") : t("common.prematch")}
-                    kickoff={formatDate(signal.event_start_at, language)}
-                    signal={signal.signal_type}
-                    odds={signal.odds}
-                    oddsLabel={t("feed.label.odds")}
-                    risk={riskLabel(signal.risk_level, t)}
-                    status={signal.status}
-                    statusLabel={statusLabel(signal.status, t)}
-                    accessLabel={accessLabel(signal.access_level, t)}
-                    note={teaser(signal.short_description, t("feed.teaserFallback"))}
-                    language={language}
-                  />
-                </Suspense>
-              </ErrorBoundary>
-            ))}
+          {activeSignals.length > 0 ? (
+            <div className="pb-home-r3f-signal-list">
+              {activeSignals.map((signal) => (
+                <ErrorBoundary key={signal.id} fallback={<div className="pb-home-r3f-fallback">3D</div>}>
+                  <Suspense fallback={<div className="pb-home-r3f-fallback">3D</div>}>
+                    <SignalCard3D
+                      to={`/feed/${signal.id}`}
+                      title={signal.match_name}
+                      league={signal.league || t("feed.noLeague")}
+                      sport={signal.sport_type}
+                      mode={signal.mode === "live" ? t("common.live") : t("common.prematch")}
+                      kickoff={formatDate(signal.event_start_at, language)}
+                      signal={signal.signal_type}
+                      odds={signal.odds}
+                      oddsLabel={t("feed.label.odds")}
+                      risk={riskLabel(signal.risk_level, t)}
+                      status={signal.status}
+                      statusLabel={statusLabel(signal.status, t)}
+                      accessLabel={accessLabel(signal.access_level, t)}
+                      note={teaser(signal.short_description, t("feed.teaserFallback"))}
+                      language={language}
+                    />
+                  </Suspense>
+                </ErrorBoundary>
+              ))}
+            </div>
+          ) : (
+            <p className="pb-empty-state">{t("home.today.empty")}</p>
+          )}
+        </section>
+
+        <section className="pb-premium-panel pb-home-news-showcase pb-reveal">
+          <div className="pb-premium-head">
+            <h3>{t("home.news.title")}</h3>
+            <small>{language === "ru" ? "Две последние публикации" : "Two latest publications"}</small>
           </div>
+
+          {latestNews.length > 0 ? (
+            <>
+              <div className="pb-home-news-grid">
+                {latestNews.map((item, index) => (
+                  <Link key={item.id} className={index === 0 ? "pb-home-news-card lead" : "pb-home-news-card"} to={`/news/${item.id}`}>
+                    <span className="pb-home-news-chip">{item.category || t("layout.title.news")}</span>
+                    <h4>{item.title}</h4>
+                    <p>{previewNews(item.body)}</p>
+                    <small>{formatNewsDate(item.published_at, language, t("common.noDate"))}</small>
+                  </Link>
+                ))}
+              </div>
+
+              <div className="pb-home-news-actions">
+                <Link className="pb-btn pb-btn-secondary" to="/news">
+                  {t("home.news.openAll")}
+                </Link>
+              </div>
+            </>
+          ) : (
+            <p className="pb-empty-state">{t("home.news.empty")}</p>
+          )}
         </section>
 
         <AppDisclaimer />
