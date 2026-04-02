@@ -33,7 +33,7 @@ export function Profile() {
       <motion.section initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="glass neon p-4">
         <div className="flex items-center gap-3">
           <div className="h-[84px] w-[84px] overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]/80">
-            <Canvas camera={{ position: [0, 0, 3.2], fov: 40 }} dpr={[1, 1.8]}>
+            <Canvas camera={{ position: [0, 0, 3.2], fov: 40 }} dpr={[1, 1.2]} gl={{ antialias: false, powerPreference: "low-power" }}>
               <ambientLight intensity={0.8} />
               <pointLight position={[2, 2, 3]} intensity={1.2} color="#00ff9d" />
               <pointLight position={[-2, -1, 2]} intensity={1.0} color="#00b8ff" />

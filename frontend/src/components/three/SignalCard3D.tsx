@@ -1,6 +1,6 @@
 import { Canvas } from "@react-three/fiber";
 import { motion, useMotionTemplate, useMotionValue, animate } from "framer-motion";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 
 import { useHaptics } from "../../hooks/useHaptics";
 import { type Signal } from "../../lib/api";
@@ -10,6 +10,7 @@ import { FloatingHeroObject } from "./FloatingHeroObject";
 type Props = {
   signal: Signal;
   onOpen?: (signal: Signal) => void;
+  force3D?: boolean;
 };
 
 function toSportObject(sport: Signal["sport"]): "football" | "tennis" | "trophy" {
@@ -18,11 +19,33 @@ function toSportObject(sport: Signal["sport"]): "football" | "tennis" | "trophy"
   return "trophy";
 }
 
-export function SignalCard3D({ signal, onOpen }: Props) {
+function shouldUseFullCanvas() {
+  if (typeof window === "undefined") return true;
+  const nav = navigator as Navigator & { deviceMemory?: number };
+  const lowCpu = typeof nav.hardwareConcurrency === "number" && nav.hardwareConcurrency <= 4;
+  const lowMem = typeof nav.deviceMemory === "number" && nav.deviceMemory <= 4;
+  const telegramWebView = /Telegram/i.test(nav.userAgent);
+  return !(lowCpu || lowMem || telegramWebView);
+}
+
+export function SignalCard3D({ signal, onOpen, force3D = false }: Props) {
   const { t } = useI18n();
   const h = useHaptics();
 
   const [flipped, setFlipped] = useState(false);
+  const [fullCanvas, setFullCanvas] = useState(force3D);
+
+  useEffect(() => {
+    setFullCanvas(force3D || shouldUseFullCanvas());
+  }, [force3D]);
+
+  const sportGlyph = useMemo(() => {
+    if (signal.sport === "football") return "⚽";
+    if (signal.sport === "tennis") return "🎾";
+    if (signal.sport === "basketball") return "🏀";
+    return "🏆";
+  }, [signal.sport]);
+
   const rotateX = useMotionValue(0);
   const rotateY = useMotionValue(0);
   const scale = useMotionValue(1);
@@ -87,14 +110,20 @@ export function SignalCard3D({ signal, onOpen }: Props) {
         </motion.div>
 
         <div className="h-[110px] w-[110px] self-center overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]/50">
-          <Canvas camera={{ position: [0, 0, 3.2], fov: 42 }} dpr={[1, 1.8]}>
-            <ambientLight intensity={0.6} />
-            <pointLight position={[2, 2, 3]} intensity={1.2} color="#00ff9d" />
-            <pointLight position={[-2, -1, 2]} intensity={0.8} color="#00b8ff" />
-            <Suspense fallback={null}>
-              <FloatingHeroObject type={toSportObject(signal.sport)} scale={0.85} />
-            </Suspense>
-          </Canvas>
+          {fullCanvas ? (
+            <Canvas camera={{ position: [0, 0, 3.2], fov: 42 }} dpr={[1, 1.2]} gl={{ antialias: false, powerPreference: "low-power" }}>
+              <ambientLight intensity={0.6} />
+              <pointLight position={[2, 2, 3]} intensity={1.2} color="#00ff9d" />
+              <pointLight position={[-2, -1, 2]} intensity={0.8} color="#00b8ff" />
+              <Suspense fallback={null}>
+                <FloatingHeroObject type={toSportObject(signal.sport)} scale={0.85} />
+              </Suspense>
+            </Canvas>
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-[34px]">
+              {sportGlyph}
+            </div>
+          )}
         </div>
       </div>
 
