@@ -52,9 +52,9 @@ export function BottomNav({ items, ariaLabel }: { items: BottomNavItem[]; ariaLa
   return (
     <nav className="pb-orb-dock pb-nav-dock-v2" aria-label={ariaLabel}>
       {items.map((item, index) => {
-        const key = item.key || (index === 4 ? "center" : `tab-${index}`);
+        const key = item.key || (index === 2 ? "tariffs" : `tab-${index}`);
         const active = item.active ? "active" : "";
-        const center = key === "center" ? " center" : "";
+        const center = key === "tariffs" ? " center" : "";
 
         return (
           <Link key={`${item.to}-${item.label}`} to={item.to} className={`${active}${center}`} data-key={key}>

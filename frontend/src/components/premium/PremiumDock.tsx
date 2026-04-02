@@ -29,7 +29,7 @@ export function PremiumDock({ items, ariaLabel }: { items: DockItem[]; ariaLabel
           key={item.key}
           to={item.to}
           data-key={item.key}
-          className={`${item.active ? "active" : ""}${item.key === "center" ? " center" : ""}`}
+          className={`${item.active ? "active" : ""}${item.key === "tariffs" ? " center" : ""}`}
           aria-current={item.active ? "page" : undefined}
           onClick={() => onPress(item.key)}
           whileTap={{ scale: 0.96 }}

@@ -35,34 +35,29 @@ function pageMeta(pathname: string): PageMeta {
   return { titleKey: "layout.title.home", subtitleKey: "layout.subtitle.home" };
 }
 
-function isMorePath(pathname: string): boolean {
-  return pathname.startsWith("/menu") || pathname.startsWith("/news") || pathname.startsWith("/tariffs") || pathname.startsWith("/admin") || pathname.startsWith("/support");
-}
-
-function DockGlyph({ type }: { type: "overview" | "signals" | "stats" | "account" | "center" }) {
-  if (type === "overview") {
+function DockGlyph({ type }: { type: "home" | "signals" | "tariffs" | "profile" | "admin" }) {
+  if (type === "home") {
     return (
       <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M4 5.3h16v5.1H4zm0 7h7.2v6.4H4zm8.8 0H20v2.8h-7.2zm0 3.8H20v2.6h-7.2z" />
+        <path d="M4.4 10.4 12 4l7.6 6.4V20H14v-5h-4v5H4.4z" />
       </svg>
     );
   }
   if (type === "signals") {
     return (
       <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M4 6.2h16v2H4zm0 4.1h10.8v2H4zm0 4.1h16v2H4z" />
-        <path d="M17.1 10.3h2.8v2h-2.8z" />
+        <path d="M5 16.4 9.6 8h3l-1.8 4h3.5l-5.1 8.6H6.1l2.3-4.2z" />
       </svg>
     );
   }
-  if (type === "stats") {
+  if (type === "tariffs") {
     return (
       <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M4 18.4h16v1.6H4zm2-2.2h2.6V9.4H6zm4.5 0h2.6V6.2h-2.6zm4.5 0h2.6v-4.6H15z" />
+        <path d="M5.2 7.2h13.6v3.1H5.2zm0 4.5h13.6v2.4H5.2zm0 3.8h13.6v2.4H5.2z" />
       </svg>
     );
   }
-  if (type === "account") {
+  if (type === "profile") {
     return (
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path d="M12 4.5a4.1 4.1 0 1 1 0 8.2 4.1 4.1 0 0 1 0-8.2m0 10.4c4.7 0 7.7 2.3 8.1 4.8H3.9c.4-2.5 3.4-4.8 8.1-4.8" />
@@ -72,13 +67,13 @@ function DockGlyph({ type }: { type: "overview" | "signals" | "stats" | "account
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="m12 3.5 1.4 2.3 2.6-.1.8 2.5 2.2 1.4-1 2.4 1 2.4-2.2 1.4-.8 2.5-2.6-.1L12 20.5l-1.4-2.3-2.6.1-.8-2.5-2.2-1.4 1-2.4-1-2.4 2.2-1.4.8-2.5 2.6.1z" />
-      <circle cx="12" cy="12" r="2.3" />
+      <circle cx="12" cy="12" r="2.2" />
     </svg>
   );
 }
 
 export function Layout({ children }: PropsWithChildren) {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -110,44 +105,51 @@ export function Layout({ children }: PropsWithChildren) {
 
   const meta = useMemo(() => pageMeta(location.pathname), [location.pathname]);
   const dockItems = useMemo(
-    () => [
-      {
-        key: "overview",
-        label: t("layout.nav.home"),
-        to: "/",
-        active: location.pathname === "/",
-        glyph: <DockGlyph type="overview" />,
-      },
-      {
-        key: "signals",
-        label: t("layout.nav.feed"),
-        to: "/feed",
-        active: location.pathname.startsWith("/feed"),
-        glyph: <DockGlyph type="signals" />,
-      },
-      {
-        key: "stats",
-        label: t("layout.nav.stats"),
-        to: "/stats",
-        active: location.pathname.startsWith("/stats"),
-        glyph: <DockGlyph type="stats" />,
-      },
-      {
-        key: "account",
-        label: t("layout.nav.profile"),
-        to: "/profile",
-        active: location.pathname.startsWith("/profile"),
-        glyph: <DockGlyph type="account" />,
-      },
-      {
-        key: "center",
-        label: t("layout.nav.center"),
-        to: "/menu",
-        active: isMorePath(location.pathname),
-        glyph: <DockGlyph type="center" />,
-      },
-    ],
-    [location.pathname, t],
+    () => {
+      const nav = [
+        {
+          key: "home",
+          label: language === "ru" ? "Главная" : "Home",
+          to: "/",
+          active: location.pathname === "/",
+          glyph: <DockGlyph type="home" />,
+        },
+        {
+          key: "signals",
+          label: language === "ru" ? "Сигналы" : "Signals",
+          to: "/feed",
+          active: location.pathname.startsWith("/feed"),
+          glyph: <DockGlyph type="signals" />,
+        },
+        {
+          key: "tariffs",
+          label: language === "ru" ? "Тарифы" : "Tariffs",
+          to: "/tariffs",
+          active: location.pathname.startsWith("/tariffs"),
+          glyph: <DockGlyph type="tariffs" />,
+        },
+        {
+          key: "profile",
+          label: language === "ru" ? "Профиль" : "Profile",
+          to: "/profile",
+          active: location.pathname.startsWith("/profile"),
+          glyph: <DockGlyph type="profile" />,
+        },
+      ];
+
+      if (staffRole === "admin") {
+        nav.push({
+          key: "admin",
+          label: language === "ru" ? "Админ" : "Admin",
+          to: "/admin",
+          active: location.pathname.startsWith("/admin"),
+          glyph: <DockGlyph type="admin" />,
+        });
+      }
+
+      return nav;
+    },
+    [language, location.pathname, staffRole],
   );
 
   useEffect(() => {

@@ -474,7 +474,19 @@ export function ProfilePage({ withThree = false }: { withThree?: boolean } = {})
         {notifyMessage ? <p className={notifyMessage.tone === "success" ? "pb-notice success" : "pb-notice error"}>{notifyMessage.text}</p> : null}
       </section>
 
-        <AppDisclaimer />
+      <section className="pb-premium-panel pb-profile-settings-cta pb-reveal">
+        <Link className="pb-profile-settings-btn" to="/menu">
+          <span className="pb-profile-settings-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m12 3.5 1.4 2.3 2.6-.1.8 2.5 2.2 1.4-1 2.4 1 2.4-2.2 1.4-.8 2.5-2.6-.1L12 20.5l-1.4-2.3-2.6.1-.8-2.5-2.2-1.4 1-2.4-1-2.4 2.2-1.4.8-2.5 2.6.1z" />
+              <circle cx="12" cy="12" r="2.3" />
+            </svg>
+          </span>
+          <span>{language === "ru" ? "Настройки" : "Settings"}</span>
+        </Link>
+      </section>
+
+      <AppDisclaimer />
       </div>
     </Layout>
   );

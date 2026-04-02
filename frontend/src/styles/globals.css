@@ -8967,6 +8967,44 @@ a:focus {
   font-size: 11px;
 }
 
+.pb-profile-settings-cta {
+  margin-top: 4px;
+}
+
+.pb-profile-settings-btn {
+  width: 100%;
+  min-height: 58px;
+  border-radius: 18px;
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 28%, var(--border-subtle));
+  background:
+    radial-gradient(circle at 94% -22%, color-mix(in srgb, var(--accent-primary) 22%, transparent), transparent 62%),
+    linear-gradient(160deg, color-mix(in srgb, var(--surface-1) 92%, transparent), color-mix(in srgb, var(--surface-2) 95%, transparent));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 14px 24px rgba(0, 0, 0, 0.24);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.pb-profile-settings-icon {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  color: color-mix(in srgb, var(--accent-primary) 82%, #e7fffa);
+}
+
+.pb-profile-settings-icon svg {
+  width: 20px;
+  height: 20px;
+  fill: currentcolor;
+}
+
 .pb-center-v4-grid {
   display: grid;
   gap: 8px;
@@ -10710,7 +10748,7 @@ h4 {
   transform: translateY(-8px);
 }
 
-.pb-nav-dock-v2 a[data-key="center"] {
+.pb-nav-dock-v2 a[data-key="tariffs"] {
   border-color: color-mix(in srgb, var(--accent-primary) 36%, transparent);
   background:
     radial-gradient(circle at 50% -35%, color-mix(in srgb, var(--accent-primary) 26%, transparent), transparent 62%),
@@ -10720,7 +10758,7 @@ h4 {
     0 8px 16px color-mix(in srgb, var(--accent-primary) 26%, transparent);
 }
 
-.pb-nav-dock-v2 a[data-key="center"] .pb-orb-icon-wrap::before {
+.pb-nav-dock-v2 a[data-key="tariffs"] .pb-orb-icon-wrap::before {
   content: "";
   position: absolute;
   inset: -5px;
@@ -11016,4 +11054,14 @@ h4 {
 .pb-app-screen-profile,
 .pb-app-screen-admin {
   position: relative;
+}
+
+:root[data-theme="light"] .pb-profile-settings-btn {
+  border-color: color-mix(in srgb, var(--accent-primary) 24%, var(--border-subtle));
+  background:
+    radial-gradient(circle at 94% -22%, rgba(10, 184, 153, 0.16), transparent 62%),
+    linear-gradient(160deg, #ffffff, #f3f8ff);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.88),
+    0 10px 20px rgba(20, 38, 61, 0.12);
 }
