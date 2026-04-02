@@ -1,15 +1,12 @@
-import { Suspense, useEffect, useRef, useState } from "react";
-
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas } from "@react-three/fiber";
+import { useFrame } from "@react-three/fiber";
+import { useRef } from "react";
 import type { Group } from "three";
-
-import { ErrorBoundary } from "../motion/ErrorBoundary";
 
 function RingModel({ percent }: { percent: number }) {
   const safe = Math.max(0, Math.min(100, Math.round(percent)));
   const angle = (safe / 100) * Math.PI * 2;
   const ringRef = useRef<Group>(null);
-  const pulseRef = useRef<Group>(null);
 
   useFrame(({ clock }) => {
     const ring = ringRef.current;
@@ -17,19 +14,13 @@ function RingModel({ percent }: { percent: number }) {
     const t = clock.elapsedTime;
     ring.rotation.y = t * 0.35;
     ring.rotation.x = Math.sin(t * 0.7) * 0.12;
-
-    const pulse = pulseRef.current;
-    if (pulse) {
-      const s = 0.9 + Math.sin(t * 2) * 0.08;
-      pulse.scale.set(s, s, s);
-    }
   });
 
   return (
     <group ref={ringRef}>
       <mesh rotation={[Math.PI / 2, 0, 0]}>
         <torusGeometry args={[0.75, 0.11, 22, 120]} />
-        <meshStandardMaterial color="#203849" metalness={0.5} roughness={0.44} emissive="#203849" emissiveIntensity={0.18} />
+        <meshStandardMaterial color="#203849" metalness={0.5} roughness={0.44} />
       </mesh>
 
       <mesh rotation={[Math.PI / 2, 0, 0]}>
@@ -41,17 +32,6 @@ function RingModel({ percent }: { percent: number }) {
         <cylinderGeometry args={[0.9, 0.9, 0.06, 28]} />
         <meshStandardMaterial color="#132737" metalness={0.4} roughness={0.5} />
       </mesh>
-
-      <group ref={pulseRef}>
-        <mesh position={[0, 0.02, 0]}>
-          <sphereGeometry args={[0.19, 20, 20]} />
-          <meshStandardMaterial color="#9cfdf0" emissive="#2cd8b7" emissiveIntensity={0.64} metalness={0.42} roughness={0.26} />
-        </mesh>
-        <mesh position={[0, 0.02, 0]} scale={1.9}>
-          <sphereGeometry args={[0.15, 18, 18]} />
-          <meshBasicMaterial color="#2cd8b7" transparent opacity={0.12} />
-        </mesh>
-      </group>
     </group>
   );
 }
@@ -68,55 +48,21 @@ export function SubscriptionProgress3D({
   height?: number;
 }) {
   const safe = Math.max(0, Math.min(100, Math.round(percent)));
-  const [animatedPercent, setAnimatedPercent] = useState(0);
-  const prevRef = useRef(0);
-
-  useEffect(() => {
-    let mounted = true;
-    const from = prevRef.current;
-    const target = safe;
-    const duration = 640;
-    const started = performance.now();
-    let frameId = 0;
-
-    const easeOutCubic = (x: number) => 1 - Math.pow(1 - x, 3);
-
-    const tick = (now: number) => {
-      if (!mounted) return;
-      const progress = Math.min(1, (now - started) / duration);
-      const next = from + (target - from) * easeOutCubic(progress);
-      prevRef.current = next;
-      setAnimatedPercent(next);
-      if (progress < 1) {
-        frameId = window.requestAnimationFrame(tick);
-      }
-    };
-
-    frameId = window.requestAnimationFrame(tick);
-    return () => {
-      mounted = false;
-      window.cancelAnimationFrame(frameId);
-    };
-  }, [safe]);
 
   return (
     <section className="pb-three-progress" style={{ height }}>
       <div className="pb-three-progress-canvas" aria-hidden="true">
-        <ErrorBoundary fallback={<div className="pb-home-r3f-fallback">3D</div>}>
-          <Suspense fallback={<div className="pb-home-r3f-fallback">3D</div>}>
-            <Canvas camera={{ position: [0, 0, 2.7], fov: 44 }} dpr={[1, 1.4]} gl={{ alpha: true, antialias: true, powerPreference: "low-power" }}>
-              <ambientLight intensity={0.82} />
-              <pointLight position={[2.2, 1.8, 3]} intensity={1.1} color="#2cd8b7" />
-              <pointLight position={[-2.2, -1.6, 2.8]} intensity={0.9} color="#2f8cff" />
-              <RingModel percent={animatedPercent} />
-            </Canvas>
-          </Suspense>
-        </ErrorBoundary>
+        <Canvas camera={{ position: [0, 0, 2.7], fov: 44 }} dpr={[1, 1.4]} gl={{ alpha: true, antialias: true, powerPreference: "low-power" }}>
+          <ambientLight intensity={0.82} />
+          <pointLight position={[2.2, 1.8, 3]} intensity={1.1} color="#2cd8b7" />
+          <pointLight position={[-2.2, -1.6, 2.8]} intensity={0.9} color="#2f8cff" />
+          <RingModel percent={safe} />
+        </Canvas>
       </div>
 
       <div className="pb-three-progress-copy">
         <small>{label}</small>
-        <strong>{Math.round(animatedPercent)}%</strong>
+        <strong>{safe}%</strong>
         <p>{caption}</p>
       </div>
     </section>
