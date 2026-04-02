@@ -1,16 +1,16 @@
 :root {
-  --background: #0f1621;
-  --surface: #18222d;
-  --card: #212d3b;
-  --border: #2c3a4a;
-  --accent: #58a6ff;
-  --accent-secondary: #8ab4f8;
-  --text-primary: #ffffff;
-  --text-secondary: #8a9ba8;
+  --background: #0a0b14;
+  --surface: #141721;
+  --card: #1e2330;
+  --border: #2a3345;
+  --accent: #00e5c8;
+  --accent-secondary: #00b8ff;
+  --text-primary: #f1f3f9;
+  --text-secondary: #a3a9b8;
 
-  --radius-xl: 18px;
-  --radius-2xl: 24px;
-  --shadow-soft: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --radius-xl: 20px;
+  --radius-2xl: 28px;
+  --shadow-soft: 0 12px 40px rgba(0, 0, 0, 0.12);
   --shadow-neon: 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent), 0 0 40px color-mix(in srgb, var(--accent) 25%, transparent);
 
   --app-bg: var(--background);
@@ -67,18 +67,18 @@
 }
 
 :root[data-theme="light"] {
-  --background: #f0f2f5;
+  --background: #f5f6fa;
   --surface: #ffffff;
-  --card: #ffffff;
-  --border: #dfe2eb;
-  --accent: #229ed9;
-  --accent-secondary: #4a9eff;
-  --text-primary: #212121;
-  --text-secondary: #5f636e;
+  --card: #f8f9fc;
+  --border: #e1e5f0;
+  --accent: #00d9b8;
+  --accent-secondary: #0099ff;
+  --text-primary: #1c1f2e;
+  --text-secondary: #5a5f78;
 
-  --radius-xl: 18px;
-  --radius-2xl: 24px;
-  --shadow-soft: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --radius-xl: 20px;
+  --radius-2xl: 28px;
+  --shadow-soft: 0 12px 40px rgba(0, 0, 0, 0.12);
   --shadow-neon: 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent), 0 0 40px color-mix(in srgb, var(--accent) 25%, transparent);
 
   --app-bg: var(--background);
@@ -10633,18 +10633,18 @@ h4 {
 /* PIT BET Theme Refresh */
 
 :root {
-  --background: #0f1621;
-  --surface: #18222d;
-  --card: #212d3b;
-  --border: #2c3a4a;
-  --accent: #58a6ff;
-  --accent-secondary: #8ab4f8;
-  --text-primary: #ffffff;
-  --text-secondary: #8a9ba8;
+  --background: #0a0b14;
+  --surface: #141721;
+  --card: #1e2330;
+  --border: #2a3345;
+  --accent: #00e5c8;
+  --accent-secondary: #00b8ff;
+  --text-primary: #f1f3f9;
+  --text-secondary: #a3a9b8;
 
-  --radius-xl: 18px;
-  --radius-2xl: 24px;
-  --shadow-soft: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --radius-xl: 20px;
+  --radius-2xl: 28px;
+  --shadow-soft: 0 12px 40px rgba(0, 0, 0, 0.12);
   --shadow-neon: 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent), 0 0 40px color-mix(in srgb, var(--accent) 25%, transparent);
 
   --app-bg: var(--background);
@@ -10682,18 +10682,18 @@ h4 {
 }
 
 :root[data-theme="light"] {
-  --background: #f0f2f5;
+  --background: #f5f6fa;
   --surface: #ffffff;
-  --card: #ffffff;
-  --border: #dfe2eb;
-  --accent: #229ed9;
-  --accent-secondary: #4a9eff;
-  --text-primary: #212121;
-  --text-secondary: #5f636e;
+  --card: #f8f9fc;
+  --border: #e1e5f0;
+  --accent: #00d9b8;
+  --accent-secondary: #0099ff;
+  --text-primary: #1c1f2e;
+  --text-secondary: #5a5f78;
 
-  --radius-xl: 18px;
-  --radius-2xl: 24px;
-  --shadow-soft: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --radius-xl: 20px;
+  --radius-2xl: 28px;
+  --shadow-soft: 0 12px 40px rgba(0, 0, 0, 0.12);
   --shadow-neon: 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent), 0 0 40px color-mix(in srgb, var(--accent) 25%, transparent);
 
   --app-bg: var(--background);

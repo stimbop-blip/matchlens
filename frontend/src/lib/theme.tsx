@@ -13,11 +13,11 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 const TELEGRAM_THEME_COLORS: Record<AppTheme, { background: string; surface: string }> = {
   dark: {
-    background: "#0f1621",
-    surface: "#18222d",
+    background: "#0a0b14",
+    surface: "#141721",
   },
   light: {
-    background: "#f0f2f5",
+    background: "#f5f6fa",
     surface: "#ffffff",
   },
 };
