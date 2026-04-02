@@ -1,6 +1,5 @@
 import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Canvas } from "@react-three/fiber";
 
 import { useI18n } from "./i18n";
 import { resolveSubscriptionSnapshot } from "./subscription";
@@ -13,7 +12,6 @@ import { PremiumKpi } from "../components/premium/PremiumKpi";
 import { RocketLoader } from "../components/ui";
 import { api, type Prediction, type PublicStats } from "../services/api";
 
-const FloatingHeroObject = lazy(() => import("../components/three/FloatingHeroObject").then((module) => ({ default: module.FloatingHeroObject })));
 const SubscriptionProgress3D = lazy(() => import("../components/three/SubscriptionProgress3D").then((module) => ({ default: module.SubscriptionProgress3D })));
 const SignalCard3D = lazy(() => import("../components/three/SignalCard3D").then((module) => ({ default: module.SignalCard3D })));
 
@@ -199,18 +197,15 @@ export function Home() {
             </div>
 
             <div className="pb-home-r3f-hero-object" aria-hidden="true">
-              <ErrorBoundary fallback={<div className="pb-home-r3f-fallback">3D</div>}>
-                <Suspense fallback={<div className="pb-home-r3f-fallback">3D</div>}>
-                  <div className="pb-home-r3f-canvas-wrap">
-                    <Canvas camera={{ position: [0, 0, 3], fov: 42 }} dpr={[1, 1.4]} gl={{ alpha: true, antialias: true, powerPreference: "low-power" }}>
-                      <ambientLight intensity={0.82} />
-                      <pointLight position={[2, 2, 3]} intensity={1.1} color="#2cd8b7" />
-                      <pointLight position={[-2, -1.2, 2.6]} intensity={0.8} color="#2f8cff" />
-                      <FloatingHeroObject type="trophy" scale={0.95} />
-                    </Canvas>
-                  </div>
-                </Suspense>
-              </ErrorBoundary>
+              <div className="pb-home-r3f-hero-art">
+                <span className="pb-home-r3f-hero-art-halo" />
+                <span className="pb-home-r3f-hero-art-core" />
+                <span className="pb-home-r3f-hero-art-chip">LIVE</span>
+                <div className="pb-home-r3f-hero-art-meta">
+                  <small>{language === "ru" ? "Активные сигналы" : "Active signals"}</small>
+                  <strong>{stats?.pending ?? activeSignals.length}</strong>
+                </div>
+              </div>
             </div>
           </div>
 

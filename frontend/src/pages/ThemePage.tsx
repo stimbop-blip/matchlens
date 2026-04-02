@@ -36,15 +36,29 @@ export function ThemePage() {
             <span className="pb-choice-flag" aria-hidden="true">
               DK
             </span>
-            <strong>{t("theme.dark")}</strong>
-            <p>{t("theme.darkDesc")}</p>
+            <span className="pb-theme-choice-preview dark" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+            </span>
+            <div className="pb-theme-choice-copy">
+              <strong>{t("theme.dark")}</strong>
+              <p>{t("theme.darkDesc")}</p>
+            </div>
           </button>
           <button type="button" className={theme === "light" ? "pb-choice-card active" : "pb-choice-card"} onClick={() => apply("light")}>
             <span className="pb-choice-flag" aria-hidden="true">
               LT
             </span>
-            <strong>{t("theme.light")}</strong>
-            <p>{t("theme.lightDesc")}</p>
+            <span className="pb-theme-choice-preview light" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+            </span>
+            <div className="pb-theme-choice-copy">
+              <strong>{t("theme.light")}</strong>
+              <p>{t("theme.lightDesc")}</p>
+            </div>
           </button>
         </div>
       </AppShellSection>

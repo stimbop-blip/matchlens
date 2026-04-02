@@ -10594,3 +10594,465 @@ h4 {
     height: 72px;
   }
 }
+
+/* PIT BET Theme Refresh */
+
+:root {
+  --app-bg: #050d1a;
+  --app-bg-elevated: #081427;
+  --surface-1: #0d1d33;
+  --surface-2: #12253e;
+  --surface-3: #182f4c;
+  --border-subtle: rgba(162, 194, 229, 0.14);
+  --border-strong: rgba(168, 203, 240, 0.24);
+  --text-primary: #f3f8ff;
+  --text-secondary: #acbdd4;
+  --text-muted: #7f93ae;
+  --accent-primary: #22d6b5;
+  --accent-soft: rgba(34, 214, 181, 0.2);
+  --info: #6fa6ff;
+  --success: #29cb7a;
+  --warning: #e8bc7f;
+  --danger: #ff5c82;
+  --tabbar-bg: rgba(10, 19, 33, 0.9);
+  --tabbar-border: rgba(171, 200, 235, 0.24);
+  --button-primary-bg: linear-gradient(132deg, #1dd9b0 0%, #3b8fff 100%);
+  --button-secondary-bg: color-mix(in srgb, var(--surface-2) 86%, transparent);
+  --button-secondary-text: #eaf3ff;
+  --input-bg: color-mix(in srgb, var(--surface-1) 90%, #0a1525);
+  --input-border: color-mix(in srgb, var(--border-strong) 72%, transparent);
+  --input-text: #eef4ff;
+  --shadow-soft: 0 18px 42px rgba(2, 8, 20, 0.42);
+  --shadow-card: 0 20px 44px rgba(2, 10, 24, 0.38);
+  --page-glow-1: rgba(34, 214, 181, 0.24);
+  --page-glow-2: rgba(90, 146, 255, 0.2);
+  --page-glow-3: rgba(34, 214, 181, 0.12);
+  --page-grad-start: #09182d;
+  --page-grad-end: #060d1b;
+  --glass-panel-start: rgba(14, 28, 43, 0.94);
+  --glass-panel-end: rgba(9, 17, 29, 0.98);
+  --glass-panel-shadow: 0 22px 48px rgba(1, 7, 18, 0.44);
+}
+
+:root[data-theme="light"] {
+  --app-bg: #f3f7fd;
+  --app-bg-elevated: #edf3fb;
+  --surface-1: #ffffff;
+  --surface-2: #f6faff;
+  --surface-3: #eaf2fb;
+  --border-subtle: #d6e2f0;
+  --border-strong: #c2d4e9;
+  --text-primary: #11253f;
+  --text-secondary: #4f6483;
+  --text-muted: #7387a4;
+  --accent-primary: #10af8c;
+  --accent-soft: rgba(16, 175, 140, 0.18);
+  --info: #3679db;
+  --success: #149f57;
+  --warning: #cc8b20;
+  --danger: #cf395f;
+  --tabbar-bg: rgba(255, 255, 255, 0.92);
+  --tabbar-border: #cfdeee;
+  --button-primary-bg: linear-gradient(132deg, #16c89e 0%, #3687ec 100%);
+  --button-secondary-bg: #edf4fb;
+  --button-secondary-text: #183a62;
+  --input-bg: #ffffff;
+  --input-border: #cddced;
+  --input-text: #18304d;
+  --shadow-soft: 0 14px 34px rgba(23, 42, 69, 0.13);
+  --shadow-card: 0 16px 36px rgba(24, 43, 70, 0.14);
+  --page-glow-1: rgba(16, 175, 140, 0.2);
+  --page-glow-2: rgba(72, 128, 219, 0.16);
+  --page-glow-3: rgba(16, 175, 140, 0.1);
+  --page-grad-start: #f8fbff;
+  --page-grad-end: #eef4fb;
+  --glass-panel-start: rgba(255, 255, 255, 0.92);
+  --glass-panel-end: rgba(243, 248, 255, 0.96);
+  --glass-panel-shadow: 0 16px 36px rgba(23, 42, 70, 0.14);
+}
+
+body {
+  background:
+    radial-gradient(circle at 10% -24%, var(--page-glow-1), transparent 46%),
+    radial-gradient(circle at 94% -10%, var(--page-glow-2), transparent 42%),
+    radial-gradient(circle at 48% 110%, var(--page-glow-3), transparent 56%),
+    linear-gradient(180deg, var(--page-grad-start), var(--page-grad-end));
+}
+
+.pb-backdrop-glow {
+  background:
+    radial-gradient(circle at 16% -12%, color-mix(in srgb, var(--accent-primary) 28%, transparent), transparent 44%),
+    radial-gradient(circle at 92% 0, color-mix(in srgb, var(--info) 18%, transparent), transparent 42%),
+    radial-gradient(circle at 50% 108%, color-mix(in srgb, var(--accent-soft) 60%, transparent), transparent 55%);
+}
+
+.pb-three-global-canvas {
+  opacity: 0.24;
+  mix-blend-mode: screen;
+}
+
+:root[data-theme="light"] .pb-three-global-canvas {
+  opacity: 0.16;
+  mix-blend-mode: multiply;
+}
+
+.pb-app-header {
+  border-color: color-mix(in srgb, var(--border-subtle) 80%, transparent);
+  background: linear-gradient(165deg, var(--glass-panel-start), var(--glass-panel-end));
+  box-shadow: var(--glass-panel-shadow);
+}
+
+.pb-hero-panel-v2,
+.pb-premium-panel {
+  border-color: color-mix(in srgb, var(--accent-primary) 16%, var(--border-subtle));
+  background:
+    radial-gradient(circle at 100% -20%, color-mix(in srgb, var(--accent-primary) 16%, transparent), transparent 56%),
+    radial-gradient(circle at -10% 120%, color-mix(in srgb, var(--info) 11%, transparent), transparent 54%),
+    linear-gradient(160deg, color-mix(in srgb, var(--surface-2) 96%, transparent), color-mix(in srgb, var(--surface-1) 98%, transparent));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 8%, transparent),
+    var(--shadow-card);
+}
+
+.pb-center-v4-card {
+  border-color: color-mix(in srgb, var(--accent-primary) 12%, var(--border-subtle));
+  background:
+    radial-gradient(circle at 100% -24%, color-mix(in srgb, var(--accent-primary) 14%, transparent), transparent 58%),
+    linear-gradient(162deg, color-mix(in srgb, var(--surface-2) 92%, transparent), color-mix(in srgb, var(--surface-1) 96%, transparent));
+  box-shadow: 0 14px 30px color-mix(in srgb, black 20%, transparent);
+}
+
+.pb-center-v4-icon {
+  border-color: color-mix(in srgb, var(--accent-primary) 44%, transparent);
+  background: color-mix(in srgb, var(--accent-primary) 14%, transparent);
+  color: color-mix(in srgb, var(--accent-primary) 86%, var(--text-primary));
+}
+
+.pb-center-v4-chip {
+  border-color: color-mix(in srgb, var(--border-strong) 70%, transparent);
+  background: color-mix(in srgb, var(--surface-3) 58%, transparent);
+}
+
+.pb-choice-card {
+  border-color: color-mix(in srgb, var(--border-strong) 70%, transparent);
+  background:
+    radial-gradient(circle at 92% 12%, color-mix(in srgb, var(--accent-primary) 14%, transparent), transparent 55%),
+    linear-gradient(155deg, color-mix(in srgb, var(--surface-2) 92%, transparent), color-mix(in srgb, var(--surface-1) 97%, transparent));
+  border-radius: 22px;
+  padding: 14px;
+  display: grid;
+  grid-template-columns: auto 94px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 14px 30px color-mix(in srgb, black 18%, transparent);
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.pb-choice-card.active {
+  border-color: color-mix(in srgb, var(--accent-primary) 54%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent-primary) 26%, transparent) inset,
+    0 16px 34px color-mix(in srgb, black 20%, transparent);
+}
+
+.pb-choice-card strong {
+  font-size: 17px;
+}
+
+.pb-choice-card .pb-choice-flag {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  border-color: color-mix(in srgb, var(--border-strong) 72%, transparent);
+  background: color-mix(in srgb, var(--surface-3) 70%, transparent);
+  font-weight: 800;
+  color: var(--text-secondary);
+}
+
+.pb-theme-choice-preview {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 68px;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 72%, transparent);
+  overflow: hidden;
+}
+
+.pb-theme-choice-preview span {
+  position: absolute;
+  border-radius: 999px;
+}
+
+.pb-theme-choice-preview span:nth-child(1) {
+  inset: 11px auto auto 12px;
+  width: 50%;
+  height: 10px;
+}
+
+.pb-theme-choice-preview span:nth-child(2) {
+  inset: 29px auto auto 12px;
+  width: 64%;
+  height: 10px;
+}
+
+.pb-theme-choice-preview span:nth-child(3) {
+  inset: auto 12px 12px auto;
+  width: 30px;
+  aspect-ratio: 1;
+}
+
+.pb-theme-choice-preview.dark {
+  background:
+    radial-gradient(circle at 78% 20%, rgba(34, 214, 181, 0.32), transparent 52%),
+    linear-gradient(145deg, #0f2238, #081423);
+}
+
+.pb-theme-choice-preview.dark span:nth-child(1),
+.pb-theme-choice-preview.dark span:nth-child(2) {
+  background: rgba(205, 228, 255, 0.24);
+}
+
+.pb-theme-choice-preview.dark span:nth-child(3) {
+  background: linear-gradient(160deg, #3c8fff, #21d5b2);
+  box-shadow: 0 0 16px rgba(33, 213, 178, 0.45);
+}
+
+.pb-theme-choice-preview.light {
+  background:
+    radial-gradient(circle at 82% 20%, rgba(27, 152, 123, 0.18), transparent 54%),
+    linear-gradient(145deg, #ffffff, #edf4fb);
+}
+
+.pb-theme-choice-preview.light span:nth-child(1),
+.pb-theme-choice-preview.light span:nth-child(2) {
+  background: rgba(66, 95, 133, 0.24);
+}
+
+.pb-theme-choice-preview.light span:nth-child(3) {
+  background: linear-gradient(160deg, #2f7ce2, #10af8c);
+  box-shadow: 0 0 14px rgba(16, 175, 140, 0.34);
+}
+
+.pb-theme-choice-copy {
+  display: grid;
+  gap: 6px;
+}
+
+@media (hover: hover) {
+  .pb-choice-card:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in srgb, var(--accent-primary) 34%, transparent);
+  }
+}
+
+@media (max-width: 620px) {
+  .pb-choice-card {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .pb-theme-choice-preview {
+    grid-column: 1 / -1;
+  }
+}
+
+.pb-home-r3f-hero-object {
+  border-color: color-mix(in srgb, var(--accent-primary) 18%, var(--border-subtle));
+  background:
+    radial-gradient(circle at 78% 20%, color-mix(in srgb, var(--accent-primary) 24%, transparent), transparent 56%),
+    linear-gradient(160deg, color-mix(in srgb, var(--surface-2) 96%, transparent), color-mix(in srgb, var(--surface-1) 98%, transparent));
+  min-height: 132px;
+}
+
+.pb-home-r3f-hero-art {
+  position: relative;
+  height: 132px;
+  padding: 12px;
+  display: grid;
+  align-content: end;
+  gap: 7px;
+  overflow: hidden;
+}
+
+.pb-home-r3f-hero-art-halo,
+.pb-home-r3f-hero-art-core {
+  position: absolute;
+  border-radius: 999px;
+}
+
+.pb-home-r3f-hero-art-halo {
+  width: 108px;
+  height: 108px;
+  top: 10px;
+  right: 16px;
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 34%, transparent);
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent-primary) 26%, transparent), transparent 70%);
+}
+
+.pb-home-r3f-hero-art-core {
+  width: 48px;
+  height: 48px;
+  top: 38px;
+  right: 46px;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--accent-primary) 86%, white 10%), var(--info));
+  box-shadow: 0 0 18px color-mix(in srgb, var(--accent-primary) 44%, transparent);
+}
+
+.pb-home-r3f-hero-art-chip {
+  justify-self: start;
+  position: relative;
+  z-index: 1;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 42%, transparent);
+  background: color-mix(in srgb, var(--accent-primary) 14%, transparent);
+  color: color-mix(in srgb, var(--accent-primary) 88%, var(--text-primary));
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.32px;
+  padding: 4px 8px;
+}
+
+.pb-home-r3f-hero-art-meta {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 3px;
+}
+
+.pb-home-r3f-hero-art-meta small {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.pb-home-r3f-hero-art-meta strong {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.pb-signal3d-card {
+  border-color: color-mix(in srgb, var(--accent-primary) 16%, var(--border-subtle));
+  background:
+    radial-gradient(circle at 98% -18%, color-mix(in srgb, var(--accent-primary) 20%, transparent), transparent 56%),
+    linear-gradient(160deg, color-mix(in srgb, var(--surface-2) 94%, transparent), color-mix(in srgb, var(--surface-1) 98%, transparent));
+}
+
+.pb-signal3d-core {
+  grid-template-columns: 88px minmax(0, 1fr);
+}
+
+.pb-signal3d-canvas.pb-signal3d-emblem {
+  position: relative;
+  display: grid;
+  place-items: center;
+  border-color: color-mix(in srgb, var(--accent-primary) 16%, var(--border-subtle));
+  background:
+    radial-gradient(circle at 26% 20%, color-mix(in srgb, white 14%, transparent), transparent 56%),
+    linear-gradient(160deg, color-mix(in srgb, var(--surface-2) 78%, transparent), color-mix(in srgb, var(--surface-1) 92%, transparent));
+}
+
+.pb-signal3d-emblem-glow {
+  position: absolute;
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent-primary) 24%, transparent), transparent 72%);
+}
+
+.pb-signal3d-emblem svg {
+  position: relative;
+  z-index: 1;
+  width: 28px;
+  height: 28px;
+  fill: color-mix(in srgb, var(--accent-primary) 78%, var(--text-primary));
+}
+
+.pb-signal3d-emblem.football .pb-signal3d-emblem-glow {
+  background: radial-gradient(circle, color-mix(in srgb, #56b3ff 28%, transparent), transparent 72%);
+}
+
+.pb-signal3d-emblem.tennis .pb-signal3d-emblem-glow {
+  background: radial-gradient(circle, color-mix(in srgb, #83e875 28%, transparent), transparent 72%);
+}
+
+.pb-signal3d-emblem.tennis svg {
+  fill: color-mix(in srgb, #8ef17f 72%, var(--text-primary));
+}
+
+.pb-signal3d-emblem.football svg {
+  fill: color-mix(in srgb, #8fc8ff 76%, var(--text-primary));
+}
+
+.pb-profile-three-trophy {
+  border-color: color-mix(in srgb, var(--accent-primary) 16%, var(--border-subtle));
+  background:
+    radial-gradient(circle at 84% 20%, color-mix(in srgb, var(--accent-primary) 20%, transparent), transparent 58%),
+    linear-gradient(160deg, color-mix(in srgb, var(--surface-2) 94%, transparent), color-mix(in srgb, var(--surface-1) 98%, transparent));
+}
+
+.pb-profile-three-emblem {
+  height: 100%;
+  min-height: 210px;
+  display: grid;
+  place-items: center;
+  position: relative;
+}
+
+.pb-profile-three-emblem-glow,
+.pb-profile-three-emblem-core {
+  position: absolute;
+  border-radius: 999px;
+}
+
+.pb-profile-three-emblem-glow {
+  width: 118px;
+  height: 118px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent-primary) 26%, transparent), transparent 72%);
+}
+
+.pb-profile-three-emblem-core {
+  width: 68px;
+  height: 68px;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--accent-primary) 88%, white 10%), var(--info));
+  box-shadow: 0 0 18px color-mix(in srgb, var(--accent-primary) 42%, transparent);
+}
+
+.pb-profile-three-emblem svg {
+  position: relative;
+  z-index: 1;
+  width: 34px;
+  height: 34px;
+  fill: #ffffff;
+}
+
+:root[data-theme="light"] .pb-home-r3f-hero-object,
+:root[data-theme="light"] .pb-signal3d-card,
+:root[data-theme="light"] .pb-signal3d-canvas.pb-signal3d-emblem,
+:root[data-theme="light"] .pb-profile-three-trophy {
+  border-color: color-mix(in srgb, var(--accent-primary) 22%, var(--border-subtle));
+  background:
+    radial-gradient(circle at 84% 20%, rgba(16, 175, 140, 0.14), transparent 58%),
+    linear-gradient(160deg, #ffffff, #f0f6ff);
+  box-shadow: 0 14px 30px rgba(22, 39, 63, 0.12);
+}
+
+:root[data-theme="light"] .pb-signal3d-emblem svg {
+  fill: #24608d;
+}
+
+:root[data-theme="light"] .pb-signal3d-emblem.football svg {
+  fill: #2e7add;
+}
+
+:root[data-theme="light"] .pb-signal3d-emblem.tennis svg {
+  fill: #2f9d63;
+}
+
+:root[data-theme="light"] .pb-home-r3f-hero-art-meta small,
+:root[data-theme="light"] .pb-home-r3f-hero-art-chip {
+  color: #2a5a8a;
+}
+
+:root[data-theme="light"] .pb-home-r3f-hero-art-core,
+:root[data-theme="light"] .pb-profile-three-emblem-core {
+  box-shadow: 0 0 16px rgba(15, 175, 140, 0.3);
+}

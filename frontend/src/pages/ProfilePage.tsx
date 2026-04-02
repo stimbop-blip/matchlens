@@ -1,6 +1,5 @@
 import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Canvas } from "@react-three/fiber";
 
 import { useI18n } from "../app/i18n";
 import { countPendingPayments, paymentStatusTone, resolveSubscriptionSnapshot } from "../app/subscription";
@@ -14,7 +13,6 @@ import { RocketLoader, SkeletonBlock } from "../components/ui";
 import { api, type Me, type MyPayment, type NotificationSettings, type PromoApplyResult, type PublicStats, type ReferralStats } from "../services/api";
 import { waitForTelegramInitData } from "../services/telegram";
 
-const FloatingHeroObject = lazy(() => import("../components/three/FloatingHeroObject").then((module) => ({ default: module.FloatingHeroObject })));
 const ROIChart3D = lazy(() => import("../components/three/ROIChart3D").then((module) => ({ default: module.ROIChart3D })));
 const SubscriptionProgress3D = lazy(() => import("../components/three/SubscriptionProgress3D").then((module) => ({ default: module.SubscriptionProgress3D })));
 
@@ -298,16 +296,13 @@ export function ProfilePage({ withThree = false }: { withThree?: boolean } = {})
 
           <div className="pb-profile-three-grid">
             <div className="pb-profile-three-trophy" aria-hidden="true">
-              <ErrorBoundary fallback={<div className="pb-home-r3f-fallback">3D</div>}>
-                <Suspense fallback={<div className="pb-home-r3f-fallback">3D</div>}>
-                  <Canvas camera={{ position: [0, 0, 3], fov: 42 }} dpr={[1, 1.4]} gl={{ alpha: true, antialias: true, powerPreference: "low-power" }}>
-                    <ambientLight intensity={0.82} />
-                    <pointLight position={[2, 2, 3]} intensity={1.1} color="#2cd8b7" />
-                    <pointLight position={[-2, -1.2, 2.6]} intensity={0.82} color="#2f8cff" />
-                    <FloatingHeroObject type="trophy" scale={0.9} />
-                  </Canvas>
-                </Suspense>
-              </ErrorBoundary>
+              <div className="pb-profile-three-emblem">
+                <span className="pb-profile-three-emblem-glow" />
+                <span className="pb-profile-three-emblem-core" />
+                <svg viewBox="0 0 24 24">
+                  <path d="M7.6 4.5h8.8v1.7h2v2.2c0 2.2-1.4 4.2-3.5 5l-1 .4c-.5.2-.8.6-.8 1.1v1h2.1V18H8.8v-2.1h2.1v-1c0-.5-.3-.9-.8-1.1l-1-.4a5.4 5.4 0 0 1-3.5-5V6.2h2V4.5Zm0 3.9v-.1H5.8v.1c0 1.2.7 2.3 1.8 2.8l.6.3a6.7 6.7 0 0 1-.6-2.8Zm10.6 0v-.1h-1.8v.1c0 1-.2 2-.6 2.8l.6-.3a3.1 3.1 0 0 0 1.8-2.8Z" />
+                </svg>
+              </div>
             </div>
 
             <ErrorBoundary fallback={<div className="pb-home-r3f-fallback">3D</div>}>
