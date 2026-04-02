@@ -1,19 +1,14 @@
-import { Suspense, lazy, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { useI18n } from "./i18n";
+import { resolveSportLabel } from "./sport";
 import { resolveSubscriptionSnapshot } from "./subscription";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
-import { ErrorBoundary } from "../components/motion/ErrorBoundary";
 import { PageTransition } from "../components/motion/PageTransition";
-import { HeroPanel } from "../components/premium/HeroPanel";
-import { PremiumKpi } from "../components/premium/PremiumKpi";
 import { RocketLoader } from "../components/ui";
 import { api, type NewsPost, type Prediction, type PublicStats } from "../services/api";
-
-const SubscriptionProgress3D = lazy(() => import("../components/three/SubscriptionProgress3D").then((module) => ({ default: module.SubscriptionProgress3D })));
-const SignalCard3D = lazy(() => import("../components/three/SignalCard3D").then((module) => ({ default: module.SignalCard3D })));
 
 function formatDate(value: string, language: "ru" | "en"): string {
   const date = new Date(value);
@@ -68,6 +63,17 @@ function accessLabel(level: Prediction["access_level"], t: (key: string) => stri
   if (level === "premium") return t("common.premium");
   if (level === "vip") return t("common.vip");
   return t("common.free");
+}
+
+function sportEmoji(value: string): string {
+  const sport = value.toLowerCase();
+  if (sport.includes("football") || sport.includes("soccer")) return "⚽";
+  if (sport.includes("hockey")) return "🏒";
+  if (sport.includes("basketball")) return "🏀";
+  if (sport.includes("tennis") && sport.includes("table")) return "🏓";
+  if (sport.includes("tennis")) return "🎾";
+  if (sport.includes("volley")) return "🏐";
+  return "🏅";
 }
 
 function teaser(value: string | null | undefined, fallback: string): string {
@@ -150,7 +156,6 @@ export function Home() {
   }, []);
 
   const sub = resolveSubscriptionSnapshot(subscriptionRaw);
-  const accessProgress = sub.tariff === "vip" ? 100 : sub.tariff === "premium" ? 72 : 36;
   const activeSignals = useMemo(() => signals.slice(0, 2), [signals]);
   const latestNews = useMemo(
     () => [...newsItems].filter((item) => item.is_published).sort((a, b) => newsRecency(b) - newsRecency(a)).slice(0, 2),
@@ -164,118 +169,83 @@ export function Home() {
       : language === "ru"
         ? "Ожидающих нет - показаны 2 последних выигранных"
         : "No pending matches - showing 2 latest won";
-  const signalChip = signalSource === "pending" ? "LIVE" : "WON";
-  const signalCounter = signalSource === "pending" ? (stats?.pending ?? activeSignals.length) : activeSignals.length;
 
-  const subtitleText =
-    language === "ru"
-      ? "Премиум-центр сигналов с 3D аналитикой и быстрым доступом к ставкам"
-      : "Premium signal center with 3D analytics and instant betting workflow";
+  const subtitleText = language === "ru" ? "Рабочий центр прогнозов внутри Telegram" : "Working forecast hub inside Telegram";
 
   return (
     <PageTransition>
       <Layout>
-        <HeroPanel
-          eyebrow="PIT BET 3D"
-          title={`${language === "ru" ? "Добро пожаловать" : "Welcome back"}, ${displayName}`}
-          subtitle={subtitleText}
-          right={<span className={`pb-tier-pill ${sub.tariff}`}>{accessLabel(sub.tariff, t)}</span>}
-        >
-          <div className="pb-home-r3f-hero-grid">
-            <div className="pb-home-r3f-hero-copy">
-              <h3>{language === "ru" ? "Командный premium-режим активен" : "Command premium mode is active"}</h3>
-              <p>{t("home.hero.subheadline")}</p>
-            </div>
-
-            <div className="pb-home-r3f-hero-object" aria-hidden="true">
-              <div className="pb-home-r3f-hero-art">
-                <span className="pb-home-r3f-hero-art-halo" />
-                <span className="pb-home-r3f-hero-art-core" />
-                <span className="pb-home-r3f-hero-art-chip">{signalChip}</span>
-                <div className="pb-home-r3f-hero-art-meta">
-                  <small>{signalSource === "pending" ? (language === "ru" ? "Матчи в ожидании" : "Pending matches") : (language === "ru" ? "Выигранные" : "Won matches")}</small>
-                  <strong>{signalCounter}</strong>
-                </div>
-              </div>
-            </div>
+        <section className="pb-premium-panel pb-telegram-hero pb-reveal">
+          <div className="pb-telegram-hero-top">
+            <span className={`pb-tier-pill ${sub.tariff}`}>{accessLabel(sub.tariff, t)}</span>
+            <span className="pb-telegram-status-chip">{sub.is_active ? t("common.status.active") : t("common.status.expired")}</span>
           </div>
 
-          <div className="pb-overview-kpi-grid">
-            <PremiumKpi label={t("home.today.active")} value={stats?.pending ?? signals.length} tone="accent" />
-            <PremiumKpi label={t("home.performance.hit")} value={`${(stats?.hit_rate ?? 0).toFixed(1)}%`} tone="success" />
-            <PremiumKpi label={t("common.roi")} value={`${(stats?.roi ?? 0).toFixed(1)}%`} tone="vip" />
+          <h3>{`${language === "ru" ? "Добро пожаловать" : "Welcome"}, ${displayName}`}</h3>
+          <p>{subtitleText}</p>
+
+          <div className="pb-telegram-hero-metrics">
+            <article>
+              <small>{language === "ru" ? "Сигналы" : "Signals"}</small>
+              <strong>{stats?.total_predictions ?? signals.length}</strong>
+            </article>
+            <article>
+              <small>{language === "ru" ? "В ожидании" : "Pending"}</small>
+              <strong>{stats?.pending ?? signals.length}</strong>
+            </article>
+            <article>
+              <small>{language === "ru" ? "Точность" : "Hit rate"}</small>
+              <strong>{`${(stats?.hit_rate ?? 0).toFixed(1)}%`}</strong>
+            </article>
           </div>
 
-          <div className="pb-overview-hero-actions">
+          <div className="pb-overview-hero-actions pb-telegram-hero-actions">
             <Link className="pb-btn pb-btn-primary" to="/feed">
               {t("home.hero.ctaSignals")}
             </Link>
             <Link className="pb-btn pb-btn-secondary" to="/tariffs">
               {t("layout.main.openTariffs")}
             </Link>
-            <Link className="pb-btn pb-btn-ghost" to="/profile">
-              {t("layout.main.openProfile")}
-            </Link>
           </div>
-        </HeroPanel>
+        </section>
 
-        <section className="pb-premium-panel pb-home-r3f-subscription pb-reveal">
+        <section className="pb-premium-panel pb-telegram-predictions pb-reveal">
           <div className="pb-premium-head">
-            <h3>{language === "ru" ? "Текущая подписка" : "Current subscription"}</h3>
-            <small>{language === "ru" ? "Живой прогресс доступа" : "Live access progress"}</small>
+            <h3>{language === "ru" ? "Последние прогнозы" : "Latest forecasts"}</h3>
+            <small>{signalModeSubtitle}</small>
           </div>
 
           {loading ? <RocketLoader title={t("home.loadingTitle")} subtitle={t("home.loadingSubtitle")} compact /> : null}
 
-          {!loading ? (
-            <ErrorBoundary fallback={<div className="pb-home-r3f-fallback">3D</div>}>
-              <Suspense fallback={<div className="pb-home-r3f-fallback">3D</div>}>
-                <SubscriptionProgress3D
-                  percent={accessProgress}
-                  label={language === "ru" ? "Доступ открыт" : "Access unlocked"}
-                  caption={sub.status === "active" ? t("common.status.active") : t("common.status.expired")}
-                  height={230}
-                />
-              </Suspense>
-            </ErrorBoundary>
-          ) : null}
-        </section>
-
-        <section className="pb-premium-panel pb-home-r3f-signals pb-reveal">
-          <div className="pb-premium-head">
-            <h3>{language === "ru" ? "Последние сигналы" : "Latest signals"}</h3>
-            <small>{signalModeSubtitle}</small>
-          </div>
-
-          {activeSignals.length > 0 ? (
-            <div className="pb-home-r3f-signal-list">
+          {!loading && activeSignals.length > 0 ? (
+            <div className="pb-telegram-predictions-list">
               {activeSignals.map((signal) => (
-                <ErrorBoundary key={signal.id} fallback={<div className="pb-home-r3f-fallback">3D</div>}>
-                  <Suspense fallback={<div className="pb-home-r3f-fallback">3D</div>}>
-                    <SignalCard3D
-                      to={`/feed/${signal.id}`}
-                      title={signal.match_name}
-                      league={signal.league || t("feed.noLeague")}
-                      sport={signal.sport_type}
-                      mode={signal.mode === "live" ? t("common.live") : t("common.prematch")}
-                      kickoff={formatDate(signal.event_start_at, language)}
-                      signal={signal.signal_type}
-                      odds={signal.odds}
-                      oddsLabel={t("feed.label.odds")}
-                      risk={riskLabel(signal.risk_level, t)}
-                      status={signal.status}
-                      statusLabel={statusLabel(signal.status, t)}
-                      accessLabel={accessLabel(signal.access_level, t)}
-                      note={teaser(signal.short_description, t("feed.teaserFallback"))}
-                      language={language}
-                    />
-                  </Suspense>
-                </ErrorBoundary>
+                <Link key={signal.id} to={`/feed/${signal.id}`} className="pb-telegram-prediction-card">
+                  <div className="pb-telegram-prediction-icon" aria-hidden="true">
+                    {sportEmoji(signal.sport_type)}
+                  </div>
+                  <div className="pb-telegram-prediction-main">
+                    <strong>{signal.match_name}</strong>
+                    <p>{signal.league || t("feed.noLeague")}</p>
+                    <div className="pb-telegram-prediction-meta">
+                      <span className={`pb-telegram-status ${signal.status}`}>{statusLabel(signal.status, t)}</span>
+                      <span>{signal.mode === "live" ? t("common.live") : t("common.prematch")}</span>
+                      <span>{resolveSportLabel(signal.sport_type, language)}</span>
+                    </div>
+                    <small>{teaser(signal.short_description, t("feed.teaserFallback"))}</small>
+                  </div>
+                  <div className="pb-telegram-prediction-odds">
+                    <small>{t("feed.label.odds")}</small>
+                    <strong>{Number.isFinite(signal.odds) ? signal.odds.toFixed(2) : String(signal.odds)}</strong>
+                    <span>{riskLabel(signal.risk_level, t)}</span>
+                    <span>{formatDate(signal.event_start_at, language)}</span>
+                  </div>
+                </Link>
               ))}
             </div>
-          ) : (
-            <p className="pb-empty-state">{t("home.today.empty")}</p>
-          )}
+          ) : null}
+
+          {!loading && activeSignals.length === 0 ? <p className="pb-empty-state">{t("home.today.empty")}</p> : null}
         </section>
 
         <section className="pb-premium-panel pb-home-news-showcase pb-reveal">
