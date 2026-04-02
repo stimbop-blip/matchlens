@@ -1,6 +1,6 @@
 import { createContext, type ReactNode, useContext, useEffect, useMemo, useState } from "react";
 
-import { applyAppTheme, detectTelegramTheme, type AppTheme } from "./telegram";
+import { detectTelegramTheme, type AppTheme } from "./telegram";
 
 type ThemeContextValue = {
   theme: AppTheme;
@@ -10,6 +10,17 @@ type ThemeContextValue = {
 
 const STORAGE_KEY = "pitbet_theme";
 const ThemeContext = createContext<ThemeContextValue | null>(null);
+
+const TELEGRAM_THEME_COLORS: Record<AppTheme, { background: string; surface: string }> = {
+  dark: {
+    background: "#0f1621",
+    surface: "#18222d",
+  },
+  light: {
+    background: "#f0f2f5",
+    surface: "#ffffff",
+  },
+};
 
 function resolveInitialTheme(): AppTheme {
   if (typeof window === "undefined") return "dark";
@@ -22,7 +33,13 @@ function applyTheme(theme: AppTheme): void {
   if (typeof document === "undefined") return;
   document.documentElement.setAttribute("data-theme", theme);
   document.documentElement.style.colorScheme = theme;
-  applyAppTheme(theme);
+
+  const webApp = window.Telegram?.WebApp;
+  if (!webApp) return;
+
+  const colors = TELEGRAM_THEME_COLORS[theme];
+  webApp.setBackgroundColor?.(colors.background);
+  webApp.setHeaderColor?.(colors.surface);
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
