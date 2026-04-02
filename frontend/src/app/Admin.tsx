@@ -4,7 +4,7 @@ import { PageTransition } from "../components/motion/PageTransition";
 export function Admin() {
   return (
     <PageTransition>
-      <AdminPage withThree />
+      <AdminPage />
     </PageTransition>
   );
 }

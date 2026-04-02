@@ -1,20 +1,16 @@
-import { Suspense, lazy, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { useI18n } from "../app/i18n";
 import { countPendingPayments, paymentStatusTone, resolveSubscriptionSnapshot } from "../app/subscription";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
-import { ErrorBoundary } from "../components/motion/ErrorBoundary";
 import { HeroPanel } from "../components/premium/HeroPanel";
 import { PremiumKpi } from "../components/premium/PremiumKpi";
 import { PremiumRing } from "../components/premium/PremiumRing";
 import { RocketLoader, SkeletonBlock } from "../components/ui";
-import { api, type Me, type MyPayment, type NotificationSettings, type PromoApplyResult, type PublicStats, type ReferralStats } from "../services/api";
+import { api, type Me, type MyPayment, type NotificationSettings, type PromoApplyResult, type ReferralStats } from "../services/api";
 import { waitForTelegramInitData } from "../services/telegram";
-
-const ROIChart3D = lazy(() => import("../components/three/ROIChart3D").then((module) => ({ default: module.ROIChart3D })));
-const SubscriptionProgress3D = lazy(() => import("../components/three/SubscriptionProgress3D").then((module) => ({ default: module.SubscriptionProgress3D })));
 
 function formatDate(value: string | null | undefined, language: "ru" | "en"): string {
   if (!value) return "-";
@@ -79,7 +75,7 @@ const NOTIFICATION_CONTROLS: NotificationControl[] = [
   { key: "notify_vip", labelKey: "profile.notifications.vip", minTariff: "vip" },
 ];
 
-export function ProfilePage({ withThree = false }: { withThree?: boolean } = {}) {
+export function ProfilePage() {
   const { t, language } = useI18n();
 
   const [me, setMe] = useState<Me | null>(null);
@@ -87,8 +83,6 @@ export function ProfilePage({ withThree = false }: { withThree?: boolean } = {})
   const [notify, setNotify] = useState<NotificationSettings | null>(null);
   const [referral, setReferral] = useState<ReferralStats | null>(null);
   const [payments, setPayments] = useState<MyPayment[]>([]);
-  const [stats, setStats] = useState<PublicStats | null>(null);
-
   const [promoCode, setPromoCode] = useState("");
   const [promoTariff, setPromoTariff] = useState<"free" | "premium" | "vip">("premium");
   const [promoResult, setPromoResult] = useState<PromoApplyResult | null>(null);
@@ -104,16 +98,15 @@ export function ProfilePage({ withThree = false }: { withThree?: boolean } = {})
         return;
       }
 
-      const results = await Promise.allSettled([api.me(), api.mySubscription(), api.myNotificationSettings(), api.myReferral(), api.myPayments(), api.stats()]);
+      const results = await Promise.allSettled([api.me(), api.mySubscription(), api.myNotificationSettings(), api.myReferral(), api.myPayments()]);
       if (!alive) return;
 
-      const [meRes, subRes, notifyRes, refRes, payRes, statsRes] = results;
+      const [meRes, subRes, notifyRes, refRes, payRes] = results;
       setMe(meRes.status === "fulfilled" ? meRes.value : null);
       setSubscriptionRaw(subRes.status === "fulfilled" ? subRes.value : null);
       setNotify(notifyRes.status === "fulfilled" ? notifyRes.value : null);
       setReferral(refRes.status === "fulfilled" ? refRes.value : null);
       setPayments(payRes.status === "fulfilled" ? payRes.value : []);
-      setStats(statsRes.status === "fulfilled" ? statsRes.value : null);
       setLoading(false);
     };
 
@@ -129,12 +122,6 @@ export function ProfilePage({ withThree = false }: { withThree?: boolean } = {})
   const isSupport = Boolean(me?.is_support || me?.role === "support");
   const isStaff = isAdmin || isSupport;
   const accessProgress = buildAccessProgress(sub.tariff, sub.is_active);
-  const roiSeries = useMemo(() => {
-    const hit = Math.max(1, Math.round(stats?.hit_rate ?? 0));
-    const roi = Math.max(1, Math.round((stats?.roi ?? 0) + 20));
-    const settled = Math.max(1, (stats?.wins ?? 0) + (stats?.refunds ?? 0));
-    return [hit, roi, settled, pendingPayments + 1];
-  }, [pendingPayments, stats]);
 
   const availableNotificationControls = useMemo(() => {
     const currentWeight = TARIFF_WEIGHT[sub.tariff];
@@ -235,26 +222,19 @@ export function ProfilePage({ withThree = false }: { withThree?: boolean } = {})
         subtitle={t("profile.hero.subtitle")}
         right={<span className={`pb-tier-pill ${sub.tariff}`}>{tariffLabel(sub.tariff, t)}</span>}
       >
-        <div className="pb-profile-v4-hero-scene">
-          <div className="pb-profile-v4-user-prism" aria-hidden="true">
-            <span />
-            <span />
-            <span />
-          </div>
-          <div className="pb-profile-v4-tier-stack">
-            <article>
-              <small>{t("profile.snapshot.tariff")}</small>
-              <strong>{tariffLabel(sub.tariff, t)}</strong>
-            </article>
-            <article>
-              <small>{t("profile.snapshot.status")}</small>
-              <strong>{statusLabel(sub.status, t)}</strong>
-            </article>
-            <article>
-              <small>{t("profile.snapshot.pending")}</small>
-              <strong>{pendingPayments}</strong>
-            </article>
-          </div>
+        <div className="pb-profile-v4-tier-stack pb-profile-v4-tier-stack-hero">
+          <article>
+            <small>{t("profile.snapshot.tariff")}</small>
+            <strong>{tariffLabel(sub.tariff, t)}</strong>
+          </article>
+          <article>
+            <small>{t("profile.snapshot.status")}</small>
+            <strong>{statusLabel(sub.status, t)}</strong>
+          </article>
+          <article>
+            <small>{t("profile.snapshot.pending")}</small>
+            <strong>{pendingPayments}</strong>
+          </article>
         </div>
 
         <div className="pb-profile-v4-hero-grid">
@@ -286,44 +266,6 @@ export function ProfilePage({ withThree = false }: { withThree?: boolean } = {})
           ) : null}
         </div>
       </HeroPanel>
-
-      {withThree ? (
-        <section className="pb-premium-panel pb-profile-three pb-reveal">
-          <div className="pb-premium-head">
-            <h3>{language === "ru" ? "3D Аналитика профиля" : "3D profile analytics"}</h3>
-            <small>{language === "ru" ? "Прогресс, ROI и премиум-метрики" : "Progress, ROI and premium metrics"}</small>
-          </div>
-
-          <div className="pb-profile-three-grid">
-            <div className="pb-profile-three-trophy" aria-hidden="true">
-              <div className="pb-profile-three-emblem">
-                <span className="pb-profile-three-emblem-glow" />
-                <span className="pb-profile-three-emblem-core" />
-                <svg viewBox="0 0 24 24">
-                  <path d="M7.6 4.5h8.8v1.7h2v2.2c0 2.2-1.4 4.2-3.5 5l-1 .4c-.5.2-.8.6-.8 1.1v1h2.1V18H8.8v-2.1h2.1v-1c0-.5-.3-.9-.8-1.1l-1-.4a5.4 5.4 0 0 1-3.5-5V6.2h2V4.5Zm0 3.9v-.1H5.8v.1c0 1.2.7 2.3 1.8 2.8l.6.3a6.7 6.7 0 0 1-.6-2.8Zm10.6 0v-.1h-1.8v.1c0 1-.2 2-.6 2.8l.6-.3a3.1 3.1 0 0 0 1.8-2.8Z" />
-                </svg>
-              </div>
-            </div>
-
-            <ErrorBoundary fallback={<div className="pb-home-r3f-fallback">3D</div>}>
-              <Suspense fallback={<div className="pb-home-r3f-fallback">3D</div>}>
-                <ROIChart3D title={language === "ru" ? "ROI и эффективность" : "ROI and efficiency"} values={roiSeries} height={210} />
-              </Suspense>
-            </ErrorBoundary>
-
-            <ErrorBoundary fallback={<div className="pb-home-r3f-fallback">3D</div>}>
-              <Suspense fallback={<div className="pb-home-r3f-fallback">3D</div>}>
-                <SubscriptionProgress3D
-                  percent={accessProgress}
-                  label={language === "ru" ? "Прогресс подписки" : "Subscription progress"}
-                  caption={statusLabel(sub.status, t)}
-                  height={210}
-                />
-              </Suspense>
-            </ErrorBoundary>
-          </div>
-        </section>
-      ) : null}
 
       <section className="pb-premium-panel pb-profile-v4-snapshot pb-reveal">
         <div className="pb-premium-head">

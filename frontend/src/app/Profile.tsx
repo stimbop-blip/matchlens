@@ -4,7 +4,7 @@ import { PageTransition } from "../components/motion/PageTransition";
 export function Profile() {
   return (
     <PageTransition>
-      <ProfilePage withThree />
+      <ProfilePage />
     </PageTransition>
   );
 }
