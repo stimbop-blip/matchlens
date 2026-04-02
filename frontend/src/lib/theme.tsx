@@ -1,7 +1,6 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { getTelegramTheme, onTelegramThemeChange } from "./telegram";
+import { createContext, type ReactNode, useContext, useEffect, useMemo, useState } from "react";
 
-export type AppTheme = "light" | "dark";
+import { applyAppTheme, detectTelegramTheme, type AppTheme } from "./telegram";
 
 type ThemeContextValue = {
   theme: AppTheme;
@@ -13,30 +12,56 @@ const STORAGE_KEY = "pitbet_theme";
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 function resolveInitialTheme(): AppTheme {
+  if (typeof window === "undefined") return "dark";
   const saved = localStorage.getItem(STORAGE_KEY);
   if (saved === "light" || saved === "dark") return saved;
-  return getTelegramTheme();
+  return detectTelegramTheme();
 }
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
+function applyTheme(theme: AppTheme): void {
+  if (typeof document === "undefined") return;
+  document.documentElement.setAttribute("data-theme", theme);
+  document.documentElement.style.colorScheme = theme;
+  applyAppTheme(theme);
+}
+
+export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<AppTheme>(resolveInitialTheme);
 
   const setTheme = (next: AppTheme) => {
     setThemeState(next);
-    localStorage.setItem(STORAGE_KEY, next);
+    if (typeof window !== "undefined") {
+      localStorage.setItem(STORAGE_KEY, next);
+    }
   };
 
   const toggleTheme = () => setTheme(theme === "dark" ? "light" : "dark");
 
   useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
+    applyTheme(theme);
   }, [theme]);
 
   useEffect(() => {
-    const unsub = onTelegramThemeChange((next) => {
-      setTheme(next);
-    });
-    return unsub;
+    if (typeof window === "undefined") return () => undefined;
+
+    type TelegramEventBridge = {
+      onEvent?: (event: string, cb: () => void) => void;
+      offEvent?: (event: string, cb: () => void) => void;
+    };
+
+    const webApp = window.Telegram?.WebApp as TelegramEventBridge | undefined;
+    if (!webApp?.onEvent || !webApp?.offEvent) return () => undefined;
+
+    const onThemeChanged = () => {
+      const next = detectTelegramTheme();
+      setThemeState((prev) => (prev === next ? prev : next));
+      localStorage.setItem(STORAGE_KEY, next);
+    };
+
+    webApp.onEvent("themeChanged", onThemeChanged);
+    return () => {
+      webApp.offEvent?.("themeChanged", onThemeChanged);
+    };
   }, []);
 
   const value = useMemo(() => ({ theme, setTheme, toggleTheme }), [theme]);
