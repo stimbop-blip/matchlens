@@ -12,13 +12,5 @@
     "jsx": "react-jsx",
     "strict": true
   },
-  "include": [
-    "src/main.tsx",
-    "src/app/**/*",
-    "src/components/**/*",
-    "src/lib/**/*",
-    "src/hooks/**/*",
-    "src/styles/**/*",
-    "src/vite-env.d.ts"
-  ]
+  "include": ["src"]
 }

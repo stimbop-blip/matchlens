@@ -1,71 +1,55 @@
-import { Line, OrbitControls } from "@react-three/drei";
-import { Canvas } from "@react-three/fiber";
-import { useMemo } from "react";
-import * as THREE from "three";
+import { Canvas, useFrame } from "@react-three/fiber";
+import { useMemo, useRef } from "react";
+import type { Group } from "three";
 
-import { useAppTheme } from "../../lib/theme";
+function ChartBars({ values }: { values: number[] }) {
+  const groupRef = useRef<Group>(null);
+  const max = useMemo(() => Math.max(1, ...values), [values]);
 
-type ROIChart3DProps = {
-  values: number[];
-  height?: number;
-  className?: string;
-};
-
-function normalize(values: number[]) {
-  const safe = values.length ? values : [0];
-  const min = Math.min(...safe);
-  const max = Math.max(...safe);
-  const span = Math.max(1, max - min);
-  return safe.map((v) => (v - min) / span);
-}
-
-function Scene({ values }: { values: number[] }) {
-  const { theme } = useAppTheme();
-  const dark = theme === "dark";
-  const accent = dark ? "#00ff9d" : "#00cc7a";
-  const accent2 = "#00b8ff";
-  const normalized = useMemo(() => normalize(values), [values]);
-
-  const points = useMemo(
-    () =>
-      normalized.map((v, i) => new THREE.Vector3(-2.8 + i * (5.6 / Math.max(1, normalized.length - 1)), -0.75 + v * 2.2, 0.35)),
-    [normalized],
-  );
+  useFrame(({ clock }) => {
+    const group = groupRef.current;
+    if (!group) return;
+    group.rotation.y = Math.sin(clock.elapsedTime * 0.3) * 0.18;
+  });
 
   return (
-    <>
-      <ambientLight intensity={dark ? 0.6 : 0.8} />
-      <pointLight position={[2.5, 4, 4]} intensity={1.35} color={accent} />
-      <pointLight position={[-3, 1, 3]} intensity={1.15} color={accent2} />
+    <group ref={groupRef} position={[0, -0.65, 0]}>
+      {values.map((value, index) => {
+        const normalized = Math.max(0.12, value / max);
+        const height = normalized * 1.5;
+        const x = (index - (values.length - 1) / 2) * 0.55;
 
-      <group position={[-2.8, -1.1, 0]}>
-        {normalized.map((v, i) => {
-          const x = i * (5.6 / Math.max(1, normalized.length - 1));
-          const h = 0.25 + v * 2.25;
-          return (
-            <mesh key={i} position={[x, h / 2, 0]}>
-              <boxGeometry args={[0.3, h, 0.3]} />
-              <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={dark ? 0.55 : 0.18} metalness={0.86} roughness={0.2} />
+        return (
+          <group key={`${index}-${value}`} position={[x, height / 2, 0]}>
+            <mesh>
+              <boxGeometry args={[0.3, height, 0.3]} />
+              <meshStandardMaterial color={index % 2 === 0 ? "#2cd8b7" : "#2f8cff"} metalness={0.58} roughness={0.32} emissive={index % 2 === 0 ? "#2cd8b7" : "#2f8cff"} emissiveIntensity={0.26} />
             </mesh>
-          );
-        })}
-      </group>
+          </group>
+        );
+      })}
 
-      <Line points={points} color={accent2} lineWidth={2.2} transparent opacity={0.95} />
-
-      <OrbitControls enableZoom={false} enablePan={false} autoRotate autoRotateSpeed={0.45} minPolarAngle={Math.PI / 2.7} maxPolarAngle={Math.PI / 2.1} />
-    </>
+      <mesh position={[0, -0.05, 0]}>
+        <boxGeometry args={[values.length * 0.56, 0.08, 0.64]} />
+        <meshStandardMaterial color="#112435" metalness={0.4} roughness={0.55} />
+      </mesh>
+    </group>
   );
 }
 
-export function ROIChart3D({ values, height = 220, className }: ROIChart3DProps) {
-  const safeValues = values.length ? values : [5, 9, 7, 12, 15, 14, 18];
-
+export function ROIChart3D({ title, values, height = 210 }: { title: string; values: number[]; height?: number }) {
   return (
-    <div className={className} style={{ height, borderRadius: 22, overflow: "hidden", border: "1px solid var(--border)", background: "color-mix(in srgb, var(--card) 86%, transparent)" }}>
-      <Canvas camera={{ position: [0, 1, 6], fov: 40 }} dpr={[1, 1.05]} gl={{ antialias: false, powerPreference: "low-power" }}>
-        <Scene values={safeValues} />
-      </Canvas>
-    </div>
+    <section className="pb-three-chart" style={{ height }}>
+      <div className="pb-three-chart-canvas" aria-hidden="true">
+        <Canvas camera={{ position: [0, 0.35, 3.4], fov: 45 }} dpr={[1, 1.4]} gl={{ alpha: true, antialias: true, powerPreference: "low-power" }}>
+          <ambientLight intensity={0.78} />
+          <pointLight position={[2.5, 2.2, 3]} intensity={1.15} color="#2cd8b7" />
+          <pointLight position={[-2.3, -1.2, 2.4]} intensity={0.9} color="#2f8cff" />
+          <ChartBars values={values} />
+        </Canvas>
+      </div>
+
+      <div className="pb-three-chart-caption">{title}</div>
+    </section>
   );
 }

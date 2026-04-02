@@ -1,28 +1,9 @@
-import { QueryClient } from "@tanstack/react-query";
+type QueryKey = readonly unknown[];
 
-function shouldRetry(failureCount: number, error: unknown) {
-  if (failureCount >= 2) return false;
-
-  if (error instanceof Error) {
-    const message = error.message.toLowerCase();
-    if (message.includes("401") || message.includes("403") || message.includes("404")) return false;
+class TinyQueryClient {
+  invalidateQueries(_queryKey?: QueryKey) {
+    return;
   }
-
-  return true;
 }
 
-export const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 20_000,
-      gcTime: 5 * 60_000,
-      retry: shouldRetry,
-      refetchOnWindowFocus: false,
-      refetchOnReconnect: true,
-      refetchOnMount: false,
-    },
-    mutations: {
-      retry: 1,
-    },
-  },
-});
+export const queryClient = new TinyQueryClient();
