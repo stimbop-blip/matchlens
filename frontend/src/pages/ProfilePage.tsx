@@ -31,6 +31,12 @@ type ProfileRow = {
   value?: string;
 };
 
+type ProfileSection = {
+  key: string;
+  title: string;
+  rows: ProfileRow[];
+};
+
 export function ProfilePage() {
   const { t, language } = useI18n();
   const legalCopy = LEGAL_TEXTS[language === "en" ? "en" : "ru"];
@@ -87,8 +93,8 @@ export function ProfilePage() {
   const themeLabel = (me?.theme || "dark") === "light" ? t("theme.light") : t("theme.dark");
   const languageLabel = (me?.language || language) === "en" ? t("language.en") : t("language.ru");
 
-  const rows = useMemo<ProfileRow[]>(() => {
-    const base: ProfileRow[] = [
+  const sections = useMemo<ProfileSection[]>(() => {
+    const mainRows: ProfileRow[] = [
       {
         key: "tariffs",
         to: "/tariffs",
@@ -119,6 +125,9 @@ export function ProfilePage() {
         icon: LifeBuoy,
         value: supportValue,
       },
+    ];
+
+    const settingsRows: ProfileRow[] = [
       {
         key: "language",
         to: "/menu/language",
@@ -135,6 +144,9 @@ export function ProfilePage() {
         icon: Palette,
         value: themeLabel,
       },
+    ];
+
+    const legalRows: ProfileRow[] = [
       {
         key: "rules",
         to: "/menu/rules",
@@ -158,8 +170,10 @@ export function ProfilePage() {
       },
     ];
 
+    const staffRows: ProfileRow[] = [];
+
     if (isAdmin) {
-      base.push({
+      staffRows.push({
         key: "admin",
         to: "/admin",
         label: t("hub.item.admin.title"),
@@ -169,7 +183,7 @@ export function ProfilePage() {
     }
 
     if (isStaff) {
-      base.push({
+      staffRows.push({
         key: "inbox",
         to: "/support/inbox",
         label: t("menu.support.inboxTitle"),
@@ -178,8 +192,34 @@ export function ProfilePage() {
       });
     }
 
-    return base;
-  }, [accessValue, isAdmin, isStaff, languageLabel, legalCopy.moreLinks.paymentSubtitle, legalCopy.moreLinks.paymentTitle, legalCopy.moreLinks.responsibleSubtitle, legalCopy.moreLinks.responsibleTitle, legalCopy.moreLinks.rulesSubtitle, legalCopy.moreLinks.rulesTitle, legalCopy.moreLinks.supportSubtitle, legalCopy.moreLinks.supportTitle, supportValue, t, themeLabel]);
+    const grouped: ProfileSection[] = [
+      {
+        key: "main",
+        title: language === "ru" ? "Основное" : "Main",
+        rows: mainRows,
+      },
+      {
+        key: "settings",
+        title: language === "ru" ? "Настройки" : "Settings",
+        rows: settingsRows,
+      },
+      {
+        key: "legal",
+        title: language === "ru" ? "Правила" : "Legal",
+        rows: legalRows,
+      },
+    ];
+
+    if (staffRows.length > 0) {
+      grouped.push({
+        key: "staff",
+        title: language === "ru" ? "Команда" : "Team",
+        rows: staffRows,
+      });
+    }
+
+    return grouped;
+  }, [accessValue, isAdmin, isStaff, language, languageLabel, legalCopy.moreLinks.paymentSubtitle, legalCopy.moreLinks.paymentTitle, legalCopy.moreLinks.responsibleSubtitle, legalCopy.moreLinks.responsibleTitle, legalCopy.moreLinks.rulesSubtitle, legalCopy.moreLinks.rulesTitle, legalCopy.moreLinks.supportSubtitle, legalCopy.moreLinks.supportTitle, supportValue, t, themeLabel]);
 
   if (loading) {
     return (
@@ -220,26 +260,33 @@ export function ProfilePage() {
         </div>
       </section>
 
-      <section className="pb-premium-panel pb-telegram-profile-list pb-reveal">
-        {rows.map((row) => {
-          const Icon = row.icon;
-          return (
-            <Link key={row.key} to={row.to} className="pb-telegram-profile-row">
-              <span className="pb-telegram-profile-row-icon" aria-hidden="true">
-                <Icon size={20} strokeWidth={2} />
-              </span>
-              <span className="pb-telegram-profile-row-copy">
-                <strong>{row.label}</strong>
-                <small>{row.subtitle}</small>
-              </span>
-              <span className="pb-telegram-profile-row-value">
-                {row.value ? <em>{row.value}</em> : null}
-                <ChevronRight size={17} strokeWidth={2} />
-              </span>
-            </Link>
-          );
-        })}
-      </section>
+      {sections.map((section) => (
+        <section key={section.key} className="pb-premium-panel pb-telegram-profile-section pb-reveal">
+          <div className="pb-telegram-profile-section-head">
+            <h4>{section.title}</h4>
+          </div>
+          <div className="pb-telegram-profile-list">
+            {section.rows.map((row) => {
+              const Icon = row.icon;
+              return (
+                <Link key={row.key} to={row.to} className="pb-telegram-profile-row">
+                  <span className="pb-telegram-profile-row-icon" aria-hidden="true">
+                    <Icon size={20} strokeWidth={2} />
+                  </span>
+                  <span className="pb-telegram-profile-row-copy">
+                    <strong>{row.label}</strong>
+                    <small>{row.subtitle}</small>
+                  </span>
+                  <span className="pb-telegram-profile-row-value">
+                    {row.value ? <em>{row.value}</em> : null}
+                    <ChevronRight size={17} strokeWidth={2} />
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      ))}
 
       <AppDisclaimer />
     </Layout>

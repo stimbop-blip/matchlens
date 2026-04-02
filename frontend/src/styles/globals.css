@@ -11607,7 +11607,7 @@ body {
   min-height: 92px;
   display: grid;
   place-items: center;
-  gap: 6px;
+  gap: 8px;
   padding: 10px 6px;
   color: var(--text-primary);
 }
@@ -11616,22 +11616,20 @@ body {
   background: var(--card);
 }
 
-.pb-telegram-tool-card span {
-  font-size: 16px;
-  line-height: 1;
+.pb-telegram-tool-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  display: grid;
+  place-items: center;
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--surface) 72%, transparent);
 }
 
-.pb-telegram-tool-card strong,
-.pb-telegram-tool-card b,
-.pb-telegram-tool-card p {
+.pb-telegram-tool-label {
   font-size: 12px;
-}
-
-.pb-telegram-tool-card > span:last-child,
-.pb-telegram-tool-card > em,
-.pb-telegram-tool-card > small,
-.pb-telegram-tool-card > label {
-  font-size: 12px;
+  line-height: 1.15;
   color: var(--text-secondary);
 }
 
@@ -11668,6 +11666,10 @@ body {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
+}
+
+.pb-telegram-gallery-grid.single {
+  grid-template-columns: 1fr;
 }
 
 .pb-telegram-gallery-card {
@@ -11725,6 +11727,13 @@ body {
 .pb-telegram-gallery-card small {
   color: var(--text-secondary);
   font-size: 12px;
+}
+
+.pb-telegram-gallery-pick {
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  padding: 3px 8px;
+  justify-self: start;
 }
 
 .pb-telegram-gallery-odds {
@@ -11794,6 +11803,28 @@ body {
 .pb-telegram-profile-list {
   padding: 0;
   overflow: hidden;
+}
+
+.pb-telegram-profile-section {
+  padding: 0;
+  overflow: hidden;
+}
+
+.pb-telegram-profile-section-head {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+:root[data-theme="dark"] .pb-telegram-profile-section-head {
+  background: var(--card);
+}
+
+.pb-telegram-profile-section-head h4 {
+  font-size: 14px;
+  line-height: 1.2;
+  letter-spacing: 0.2px;
+  color: var(--text-secondary);
 }
 
 .pb-telegram-profile-row {

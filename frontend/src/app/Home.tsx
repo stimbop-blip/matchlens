@@ -60,13 +60,6 @@ function sportEmoji(value: string): string {
   return "🏅";
 }
 
-function teaser(value: string | null | undefined, fallback: string): string {
-  const compact = (value || "").replace(/\s+/g, " ").trim();
-  if (!compact) return fallback;
-  if (compact.length <= 140) return compact;
-  return `${compact.slice(0, 137).trim()}...`;
-}
-
 function previewNews(value: string, maxLength = 160): string {
   const compact = value.replace(/\s+/g, " ").trim();
   if (!compact) return "";
@@ -172,7 +165,10 @@ export function Home() {
     [language],
   );
 
-  const subtitleText = language === "ru" ? "Рабочий центр прогнозов внутри Telegram" : "Working forecast hub inside Telegram";
+  const subtitleText =
+    language === "ru"
+      ? "PIT BET — закрытый клуб спортивной аналитики. Мы отбираем сильные сигналы по движению линии, коэффициентам и игровому контексту."
+      : "PIT BET is a private sports analytics club. We select strong signals by line movement, odds and match context.";
 
   return (
     <PageTransition>
@@ -184,13 +180,15 @@ export function Home() {
           </div>
 
           <h3 className="pb-telegram-gallery-title">{language === "ru" ? "Главная" : "Home"}</h3>
-          <p className="pb-telegram-gallery-subtitle">{`${displayName}. ${subtitleText}`}</p>
+          <p className="pb-telegram-gallery-subtitle">{subtitleText}</p>
 
           <div className="pb-telegram-tools-grid">
             {quickActions.map((item) => (
               <Link key={item.to} to={item.to} className="pb-telegram-tool-card">
-                <item.icon size={28} strokeWidth={1.9} />
-                <span>{item.label}</span>
+                <span className="pb-telegram-tool-icon" aria-hidden="true">
+                  <item.icon size={26} strokeWidth={2} />
+                </span>
+                <span className="pb-telegram-tool-label">{item.label}</span>
               </Link>
             ))}
           </div>
@@ -222,16 +220,21 @@ export function Home() {
           {loading ? <RocketLoader title={t("home.loadingTitle")} subtitle={t("home.loadingSubtitle")} compact /> : null}
 
           {!loading && filteredSignals.length > 0 ? (
-            <div className="pb-telegram-gallery-grid">
+            <div className={filteredSignals.length === 1 ? "pb-telegram-gallery-grid single" : "pb-telegram-gallery-grid"}>
               {filteredSignals.map((signal, index) => (
-                <Link key={signal.id} to={`/feed/${signal.id}`} className={index % 2 === 0 ? "pb-telegram-gallery-card tall" : "pb-telegram-gallery-card"}>
+                <Link
+                  key={signal.id}
+                  to={`/feed/${signal.id}`}
+                  className={filteredSignals.length > 1 && index % 2 === 0 ? "pb-telegram-gallery-card tall" : "pb-telegram-gallery-card"}
+                >
                   <span className="pb-telegram-gallery-badge">{statusLabel(signal.status, t)}</span>
                   <div className="pb-telegram-gallery-icon" aria-hidden="true">
                     {sportEmoji(signal.sport_type)}
                   </div>
                   <strong>{signal.match_name}</strong>
                   <p>{signal.league || t("feed.noLeague")}</p>
-                  <small>{resolveSportLabel(signal.sport_type, language)}</small>
+                  <small>{`${resolveSportLabel(signal.sport_type, language)} · ${signal.mode === "live" ? t("common.live") : t("common.prematch")}`}</small>
+                  <small className="pb-telegram-gallery-pick">{signal.signal_type}</small>
                   <span className="pb-telegram-gallery-odds">{Number.isFinite(signal.odds) ? signal.odds.toFixed(2) : String(signal.odds)}</span>
                 </Link>
               ))}
