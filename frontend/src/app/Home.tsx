@@ -148,9 +148,12 @@ export function Home() {
         ? "Ожидающих нет - показаны 2 последних выигранных"
         : "No pending matches - showing 2 latest won";
 
-  const filteredSignals = useMemo(() => {
+  const displaySignals = useMemo(() => {
     if (forecastFilter === "all") return activeSignals;
-    return activeSignals.filter((signal) => signal.status === forecastFilter);
+    const primary = activeSignals.filter((signal) => signal.status === forecastFilter);
+    if (primary.length >= 2) return primary.slice(0, 2);
+    const secondary = activeSignals.filter((signal) => signal.status !== forecastFilter);
+    return [...primary, ...secondary].slice(0, 2);
   }, [activeSignals, forecastFilter]);
 
   const quickActions = useMemo(
@@ -217,15 +220,34 @@ export function Home() {
             </button>
           </div>
 
+          <div className="pb-telegram-forecast-stats">
+            <article>
+              <small>{language === "ru" ? "Активные" : "Active"}</small>
+              <strong>{stats?.pending ?? activeSignals.length}</strong>
+            </article>
+            <article>
+              <small>{language === "ru" ? "Точность" : "Hit rate"}</small>
+              <strong>{`${(stats?.hit_rate ?? 0).toFixed(1)}%`}</strong>
+            </article>
+            <article>
+              <small>{language === "ru" ? "ROI" : "ROI"}</small>
+              <strong>{`${(stats?.roi ?? 0).toFixed(1)}%`}</strong>
+            </article>
+            <article>
+              <small>{language === "ru" ? "Победы" : "Wins"}</small>
+              <strong>{stats?.wins ?? 0}</strong>
+            </article>
+          </div>
+
           {loading ? <RocketLoader title={t("home.loadingTitle")} subtitle={t("home.loadingSubtitle")} compact /> : null}
 
-          {!loading && filteredSignals.length > 0 ? (
-            <div className={filteredSignals.length === 1 ? "pb-telegram-gallery-grid single" : "pb-telegram-gallery-grid"}>
-              {filteredSignals.map((signal, index) => (
+          {!loading && displaySignals.length > 0 ? (
+            <div className="pb-telegram-gallery-grid">
+              {displaySignals.map((signal) => (
                 <Link
                   key={signal.id}
                   to={`/feed/${signal.id}`}
-                  className={filteredSignals.length > 1 && index % 2 === 0 ? "pb-telegram-gallery-card tall" : "pb-telegram-gallery-card"}
+                  className="pb-telegram-gallery-card"
                 >
                   <span className="pb-telegram-gallery-badge">{statusLabel(signal.status, t)}</span>
                   <div className="pb-telegram-gallery-icon" aria-hidden="true">
@@ -241,7 +263,7 @@ export function Home() {
             </div>
           ) : null}
 
-          {!loading && filteredSignals.length === 0 ? <p className="pb-empty-state">{t("home.today.empty")}</p> : null}
+          {!loading && displaySignals.length === 0 ? <p className="pb-empty-state">{t("home.today.empty")}</p> : null}
         </section>
 
         <section className="pb-premium-panel pb-home-news-showcase pb-reveal">
