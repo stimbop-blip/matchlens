@@ -1,12 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Activity, Users, Wallet, Zap } from "lucide-react";
-import { Suspense, lazy } from "react";
+import { Suspense } from "react";
 
+import { ErrorBoundary } from "../components/motion/ErrorBoundary";
+import { ROIChart3D } from "../components/three/ROIChart3D";
 import { api } from "../lib/api";
 import { useI18n } from "../lib/i18n";
-
-const ROIChart3D = lazy(() => import("../components/three/ROIChart3D").then((m) => ({ default: m.ROIChart3D })));
 
 export function Admin() {
   const { t } = useI18n();
@@ -35,9 +35,11 @@ export function Admin() {
 
       <section className="glass p-3">
         <h2 className="text-base font-semibold text-[var(--text-primary)]">{t("admin.roiTrend")}</h2>
-        <Suspense fallback={<div className="rounded-xl border border-[var(--border)] p-3 text-xs text-[var(--text-secondary)]">{t("common.loadingChart")}</div>}>
-          <ROIChart3D values={[6, 8, 10, 9, 12, 13, 15, 14, 17, 18, 21, 23]} height={220} />
-        </Suspense>
+        <ErrorBoundary fallback={<div className="rounded-xl border border-[var(--border)] p-3 text-xs text-[var(--text-secondary)]">{t("common.loadingChart")}</div>}>
+          <Suspense fallback={<div className="rounded-xl border border-[var(--border)] p-3 text-xs text-[var(--text-secondary)]">{t("common.loadingChart")}</div>}>
+            <ROIChart3D values={[6, 8, 10, 9, 12, 13, 15, 14, 17, 18, 21, 23]} height={220} />
+          </Suspense>
+        </ErrorBoundary>
       </section>
     </div>
   );

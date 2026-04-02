@@ -1,13 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion, useMotionValue, useSpring } from "framer-motion";
 import { Filter, RefreshCcw, SlidersHorizontal } from "lucide-react";
-import { Suspense, lazy, useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 
+import { ErrorBoundary } from "../components/motion/ErrorBoundary";
+import { SignalCard3D } from "../components/three/SignalCard3D";
 import { useHaptics } from "../hooks/useHaptics";
 import { api, type Signal } from "../lib/api";
 import { useI18n } from "../lib/i18n";
-
-const SignalCard3D = lazy(() => import("../components/three/SignalCard3D").then((m) => ({ default: m.SignalCard3D })));
 
 type SportFilter = "all" | "football" | "tennis" | "basketball";
 type StatusFilter = "all" | "new" | "live" | "won" | "lost";
@@ -173,9 +173,11 @@ export function Signals() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.34, delay: 0.05 + idx * 0.05 }}
           >
-            <Suspense fallback={<section className="glass p-4 text-sm text-[var(--text-secondary)]">{t("common.loadingSignal")}</section>}>
-              <SignalCard3D signal={signal} onOpen={() => h.soft()} />
-            </Suspense>
+            <ErrorBoundary fallback={<section className="glass p-4 text-sm text-[var(--text-secondary)]">{t("common.loadingSignal")}</section>}>
+              <Suspense fallback={<section className="glass p-4 text-sm text-[var(--text-secondary)]">{t("common.loadingSignal")}</section>}>
+                <SignalCard3D signal={signal} onOpen={() => h.soft()} />
+              </Suspense>
+            </ErrorBoundary>
           </motion.div>
         ))}
       </section>

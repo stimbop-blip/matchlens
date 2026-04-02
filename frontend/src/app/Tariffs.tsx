@@ -26,7 +26,10 @@ export function Tariffs() {
   const [selected, setSelected] = useState<string>("premium");
 
   const tariffsQuery = useQuery({ queryKey: ["tariffs"], queryFn: api.getTariffs });
-  const items = useMemo(() => (tariffsQuery.data?.length ? tariffsQuery.data : fallbackTariffs), [tariffsQuery.data]);
+  const items = useMemo(() => {
+    const source = tariffsQuery.data?.length ? tariffsQuery.data : fallbackTariffs;
+    return source.map((item) => ({ ...item, features: Array.isArray(item.features) ? item.features : [] }));
+  }, [tariffsQuery.data]);
   const current = useMemo(() => items.find((x) => x.id === selected) ?? items[0], [items, selected]);
 
   const buyMutation = useMutation({ mutationFn: (tariffId: string) => api.buyTariff({ tariffId, paymentMethod: "card" }) });

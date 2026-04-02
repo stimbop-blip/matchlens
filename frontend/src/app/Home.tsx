@@ -2,15 +2,15 @@ import { Canvas } from "@react-three/fiber";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Bell, Sparkles, TrendingUp } from "lucide-react";
-import { Suspense, lazy, useMemo } from "react";
+import { Suspense, useMemo } from "react";
 
+import { ErrorBoundary } from "../components/motion/ErrorBoundary";
+import { FloatingHeroObject } from "../components/three/FloatingHeroObject";
+import { SignalCard3D } from "../components/three/SignalCard3D";
+import { SubscriptionProgress3D } from "../components/three/SubscriptionProgress3D";
 import { useHaptics } from "../hooks/useHaptics";
 import { api, type Signal } from "../lib/api";
 import { useI18n } from "../lib/i18n";
-
-const FloatingHeroObject = lazy(() => import("../components/three/FloatingHeroObject").then((m) => ({ default: m.FloatingHeroObject })));
-const SignalCard3D = lazy(() => import("../components/three/SignalCard3D").then((m) => ({ default: m.SignalCard3D })));
-const SubscriptionProgress3D = lazy(() => import("../components/three/SubscriptionProgress3D").then((m) => ({ default: m.SubscriptionProgress3D })));
 
 
 const fallbackSignals: Signal[] = [
@@ -70,17 +70,21 @@ export function Home() {
               <ambientLight intensity={0.75} />
               <pointLight position={[2, 2, 3]} intensity={1.35} color="#00ff9d" />
               <pointLight position={[-2, -1, 2]} intensity={1.0} color="#00b8ff" />
-              <Suspense fallback={null}>
-                <FloatingHeroObject type="trophy" scale={0.95} />
-              </Suspense>
+              <ErrorBoundary fallback={null}>
+                <Suspense fallback={null}>
+                  <FloatingHeroObject type="trophy" scale={0.95} />
+                </Suspense>
+              </ErrorBoundary>
             </Canvas>
           </div>
         </div>
       </motion.section>
 
-      <Suspense fallback={<section className="glass p-4 text-sm text-[var(--text-secondary)]">{t("common.loading3d")}</section>}>
-        <SubscriptionProgress3D percent={progress} label="Subscription status" caption={t("profile.premiumActive")} height={210} />
-      </Suspense>
+      <ErrorBoundary fallback={<section className="glass p-4 text-sm text-[var(--text-secondary)]">{t("common.loading3d")}</section>}>
+        <Suspense fallback={<section className="glass p-4 text-sm text-[var(--text-secondary)]">{t("common.loading3d")}</section>}>
+          <SubscriptionProgress3D percent={progress} label="Subscription status" caption={t("profile.premiumActive")} height={210} />
+        </Suspense>
+      </ErrorBoundary>
 
       <section className="glass p-3">
         <div className="mb-2 flex items-center justify-between">
@@ -92,9 +96,11 @@ export function Home() {
         </div>
         <div className="space-y-2.5">
           {signals.map((signal) => (
-            <Suspense key={signal.id} fallback={<section className="glass p-4 text-sm text-[var(--text-secondary)]">{t("common.loadingSignal")}</section>}>
-              <SignalCard3D signal={signal} onOpen={() => h.soft()} />
-            </Suspense>
+            <ErrorBoundary key={signal.id} fallback={<section className="glass p-4 text-sm text-[var(--text-secondary)]">{t("common.loadingSignal")}</section>}>
+              <Suspense fallback={<section className="glass p-4 text-sm text-[var(--text-secondary)]">{t("common.loadingSignal")}</section>}>
+                <SignalCard3D signal={signal} onOpen={() => h.soft()} />
+              </Suspense>
+            </ErrorBoundary>
           ))}
         </div>
       </section>

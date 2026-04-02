@@ -1,24 +1,29 @@
-import { Suspense, lazy } from "react";
+import { Suspense } from "react";
 
+import { ErrorBoundary } from "../components/motion/ErrorBoundary";
 import { MobileShell } from "../components/layout/MobileShell";
 import { PageTransition } from "../components/motion/PageTransition";
+import { ThreeBackgroundCanvas } from "../components/three/ThreeBackgroundCanvas";
 import { AppProviders } from "./providers";
 import { AppRouter } from "./router";
-
-const ThreeBackgroundCanvas = lazy(() => import("../components/three/ThreeBackgroundCanvas").then((m) => ({ default: m.ThreeBackgroundCanvas })));
 
 export default function App() {
   return (
     <AppProviders>
       <div className="app-bg min-h-screen">
-        <Suspense fallback={null}>
+        <ErrorBoundary fallback={null}>
           <ThreeBackgroundCanvas />
-        </Suspense>
-        <MobileShell withNav>
-          <PageTransition>
-            <AppRouter />
-          </PageTransition>
-        </MobileShell>
+        </ErrorBoundary>
+
+        <ErrorBoundary fallback={<div className="glass rounded-2xl p-4 text-sm text-[var(--text-secondary)]">Loading...</div>}>
+          <MobileShell withNav>
+            <PageTransition>
+              <Suspense fallback={<div className="glass rounded-2xl p-4 text-sm text-[var(--text-secondary)]">Loading...</div>}>
+                <AppRouter />
+              </Suspense>
+            </PageTransition>
+          </MobileShell>
+        </ErrorBoundary>
       </div>
     </AppProviders>
   );
