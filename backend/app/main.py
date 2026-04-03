@@ -101,6 +101,12 @@ def on_startup() -> None:
                 conn.execute(text("ALTER TABLE user_settings ADD COLUMN notify_results BOOLEAN DEFAULT TRUE"))
             if "notify_news" not in columns:
                 conn.execute(text("ALTER TABLE user_settings ADD COLUMN notify_news BOOLEAN DEFAULT TRUE"))
+            if "notify_report_daily" not in columns:
+                conn.execute(text("ALTER TABLE user_settings ADD COLUMN notify_report_daily BOOLEAN DEFAULT TRUE"))
+            if "notify_report_weekly" not in columns:
+                conn.execute(text("ALTER TABLE user_settings ADD COLUMN notify_report_weekly BOOLEAN DEFAULT TRUE"))
+            if "notify_report_monthly" not in columns:
+                conn.execute(text("ALTER TABLE user_settings ADD COLUMN notify_report_monthly BOOLEAN DEFAULT FALSE"))
             if "notify_subscription" not in columns:
                 conn.execute(text("ALTER TABLE user_settings ADD COLUMN notify_subscription BOOLEAN DEFAULT TRUE"))
             if "preferred_language" not in columns:

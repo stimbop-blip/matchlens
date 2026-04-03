@@ -88,7 +88,16 @@ export function ProfilePage() {
         ? t("menu.services.support.status.closed")
         : t("menu.services.support.status.available");
   const notificationsEnabledCount = notify
-    ? [notify.notify_free, notify.notify_premium, notify.notify_vip, notify.notify_results, notify.notify_news].filter(Boolean).length
+    ? [
+        notify.notify_free,
+        notify.notify_premium,
+        notify.notify_vip,
+        notify.notify_results,
+        notify.notify_news,
+        notify.notify_report_daily,
+        notify.notify_report_weekly,
+        notify.notify_report_monthly,
+      ].filter(Boolean).length
     : 0;
   const notificationsStatus = notify?.notifications_enabled ? t("common.status.active") : t("common.status.inactive");
   const themeLabel = (me?.theme || "dark") === "light" ? t("theme.light") : t("theme.dark");
@@ -135,7 +144,7 @@ export function ProfilePage() {
         label: t("hub.item.notifications.title"),
         subtitle: t("menu.account.notifications.subtitle"),
         icon: Bell,
-        value: `${notificationsEnabledCount}/5`,
+        value: `${notificationsEnabledCount}/8`,
       },
       {
         key: "language",
@@ -264,7 +273,7 @@ export function ProfilePage() {
           <article>
             <small>{t("hub.item.notifications.title")}</small>
             <strong>{notificationsStatus}</strong>
-            <span>{`${notificationsEnabledCount}/5`}</span>
+            <span>{`${notificationsEnabledCount}/8`}</span>
           </article>
         </div>
       </section>

@@ -126,7 +126,16 @@ export function MenuPage() {
 
   const languageValue = (me?.language || language) === "en" ? t("language.en") : t("language.ru");
   const themeValue = (me?.theme || "dark") === "light" ? t("theme.light") : t("theme.dark");
-  const categoryEnabledCount = [notify?.notify_free, notify?.notify_premium, notify?.notify_vip, notify?.notify_results, notify?.notify_news].filter(Boolean).length;
+  const categoryEnabledCount = [
+    notify?.notify_free,
+    notify?.notify_premium,
+    notify?.notify_vip,
+    notify?.notify_results,
+    notify?.notify_news,
+    notify?.notify_report_daily,
+    notify?.notify_report_weekly,
+    notify?.notify_report_monthly,
+  ].filter(Boolean).length;
 
   const publishedNews = useMemo(() => news.filter((item) => item.is_published), [news]);
   const latestNews = useMemo(() => [...publishedNews].sort((a, b) => dateMs(b.published_at) - dateMs(a.published_at)).slice(0, 3), [publishedNews]);
@@ -196,7 +205,7 @@ export function MenuPage() {
             <p>{t("menu.account.notifications.subtitle")}</p>
             <div className="pb-center-v4-metrics">
               <span>{notificationsStatus}</span>
-              <span>{t("menu.account.notifications.categories", { enabled: categoryEnabledCount, total: 5 })}</span>
+              <span>{t("menu.account.notifications.categories", { enabled: categoryEnabledCount, total: 8 })}</span>
             </div>
           </Link>
         </div>

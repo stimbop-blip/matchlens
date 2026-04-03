@@ -95,6 +95,18 @@ def _access_pref_enabled(settings: UserSettings | None, access_level: str) -> bo
     return True
 
 
+def _report_pref_enabled(settings: UserSettings | None, period: str) -> bool:
+    if settings is None:
+        return True
+    if period == "daily":
+        return bool(settings.notify_report_daily)
+    if period == "weekly":
+        return bool(settings.notify_report_weekly)
+    if period == "monthly":
+        return bool(settings.notify_report_monthly)
+    return True
+
+
 def _active_level_map(db: Session) -> dict[str, str]:
     level_map: dict[str, str] = {}
     now = datetime.now(UTC)
@@ -247,6 +259,9 @@ def get_or_create_user_settings(db: Session, user: User) -> UserSettings:
         notify_vip=True,
         notify_results=True,
         notify_news=True,
+        notify_report_daily=True,
+        notify_report_weekly=True,
+        notify_report_monthly=False,
         notify_subscription=True,
         preferred_language=_normalize_language(user.language_code),
         preferred_theme="dark",
@@ -266,6 +281,9 @@ def get_notification_settings(db: Session, user: User) -> dict:
         "notify_vip": bool(settings.notify_vip),
         "notify_results": bool(settings.notify_results),
         "notify_news": bool(settings.notify_news),
+        "notify_report_daily": bool(settings.notify_report_daily),
+        "notify_report_weekly": bool(settings.notify_report_weekly),
+        "notify_report_monthly": bool(settings.notify_report_monthly),
     }
 
 
@@ -300,7 +318,17 @@ def update_user_preferences(db: Session, user: User, payload: dict) -> dict:
 
 def update_notification_settings(db: Session, user: User, payload: dict) -> dict:
     settings = get_or_create_user_settings(db, user)
-    for field in ["notifications_enabled", "notify_free", "notify_premium", "notify_vip", "notify_results", "notify_news"]:
+    for field in [
+        "notifications_enabled",
+        "notify_free",
+        "notify_premium",
+        "notify_vip",
+        "notify_results",
+        "notify_news",
+        "notify_report_daily",
+        "notify_report_weekly",
+        "notify_report_monthly",
+    ]:
         if field in payload and payload[field] is not None:
             setattr(settings, field, bool(payload[field]))
     db.add(settings)
@@ -872,7 +900,22 @@ def _report_period_bounds(period: str) -> tuple[datetime, datetime, str, str] | 
         bucket = f"{iso_year}w{iso_week:02d}"
         title_period = "за 7 дней"
         return start, now, bucket, title_period
+    if period == "monthly":
+        start = now - timedelta(days=30)
+        bucket = now.strftime("%Y%m")
+        title_period = "за 30 дней"
+        return start, now, bucket, title_period
     return None
+
+
+def _report_dedupe_cooldown_minutes(period: str) -> int:
+    if period == "daily":
+        return 60 * 24 * 14
+    if period == "weekly":
+        return 60 * 24 * 60
+    if period == "monthly":
+        return 60 * 24 * 120
+    return 60 * 24 * 14
 
 
 def _flat_bank_profit(predictions: list[Prediction], stake_rub: float = 10_000.0) -> tuple[float, int, int, int]:
@@ -899,6 +942,7 @@ def queue_recurring_performance_report(db: Session, period: str) -> dict:
         raise ValueError("Unsupported report period")
 
     window_start, window_end, bucket, title_period = bounds
+    dedupe_cooldown_minutes = _report_dedupe_cooldown_minutes(period)
     settings_map = _user_settings_map(db)
     level_map = _active_level_map(db)
     users = db.scalars(select(User)).all()
@@ -944,6 +988,9 @@ def queue_recurring_performance_report(db: Session, period: str) -> dict:
         if settings and not settings.notifications_enabled:
             skipped += 1
             continue
+        if not _report_pref_enabled(settings, period):
+            skipped += 1
+            continue
         if not _access_pref_enabled(settings, user_level):
             skipped += 1
             continue
@@ -954,7 +1001,7 @@ def queue_recurring_performance_report(db: Session, period: str) -> dict:
             continue
 
         dedupe_key = f"report:{period}:{bucket}:{user_id}:{user_level}"
-        if _has_recent_dedupe(db, dedupe_key=dedupe_key, cooldown_minutes=60 * 24 * 14):
+        if _has_recent_dedupe(db, dedupe_key=dedupe_key, cooldown_minutes=dedupe_cooldown_minutes):
             skipped += 1
             continue
 

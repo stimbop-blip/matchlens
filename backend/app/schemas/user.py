@@ -43,6 +43,9 @@ class NotificationSettingsOut(BaseModel):
     notify_vip: bool
     notify_results: bool
     notify_news: bool
+    notify_report_daily: bool
+    notify_report_weekly: bool
+    notify_report_monthly: bool
 
 
 class NotificationSettingsUpdateIn(BaseModel):
@@ -52,6 +55,9 @@ class NotificationSettingsUpdateIn(BaseModel):
     notify_vip: bool | None = None
     notify_results: bool | None = None
     notify_news: bool | None = None
+    notify_report_daily: bool | None = None
+    notify_report_weekly: bool | None = None
+    notify_report_monthly: bool | None = None
 
 
 class ReferralOut(BaseModel):

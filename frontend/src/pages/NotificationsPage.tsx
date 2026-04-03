@@ -9,7 +9,16 @@ import { api, type NotificationSettings } from "../services/api";
 
 type SettingsKey = keyof NotificationSettings;
 
-const CATEGORY_KEYS: SettingsKey[] = ["notify_free", "notify_premium", "notify_vip", "notify_results", "notify_news"];
+const CATEGORY_KEYS: SettingsKey[] = [
+  "notify_free",
+  "notify_premium",
+  "notify_vip",
+  "notify_results",
+  "notify_news",
+  "notify_report_daily",
+  "notify_report_weekly",
+  "notify_report_monthly",
+];
 
 function countEnabledCategories(settings: NotificationSettings | null): number {
   if (!settings) return 0;
@@ -30,6 +39,9 @@ export function NotificationsPage() {
   const lockReason = (key: SettingsKey): string | null => {
     if (key === "notify_premium" && subscription.tariff === "free") return t("profile.notifications.lockPremium");
     if (key === "notify_vip" && subscription.tariff !== "vip") return t("profile.notifications.lockVip");
+    if (["notify_report_daily", "notify_report_weekly", "notify_report_monthly"].includes(key) && subscription.tariff === "free") {
+      return t("profile.notifications.lockPremium");
+    }
     return null;
   };
 
@@ -89,11 +101,11 @@ export function NotificationsPage() {
           <span>
             {t("common.status.active")}: <b>{settings?.notifications_enabled ? t("common.status.active") : t("common.status.inactive")}</b>
           </span>
-          <span>
-            {t("menu.account.notifications.categories", { enabled: enabledCount, total: 5 })}
-          </span>
-        </div>
-      </section>
+            <span>
+            {t("menu.account.notifications.categories", { enabled: enabledCount, total: 8 })}
+            </span>
+          </div>
+        </section>
 
       <AppShellSection>
         <SectionHeader title={t("profile.notifications.title")} subtitle={t("menu.account.notifications.subtitle")} />
@@ -128,6 +140,9 @@ export function NotificationsPage() {
               { key: "notify_vip" as const, label: t("profile.notifications.vip") },
               { key: "notify_results" as const, label: t("profile.notifications.results") },
               { key: "notify_news" as const, label: t("profile.notifications.news") },
+              { key: "notify_report_daily" as const, label: t("profile.notifications.reportDaily") },
+              { key: "notify_report_weekly" as const, label: t("profile.notifications.reportWeekly") },
+              { key: "notify_report_monthly" as const, label: t("profile.notifications.reportMonthly") },
             ].map((item) => {
               const lockedText = lockReason(item.key);
               const disabled = Boolean(lockedText) || savingKey !== null;

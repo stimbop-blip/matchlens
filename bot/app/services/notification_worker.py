@@ -91,6 +91,10 @@ async def run_notification_worker(bot: Bot, backend_client: BackendClient) -> No
                     queued_weekly_report = await backend_client.queue_recurring_reports(period="weekly")
                     if queued_weekly_report > 0:
                         logger.info("notification_worker queued_weekly_report=%s", queued_weekly_report)
+                if iteration % (30 * 12) == 1:
+                    queued_monthly_report = await backend_client.queue_recurring_reports(period="monthly")
+                    if queued_monthly_report > 0:
+                        logger.info("notification_worker queued_monthly_report=%s", queued_monthly_report)
 
             items = await backend_client.pull_notifications(limit=20)
             pulled = len(items)

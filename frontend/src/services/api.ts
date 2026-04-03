@@ -325,6 +325,9 @@ export type NotificationSettings = {
   notify_vip: boolean;
   notify_results: boolean;
   notify_news: boolean;
+  notify_report_daily: boolean;
+  notify_report_weekly: boolean;
+  notify_report_monthly: boolean;
 };
 
 export type NewsPost = {

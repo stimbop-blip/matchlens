@@ -12200,3 +12200,113 @@ body {
 :root[data-theme="light"] .pb-telegram-dock {
   background: color-mix(in srgb, var(--surface) 94%, transparent);
 }
+
+/* Light mode readability fixes: tariffs + admin */
+
+:root[data-theme="light"] .pb-screen-tariffs .pb-plan-card,
+:root[data-theme="light"] .pb-screen-tariffs .pb-pay-card,
+:root[data-theme="light"] .pb-screen-tariffs .pb-summary-card,
+:root[data-theme="light"] .pb-screen-tariffs .pb-manual-card {
+  border-color: #cfdded;
+  background:
+    radial-gradient(circle at 90% -18%, rgba(16, 185, 150, 0.1), transparent 52%),
+    linear-gradient(165deg, #ffffff, #f3f8ff);
+  box-shadow: 0 12px 24px rgba(20, 36, 58, 0.1);
+}
+
+:root[data-theme="light"] .pb-screen-tariffs .pb-plan-card.free {
+  background: linear-gradient(165deg, #ffffff, #f6f9ff);
+}
+
+:root[data-theme="light"] .pb-screen-tariffs .pb-plan-card.active {
+  border-color: color-mix(in srgb, var(--accent) 56%, #b8d7ef);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 28%, transparent) inset, 0 14px 28px rgba(19, 37, 60, 0.14);
+}
+
+:root[data-theme="light"] .pb-screen-tariffs .pb-plan-badge,
+:root[data-theme="light"] .pb-screen-tariffs .pb-duration-pill,
+:root[data-theme="light"] .pb-screen-tariffs .pb-method-card {
+  border-color: #cddced;
+  background: #f6f9ff;
+}
+
+:root[data-theme="light"] .pb-screen-tariffs .pb-duration-pill.active,
+:root[data-theme="light"] .pb-screen-tariffs .pb-method-card.active {
+  border-color: color-mix(in srgb, var(--accent) 52%, #b8d7ef);
+  background: color-mix(in srgb, var(--accent) 16%, #f3f8ff);
+}
+
+:root[data-theme="light"] .pb-screen-tariffs .pb-plan-price,
+:root[data-theme="light"] .pb-screen-tariffs .pb-summary-card strong,
+:root[data-theme="light"] .pb-screen-tariffs .pb-method-card strong,
+:root[data-theme="light"] .pb-screen-tariffs .pb-duration-pill strong {
+  color: #122a44;
+}
+
+:root[data-theme="light"] .pb-screen-tariffs .pb-plan-card > p,
+:root[data-theme="light"] .pb-screen-tariffs .pb-plan-card li,
+:root[data-theme="light"] .pb-screen-tariffs .pb-plan-badge,
+:root[data-theme="light"] .pb-screen-tariffs .pb-pay-card h3,
+:root[data-theme="light"] .pb-screen-tariffs .pb-summary-card > div span,
+:root[data-theme="light"] .pb-screen-tariffs .pb-summary-card p,
+:root[data-theme="light"] .pb-screen-tariffs .pb-method-card span,
+:root[data-theme="light"] .pb-screen-tariffs .pb-method-card p,
+:root[data-theme="light"] .pb-screen-tariffs .pb-duration-pill span {
+  color: #4b617b;
+}
+
+:root[data-theme="light"] .pb-admin-v4 {
+  border-color: #cfdded;
+  background:
+    radial-gradient(circle at 100% -24%, rgba(16, 185, 150, 0.12), transparent 56%),
+    linear-gradient(160deg, #f8fbff, #edf5ff);
+  box-shadow: 0 12px 28px rgba(21, 38, 61, 0.12);
+}
+
+:root[data-theme="light"] .pb-admin-v4 .section-head,
+:root[data-theme="light"] .pb-admin-v4 .admin-control-bar,
+:root[data-theme="light"] .pb-admin-v4 .admin-card-compact,
+:root[data-theme="light"] .pb-admin-v4 .admin-broadcast-compact,
+:root[data-theme="light"] .pb-admin-v4 .metrics-grid article,
+:root[data-theme="light"] .pb-admin-v4 .card-lite,
+:root[data-theme="light"] .pb-admin-v4 .admin-tabs-wrap.admin-tabs-mobile,
+:root[data-theme="light"] .pb-admin-v4 .admin-sheet {
+  border-color: #cfdded;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 10px 24px rgba(26, 42, 68, 0.1);
+}
+
+:root[data-theme="light"] .pb-admin-v4 .admin-tabs-wrap.admin-tabs-mobile .admin-tabs .tab {
+  border-color: #cbdced;
+  background: #f4f8ff;
+  color: #4b617b;
+}
+
+:root[data-theme="light"] .pb-admin-v4 .admin-tabs-wrap.admin-tabs-mobile .admin-tabs .tab.active {
+  border-color: rgba(15, 186, 149, 0.44);
+  background: rgba(15, 186, 149, 0.14);
+  color: #0f7b64;
+}
+
+:root[data-theme="light"] .pb-admin-v4 .admin-meta-row span,
+:root[data-theme="light"] .pb-admin-v4 .admin-status-switch button,
+:root[data-theme="light"] .pb-admin-v4 .admin-chip-toggle,
+:root[data-theme="light"] .pb-admin-v4 .btn.ghost {
+  border-color: #cbdced;
+  background: #f4f8ff;
+  color: #4b617b;
+}
+
+:root[data-theme="light"] .pb-admin-v4 .admin-card-title-row strong,
+:root[data-theme="light"] .pb-admin-v4 .pb-admin-v4-kpis strong,
+:root[data-theme="light"] .pb-admin-v4 .metrics-grid strong,
+:root[data-theme="light"] .pb-admin-v4 .admin-sheet-head strong {
+  color: #122a44;
+}
+
+:root[data-theme="light"] .pb-admin-v4 .admin-card-sub,
+:root[data-theme="light"] .pb-admin-v4 .section-head .muted,
+:root[data-theme="light"] .pb-admin-v4 .metrics-grid span,
+:root[data-theme="light"] .pb-admin-v4 .pb-admin-v4-kpis span {
+  color: #4b617b;
+}
