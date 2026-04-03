@@ -30,7 +30,7 @@ export function CommandHub({ open, isAdmin, onClose }: CommandHubProps) {
     { id: "tariffs", to: "/tariffs", titleKey: "hub.item.tariffs.title", descKey: "hub.item.tariffs.desc", section: "core" },
     { id: "news", to: "/news", titleKey: "hub.item.news.title", descKey: "hub.item.news.desc", section: "service" },
     { id: "referrals", to: "/profile#referral", titleKey: "hub.item.referrals.title", descKey: "hub.item.referrals.desc", section: "service" },
-    { id: "notifications", to: "/profile#notifications", titleKey: "hub.item.notifications.title", descKey: "hub.item.notifications.desc", section: "service" },
+    { id: "notifications", to: "/profile/notifications", titleKey: "hub.item.notifications.title", descKey: "hub.item.notifications.desc", section: "service" },
     { id: "support", to: "/support", titleKey: "hub.item.support.title", descKey: "hub.item.support.desc", section: "service" },
     { id: "support-inbox", to: "/support/inbox", titleKey: "menu.support.inboxTitle", descKey: "menu.support.inboxDesc", section: "service", adminOnly: true },
     { id: "language", to: "/menu/language", titleKey: "hub.item.language.title", descKey: "hub.item.language.desc", section: "settings" },

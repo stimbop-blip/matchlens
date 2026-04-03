@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 
 import { clearConsentCache, isConsentAccepted, readConsentCache, writeConsentCache } from "./consent";
 import { Admin } from "./Admin";
@@ -13,6 +13,7 @@ import { LanguagePage } from "../pages/LanguagePage";
 import { MenuPage } from "../pages/MenuPage";
 import { NewsDetailsPage } from "../pages/NewsDetailsPage";
 import { NewsPage } from "../pages/NewsPage";
+import { NotificationsPage } from "../pages/NotificationsPage";
 import { PaymentRefundPage } from "../pages/PaymentRefundPage";
 import { PredictionDetailsPage } from "../pages/PredictionDetailsPage";
 import { ResponsiblePage } from "../pages/ResponsiblePage";
@@ -24,9 +25,26 @@ import { ThemePage } from "../pages/ThemePage";
 
 export function AppRouter() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [consent, setConsent] = useState<UserConsent | null>(() => readConsentCache());
   const [checking, setChecking] = useState(true);
   const [remoteVerified, setRemoteVerified] = useState(false);
+
+  const resolveOpenTarget = useCallback((value: string | null): string | null => {
+    if (!value) return null;
+    const normalized = value.trim().replace(/^\/+/, "").toLowerCase();
+    if (!normalized) return null;
+    if (normalized === "support" || normalized === "support/chat") return "/support";
+    if (normalized === "feed" || normalized === "signals") return "/feed";
+    if (normalized === "profile") return "/profile";
+    if (normalized === "notifications" || normalized === "profile/notifications") return "/profile/notifications";
+    if (normalized === "tariffs") return "/tariffs";
+    if (normalized === "stats") return "/stats";
+    if (normalized === "news") return "/news";
+    if (normalized === "menu") return "/menu";
+    if (normalized === "admin") return "/admin";
+    return null;
+  }, []);
 
   const syncConsent = useCallback(async () => {
     try {
@@ -64,6 +82,33 @@ export function AppRouter() {
 
   const canEnterApp = useMemo(() => remoteVerified && isConsentAccepted(consent), [remoteVerified, consent]);
 
+  useEffect(() => {
+    if (!canEnterApp) return;
+
+    const params = new URLSearchParams(location.search);
+    const openValue = params.get("open") || params.get("startapp");
+    const target = resolveOpenTarget(openValue);
+    if (!target) return;
+
+    if (location.pathname !== target) {
+      navigate(target, { replace: true });
+      return;
+    }
+
+    if (params.has("open") || params.has("startapp")) {
+      params.delete("open");
+      params.delete("startapp");
+      const nextSearch = params.toString();
+      navigate(
+        {
+          pathname: location.pathname,
+          search: nextSearch ? `?${nextSearch}` : "",
+        },
+        { replace: true },
+      );
+    }
+  }, [canEnterApp, location.pathname, location.search, navigate, resolveOpenTarget]);
+
   const handleAccepted = (value: UserConsent) => {
     setConsent(value);
     writeConsentCache(value);
@@ -90,6 +135,7 @@ export function AppRouter() {
       <Route path="/feed/:predictionId" element={<PredictionDetailsPage />} />
       <Route path="/stats" element={<StatsPage />} />
       <Route path="/tariffs" element={<Tariffs />} />
+      <Route path="/profile/notifications" element={<NotificationsPage />} />
       <Route path="/profile" element={<Profile />} />
       <Route path="/menu" element={<MenuPage />} />
       <Route path="/menu/language" element={<LanguagePage />} />

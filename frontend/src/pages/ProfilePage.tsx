@@ -1,4 +1,4 @@
-import { ChevronRight, ClipboardList, CreditCard, Globe2, Inbox, LifeBuoy, ListChecks, Newspaper, Palette, ShieldCheck, UserCog, WalletCards } from "lucide-react";
+import { Bell, ChevronRight, ClipboardList, CreditCard, Globe2, Inbox, LifeBuoy, ListChecks, Newspaper, Palette, ShieldCheck, UserCog, WalletCards } from "lucide-react";
 import { useEffect, useMemo, useState, type ComponentType } from "react";
 import { Link } from "react-router-dom";
 
@@ -90,6 +90,7 @@ export function ProfilePage() {
   const notificationsEnabledCount = notify
     ? [notify.notify_free, notify.notify_premium, notify.notify_vip, notify.notify_results, notify.notify_news].filter(Boolean).length
     : 0;
+  const notificationsStatus = notify?.notifications_enabled ? t("common.status.active") : t("common.status.inactive");
   const themeLabel = (me?.theme || "dark") === "light" ? t("theme.light") : t("theme.dark");
   const languageLabel = (me?.language || language) === "en" ? t("language.en") : t("language.ru");
 
@@ -128,6 +129,14 @@ export function ProfilePage() {
     ];
 
     const settingsRows: ProfileRow[] = [
+      {
+        key: "notifications",
+        to: "/profile/notifications",
+        label: t("hub.item.notifications.title"),
+        subtitle: t("menu.account.notifications.subtitle"),
+        icon: Bell,
+        value: `${notificationsEnabledCount}/5`,
+      },
       {
         key: "language",
         to: "/menu/language",
@@ -219,7 +228,7 @@ export function ProfilePage() {
     }
 
     return grouped;
-  }, [accessValue, isAdmin, isStaff, language, languageLabel, legalCopy.moreLinks.paymentSubtitle, legalCopy.moreLinks.paymentTitle, legalCopy.moreLinks.responsibleSubtitle, legalCopy.moreLinks.responsibleTitle, legalCopy.moreLinks.rulesSubtitle, legalCopy.moreLinks.rulesTitle, legalCopy.moreLinks.supportSubtitle, legalCopy.moreLinks.supportTitle, supportValue, t, themeLabel]);
+  }, [accessValue, isAdmin, isStaff, language, languageLabel, legalCopy.moreLinks.paymentSubtitle, legalCopy.moreLinks.paymentTitle, legalCopy.moreLinks.responsibleSubtitle, legalCopy.moreLinks.responsibleTitle, legalCopy.moreLinks.rulesSubtitle, legalCopy.moreLinks.rulesTitle, legalCopy.moreLinks.supportSubtitle, legalCopy.moreLinks.supportTitle, notificationsEnabledCount, supportValue, t, themeLabel]);
 
   if (loading) {
     return (
@@ -254,7 +263,7 @@ export function ProfilePage() {
           </article>
           <article>
             <small>{t("hub.item.notifications.title")}</small>
-            <strong>{notify?.notifications_enabled ? t("common.status.active") : t("common.status.inactive")}</strong>
+            <strong>{notificationsStatus}</strong>
             <span>{`${notificationsEnabledCount}/5`}</span>
           </article>
         </div>

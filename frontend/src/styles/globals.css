@@ -104,7 +104,7 @@
   --premium-badge-text: var(--accent);
   --vip-badge-bg: var(--card);
   --vip-badge-text: var(--accent-secondary);
-  --tabbar-bg: color-mix(in srgb, var(--surface) 92%, transparent);
+  --tabbar-bg: var(--surface);
   --tabbar-border: var(--border);
   --tabbar-active: var(--accent);
   --tabbar-inactive: var(--text-secondary);
@@ -116,14 +116,14 @@
   --input-border: var(--border);
   --input-text: var(--text-primary);
   --shadow-card: var(--shadow-soft);
-  --glass-surface: color-mix(in srgb, var(--surface) 90%, transparent);
+  --glass-surface: var(--surface);
   --page-glow-1: color-mix(in srgb, var(--accent) 14%, transparent);
   --page-glow-2: color-mix(in srgb, var(--accent-secondary) 12%, transparent);
   --page-glow-3: color-mix(in srgb, var(--accent) 8%, transparent);
   --page-grad-start: var(--background);
   --page-grad-end: color-mix(in srgb, var(--background) 76%, var(--surface));
-  --glass-panel-start: color-mix(in srgb, var(--surface) 95%, transparent);
-  --glass-panel-end: color-mix(in srgb, var(--card) 90%, transparent);
+  --glass-panel-start: var(--surface);
+  --glass-panel-end: var(--card);
   --glass-panel-shadow: var(--shadow-soft);
 
   --bg: var(--app-bg);
@@ -10711,7 +10711,7 @@ h4 {
   --success: var(--accent);
   --warning: var(--accent-secondary);
   --danger: var(--accent-secondary);
-  --tabbar-bg: color-mix(in srgb, var(--surface) 92%, transparent);
+  --tabbar-bg: var(--surface);
   --tabbar-border: var(--border);
   --button-primary-bg: linear-gradient(135deg, var(--accent) 0%, var(--accent-secondary) 100%);
   --button-secondary-bg: var(--card);
@@ -10720,13 +10720,14 @@ h4 {
   --input-border: var(--border);
   --input-text: var(--text-primary);
   --shadow-card: var(--shadow-soft);
+  --glass-surface: var(--surface);
   --page-glow-1: color-mix(in srgb, var(--accent) 14%, transparent);
   --page-glow-2: color-mix(in srgb, var(--accent-secondary) 12%, transparent);
   --page-glow-3: color-mix(in srgb, var(--accent) 8%, transparent);
   --page-grad-start: var(--background);
   --page-grad-end: color-mix(in srgb, var(--background) 76%, var(--surface));
-  --glass-panel-start: color-mix(in srgb, var(--surface) 95%, transparent);
-  --glass-panel-end: color-mix(in srgb, var(--card) 90%, transparent);
+  --glass-panel-start: var(--surface);
+  --glass-panel-end: var(--card);
   --glass-panel-shadow: var(--shadow-soft);
 }
 
@@ -11997,6 +11998,56 @@ body {
   color: var(--text-secondary);
 }
 
+.pb-notify-card {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+:root[data-theme="dark"] .pb-notify-card {
+  background: var(--card);
+}
+
+.pb-notify-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.pb-notify-row:last-child {
+  border-bottom: 0;
+}
+
+.pb-notify-row.disabled {
+  opacity: 0.62;
+}
+
+.pb-notify-copy {
+  display: grid;
+  gap: 3px;
+}
+
+.pb-notify-copy strong {
+  font-size: 15px;
+  line-height: 1.2;
+}
+
+.pb-notify-copy small {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.pb-notify-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+
 @media (max-width: 640px) {
   .pb-telegram-forecast-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -12030,7 +12081,7 @@ body {
   background:
     radial-gradient(circle at 84% -16%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 56%),
     radial-gradient(circle at -6% 108%, color-mix(in srgb, var(--accent-secondary) 10%, transparent), transparent 58%),
-    linear-gradient(164deg, color-mix(in srgb, var(--surface) 96%, transparent), color-mix(in srgb, var(--card) 92%, transparent));
+    linear-gradient(164deg, var(--surface), var(--card));
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.92),
     0 18px 36px rgba(18, 34, 56, 0.16);
@@ -12051,7 +12102,7 @@ body {
 :root[data-theme="light"] .pb-gate-check-row,
 :root[data-theme="light"] .pb-gate-switch {
   border-color: color-mix(in srgb, var(--border) 84%, transparent);
-  background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, transparent), color-mix(in srgb, var(--card) 90%, transparent));
+  background: linear-gradient(180deg, var(--surface), var(--card));
 }
 
 :root[data-theme="light"] .pb-gate-switch input {
@@ -12112,7 +12163,7 @@ body {
 :root[data-theme="light"] .pb-telegram-profile-kpis article,
 :root[data-theme="light"] .pb-telegram-profile-row,
 :root[data-theme="light"] .pb-telegram-profile-section-head {
-  background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 98%, transparent), color-mix(in srgb, var(--card) 92%, transparent));
+  background: linear-gradient(180deg, var(--surface), var(--card));
   border-color: color-mix(in srgb, var(--border) 86%, transparent);
 }
 
@@ -12125,4 +12176,27 @@ body {
 :root[data-theme="light"] .pb-telegram-gallery-main small,
 :root[data-theme="light"] .pb-telegram-forecast-note {
   color: color-mix(in srgb, var(--text-secondary) 92%, var(--text-primary));
+}
+
+:root[data-theme="light"] body {
+  background:
+    radial-gradient(circle at 12% -18%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 46%),
+    radial-gradient(circle at 92% -14%, color-mix(in srgb, var(--accent-secondary) 12%, transparent), transparent 42%),
+    linear-gradient(180deg, var(--background), color-mix(in srgb, var(--background) 80%, var(--surface)));
+}
+
+:root[data-theme="light"] .pb-app-header,
+:root[data-theme="light"] .pb-premium-panel,
+:root[data-theme="light"] .pb-hero-panel-v2,
+:root[data-theme="light"] .pb-home-news-card,
+:root[data-theme="light"] .pb-home-news-card.lead,
+:root[data-theme="light"] .pb-telegram-gallery-card,
+:root[data-theme="light"] .pb-telegram-tool-card {
+  background: linear-gradient(180deg, var(--surface), var(--card));
+  border-color: color-mix(in srgb, var(--border) 86%, transparent);
+  box-shadow: 0 12px 26px rgba(22, 37, 59, 0.12);
+}
+
+:root[data-theme="light"] .pb-telegram-dock {
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
 }

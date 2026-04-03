@@ -188,7 +188,7 @@ export function MenuPage() {
             </div>
           </Link>
 
-          <Link className="pb-center-v4-card" to="/profile#notifications">
+          <Link className="pb-center-v4-card" to="/profile/notifications">
             <div className="pb-center-v4-head">
               <CenterIcon kind="notifications" />
             </div>

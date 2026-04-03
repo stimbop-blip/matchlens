@@ -4,7 +4,7 @@ import contextlib
 from datetime import UTC, datetime
 from html import escape
 from typing import Any, cast
-from urllib.parse import urlencode, urlsplit, urlunsplit
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from aiogram import F, Router
 from aiogram.exceptions import TelegramBadRequest
@@ -90,6 +90,19 @@ def _mini_app_url(path: str | None = None) -> str:
     base_path = parsed.path.rstrip("/")
     merged_path = f"{base_path}{suffix}" if base_path else suffix
     return urlunsplit((parsed.scheme, parsed.netloc, merged_path, parsed.query, parsed.fragment))
+
+
+def _mini_app_open_url(target: str) -> str:
+    base = settings.mini_app_url.strip()
+    if not base:
+        return base
+
+    parsed = urlsplit(base)
+    params = dict(parse_qsl(parsed.query, keep_blank_values=True))
+    params["open"] = target.strip().lstrip("/")
+    query = urlencode(params)
+    path = parsed.path or "/"
+    return urlunsplit((parsed.scheme, parsed.netloc, path, query, parsed.fragment))
 
 
 def _remember_free(user_id: int, items: list[dict[str, Any]]) -> None:
@@ -630,7 +643,7 @@ async def _build_settings_notifications_screen(language: str) -> tuple[str, Inli
         section_nav_keyboard(
             language=language,
             back_callback="menu:settings",
-            primary_button=(t(language, "open_notifications"), _mini_app_url("/profile")),
+            primary_button=(t(language, "open_notifications"), _mini_app_url("/profile/notifications")),
         ),
     )
 
@@ -641,7 +654,7 @@ async def _build_notifications_screen(language: str) -> tuple[str, InlineKeyboar
         section_nav_keyboard(
             language=language,
             back_callback="menu:main",
-            primary_button=(t(language, "open_notifications"), _mini_app_url("/profile")),
+            primary_button=(t(language, "open_notifications"), _mini_app_url("/profile/notifications")),
         ),
     )
 
@@ -691,19 +704,15 @@ async def _build_referrals_screen(language: str, user_id: int | None, *, show_li
 
 
 async def _build_support_screen(language: str) -> tuple[str, InlineKeyboardMarkup]:
+    support_app_url = _mini_app_open_url("support")
     support_url = settings.bot_support_url.strip()
-    nav_keyboard = section_nav_keyboard(
-        language=language,
-        back_callback="menu:main",
-        primary_button=(t(language, "open_mini_app"), settings.mini_app_url),
-    )
-    if not support_url or "your_support" in support_url:
-        return (t(language, "support_placeholder"), nav_keyboard)
-
-    rows = [
-        [InlineKeyboardButton(text=t(language, "support_button"), url=support_url)],
-        *nav_keyboard.inline_keyboard,
+    nav_keyboard = section_nav_keyboard(language=language, back_callback="menu:main")
+    rows: list[list[InlineKeyboardButton]] = [
+        [InlineKeyboardButton(text=t(language, "support_button"), web_app=WebAppInfo(url=support_app_url))],
     ]
+    if support_url and "your_support" not in support_url:
+        rows.append([InlineKeyboardButton(text=t(language, "support_external_button"), url=support_url)])
+    rows.extend(nav_keyboard.inline_keyboard)
     return (
         f"{t(language, 'support_title')}\n{t(language, 'support_body')}",
         InlineKeyboardMarkup(inline_keyboard=rows),
