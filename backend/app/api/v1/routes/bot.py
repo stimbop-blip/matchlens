@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
 
@@ -27,6 +27,7 @@ from app.services.notification_service import (
     mark_notification_failed,
     mark_notification_sent,
     pull_queued_notifications,
+    queue_recurring_performance_report,
     queue_expiring_subscription_notifications,
     update_user_preferences,
 )
@@ -38,9 +39,9 @@ from app.services.user_service import upsert_user_by_telegram
 router = APIRouter(prefix="/bot", tags=["bot"])
 
 TARIFF_DESCRIPTION = {
-    "free": "Знакомство с PIT BET: часть бесплатных сигналов и базовый доступ.",
-    "premium": "Основной тариф: полная Premium-лента, уведомления и разборы.",
-    "vip": "Максимум: VIP-сигналы, ранний доступ и лайв-отбор.",
+    "free": "Старт в PIT BET: бесплатные сигналы, базовая статистика и новости.",
+    "premium": "План для стабильной игры: полная Premium-лента, ранние входы и усиленный дневной отбор.",
+    "vip": "Максимальный режим: strongest setups, live/hot picks, приоритет и регулярные VIP-дайджесты.",
 }
 
 TARIFF_OPTIONS = {
@@ -209,3 +210,12 @@ def bot_mark_notification_failed(notification_id: str, db: Session = Depends(get
 def bot_queue_expiring_subscriptions(hours_before: int = 24, db: Session = Depends(get_db)) -> dict:
     queued = queue_expiring_subscription_notifications(db, hours_before=hours_before)
     return {"ok": True, "queued": queued}
+
+
+@router.post("/reports/queue-recurring")
+def bot_queue_recurring_reports(period: str = "daily", db: Session = Depends(get_db)) -> dict:
+    try:
+        result = queue_recurring_performance_report(db, period=period)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"ok": True, **result}

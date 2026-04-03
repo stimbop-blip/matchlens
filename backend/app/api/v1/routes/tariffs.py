@@ -9,9 +9,9 @@ from app.schemas.tariff import TariffOptionOut, TariffOut
 router = APIRouter(prefix="/tariffs", tags=["tariffs"])
 
 TARIFF_DESCRIPTION = {
-    "free": "Знакомство с PIT BET: бесплатные сигналы, базовая статистика и новости платформы.",
-    "premium": "Основной тариф PIT BET: полная Premium-лента, ранний доступ и сильный ежедневный отбор.",
-    "vip": "Максимальный пакет: VIP strongest setups, live/hot picks, приоритетные уведомления и расширенные разборы.",
+    "free": "Стартовый доступ: бесплатные сигналы, базовая статистика и новости платформы.",
+    "premium": "Рабочий тариф PIT BET: полная Premium-лента, ранний доступ и ежедневный отбор с приоритетом по качеству.",
+    "vip": "Максимальный режим: strongest setups, live/hot picks, приоритетные оповещения и регулярные VIP-дайджесты.",
 }
 
 TARIFF_PERKS: dict[str, list[str]] = {
@@ -22,30 +22,31 @@ TARIFF_PERKS: dict[str, list[str]] = {
         "Доступ к реферальной системе",
     ],
     "premium": [
-        "Полная Premium-лента и ранний доступ к сигналам",
-        "Уведомления о новых Premium-сигналах и результатах",
-        "Краткие разборы, архив и метки 'Выбор дня'",
-        "Более сильный ежедневный отбор",
+        "Полная Premium-лента + ранний доступ к входам",
+        "Сильный ежедневный отбор с фокусом на ликвидные рынки",
+        "Сигнальные уведомления + результаты без лишнего шума",
+        "Архив разборов, метки 'Выбор дня' и приоритет в приложении",
     ],
     "vip": [
         "Все возможности Premium",
-        "VIP-сигналы, strongest setups и top picks",
-        "Live / hot picks и самый ранний доступ",
-        "Расширенные разборы, VIP-блок и приоритетные уведомления",
+        "VIP strongest setups, top picks и отдельный VIP-поток",
+        "Live/hot picks с самым ранним доступом",
+        "VIP-дайджесты: регулярные отчеты по эффективности и flat-банку 10 000 RUB",
+        "Приоритетная поддержка и приоритетные уведомления",
     ],
 }
 
 TARIFF_OPTIONS: dict[str, list[TariffOptionOut]] = {
     "free": [TariffOptionOut(duration_days=0, price_rub=0, badge="Без оплаты", benefit_label="Входной уровень")],
     "premium": [
-        TariffOptionOut(duration_days=7, price_rub=490, badge=None, benefit_label="Тестовый старт"),
-        TariffOptionOut(duration_days=30, price_rub=1490, badge="Лучший выбор", benefit_label="Оптимальный баланс"),
-        TariffOptionOut(duration_days=90, price_rub=3990, badge="Максимальная выгода", benefit_label="До 11% выгоднее"),
+        TariffOptionOut(duration_days=7, price_rub=490, badge="Пробный вход", benefit_label="Проверка формата"),
+        TariffOptionOut(duration_days=30, price_rub=1490, badge="Лучший выбор", benefit_label="Стабильный рабочий режим"),
+        TariffOptionOut(duration_days=90, price_rub=3990, badge="Экономия", benefit_label="До 11% выгоднее месяца"),
     ],
     "vip": [
-        TariffOptionOut(duration_days=7, price_rub=1290, badge="Максимум доступа", benefit_label="Интенсивный режим"),
-        TariffOptionOut(duration_days=30, price_rub=3990, badge="Лучший выбор", benefit_label="Основной VIP-режим"),
-        TariffOptionOut(duration_days=90, price_rub=10490, badge="Максимальная выгода", benefit_label="До 12% выгоднее"),
+        TariffOptionOut(duration_days=7, price_rub=1290, badge="Тест VIP", benefit_label="Интенсивный режим"),
+        TariffOptionOut(duration_days=30, price_rub=3990, badge="Лучший выбор", benefit_label="Основной VIP-цикл"),
+        TariffOptionOut(duration_days=90, price_rub=10490, badge="Экономия", benefit_label="До 12% выгоднее месяца"),
     ],
 }
 

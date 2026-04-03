@@ -19,6 +19,7 @@ class Notification(Base):
     image_data: Mapped[str | None] = mapped_column(Text, nullable=True)
     cta_text: Mapped[str | None] = mapped_column(String(80), nullable=True)
     cta_url: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    dedupe_key: Mapped[str | None] = mapped_column(String(180), nullable=True, index=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="queued", index=True)
     scheduled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

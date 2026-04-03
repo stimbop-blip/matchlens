@@ -6,12 +6,14 @@ import logging
 from html import escape
 
 from aiogram import Bot
-from aiogram.types import BufferedInputFile, InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.types import BufferedInputFile, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 
 from app.config import settings
 from app.services.backend_client import BackendClient
 
 logger = logging.getLogger(__name__)
+
+OPEN_APP_BUTTON_TEXT = "Открыть"
 
 
 def _render_message(title: str, message: str) -> str:
@@ -58,6 +60,21 @@ def _photo_from_data_url(image_data: str) -> BufferedInputFile | None:
     return BufferedInputFile(raw, filename=f"pit-bet-result.{ext}")
 
 
+def _build_notification_keyboard(button_text: str, button_url: str) -> InlineKeyboardMarkup | None:
+    rows: list[list[InlineKeyboardButton]] = []
+
+    if button_text and button_url:
+        rows.append([InlineKeyboardButton(text=button_text, url=button_url)])
+
+    mini_app_url = (settings.mini_app_url or "").strip()
+    if mini_app_url:
+        rows.append([InlineKeyboardButton(text=OPEN_APP_BUTTON_TEXT, web_app=WebAppInfo(url=mini_app_url))])
+
+    if not rows:
+        return None
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
 async def run_notification_worker(bot: Bot, backend_client: BackendClient) -> None:
     iteration = 0
     while True:
@@ -67,6 +84,13 @@ async def run_notification_worker(bot: Bot, backend_client: BackendClient) -> No
                 queued_expiring = await backend_client.queue_expiring_subscriptions(hours_before=24)
                 if queued_expiring > 0:
                     logger.info("notification_worker queued_expiring=%s", queued_expiring)
+                queued_daily_report = await backend_client.queue_recurring_reports(period="daily")
+                if queued_daily_report > 0:
+                    logger.info("notification_worker queued_daily_report=%s", queued_daily_report)
+                if iteration % (30 * 6) == 1:
+                    queued_weekly_report = await backend_client.queue_recurring_reports(period="weekly")
+                    if queued_weekly_report > 0:
+                        logger.info("notification_worker queued_weekly_report=%s", queued_weekly_report)
 
             items = await backend_client.pull_notifications(limit=20)
             pulled = len(items)
@@ -105,11 +129,7 @@ async def run_notification_worker(bot: Bot, backend_client: BackendClient) -> No
                     continue
 
                 try:
-                    reply_markup = None
-                    if button_text and button_url:
-                        reply_markup = InlineKeyboardMarkup(
-                            inline_keyboard=[[InlineKeyboardButton(text=button_text, url=button_url)]]
-                        )
+                    reply_markup = _build_notification_keyboard(button_text, button_url)
 
                     photo = _photo_from_data_url(image_data) if image_data else None
                     if photo is not None:

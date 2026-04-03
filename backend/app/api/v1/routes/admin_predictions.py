@@ -50,7 +50,7 @@ def admin_create_prediction(
     current_admin: User = Depends(require_admin),
 ) -> PredictionOut:
     item = create_prediction(db, payload.model_dump(), str(current_admin.id))
-    if item.published_at is not None:
+    if item.published_at is not None and payload.notify_subscribers:
         queue_prediction_created_notification(db, item)
     return _prediction_out(item)
 
@@ -68,8 +68,9 @@ def admin_update_prediction(
     previous_published_at = item.published_at
     previous_status = item.status.value
     previous_has_result_screenshot = bool((item.result_screenshot or "").strip())
+    notify_subscribers = True if payload.notify_subscribers is None else bool(payload.notify_subscribers)
     item = update_prediction(db, item, payload.model_dump())
-    if previous_published_at is None and item.published_at is not None:
+    if notify_subscribers and previous_published_at is None and item.published_at is not None:
         queue_prediction_created_notification(db, item)
 
     result_statuses = {"won", "lost", "refund"}
@@ -79,7 +80,7 @@ def admin_update_prediction(
         and not previous_has_result_screenshot
         and bool((item.result_screenshot or "").strip())
     )
-    if status_changed_to_result or screenshot_added_for_result:
+    if notify_subscribers and (status_changed_to_result or screenshot_added_for_result):
         queue_prediction_result_notification(db, item)
     return _prediction_out(item)
 

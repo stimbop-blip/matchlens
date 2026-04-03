@@ -114,15 +114,24 @@ export function TariffsPage() {
         duration_days: option.duration_days as Duration,
         price_rub: option.price_rub,
         badge: option.badge || undefined,
+        benefit_label: option.benefit_label || undefined,
       }))
       .filter((option) => option.duration_days === 7 || option.duration_days === 30 || option.duration_days === 90);
   }, [selectedTariff]);
 
-  const features = {
-    free: [t("tariffs.feature.free1"), t("tariffs.feature.free2"), t("tariffs.feature.free3")],
-    premium: [t("tariffs.feature.premium1"), t("tariffs.feature.premium2"), t("tariffs.feature.premium3"), t("tariffs.feature.premium4")],
-    vip: [t("tariffs.feature.vip1"), t("tariffs.feature.vip2"), t("tariffs.feature.vip3"), t("tariffs.feature.vip4")],
-  };
+  const features = useMemo(() => {
+    const perkMap = new Map(tariffs.map((item) => [item.code, item.perks] as const));
+    const freePerks = perkMap.get("free") || [];
+    const premiumPerks = perkMap.get("premium") || [];
+    const vipPerks = perkMap.get("vip") || [];
+    return {
+      free: freePerks.length ? freePerks : [t("tariffs.feature.free1"), t("tariffs.feature.free2"), t("tariffs.feature.free3")],
+      premium: premiumPerks.length
+        ? premiumPerks
+        : [t("tariffs.feature.premium1"), t("tariffs.feature.premium2"), t("tariffs.feature.premium3"), t("tariffs.feature.premium4")],
+      vip: vipPerks.length ? vipPerks : [t("tariffs.feature.vip1"), t("tariffs.feature.vip2"), t("tariffs.feature.vip3"), t("tariffs.feature.vip4")],
+    };
+  }, [t, tariffs]);
 
   const createPayment = async () => {
     if (!selectedMethod) {
@@ -290,7 +299,7 @@ export function TariffsPage() {
                       {option.duration_days} {t("common.days")}
                     </strong>
                     <span>{formatRub(option.price_rub)}</span>
-                    <small>{("badge" in option && option.badge) || durationBadges[option.duration_days]}</small>
+                    <small>{("benefit_label" in option && option.benefit_label) || ("badge" in option && option.badge) || durationBadges[option.duration_days]}</small>
                   </button>
                 );
               })}

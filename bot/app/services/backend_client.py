@@ -132,3 +132,28 @@ class BackendClient:
             return int(payload.get("queued", 0))
         except (TypeError, ValueError):
             return 0
+
+    async def queue_recurring_reports(self, period: str = "daily") -> int:
+        try:
+            response = await self._client.post(
+                "/api/v1/bot/reports/queue-recurring",
+                params={"period": period},
+            )
+        except Exception as exc:
+            logger.warning("queue_recurring_reports failed period=%s reason=%s", period, exc)
+            return 0
+
+        if response.status_code != 200:
+            logger.warning("queue_recurring_reports non-200 period=%s status=%s", period, response.status_code)
+            return 0
+
+        try:
+            payload = response.json()
+        except Exception as exc:
+            logger.warning("queue_recurring_reports invalid JSON period=%s reason=%s", period, exc)
+            return 0
+
+        try:
+            return int(payload.get("queued", 0))
+        except (TypeError, ValueError):
+            return 0

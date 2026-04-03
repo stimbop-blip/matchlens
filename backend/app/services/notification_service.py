@@ -7,7 +7,7 @@ from urllib.parse import urlparse
 from sqlalchemy import and_, desc, or_, select
 from sqlalchemy.orm import Session
 
-from app.models.enums import UserRole
+from app.models.enums import AccessLevel, PredictionStatus, UserRole
 from app.models.news_post import NewsPost
 from app.models.notification import Notification
 from app.models.prediction import Prediction
@@ -22,6 +22,8 @@ _LEVEL_PRIORITY = {"free": 0, "premium": 1, "vip": 2}
 _SUPPORTED_LANGUAGES = {"ru", "en"}
 _SUPPORTED_THEMES = {"dark", "light"}
 _MAX_IMAGE_DATA_LEN = 8_000_000
+_PREDICTION_CREATED_COOLDOWN_MINUTES = 20
+_PREDICTION_RESULT_COOLDOWN_MINUTES = 60
 
 
 def _allowed_levels(access_level: str) -> set[str]:
@@ -71,7 +73,9 @@ def _format_kickoff(value: datetime) -> str:
     return dt.strftime("%d.%m %H:%M UTC")
 
 
-def _format_odds(value: object) -> str:
+def _format_odds(value: float | int | str | None) -> str:
+    if value is None:
+        return "-"
     try:
         odds = float(value)
     except (TypeError, ValueError):
@@ -169,6 +173,21 @@ def _normalize_theme(value: str | None) -> str:
     if candidate in _SUPPORTED_THEMES:
         return candidate
     return "dark"
+
+
+def _has_recent_dedupe(db: Session, dedupe_key: str, cooldown_minutes: int) -> bool:
+    if not dedupe_key:
+        return False
+    now = datetime.now(UTC)
+    threshold = now - timedelta(minutes=max(1, cooldown_minutes))
+    existing = db.scalar(
+        select(Notification.id)
+        .where(Notification.dedupe_key == dedupe_key)
+        .where(Notification.created_at >= threshold)
+        .where(Notification.status.in_(("queued", "sent")))
+        .limit(1)
+    )
+    return existing is not None
 
 
 def _build_prediction_created_payload(prediction: Prediction) -> tuple[str, str]:
@@ -359,7 +378,13 @@ def queue_prediction_notification(
     title: str,
     message: str,
     image_data: str | None = None,
+    dedupe_key: str | None = None,
+    cooldown_minutes: int = _PREDICTION_CREATED_COOLDOWN_MINUTES,
 ) -> int:
+    if dedupe_key and _has_recent_dedupe(db, dedupe_key=dedupe_key, cooldown_minutes=cooldown_minutes):
+        logger.info("notification_prediction_created skipped reason=dedupe dedupe_key=%s", dedupe_key)
+        return 0
+
     users = db.scalars(select(User)).all()
     level_map = _active_level_map(db)
     settings_map = _user_settings_map(db)
@@ -400,6 +425,7 @@ def queue_prediction_notification(
                 title=title,
                 message=message,
                 image_data=normalized_image,
+                dedupe_key=dedupe_key,
                 status="queued",
             )
         )
@@ -421,12 +447,15 @@ def queue_prediction_notification(
 
 def queue_prediction_created_notification(db: Session, prediction: Prediction) -> int:
     title, message = _build_prediction_created_payload(prediction)
+    dedupe_key = f"prediction_created:{prediction.id}"
     return queue_prediction_notification(
         db,
         access_level=prediction.access_level.value,
         title=title,
         message=message,
         image_data=prediction.bet_screenshot,
+        dedupe_key=dedupe_key,
+        cooldown_minutes=_PREDICTION_CREATED_COOLDOWN_MINUTES,
     )
 
 
@@ -444,6 +473,16 @@ def queue_prediction_result_notification(db: Session, prediction: Prediction) ->
         logger.info(
             "notification_prediction_result skipped prediction_id=%s reason=not_published",
             prediction.id,
+        )
+        return 0
+
+    status = prediction.status.value
+    dedupe_key = f"prediction_result:{prediction.id}:{status}"
+    if _has_recent_dedupe(db, dedupe_key=dedupe_key, cooldown_minutes=_PREDICTION_RESULT_COOLDOWN_MINUTES):
+        logger.info(
+            "notification_prediction_result skipped prediction_id=%s reason=dedupe dedupe_key=%s",
+            prediction.id,
+            dedupe_key,
         )
         return 0
 
@@ -489,6 +528,7 @@ def queue_prediction_result_notification(db: Session, prediction: Prediction) ->
                 title=title,
                 message=message,
                 image_data=image_data,
+                dedupe_key=dedupe_key,
                 status="queued",
             )
         )
@@ -817,3 +857,131 @@ def queue_expiring_subscription_notifications(db: Session, hours_before: int = 2
             hours_before,
         )
     return created
+
+
+def _report_period_bounds(period: str) -> tuple[datetime, datetime, str, str] | None:
+    now = datetime.now(UTC)
+    if period == "daily":
+        start = now - timedelta(days=1)
+        bucket = now.strftime("%Y%m%d")
+        title_period = "за 24 часа"
+        return start, now, bucket, title_period
+    if period == "weekly":
+        start = now - timedelta(days=7)
+        iso_year, iso_week, _ = now.isocalendar()
+        bucket = f"{iso_year}w{iso_week:02d}"
+        title_period = "за 7 дней"
+        return start, now, bucket, title_period
+    return None
+
+
+def _flat_bank_profit(predictions: list[Prediction], stake_rub: float = 10_000.0) -> tuple[float, int, int, int]:
+    won = 0
+    lost = 0
+    refund = 0
+    profit = 0.0
+    for prediction in predictions:
+        status = prediction.status.value
+        if status == PredictionStatus.won.value:
+            won += 1
+            profit += (float(prediction.odds) - 1.0) * stake_rub
+        elif status == PredictionStatus.lost.value:
+            lost += 1
+            profit -= stake_rub
+        elif status == PredictionStatus.refund.value:
+            refund += 1
+    return profit, won, lost, refund
+
+
+def queue_recurring_performance_report(db: Session, period: str) -> dict:
+    bounds = _report_period_bounds(period)
+    if not bounds:
+        raise ValueError("Unsupported report period")
+
+    window_start, window_end, bucket, title_period = bounds
+    settings_map = _user_settings_map(db)
+    level_map = _active_level_map(db)
+    users = db.scalars(select(User)).all()
+
+    report_by_level: dict[str, dict[str, float | int]] = {}
+    for level in (AccessLevel.premium.value, AccessLevel.vip.value):
+        rows = db.scalars(
+            select(Prediction)
+            .where(Prediction.access_level == AccessLevel(level))
+            .where(Prediction.published_at.is_not(None))
+            .where(Prediction.published_at >= window_start)
+            .where(Prediction.published_at < window_end)
+            .order_by(desc(Prediction.published_at))
+        ).all()
+
+        settled = [item for item in rows if item.status.value in {"won", "lost", "refund"}]
+        profit, won, lost, refund = _flat_bank_profit(settled)
+        settled_count = len(settled)
+        hit_rate = (won / (won + lost) * 100.0) if (won + lost) else 0.0
+        roi = (profit / (settled_count * 10_000.0) * 100.0) if settled_count else 0.0
+
+        report_by_level[level] = {
+            "published": len(rows),
+            "settled": settled_count,
+            "won": won,
+            "lost": lost,
+            "refund": refund,
+            "profit": profit,
+            "hit_rate": hit_rate,
+            "roi": roi,
+        }
+
+    queued = 0
+    skipped = 0
+    for user in users:
+        user_id = str(user.id)
+        user_level = level_map.get(user_id, AccessLevel.free.value)
+        if user_level not in {AccessLevel.premium.value, AccessLevel.vip.value}:
+            skipped += 1
+            continue
+
+        settings = settings_map.get(user_id)
+        if settings and not settings.notifications_enabled:
+            skipped += 1
+            continue
+        if not _access_pref_enabled(settings, user_level):
+            skipped += 1
+            continue
+
+        report = report_by_level.get(user_level)
+        if not report:
+            skipped += 1
+            continue
+
+        dedupe_key = f"report:{period}:{bucket}:{user_id}:{user_level}"
+        if _has_recent_dedupe(db, dedupe_key=dedupe_key, cooldown_minutes=60 * 24 * 14):
+            skipped += 1
+            continue
+
+        title = f"PIT BET • {'Premium' if user_level == 'premium' else 'VIP'} digest {title_period}"
+        message = (
+            f"Период: {title_period}\n"
+            f"Публикаций: {report['published']}\n"
+            f"Закрыто: {report['settled']}\n"
+            f"W/L/R: {report['won']}/{report['lost']}/{report['refund']}\n"
+            f"Точность (без возвратов): {report['hit_rate']:.1f}%\n"
+            f"ROI (flat 10 000 RUB): {report['roi']:.2f}%\n"
+            f"Итог по банку (flat 10 000 RUB): {report['profit']:+.0f} RUB\n\n"
+            "Откройте PIT BET Mini App, чтобы посмотреть актуальные сигналы и статистику."
+        )
+
+        db.add(
+            Notification(
+                user_id=user.id,
+                type=f"report_{period}",
+                title=title,
+                message=message,
+                dedupe_key=dedupe_key,
+                status="queued",
+            )
+        )
+        queued += 1
+
+    db.commit()
+    logger.info("notification_report period=%s queued=%s skipped=%s", period, queued, skipped)
+    return {"period": period, "queued": queued, "skipped": skipped}

@@ -108,14 +108,12 @@ TEXTS: dict[Language, dict[str, str]] = {
         ),
         "tariffs_section_premium": (
             "<b>Premium</b>\n"
-            "Основной доступ для ежедневного использования.\n"
+            "Рабочий доступ для стабильной ежедневной игры.\n"
             "• полная Premium-лента\n"
-            "• ранний доступ к сигналам\n"
-            "• уведомления о новых публикациях\n"
-            "• уведомления о результатах\n"
-            "• краткие разборы\n"
-            "• архив Premium-сигналов\n"
-            "• метки \"Выбор дня\""
+            "• ранний доступ к входам\n"
+            "• сильный ежедневный отбор\n"
+            "• уведомления о сигналах и результатах\n"
+            "• архив разборов и метки \"Выбор дня\""
         ),
         "tariffs_section_vip": (
             "<b>VIP</b>\n"
@@ -123,11 +121,10 @@ TEXTS: dict[Language, dict[str, str]] = {
             "• всё из Premium\n"
             "• VIP-сигналы\n"
             "• strongest setups / top picks\n"
-            "• live / hot picks\n"
-            "• самый ранний доступ\n"
-            "• расширенные разборы\n"
-            "• отдельный VIP-блок\n"
-            "• приоритетные уведомления"
+            "• live / hot picks и самый ранний доступ\n"
+            "• регулярные VIP-дайджесты\n"
+            "• flat-оценка по банку 10 000 RUB\n"
+            "• приоритетные уведомления и поддержка"
         ),
         "tariffs_premium_durations": "Сроки Premium:",
         "tariffs_vip_durations": "Сроки VIP:",
@@ -187,8 +184,12 @@ TEXTS: dict[Language, dict[str, str]] = {
             "Зайди по моей ссылке и получи скидку 10% на первую покупку:"
         ),
         "support_title": "<b>🛟 Поддержка PIT BET</b>",
-        "support_body": "Если нужна помощь по доступу, оплате или уведомлениям — напишите нам.",
-        "support_button": "Написать в поддержку",
+        "support_body": (
+            "Нужна помощь по доступу, оплате или уведомлениям?\n"
+            "Откройте диалог поддержки в Mini App — там сохраняется история и удобнее вести переписку."
+        ),
+        "support_button": "💬 Открыть диалог поддержки",
+        "support_external_button": "📨 Написать в Telegram",
         "support_placeholder": (
             "<b>🛟 Поддержка PIT BET</b>\n"
             "Контакт поддержки пока не настроен."
@@ -316,14 +317,12 @@ TEXTS: dict[Language, dict[str, str]] = {
         ),
         "tariffs_section_premium": (
             "<b>Premium</b>\n"
-            "Core access for daily use.\n"
+            "Core access for consistent daily workflow.\n"
             "• full Premium feed\n"
-            "• early access to signals\n"
-            "• notifications about new posts\n"
-            "• result updates\n"
-            "• short breakdowns\n"
-            "• Premium archive\n"
-            "• \"Pick of the day\" tags"
+            "• early access to entries\n"
+            "• stronger daily selection\n"
+            "• signal + result notifications\n"
+            "• breakdown archive and \"Pick of the day\" tags"
         ),
         "tariffs_section_vip": (
             "<b>VIP</b>\n"
@@ -331,11 +330,10 @@ TEXTS: dict[Language, dict[str, str]] = {
             "• everything from Premium\n"
             "• VIP signals\n"
             "• strongest setups / top picks\n"
-            "• live / hot picks\n"
-            "• earliest access\n"
-            "• extended breakdowns\n"
-            "• dedicated VIP block\n"
-            "• priority notifications"
+            "• live / hot picks with earliest access\n"
+            "• recurring VIP digests\n"
+            "• flat-bank simulation (10 000 RUB)\n"
+            "• priority notifications and support"
         ),
         "tariffs_premium_durations": "Premium durations:",
         "tariffs_vip_durations": "VIP durations:",
@@ -395,8 +393,12 @@ TEXTS: dict[Language, dict[str, str]] = {
             "Join through my link and get a 10% discount on your first purchase:"
         ),
         "support_title": "<b>🛟 PIT BET Support</b>",
-        "support_body": "Need help with access, payment, or notifications? Contact us.",
-        "support_button": "Contact support",
+        "support_body": (
+            "Need help with access, payments, or notifications?\n"
+            "Open the support dialog in the Mini App for a clear thread and faster follow-up."
+        ),
+        "support_button": "💬 Open support dialog",
+        "support_external_button": "📨 Message on Telegram",
         "support_placeholder": (
             "<b>🛟 PIT BET Support</b>\n"
             "Support contact is not configured yet."

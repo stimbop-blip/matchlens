@@ -122,6 +122,9 @@ def on_startup() -> None:
                 conn.execute(text("ALTER TABLE notifications ADD COLUMN cta_url VARCHAR(1024)"))
             if "image_data" not in notification_columns:
                 conn.execute(text("ALTER TABLE notifications ADD COLUMN image_data TEXT"))
+            if "dedupe_key" not in notification_columns:
+                conn.execute(text("ALTER TABLE notifications ADD COLUMN dedupe_key VARCHAR(180)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_notifications_dedupe_key ON notifications (dedupe_key)"))
 
         predictions_table_exists = conn.execute(text("SELECT to_regclass('public.predictions')")).scalar()
         if predictions_table_exists:

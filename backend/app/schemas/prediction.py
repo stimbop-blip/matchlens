@@ -38,6 +38,7 @@ class PredictionCreateIn(BaseModel):
     mode: str = Field(default="prematch")
     status: str = Field(default="pending")
     publish_now: bool = False
+    notify_subscribers: bool = True
 
 
 class PredictionUpdateIn(BaseModel):
@@ -56,3 +57,4 @@ class PredictionUpdateIn(BaseModel):
     mode: str | None = None
     status: str | None = None
     publish_now: bool | None = None
+    notify_subscribers: bool | None = None

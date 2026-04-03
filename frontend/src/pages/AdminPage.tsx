@@ -58,6 +58,7 @@ type PredictionDraft = {
   tag_hot: boolean;
   bet_screenshot: string | null;
   result_screenshot: string | null;
+  notify_subscribers: boolean;
 };
 
 type NewsDraft = {
@@ -192,6 +193,7 @@ function createEmptyPredictionDraft(): PredictionDraft {
     tag_hot: false,
     bet_screenshot: null,
     result_screenshot: null,
+    notify_subscribers: true,
   };
 }
 
@@ -216,6 +218,7 @@ function createPredictionDraftFromItem(item: Prediction): PredictionDraft {
     tag_hot: false,
     bet_screenshot: item.bet_screenshot,
     result_screenshot: item.result_screenshot,
+    notify_subscribers: true,
   };
 }
 
@@ -753,6 +756,7 @@ export function AdminPage({ withThree = false }: { withThree?: boolean } = {}) {
       mode: predictionDraft.mode,
       status: predictionDraft.status,
       publish_now: true,
+      notify_subscribers: predictionDraft.notify_subscribers,
     };
 
     setPredictionSaving(true);
@@ -2076,6 +2080,14 @@ export function AdminPage({ withThree = false }: { withThree?: boolean } = {}) {
                 {tx("Возврат", "Refund")}
               </button>
             </div>
+            <label className="switch-row" style={{ padding: "0 4px" }}>
+              <span>{tx("Отправить уведомление подписчикам", "Notify subscribers")}</span>
+              <input
+                type="checkbox"
+                checked={predictionDraft.notify_subscribers}
+                onChange={(e) => setPredictionDraft((prev) => ({ ...prev, notify_subscribers: e.target.checked }))}
+              />
+            </label>
           </section>
 
           <section className="admin-editor-section">
