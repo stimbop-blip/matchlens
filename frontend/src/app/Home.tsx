@@ -60,6 +60,29 @@ function sportEmoji(value: string): string {
   return "🏅";
 }
 
+function sportCoverPalette(value: string): { start: string; end: string } {
+  const sport = value.toLowerCase();
+  if (sport.includes("football") || sport.includes("soccer")) return { start: "#0e3f7a", end: "#1d7cf2" };
+  if (sport.includes("hockey")) return { start: "#114052", end: "#19a2d8" };
+  if (sport.includes("basketball")) return { start: "#6d350f", end: "#d07a23" };
+  if (sport.includes("tennis") && sport.includes("table")) return { start: "#5a2758", end: "#d14fab" };
+  if (sport.includes("tennis")) return { start: "#1e5632", end: "#5eca58" };
+  return { start: "#1b314f", end: "#0d7f9e" };
+}
+
+function sportCoverDataUri(sport: string): string {
+  const icon = sportEmoji(sport);
+  const palette = sportCoverPalette(sport);
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 420 240'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0%' stop-color='${palette.start}'/><stop offset='100%' stop-color='${palette.end}'/></linearGradient><radialGradient id='r' cx='0.82' cy='0.12' r='0.6'><stop offset='0%' stop-color='rgba(255,255,255,0.36)'/><stop offset='100%' stop-color='rgba(255,255,255,0)'/></radialGradient></defs><rect width='420' height='240' rx='26' fill='url(#g)'/><rect width='420' height='240' rx='26' fill='url(#r)'/><circle cx='337' cy='44' r='26' fill='rgba(255,255,255,0.18)'/><circle cx='357' cy='188' r='42' fill='rgba(255,255,255,0.1)'/><text x='42' y='154' font-size='84'>${icon}</text></svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
+function predictionImage(signal: Prediction): string {
+  if (signal.bet_screenshot) return signal.bet_screenshot;
+  if (signal.result_screenshot) return signal.result_screenshot;
+  return sportCoverDataUri(signal.sport_type);
+}
+
 function previewNews(value: string, maxLength = 160): string {
   const compact = value.replace(/\s+/g, " ").trim();
   if (!compact) return "";
@@ -70,7 +93,6 @@ function previewNews(value: string, maxLength = 160): string {
 export function Home() {
   const { t, language } = useI18n();
 
-  const [displayName, setDisplayName] = useState("PIT BET");
   const [subscriptionRaw, setSubscriptionRaw] = useState<{ tariff: string; status: string; ends_at: string | null } | null>(null);
   const [stats, setStats] = useState<PublicStats | null>(null);
   const [signals, setSignals] = useState<Prediction[]>([]);
@@ -85,18 +107,13 @@ export function Home() {
       setLoading(true);
 
       try {
-        const [meRes, subRes, statsRes, pendingRes, newsRes] = await Promise.allSettled([
-          api.me(),
+        const [subRes, statsRes, pendingRes, newsRes] = await Promise.allSettled([
           api.mySubscription(),
           api.stats(),
           api.predictions({ status: "pending", limit: 24 }),
           api.news(),
         ]);
         if (!alive) return;
-
-        if (meRes.status === "fulfilled") {
-          setDisplayName(meRes.value.first_name || meRes.value.username || "PIT BET");
-        }
 
         setSubscriptionRaw(subRes.status === "fulfilled" ? subRes.value : null);
         setStats(statsRes.status === "fulfilled" ? statsRes.value : null);
@@ -105,9 +122,30 @@ export function Home() {
         const pending = pendingRes.status === "fulfilled" ? pendingRes.value : [];
 
         if (pending.length > 0) {
-          setSignalSource("pending");
-          setSignals([...pending].sort((a, b) => predictionRecency(b) - predictionRecency(a)).slice(0, 2));
-          return;
+          const pendingSorted = [...pending].sort((a, b) => predictionRecency(b) - predictionRecency(a)).slice(0, 2);
+          if (pendingSorted.length >= 2) {
+            setSignalSource("pending");
+            setSignals(pendingSorted);
+            return;
+          }
+
+          try {
+            const wonForFill = await api.predictions({ status: "won", limit: 24 });
+            if (!alive) return;
+            const pendingIds = new Set(pendingSorted.map((item) => item.id));
+            const wonSorted = [...wonForFill]
+              .filter((item) => !pendingIds.has(item.id))
+              .sort((a, b) => predictionRecency(b) - predictionRecency(a));
+
+            setSignalSource("pending");
+            setSignals([...pendingSorted, ...wonSorted].slice(0, 2));
+            return;
+          } catch {
+            if (!alive) return;
+            setSignalSource("pending");
+            setSignals(pendingSorted);
+            return;
+          }
         }
 
         try {
@@ -220,6 +258,8 @@ export function Home() {
             </button>
           </div>
 
+          <p className="pb-telegram-forecast-note">{signalModeSubtitle}</p>
+
           <div className="pb-telegram-forecast-stats">
             <article>
               <small>{language === "ru" ? "Активные" : "Active"}</small>
@@ -249,15 +289,21 @@ export function Home() {
                   to={`/feed/${signal.id}`}
                   className="pb-telegram-gallery-card"
                 >
-                  <span className="pb-telegram-gallery-badge">{statusLabel(signal.status, t)}</span>
-                  <div className="pb-telegram-gallery-icon" aria-hidden="true">
-                    {sportEmoji(signal.sport_type)}
+                  <div className="pb-telegram-gallery-cover-wrap" aria-hidden="true">
+                    <img className="pb-telegram-gallery-cover" src={predictionImage(signal)} alt={signal.match_name} loading="lazy" />
+                    <span className="pb-telegram-gallery-badge">{statusLabel(signal.status, t)}</span>
+                    <span className="pb-telegram-gallery-sport-pill">{resolveSportLabel(signal.sport_type, language)}</span>
                   </div>
-                  <strong>{signal.match_name}</strong>
-                  <p>{signal.league || t("feed.noLeague")}</p>
-                  <small>{`${resolveSportLabel(signal.sport_type, language)} · ${signal.mode === "live" ? t("common.live") : t("common.prematch")}`}</small>
-                  <small className="pb-telegram-gallery-pick">{signal.signal_type}</small>
-                  <span className="pb-telegram-gallery-odds">{Number.isFinite(signal.odds) ? signal.odds.toFixed(2) : String(signal.odds)}</span>
+                  <div className="pb-telegram-gallery-main">
+                    <strong>{signal.match_name}</strong>
+                    <p>{signal.league || t("feed.noLeague")}</p>
+                    <small>{signal.mode === "live" ? t("common.live") : t("common.prematch")}</small>
+                    <small className="pb-telegram-gallery-pick">{signal.signal_type}</small>
+                  </div>
+                  <div className="pb-telegram-gallery-foot">
+                    <span className="pb-telegram-gallery-odds">{Number.isFinite(signal.odds) ? signal.odds.toFixed(2) : String(signal.odds)}</span>
+                    <span className="pb-telegram-gallery-foot-label">{t("feed.label.odds")}</span>
+                  </div>
                 </Link>
               ))}
             </div>

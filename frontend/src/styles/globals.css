@@ -11661,6 +11661,13 @@ body {
   border-color: #2f2445;
 }
 
+.pb-telegram-forecast-note {
+  margin-top: 8px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
 .pb-telegram-forecast-stats {
   margin-top: 10px;
   display: grid;
@@ -11701,12 +11708,12 @@ body {
 
 .pb-telegram-gallery-card {
   display: grid;
-  align-content: start;
-  gap: 7px;
+  grid-template-rows: auto 1fr auto;
+  gap: 10px;
   border: 1px solid var(--border);
   border-radius: 18px;
   background: var(--surface);
-  min-height: 220px;
+  min-height: 292px;
   padding: 12px;
   position: relative;
   overflow: hidden;
@@ -11717,37 +11724,63 @@ body {
 }
 
 .pb-telegram-gallery-badge {
-  justify-self: start;
+  position: absolute;
+  top: 8px;
+  left: 8px;
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--accent-secondary) 34%, var(--border));
-  background: color-mix(in srgb, var(--accent-secondary) 18%, transparent);
-  color: color-mix(in srgb, var(--accent-secondary) 86%, var(--text-primary));
+  background: color-mix(in srgb, var(--accent-secondary) 26%, transparent);
+  color: #ffffff;
   font-size: 10px;
   font-weight: 700;
   padding: 4px 8px;
+  backdrop-filter: blur(4px);
 }
 
-.pb-telegram-gallery-icon {
-  width: 62px;
-  height: 62px;
+.pb-telegram-gallery-sport-pill {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, white 30%, transparent);
+  background: rgba(8, 11, 20, 0.55);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 4px 8px;
+  backdrop-filter: blur(4px);
+}
+
+.pb-telegram-gallery-cover-wrap {
+  position: relative;
   border-radius: 14px;
   border: 1px solid var(--border);
-  background: color-mix(in srgb, var(--surface) 76%, transparent);
-  box-shadow: inset 0 1px 0 color-mix(in srgb, white 18%, transparent);
-  font-size: 34px;
+  overflow: hidden;
+  min-height: 132px;
+}
+
+.pb-telegram-gallery-cover {
+  width: 100%;
+  height: 132px;
+  object-fit: cover;
+  display: block;
+}
+
+.pb-telegram-gallery-main {
   display: grid;
-  place-items: center;
+  gap: 7px;
 }
 
-.pb-telegram-gallery-card strong {
-  font-size: 22px;
-  line-height: 1;
+.pb-telegram-gallery-main strong {
+  font-size: 17px;
+  line-height: 1.2;
 }
 
-.pb-telegram-gallery-card p,
-.pb-telegram-gallery-card small {
+.pb-telegram-gallery-main p,
+.pb-telegram-gallery-main small {
   color: var(--text-secondary);
   font-size: 13px;
+  line-height: 1.3;
 }
 
 .pb-telegram-gallery-pick {
@@ -11758,11 +11791,22 @@ body {
   background: color-mix(in srgb, var(--surface) 80%, transparent);
 }
 
+.pb-telegram-gallery-foot {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+}
+
 .pb-telegram-gallery-odds {
-  margin-top: auto;
-  font-size: 34px;
+  font-size: 38px;
   line-height: 1;
   font-weight: 800;
+}
+
+.pb-telegram-gallery-foot-label {
+  color: var(--text-secondary);
+  font-size: 12px;
 }
 
 .pb-telegram-profile-hero h3 {
@@ -11923,8 +11967,11 @@ body {
     grid-template-columns: 1fr 1fr;
   }
 
-  .pb-telegram-gallery-card,
-  .pb-telegram-gallery-card.tall {
+  .pb-telegram-gallery-card {
     min-height: 208px;
+  }
+
+  .pb-telegram-gallery-cover {
+    height: 108px;
   }
 }
