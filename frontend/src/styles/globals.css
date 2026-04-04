@@ -9979,13 +9979,13 @@ h4 {
 
 .pb-signal3d-core {
   display: grid;
-  grid-template-columns: 96px minmax(0, 1fr);
+  grid-template-columns: 108px minmax(0, 1fr);
   gap: 8px;
   align-items: center;
 }
 
 .pb-signal3d-canvas {
-  height: 88px;
+  height: 96px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.03);
@@ -11014,7 +11014,7 @@ body {
 }
 
 .pb-signal3d-core {
-  grid-template-columns: 96px minmax(0, 1fr);
+  grid-template-columns: 108px minmax(0, 1fr);
 }
 
 .pb-signal3d-canvas.pb-signal3d-sport-art {
@@ -12360,21 +12360,22 @@ body {
 
 /* Startup loader for returning users */
 
-.pb-boot-loader {
+.pb-startup-root {
   min-height: 100vh;
   display: grid;
   place-items: center;
   padding: 18px;
 }
 
-.pb-boot-loader-card {
-  width: min(520px, 100%);
-  border-radius: 24px;
-  border: 1px solid color-mix(in srgb, var(--accent-primary) 26%, var(--border-subtle));
+.pb-startup-shell {
+  width: min(560px, 100%);
+  border-radius: 26px;
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 28%, var(--border-subtle));
   background:
     radial-gradient(circle at 86% -22%, color-mix(in srgb, var(--accent-primary) 18%, transparent), transparent 54%),
+    radial-gradient(circle at 0% 110%, color-mix(in srgb, var(--accent-secondary) 14%, transparent), transparent 58%),
     linear-gradient(160deg, color-mix(in srgb, var(--surface-2) 94%, transparent), color-mix(in srgb, var(--surface-1) 98%, transparent));
-  box-shadow: 0 18px 36px color-mix(in srgb, black 24%, transparent);
+  box-shadow: 0 22px 42px color-mix(in srgb, black 28%, transparent);
   padding: 18px;
   display: grid;
   gap: 12px;
@@ -12382,23 +12383,134 @@ body {
   overflow: hidden;
 }
 
-.pb-boot-loader-orbit {
+.pb-startup-shell h1 {
+  font-size: clamp(26px, 7vw, 38px);
+  line-height: 1.05;
+}
+
+.pb-startup-shell p {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.pb-startup-orb {
   position: absolute;
-  width: 170px;
-  height: 170px;
-  top: -64px;
-  right: -36px;
+  width: 180px;
+  height: 180px;
+  top: -66px;
+  right: -44px;
   border-radius: 999px;
-  background: radial-gradient(circle, color-mix(in srgb, var(--accent-primary) 30%, transparent), transparent 72%);
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent-primary) 34%, transparent), transparent 72%);
   pointer-events: none;
 }
 
-:root[data-theme="light"] .pb-boot-loader-card {
+.pb-startup-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.pb-startup-card {
+  border-radius: 13px;
+  border: 1px solid color-mix(in srgb, white 24%, transparent);
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.22);
+}
+
+.pb-startup-card img {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  display: block;
+}
+
+.pb-startup-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(8, 12, 22, 0.04), rgba(8, 12, 22, 0.34));
+}
+
+.pb-startup-card span {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  z-index: 2;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  background: rgba(8, 14, 24, 0.56);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+}
+
+.pb-startup-progress {
+  margin-top: 2px;
+  height: 8px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 30%, var(--border-subtle));
+  background: color-mix(in srgb, var(--surface-1) 86%, transparent);
+  overflow: hidden;
+}
+
+.pb-startup-progress > span {
+  display: block;
+  width: 42%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), var(--accent-secondary));
+  animation: pb-startup-progress 1.3s ease-in-out infinite;
+}
+
+@keyframes pb-startup-progress {
+  0% {
+    transform: translateX(-28%);
+    opacity: 0.8;
+  }
+  50% {
+    transform: translateX(92%);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(-28%);
+    opacity: 0.8;
+  }
+}
+
+@media (max-width: 560px) {
+  .pb-startup-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pb-startup-cards .pb-startup-card:first-child {
+    grid-column: 1 / -1;
+  }
+}
+
+:root[data-theme="light"] .pb-startup-shell {
   border-color: #cfdded;
   background:
-    radial-gradient(circle at 86% -22%, rgba(16, 185, 150, 0.14), transparent 54%),
+    radial-gradient(circle at 86% -22%, rgba(16, 185, 150, 0.16), transparent 54%),
+    radial-gradient(circle at 0% 110%, rgba(60, 140, 255, 0.12), transparent 58%),
     linear-gradient(160deg, #ffffff, #f1f7ff);
   box-shadow: 0 16px 30px rgba(18, 35, 58, 0.12);
+}
+
+:root[data-theme="light"] .pb-startup-card {
+  border-color: rgba(34, 92, 142, 0.18);
+  box-shadow: 0 8px 14px rgba(26, 59, 92, 0.14);
+}
+
+:root[data-theme="light"] .pb-startup-card::after {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(17, 43, 72, 0.16));
+}
+
+:root[data-theme="light"] .pb-startup-card span {
+  border-color: rgba(30, 74, 118, 0.24);
+  background: rgba(255, 255, 255, 0.78);
+  color: #254162;
 }
 
 /* Signals hero readability in light mode */

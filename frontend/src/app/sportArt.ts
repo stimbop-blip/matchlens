@@ -23,6 +23,8 @@ const SPORT_PALETTE: Record<SportKind, SportPalette> = {
   generic: { start: "#155e75", end: "#0f2d4b", glow: "#6fd8ff", chip: "#bfeaff" },
 };
 
+const COVER_CACHE = new Map<string, string>();
+
 function escapeSvgText(value: string): string {
   return value
     .replace(/&/g, "&amp;")
@@ -103,6 +105,10 @@ function sportDecorMarkup(kind: SportKind, width: number, height: number): strin
 
 export function sportCoverDataUri(sport: string, variant: CoverVariant = "landscape"): string {
   const kind = resolveSportKind(sport);
+  const cacheKey = `${kind}:${variant}`;
+  const cached = COVER_CACHE.get(cacheKey);
+  if (cached) return cached;
+
   const palette = SPORT_PALETTE[kind];
   const iconPath = sportIconPath(kind);
   const label = escapeSvgText(sportLabel(kind, "en").toUpperCase());
@@ -155,7 +161,9 @@ export function sportCoverDataUri(sport: string, variant: CoverVariant = "landsc
     <rect x="0" y="0" width="${width}" height="${height}" rx="${radius}" fill="url(#vignette)"/>
   </svg>`;
 
-  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+  const encoded = `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+  COVER_CACHE.set(cacheKey, encoded);
+  return encoded;
 }
 
 export function resolvePredictionCover(options: {
