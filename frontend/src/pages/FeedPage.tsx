@@ -2,7 +2,6 @@ import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
 import { useI18n } from "../app/i18n";
-import { resolveSportLabel } from "../app/sport";
 import { sportCoverDataUri } from "../app/sportArt";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
@@ -201,27 +200,30 @@ export function FeedPage({ useThreeCards = false }: { useThreeCards?: boolean } 
   const pendingCount = items.filter((item) => item.status === "pending").length;
   const wonCount = items.filter((item) => item.status === "won").length;
   const hitRate = items.length > 0 ? Math.round((wonCount / items.length) * 100) : 0;
-  const heroCovers = useMemo(
-    () => [
-      { key: "football", src: sportCoverDataUri("football", "landscape"), label: resolveSportLabel("football", language) },
-      { key: "hockey", src: sportCoverDataUri("hockey", "landscape"), label: resolveSportLabel("hockey", language) },
-      { key: "tennis", src: sportCoverDataUri("tennis", "landscape"), label: resolveSportLabel("tennis", language) },
-    ],
-    [language],
-  );
+  const heroBackdrop = useMemo(() => {
+    const primarySport = items.find((item) => item.status === "pending")?.sport_type || items[0]?.sport_type || "football";
+    return sportCoverDataUri(primarySport, "landscape");
+  }, [items]);
 
   return (
     <Layout>
       <div className="pb-screen pb-screen-feed">
         <HeroPanel eyebrow="Signal Desk" title={t("feed.hero.title")} subtitle={t("feed.hero.subtitle")} right={<span className="pb-feed-v4-total">{items.length}</span>}>
         <div className="pb-feed-v4-hero-scene" aria-hidden="true">
-          <div className="pb-feed-v4-hero-gallery">
-            {heroCovers.map((item, index) => (
-              <article key={item.key} className={`pb-feed-v4-hero-sport-card card-${index + 1}`}>
-                <img src={item.src} alt="" loading="lazy" />
-                <span>{item.label}</span>
-              </article>
-            ))}
+          <img className="pb-feed-v4-hero-backdrop" src={heroBackdrop} alt="" loading="lazy" />
+          <span className="pb-feed-v4-hero-overlay" />
+          <span className="pb-feed-v4-hero-gloss" />
+          <div className="pb-feed-v4-hero-bars">
+            <span />
+            <span />
+            <span />
+            <span />
+            <span />
+          </div>
+          <div className="pb-feed-v4-hero-mark">
+            <span />
+            <span />
+            <span />
           </div>
         </div>
 

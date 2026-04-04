@@ -10123,91 +10123,111 @@ h4 {
 
 .pb-feed-v4-hero-scene {
   position: relative;
-  min-height: 116px;
+  min-height: 126px;
   margin-bottom: 10px;
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background:
-    radial-gradient(circle at 80% -12%, rgba(19, 224, 197, 0.2), transparent 52%),
-    linear-gradient(160deg, rgba(11, 21, 33, 0.96), rgba(7, 14, 22, 0.98));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  padding: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 10px 24px rgba(0, 0, 0, 0.22);
   overflow: hidden;
 }
 
-.pb-feed-v4-hero-gallery {
-  position: relative;
-  display: grid;
-  grid-template-columns: 1.2fr 1fr 1fr;
-  gap: 8px;
-  z-index: 1;
-}
-
-.pb-feed-v4-hero-sport-card {
-  position: relative;
-  aspect-ratio: 16 / 9;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  overflow: hidden;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.24);
-  isolation: isolate;
-}
-
-.pb-feed-v4-hero-gallery .card-1 {
-  position: relative;
-  min-height: 94px;
-}
-
-.pb-feed-v4-hero-gallery .card-2,
-.pb-feed-v4-hero-gallery .card-3 {
-  position: relative;
-  min-height: 94px;
-}
-
-.pb-feed-v4-hero-sport-card img {
+.pb-feed-v4-hero-backdrop {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
 }
 
-.pb-feed-v4-hero-sport-card::after {
-  content: "";
+.pb-feed-v4-hero-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(8, 12, 22, 0.05), rgba(8, 12, 22, 0.34));
-  z-index: 1;
+  background:
+    linear-gradient(180deg, rgba(6, 12, 22, 0.14), rgba(6, 12, 22, 0.52)),
+    radial-gradient(circle at 88% -16%, rgba(128, 255, 237, 0.26), transparent 52%);
 }
 
-.pb-feed-v4-hero-sport-card span {
+.pb-feed-v4-hero-gloss {
   position: absolute;
-  left: 8px;
-  bottom: 8px;
-  z-index: 2;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.32);
-  background: rgba(8, 14, 24, 0.56);
-  color: #ffffff;
-  font-size: 10px;
-  font-weight: 700;
-  padding: 3px 8px;
-  backdrop-filter: blur(4px);
+  left: -12%;
+  top: -32%;
+  width: 48%;
+  height: 170%;
+  transform: rotate(14deg);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0));
+  opacity: 0.26;
 }
 
-@media (max-width: 520px) {
-  .pb-feed-v4-hero-gallery {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+.pb-feed-v4-hero-bars {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: end;
+  gap: 7px;
+  height: 90px;
+  margin: 14px 12px 0;
+}
 
-  .pb-feed-v4-hero-gallery .card-1 {
-    grid-column: 1 / -1;
-    min-height: 92px;
-  }
+.pb-feed-v4-hero-bars span {
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: linear-gradient(180deg, rgba(227, 255, 250, 0.9), rgba(66, 173, 198, 0.76));
+  box-shadow: 0 6px 14px rgba(7, 30, 48, 0.28);
+}
 
-  .pb-feed-v4-hero-gallery .card-2,
-  .pb-feed-v4-hero-gallery .card-3 {
-    min-height: 76px;
-  }
+.pb-feed-v4-hero-bars span:nth-child(1) {
+  height: 30px;
+}
+
+.pb-feed-v4-hero-bars span:nth-child(2) {
+  height: 48px;
+}
+
+.pb-feed-v4-hero-bars span:nth-child(3) {
+  height: 64px;
+}
+
+.pb-feed-v4-hero-bars span:nth-child(4) {
+  height: 42px;
+}
+
+.pb-feed-v4-hero-bars span:nth-child(5) {
+  height: 56px;
+}
+
+.pb-feed-v4-hero-mark {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pb-feed-v4-hero-mark span {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.44);
+  background: rgba(255, 255, 255, 0.44);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.32);
+}
+
+.pb-feed-v4-hero-mark span:nth-child(2) {
+  width: 10px;
+  height: 10px;
+  opacity: 0.8;
+}
+
+.pb-feed-v4-hero-mark span:nth-child(3) {
+  width: 8px;
+  height: 8px;
+  opacity: 0.7;
 }
 
 .pb-feed-v4-hero-status {
@@ -10599,6 +10619,7 @@ h4 {
 
 :root[data-theme="light"] .pb-admin-v4 .section-head,
 :root[data-theme="light"] .pb-admin-v4 .admin-control-bar,
+:root[data-theme="light"] .pb-admin-v4 .pb-admin-v4-kpis article,
 :root[data-theme="light"] .pb-admin-v4 .admin-card-compact,
 :root[data-theme="light"] .pb-admin-v4 .admin-broadcast-compact,
 :root[data-theme="light"] .pb-admin-v4 .metrics-grid article,
@@ -10608,6 +10629,14 @@ h4 {
   border-color: #cfdded;
   background: rgba(255, 255, 255, 0.93);
   box-shadow: 0 10px 24px rgba(26, 42, 68, 0.1);
+}
+
+:root[data-theme="light"] .pb-admin-v4 .pb-admin-v4-kpis span {
+  color: #4d647f;
+}
+
+:root[data-theme="light"] .pb-admin-v4 .pb-admin-v4-kpis strong {
+  color: #12304f;
 }
 
 :root[data-theme="light"] .pb-admin-v4 .admin-report-digest-card {
@@ -12685,17 +12714,20 @@ body {
     linear-gradient(160deg, #eff6ff, #dcecff);
 }
 
-:root[data-theme="light"] .pb-feed-v4-hero-sport-card {
-  border-color: rgba(33, 92, 140, 0.2);
-  box-shadow: 0 8px 16px rgba(30, 74, 118, 0.16);
+:root[data-theme="light"] .pb-feed-v4-hero-overlay {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(18, 46, 78, 0.24)),
+    radial-gradient(circle at 88% -16%, rgba(44, 189, 224, 0.24), transparent 52%);
 }
 
-:root[data-theme="light"] .pb-feed-v4-hero-sport-card::after {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(22, 46, 78, 0.16));
+:root[data-theme="light"] .pb-feed-v4-hero-bars span {
+  border-color: rgba(34, 92, 140, 0.3);
+  background: linear-gradient(180deg, rgba(247, 255, 254, 0.96), rgba(96, 181, 209, 0.82));
+  box-shadow: 0 6px 12px rgba(28, 72, 112, 0.18);
 }
 
-:root[data-theme="light"] .pb-feed-v4-hero-sport-card span {
-  border-color: rgba(30, 74, 118, 0.24);
-  background: rgba(255, 255, 255, 0.76);
-  color: #24415f;
+:root[data-theme="light"] .pb-feed-v4-hero-mark span {
+  border-color: rgba(255, 255, 255, 0.94);
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 0 8px rgba(66, 133, 198, 0.4);
 }
