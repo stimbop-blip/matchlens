@@ -1,24 +1,10 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 
-import { resolveSportKind, resolveSportLabel, type SportLanguage } from "../../app/sport";
+import { resolveSportLabel, type SportLanguage } from "../../app/sport";
+import { resolvePredictionCover } from "../../app/sportArt";
 
 type CardStatus = "pending" | "won" | "lost" | "refund";
-
-function sportEmoji(sport: string): string {
-  const kind = resolveSportKind(sport);
-  if (kind === "football") return "⚽";
-  if (kind === "hockey") return "🏒";
-  if (kind === "basketball") return "🏀";
-  if (kind === "tennis") return "🎾";
-  if (kind === "table_tennis") return "🏓";
-  if (kind === "volleyball") return "🏐";
-  if (kind === "esports") return "🎮";
-  if (kind === "darts") return "🎯";
-  if (kind === "mma") return "🥊";
-  if (kind === "baseball") return "⚾";
-  return "🏅";
-}
 
 export function SignalCard3D({
   to,
@@ -36,6 +22,8 @@ export function SignalCard3D({
   accessLabel,
   note,
   language,
+  betScreenshot,
+  resultScreenshot,
 }: {
   to: string;
   title: string;
@@ -52,10 +40,17 @@ export function SignalCard3D({
   accessLabel: string;
   note: string;
   language: SportLanguage;
+  betScreenshot?: string | null;
+  resultScreenshot?: string | null;
 }) {
   const oddsText = Number.isFinite(odds) ? odds.toFixed(2) : String(odds);
-  const sportIcon = sportEmoji(sport);
   const sportName = resolveSportLabel(sport, language);
+  const cover = resolvePredictionCover({
+    sport,
+    betScreenshot,
+    resultScreenshot,
+    variant: "square",
+  });
 
   return (
     <motion.article whileHover={{ y: -4 }} whileTap={{ scale: 0.995 }} transition={{ duration: 0.16, ease: "easeOut" }}>
@@ -75,9 +70,8 @@ export function SignalCard3D({
 
         <div className="pb-signal3d-core">
           <div className="pb-signal3d-canvas pb-signal3d-sport-art" aria-hidden="true">
-            <span className="pb-signal3d-sport-emoji" role="img" aria-label={sportName}>
-              {sportIcon}
-            </span>
+            <img className="pb-signal3d-cover" src={cover.src} alt="" loading="lazy" />
+            {cover.fallback ? <span className="pb-signal3d-cover-chip">{sportName}</span> : null}
           </div>
 
           <div className="pb-signal-v2-odds">

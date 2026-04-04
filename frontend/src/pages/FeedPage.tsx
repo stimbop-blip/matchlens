@@ -205,13 +205,19 @@ export function FeedPage({ useThreeCards = false }: { useThreeCards?: boolean } 
       <div className="pb-screen pb-screen-feed">
         <HeroPanel eyebrow="Signal Desk" title={t("feed.hero.title")} subtitle={t("feed.hero.subtitle")} right={<span className="pb-feed-v4-total">{items.length}</span>}>
         <div className="pb-feed-v4-hero-scene" aria-hidden="true">
-          <span className="pb-feed-v4-hero-floor" />
+          <span className="pb-feed-v4-hero-gridline" />
+          <span className="pb-feed-v4-hero-glow" />
           <div className="pb-feed-v4-hero-columns">
             <span />
             <span />
             <span />
             <span />
             <span />
+          </div>
+          <div className="pb-feed-v4-hero-sports">
+            <span className="football" />
+            <span className="hockey" />
+            <span className="tennis" />
           </div>
           <span className="pb-feed-v4-hero-orbit" />
         </div>
@@ -386,6 +392,8 @@ export function FeedPage({ useThreeCards = false }: { useThreeCards?: boolean } 
                             accessLabel={accessLabel(item.access_level, t)}
                             note={teaser(item.short_description, t("feed.teaserFallback"))}
                             language={language}
+                            betScreenshot={item.bet_screenshot}
+                            resultScreenshot={item.result_screenshot}
                           />
                         </Suspense>
                       </ErrorBoundary>

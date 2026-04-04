@@ -4,9 +4,11 @@ import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-
 import { clearConsentCache, isConsentAccepted, readConsentCache, writeConsentCache } from "./consent";
 import { Admin } from "./Admin";
 import { Home } from "./Home";
+import { useI18n } from "./i18n";
 import { Profile } from "./Profile";
 import { Signals } from "./Signals";
 import { Tariffs } from "./Tariffs";
+import { RocketLoader } from "../components/ui";
 import { api, type UserConsent } from "../services/api";
 import { GatePage } from "../pages/GatePage";
 import { LanguagePage } from "../pages/LanguagePage";
@@ -24,6 +26,7 @@ import { SupportPage } from "../pages/SupportPage";
 import { ThemePage } from "../pages/ThemePage";
 
 export function AppRouter() {
+  const { language } = useI18n();
   const location = useLocation();
   const navigate = useNavigate();
   const [consent, setConsent] = useState<UserConsent | null>(() => readConsentCache());
@@ -80,7 +83,9 @@ export function AppRouter() {
     };
   }, [syncConsent]);
 
-  const canEnterApp = useMemo(() => remoteVerified && isConsentAccepted(consent), [remoteVerified, consent]);
+  const consentAccepted = useMemo(() => isConsentAccepted(consent), [consent]);
+  const canEnterApp = useMemo(() => consentAccepted && (!checking || remoteVerified), [checking, consentAccepted, remoteVerified]);
+  const showReturningLoader = useMemo(() => !canEnterApp && checking && consentAccepted, [canEnterApp, checking, consentAccepted]);
 
   useEffect(() => {
     if (!canEnterApp) return;
@@ -116,9 +121,24 @@ export function AppRouter() {
   };
 
   if (!canEnterApp) {
+    if (showReturningLoader) {
+      return (
+        <main className="pb-boot-loader">
+          <section className="pb-boot-loader-card pb-reveal">
+            <div className="pb-boot-loader-orbit" aria-hidden="true" />
+            <span className="pb-brand-chip large">PIT BET</span>
+            <RocketLoader
+              title={language === "ru" ? "Возвращаем сигналы" : "Loading your signals"}
+              subtitle={language === "ru" ? "Проверяем доступ и обновляем ленту" : "Verifying access and refreshing the feed"}
+            />
+          </section>
+        </main>
+      );
+    }
+
     return (
       <Routes>
-        <Route path="/gate" element={<GatePage consent={consent} checkingRemote={checking && !remoteVerified} onAccepted={handleAccepted} />} />
+        <Route path="/gate" element={<GatePage consent={consent} checkingRemote={checking && !consentAccepted} onAccepted={handleAccepted} />} />
         <Route path="/menu/rules" element={<RulesPage standalone />} />
         <Route path="/menu/responsible" element={<ResponsiblePage standalone />} />
         <Route path="/menu/payment-refund" element={<PaymentRefundPage standalone />} />

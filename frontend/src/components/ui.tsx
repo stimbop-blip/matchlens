@@ -2,31 +2,20 @@ import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { useI18n } from "../app/i18n";
-import { resolveSportKind, resolveSportLabel, type SportKind } from "../app/sport";
+import { resolveSportKind, resolveSportLabel } from "../app/sport";
+import { sportIconPath } from "../app/sportArt";
 
 function cx(...items: Array<string | false | null | undefined>) {
   return items.filter(Boolean).join(" ");
 }
 
-const SPORT_GLYPH: Record<SportKind, string> = {
-  football: "⚽",
-  hockey: "🏒",
-  tennis: "🎾",
-  table_tennis: "🏓",
-  basketball: "🏀",
-  volleyball: "🏐",
-  esports: "🎮",
-  darts: "🎯",
-  mma: "🥊",
-  baseball: "⚾",
-  generic: "🏅",
-};
-
 export function SportIcon({ sport, className }: { sport: string; className?: string }) {
   const kind = resolveSportKind(sport);
   return (
     <span className={cx("pb-sport-icon", `kind-${kind}`, className)} aria-hidden="true">
-      {SPORT_GLYPH[kind]}
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d={sportIconPath(kind)} />
+      </svg>
     </span>
   );
 }

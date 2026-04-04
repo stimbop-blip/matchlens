@@ -4,6 +4,7 @@ import { Grid2x2, ListChecks, Newspaper, ShieldCheck, Sparkles, Wallet } from "l
 
 import { useI18n } from "./i18n";
 import { resolveSportLabel } from "./sport";
+import { resolvePredictionCover } from "./sportArt";
 import { resolveSubscriptionSnapshot } from "./subscription";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
@@ -49,38 +50,13 @@ function accessLabel(level: Prediction["access_level"], t: (key: string) => stri
   return t("common.free");
 }
 
-function sportEmoji(value: string): string {
-  const sport = value.toLowerCase();
-  if (sport.includes("football") || sport.includes("soccer")) return "⚽";
-  if (sport.includes("hockey")) return "🏒";
-  if (sport.includes("basketball")) return "🏀";
-  if (sport.includes("tennis") && sport.includes("table")) return "🏓";
-  if (sport.includes("tennis")) return "🎾";
-  if (sport.includes("volley")) return "🏐";
-  return "🏅";
-}
-
-function sportCoverPalette(value: string): { start: string; end: string } {
-  const sport = value.toLowerCase();
-  if (sport.includes("football") || sport.includes("soccer")) return { start: "#0e3f7a", end: "#1d7cf2" };
-  if (sport.includes("hockey")) return { start: "#114052", end: "#19a2d8" };
-  if (sport.includes("basketball")) return { start: "#6d350f", end: "#d07a23" };
-  if (sport.includes("tennis") && sport.includes("table")) return { start: "#5a2758", end: "#d14fab" };
-  if (sport.includes("tennis")) return { start: "#1e5632", end: "#5eca58" };
-  return { start: "#1b314f", end: "#0d7f9e" };
-}
-
-function sportCoverDataUri(sport: string): string {
-  const icon = sportEmoji(sport);
-  const palette = sportCoverPalette(sport);
-  const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 420 240'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0%' stop-color='${palette.start}'/><stop offset='100%' stop-color='${palette.end}'/></linearGradient><radialGradient id='r1' cx='0.82' cy='0.12' r='0.66'><stop offset='0%' stop-color='rgba(255,255,255,0.34)'/><stop offset='100%' stop-color='rgba(255,255,255,0)'/></radialGradient><radialGradient id='r2' cx='0.12' cy='0.98' r='0.7'><stop offset='0%' stop-color='rgba(0,0,0,0.26)'/><stop offset='100%' stop-color='rgba(0,0,0,0)'/></radialGradient></defs><rect width='420' height='240' rx='26' fill='url(#g)'/><rect width='420' height='240' rx='26' fill='url(#r1)'/><rect width='420' height='240' rx='26' fill='url(#r2)'/><circle cx='334' cy='44' r='26' fill='rgba(255,255,255,0.18)'/><circle cx='352' cy='188' r='44' fill='rgba(255,255,255,0.1)'/><circle cx='102' cy='72' r='44' fill='rgba(255,255,255,0.14)'/><text x='210' y='148' text-anchor='middle' font-size='96'>${icon}</text><text x='24' y='218' font-size='20' fill='rgba(255,255,255,0.74)' font-family='Arial, sans-serif'>PIT BET</text></svg>`;
-  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
-}
-
 function predictionImage(signal: Prediction): string {
-  if (signal.bet_screenshot) return signal.bet_screenshot;
-  if (signal.result_screenshot) return signal.result_screenshot;
-  return sportCoverDataUri(signal.sport_type);
+  return resolvePredictionCover({
+    sport: signal.sport_type,
+    betScreenshot: signal.bet_screenshot,
+    resultScreenshot: signal.result_screenshot,
+    variant: "landscape",
+  }).src;
 }
 
 function previewNews(value: string, maxLength = 160): string {
