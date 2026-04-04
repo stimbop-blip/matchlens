@@ -24,6 +24,7 @@ const SPORT_PALETTE: Record<SportKind, SportPalette> = {
 };
 
 const COVER_CACHE = new Map<string, string>();
+const BADGE_CACHE = new Map<SportKind, string>();
 
 function escapeSvgText(value: string): string {
   return value
@@ -45,6 +46,44 @@ export function sportIconPath(kind: SportKind): string {
   if (kind === "mma") return "M6.1 12.2a5.9 5.9 0 1 1 11.8 0v.6H6.1Zm3.3 2.8h5.2v2.1H9.4Z";
   if (kind === "baseball") return "M12 4.1a7.9 7.9 0 1 0 7.9 7.9A7.9 7.9 0 0 0 12 4.1m-2 2.8c-.8 1.7-1.4 3.5-1.6 5.3M14 6.9c.8 1.7 1.4 3.5 1.6 5.3M10 17.1c-.8-1.7-1.4-3.5-1.6-5.3M14 17.1c.8-1.7 1.4-3.5 1.6-5.3";
   return "M12 4.2a7.8 7.8 0 1 0 7.8 7.8A7.8 7.8 0 0 0 12 4.2m0 3.3 1.4 2.8 3.1.5-2.3 2.2.5 3.2-2.7-1.5-2.7 1.5.5-3.2-2.3-2.2 3.1-.5z";
+}
+
+export function sportBadgeDataUri(sport: string): string {
+  const kind = resolveSportKind(sport);
+  const cached = BADGE_CACHE.get(kind);
+  if (cached) return cached;
+
+  const palette = SPORT_PALETTE[kind];
+  const iconPath = sportIconPath(kind);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="${kind}">
+    <defs>
+      <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="${palette.start}"/>
+        <stop offset="100%" stop-color="${palette.end}"/>
+      </linearGradient>
+      <radialGradient id="glow" cx="0.78" cy="0.18" r="0.8">
+        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.34"/>
+        <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+      </radialGradient>
+      <linearGradient id="chip" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.24"/>
+        <stop offset="100%" stop-color="#ffffff" stop-opacity="0.08"/>
+      </linearGradient>
+    </defs>
+    <rect x="2" y="2" width="60" height="60" rx="18" fill="url(#bg)"/>
+    <rect x="2" y="2" width="60" height="60" rx="18" fill="url(#glow)"/>
+    <rect x="2" y="2" width="60" height="60" rx="18" fill="url(#chip)"/>
+    <circle cx="46" cy="16" r="7" fill="#ffffff" fill-opacity="0.22"/>
+    <circle cx="16" cy="46" r="10" fill="#ffffff" fill-opacity="0.14"/>
+    <rect x="14" y="14" width="36" height="36" rx="12" fill="#ffffff" fill-opacity="0.14" stroke="#ffffff" stroke-opacity="0.32"/>
+    <svg x="19" y="19" width="26" height="26" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="${iconPath}" fill="#ffffff" fill-opacity="0.98" stroke="#ffffff" stroke-opacity="0.42" stroke-width="0.4"/>
+    </svg>
+  </svg>`;
+
+  const encoded = `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+  BADGE_CACHE.set(kind, encoded);
+  return encoded;
 }
 
 function cleanImage(value: string | null | undefined): string | null {

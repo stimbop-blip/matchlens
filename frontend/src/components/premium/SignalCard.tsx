@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 
 import { resolveSportKind, resolveSportLabel, type SportLanguage } from "../../app/sport";
-import { sportIconPath } from "../../app/sportArt";
+import { sportBadgeDataUri } from "../../app/sportArt";
 
 type CardStatus = "pending" | "won" | "lost" | "refund";
 
@@ -10,9 +10,7 @@ function SportMark({ sport, language }: { sport: string; language: SportLanguage
   const kind = resolveSportKind(sport);
   return (
     <span className={`pb-signal-sport ${kind}`} aria-label={resolveSportLabel(sport, language)}>
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d={sportIconPath(kind)} />
-      </svg>
+      <img src={sportBadgeDataUri(sport)} alt="" loading="lazy" />
     </span>
   );
 }

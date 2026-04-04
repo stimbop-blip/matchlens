@@ -4176,45 +4176,39 @@ a:focus {
 }
 
 .pb-sport-icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 10px;
-  border: 1px solid color-mix(in srgb, var(--border-soft) 84%, transparent);
-  background: color-mix(in srgb, var(--surface-1) 90%, transparent);
+  width: 30px;
+  height: 30px;
+  border-radius: 11px;
   display: inline-grid;
   place-items: center;
-  color: var(--text-primary);
 }
 
-.pb-sport-icon svg {
-  width: 15px;
-  height: 15px;
-  fill: currentColor;
+.pb-sport-icon img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  border-radius: inherit;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
 }
 
 .pb-sport-icon.kind-football,
 .pb-sport-icon.kind-basketball,
 .pb-sport-icon.kind-volleyball {
-  border-color: color-mix(in srgb, var(--info) 34%, transparent);
-  background: color-mix(in srgb, var(--info) 16%, transparent);
-  color: color-mix(in srgb, var(--info) 72%, var(--text-primary));
+  filter: saturate(1.04);
 }
 
 .pb-sport-icon.kind-hockey,
 .pb-sport-icon.kind-tennis,
 .pb-sport-icon.kind-table_tennis {
-  border-color: color-mix(in srgb, var(--accent-primary) 36%, transparent);
-  background: color-mix(in srgb, var(--accent-soft) 76%, transparent);
-  color: color-mix(in srgb, var(--accent-primary) 78%, var(--text-primary));
+  filter: saturate(1.06);
 }
 
 .pb-sport-icon.kind-esports,
 .pb-sport-icon.kind-mma,
 .pb-sport-icon.kind-darts,
 .pb-sport-icon.kind-baseball {
-  border-color: color-mix(in srgb, var(--warning) 32%, transparent);
-  background: color-mix(in srgb, var(--warning) 16%, transparent);
-  color: color-mix(in srgb, var(--warning) 84%, var(--text-primary));
+  filter: saturate(1.08);
 }
 
 .pb-signal-action {
@@ -8458,21 +8452,21 @@ a:focus {
 }
 
 .pb-signal-sport {
-  width: 28px;
-  height: 28px;
-  border-radius: 10px;
-  border: 1px solid rgba(19, 224, 197, 0.36);
-  background: rgba(19, 224, 197, 0.12);
-  color: #9dfff2;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
   display: grid;
   place-items: center;
   flex-shrink: 0;
 }
 
-.pb-signal-sport svg {
-  width: 16px;
-  height: 16px;
-  fill: currentcolor;
+.pb-signal-sport img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  border-radius: inherit;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.22);
 }
 
 .pb-signal-v2-badges {
@@ -12404,46 +12398,108 @@ body {
   pointer-events: none;
 }
 
-.pb-startup-cards {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.pb-startup-card {
-  border-radius: 13px;
-  border: 1px solid color-mix(in srgb, white 24%, transparent);
-  overflow: hidden;
+.pb-startup-visual {
   position: relative;
-  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.22);
+  height: 118px;
+  border-radius: 18px;
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 28%, var(--border-subtle));
+  background:
+    radial-gradient(circle at 78% 20%, color-mix(in srgb, var(--accent-primary) 24%, transparent), transparent 54%),
+    linear-gradient(160deg, color-mix(in srgb, var(--surface-2) 94%, transparent), color-mix(in srgb, var(--surface-1) 98%, transparent));
+  overflow: hidden;
 }
 
-.pb-startup-card img {
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  object-fit: cover;
-  display: block;
-}
-
-.pb-startup-card::after {
-  content: "";
+.pb-startup-visual .ring,
+.pb-startup-visual .core,
+.pb-startup-visual .spark {
   position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgba(8, 12, 22, 0.04), rgba(8, 12, 22, 0.34));
-}
-
-.pb-startup-card span {
-  position: absolute;
-  left: 8px;
-  bottom: 8px;
-  z-index: 2;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.32);
-  background: rgba(8, 14, 24, 0.56);
-  color: #ffffff;
-  font-size: 10px;
-  font-weight: 700;
-  padding: 3px 8px;
+}
+
+.pb-startup-visual .ring {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  animation: pb-startup-ring 2.4s ease-in-out infinite;
+}
+
+.pb-startup-visual .ring-a {
+  width: 96px;
+  height: 96px;
+  left: calc(50% - 48px);
+  top: calc(50% - 48px);
+}
+
+.pb-startup-visual .ring-b {
+  width: 70px;
+  height: 70px;
+  left: calc(50% - 35px);
+  top: calc(50% - 35px);
+  animation-delay: 0.18s;
+}
+
+.pb-startup-visual .ring-c {
+  width: 44px;
+  height: 44px;
+  left: calc(50% - 22px);
+  top: calc(50% - 22px);
+  animation-delay: 0.32s;
+}
+
+.pb-startup-visual .core {
+  width: 18px;
+  height: 18px;
+  left: calc(50% - 9px);
+  top: calc(50% - 9px);
+  background: radial-gradient(circle, #ffffff, color-mix(in srgb, var(--accent-primary) 28%, transparent));
+  box-shadow: 0 0 18px color-mix(in srgb, var(--accent-primary) 50%, transparent);
+}
+
+.pb-startup-visual .spark {
+  width: 5px;
+  height: 5px;
+  background: #ffffff;
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.7);
+}
+
+.pb-startup-visual .spark-1 {
+  left: 24%;
+  top: 22%;
+  animation: pb-startup-spark 1.8s ease-in-out infinite;
+}
+
+.pb-startup-visual .spark-2 {
+  right: 23%;
+  top: 28%;
+  animation: pb-startup-spark 2.1s ease-in-out infinite;
+}
+
+.pb-startup-visual .spark-3 {
+  left: 61%;
+  bottom: 21%;
+  animation: pb-startup-spark 1.6s ease-in-out infinite;
+}
+
+@keyframes pb-startup-ring {
+  0%,
+  100% {
+    transform: scale(0.97);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.03);
+    opacity: 1;
+  }
+}
+
+@keyframes pb-startup-spark {
+  0%,
+  100% {
+    transform: scale(0.75);
+    opacity: 0.45;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
 }
 
 .pb-startup-progress {
@@ -12479,14 +12535,29 @@ body {
   }
 }
 
-@media (max-width: 560px) {
-  .pb-startup-cards {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+.pb-startup-lines {
+  display: grid;
+  gap: 6px;
+}
 
-  .pb-startup-cards .pb-startup-card:first-child {
-    grid-column: 1 / -1;
-  }
+.pb-startup-lines span {
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--surface-3) 75%, transparent) 0%, color-mix(in srgb, var(--surface-1) 98%, transparent) 35%, color-mix(in srgb, var(--surface-3) 75%, transparent) 70%);
+  background-size: 200% 100%;
+  animation: pb-shimmer 1.35s linear infinite;
+}
+
+.pb-startup-lines span:nth-child(1) {
+  width: 92%;
+}
+
+.pb-startup-lines span:nth-child(2) {
+  width: 75%;
+}
+
+.pb-startup-lines span:nth-child(3) {
+  width: 58%;
 }
 
 :root[data-theme="light"] .pb-startup-shell {
@@ -12498,19 +12569,25 @@ body {
   box-shadow: 0 16px 30px rgba(18, 35, 58, 0.12);
 }
 
-:root[data-theme="light"] .pb-startup-card {
-  border-color: rgba(34, 92, 142, 0.18);
-  box-shadow: 0 8px 14px rgba(26, 59, 92, 0.14);
+:root[data-theme="light"] .pb-startup-visual {
+  border-color: rgba(33, 92, 140, 0.2);
+  background:
+    radial-gradient(circle at 78% 20%, rgba(34, 182, 217, 0.2), transparent 54%),
+    linear-gradient(160deg, #ffffff, #eaf3ff);
 }
 
-:root[data-theme="light"] .pb-startup-card::after {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(17, 43, 72, 0.16));
+:root[data-theme="light"] .pb-startup-visual .ring {
+  border-color: rgba(24, 74, 120, 0.22);
 }
 
-:root[data-theme="light"] .pb-startup-card span {
-  border-color: rgba(30, 74, 118, 0.24);
-  background: rgba(255, 255, 255, 0.78);
-  color: #254162;
+:root[data-theme="light"] .pb-startup-visual .core {
+  background: radial-gradient(circle, #ffffff, rgba(34, 182, 217, 0.34));
+  box-shadow: 0 0 14px rgba(34, 182, 217, 0.44);
+}
+
+:root[data-theme="light"] .pb-startup-lines span {
+  background: linear-gradient(90deg, #e3edf9 0%, #ffffff 35%, #e3edf9 70%);
+  background-size: 200% 100%;
 }
 
 /* Signals hero readability in light mode */
