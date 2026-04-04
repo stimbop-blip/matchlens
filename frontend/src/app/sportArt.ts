@@ -50,11 +50,63 @@ function cleanImage(value: string | null | undefined): string | null {
   return trimmed ? trimmed : null;
 }
 
+function sportDecorMarkup(kind: SportKind, width: number, height: number): string {
+  const x = Math.round(width * 0.12);
+  const y = Math.round(height * 0.14);
+  const w = Math.round(width * 0.76);
+  const h = Math.round(height * 0.58);
+  const cx = Math.round(width * 0.5);
+  const cy = Math.round(height * 0.43);
+
+  if (kind === "football") {
+    return `<g fill="none" stroke="#ffffff" stroke-opacity="0.22" stroke-width="6"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="20"/><line x1="${cx}" y1="${y}" x2="${cx}" y2="${y + h}"/><circle cx="${cx}" cy="${cy}" r="${Math.round(h * 0.18)}"/></g>`;
+  }
+
+  if (kind === "hockey") {
+    return `<g fill="none" stroke="#ffffff" stroke-opacity="0.2" stroke-width="6"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="36"/><line x1="${cx}" y1="${y}" x2="${cx}" y2="${y + h}"/><circle cx="${Math.round(width * 0.28)}" cy="${cy}" r="${Math.round(h * 0.12)}"/><circle cx="${Math.round(width * 0.72)}" cy="${cy}" r="${Math.round(h * 0.12)}"/></g>`;
+  }
+
+  if (kind === "basketball") {
+    const yMid = Math.round(height * 0.45);
+    return `<g fill="none" stroke="#ffffff" stroke-opacity="0.22" stroke-width="6"><line x1="${x}" y1="${yMid}" x2="${x + w}" y2="${yMid}"/><path d="M ${x + 10} ${yMid} Q ${cx} ${y - 26} ${x + w - 10} ${yMid}"/><path d="M ${x + 10} ${yMid} Q ${cx} ${y + h + 24} ${x + w - 10} ${yMid}"/></g>`;
+  }
+
+  if (kind === "tennis" || kind === "table_tennis") {
+    return `<g fill="none" stroke="#ffffff" stroke-opacity="0.24" stroke-width="6"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="18"/><line x1="${cx}" y1="${y}" x2="${cx}" y2="${y + h}"/><line x1="${x}" y1="${cy}" x2="${x + w}" y2="${cy}"/></g>`;
+  }
+
+  if (kind === "volleyball") {
+    return `<g fill="none" stroke="#ffffff" stroke-opacity="0.22" stroke-width="6"><path d="M ${x} ${cy} H ${x + w}"/><path d="M ${x + Math.round(w * 0.2)} ${y} C ${cx} ${cy} ${cx} ${cy} ${x + Math.round(w * 0.8)} ${y + h}"/><path d="M ${x + Math.round(w * 0.8)} ${y} C ${cx} ${cy} ${cx} ${cy} ${x + Math.round(w * 0.2)} ${y + h}"/></g>`;
+  }
+
+  if (kind === "esports") {
+    return `<g fill="none" stroke="#ffffff" stroke-opacity="0.2" stroke-width="5"><path d="M ${cx} ${y - 8} L ${x + w - 14} ${y + Math.round(h * 0.28)} L ${x + w - 14} ${y + Math.round(h * 0.72)} L ${cx} ${y + h + 8} L ${x + 14} ${y + Math.round(h * 0.72)} L ${x + 14} ${y + Math.round(h * 0.28)} Z"/></g>`;
+  }
+
+  if (kind === "darts") {
+    const r1 = Math.round(h * 0.28);
+    const r2 = Math.round(h * 0.18);
+    const r3 = Math.round(h * 0.08);
+    return `<g fill="none" stroke="#ffffff" stroke-opacity="0.22" stroke-width="6"><circle cx="${cx}" cy="${cy}" r="${r1}"/><circle cx="${cx}" cy="${cy}" r="${r2}"/><circle cx="${cx}" cy="${cy}" r="${r3}"/></g>`;
+  }
+
+  if (kind === "mma") {
+    return `<g fill="none" stroke="#ffffff" stroke-opacity="0.2" stroke-width="6"><path d="M ${x + 20} ${y} H ${x + w - 20} L ${x + w} ${y + 20} V ${y + h - 20} L ${x + w - 20} ${y + h} H ${x + 20} L ${x} ${y + h - 20} V ${y + 20} Z"/></g>`;
+  }
+
+  if (kind === "baseball") {
+    return `<g fill="none" stroke="#ffffff" stroke-opacity="0.22" stroke-width="6"><path d="M ${cx} ${y} L ${x + w} ${cy} L ${cx} ${y + h} L ${x} ${cy} Z"/><path d="M ${x + Math.round(w * 0.25)} ${cy} Q ${cx} ${y + Math.round(h * 0.22)} ${x + Math.round(w * 0.75)} ${cy}"/><path d="M ${x + Math.round(w * 0.25)} ${cy} Q ${cx} ${y + Math.round(h * 0.78)} ${x + Math.round(w * 0.75)} ${cy}"/></g>`;
+  }
+
+  return `<g fill="none" stroke="#ffffff" stroke-opacity="0.2" stroke-width="6"><path d="M ${x} ${y + h} C ${x + Math.round(w * 0.3)} ${y + Math.round(h * 0.45)}, ${x + Math.round(w * 0.55)} ${y + h}, ${x + w} ${y + Math.round(h * 0.36)}"/><path d="M ${x} ${y + Math.round(h * 0.28)} C ${x + Math.round(w * 0.3)} ${y - 10}, ${x + Math.round(w * 0.55)} ${y + Math.round(h * 0.3)}, ${x + w} ${y - 8}"/></g>`;
+}
+
 export function sportCoverDataUri(sport: string, variant: CoverVariant = "landscape"): string {
   const kind = resolveSportKind(sport);
   const palette = SPORT_PALETTE[kind];
   const iconPath = sportIconPath(kind);
   const label = escapeSvgText(sportLabel(kind, "en").toUpperCase());
+  const decor = sportDecorMarkup(kind, variant === "landscape" ? 1200 : 720, variant === "landscape" ? 675 : 720);
 
   const width = variant === "landscape" ? 1200 : 720;
   const height = variant === "landscape" ? 675 : 720;
@@ -80,15 +132,19 @@ export function sportCoverDataUri(sport: string, variant: CoverVariant = "landsc
         <stop offset="0%" stop-color="#ffffff" stop-opacity="0.20"/>
         <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
       </linearGradient>
+      <linearGradient id="vignette" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#061021" stop-opacity="0"/>
+        <stop offset="100%" stop-color="#061021" stop-opacity="0.34"/>
+      </linearGradient>
     </defs>
     <rect x="0" y="0" width="${width}" height="${height}" rx="${radius}" fill="url(#bg)"/>
     <rect x="0" y="0" width="${width}" height="${height}" rx="${radius}" fill="url(#glow)"/>
-    <path d="M-20 ${Math.round(height * 0.72)} C ${Math.round(width * 0.2)} ${Math.round(height * 0.52)}, ${Math.round(width * 0.38)} ${Math.round(height * 0.9)}, ${Math.round(width * 0.64)} ${Math.round(height * 0.62)} S ${Math.round(width * 0.98)} ${Math.round(height * 0.68)}, ${width + 20} ${Math.round(height * 0.56)}" fill="none" stroke="#ffffff" stroke-opacity="0.20" stroke-width="12"/>
-    <path d="M-10 ${Math.round(height * 0.86)} C ${Math.round(width * 0.18)} ${Math.round(height * 0.72)}, ${Math.round(width * 0.44)} ${Math.round(height * 1.02)}, ${Math.round(width * 0.72)} ${Math.round(height * 0.78)} S ${Math.round(width * 0.98)} ${Math.round(height * 0.88)}, ${width + 20} ${Math.round(height * 0.74)}" fill="none" stroke="#ffffff" stroke-opacity="0.12" stroke-width="10"/>
+    <path d="M-20 ${Math.round(height * 0.72)} C ${Math.round(width * 0.2)} ${Math.round(height * 0.52)}, ${Math.round(width * 0.38)} ${Math.round(height * 0.9)}, ${Math.round(width * 0.64)} ${Math.round(height * 0.62)} S ${Math.round(width * 0.98)} ${Math.round(height * 0.68)}, ${width + 20} ${Math.round(height * 0.56)}" fill="none" stroke="#ffffff" stroke-opacity="0.18" stroke-width="12"/>
+    ${decor}
     <circle cx="${Math.round(width * 0.18)}" cy="${Math.round(height * 0.24)}" r="${Math.round(height * 0.095)}" fill="#ffffff" fill-opacity="0.14"/>
     <circle cx="${Math.round(width * 0.84)}" cy="${Math.round(height * 0.74)}" r="${Math.round(height * 0.13)}" fill="#ffffff" fill-opacity="0.12"/>
     <circle cx="${Math.round(width * 0.92)}" cy="${Math.round(height * 0.18)}" r="${Math.round(height * 0.045)}" fill="#ffffff" fill-opacity="0.24"/>
-    <rect x="${iconX}" y="${iconY}" width="${iconBox}" height="${iconBox}" rx="${Math.round(iconBox * 0.28)}" fill="#ffffff" fill-opacity="0.14" stroke="#ffffff" stroke-opacity="0.30"/>
+    <rect x="${iconX}" y="${iconY}" width="${iconBox}" height="${iconBox}" rx="${Math.round(iconBox * 0.28)}" fill="#ffffff" fill-opacity="0.16" stroke="#ffffff" stroke-opacity="0.34"/>
     <svg x="${iconX + Math.round(iconBox * 0.17)}" y="${iconY + Math.round(iconBox * 0.17)}" width="${Math.round(iconBox * 0.66)}" height="${Math.round(iconBox * 0.66)}" viewBox="0 0 24 24" aria-hidden="true">
       <path d="${iconPath}" fill="#ffffff" fill-opacity="0.97" stroke="#ffffff" stroke-opacity="0.35" stroke-width="0.35"/>
     </svg>
@@ -96,6 +152,7 @@ export function sportCoverDataUri(sport: string, variant: CoverVariant = "landsc
     <text x="${Math.round(width - 138)}" y="${titleY}" text-anchor="middle" dominant-baseline="middle" fill="${palette.chip}" font-size="${titleSize}" font-family="Satoshi, Manrope, Segoe UI, sans-serif" font-weight="700" letter-spacing="0.6">${label}</text>
     <text x="${Math.round(32)}" y="${Math.round(height - 24)}" fill="#ffffff" fill-opacity="0.72" font-size="${brandSize}" font-family="Satoshi, Manrope, Segoe UI, sans-serif" font-weight="700" letter-spacing="1.4">PIT BET</text>
     <rect x="0" y="0" width="${width}" height="${height}" rx="${radius}" fill="url(#mesh)"/>
+    <rect x="0" y="0" width="${width}" height="${height}" rx="${radius}" fill="url(#vignette)"/>
   </svg>`;
 
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
