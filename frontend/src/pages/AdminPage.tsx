@@ -38,6 +38,7 @@ type NewsFilter = "all" | "published" | "draft";
 type PromoFilter = "all" | "active" | "inactive";
 type MethodFilter = "all" | "active" | "inactive";
 type ReportPeriod = "daily" | "weekly" | "monthly";
+type ReportDigestAccess = "all" | "premium" | "vip";
 
 type PredictionDraft = {
   title: string;
@@ -176,6 +177,12 @@ function reportPeriodLabel(period: ReportPeriod, language: "ru" | "en"): string 
   if (period === "daily") return language === "ru" ? "За день" : "Daily";
   if (period === "weekly") return language === "ru" ? "За неделю" : "Weekly";
   return language === "ru" ? "За месяц" : "Monthly";
+}
+
+function reportAccessLabel(access: string, language: "ru" | "en"): string {
+  if (access === "premium") return language === "ru" ? "Только Premium" : "Premium only";
+  if (access === "vip") return language === "ru" ? "Только VIP" : "VIP only";
+  return language === "ru" ? "Premium + VIP" : "Premium + VIP";
 }
 
 function createEmptyPredictionDraft(): PredictionDraft {
@@ -459,9 +466,11 @@ export function AdminPage({ withThree = false }: { withThree?: boolean } = {}) {
     button_url?: string | null;
   } | null>(null);
   const [deliveryStats, setDeliveryStats] = useState<{ total: number; sent: number; failed: number; queued: number } | null>(null);
+  const [reportDigestAccess, setReportDigestAccess] = useState<ReportDigestAccess>("all");
   const [reportSendingPeriod, setReportSendingPeriod] = useState<ReportPeriod | null>(null);
   const [reportDigestResult, setReportDigestResult] = useState<{
     period: string;
+    access_level: string;
     queued: number;
     queued_premium: number;
     queued_vip: number;
@@ -1196,7 +1205,7 @@ export function AdminPage({ withThree = false }: { withThree?: boolean } = {}) {
     if (!window.confirm(tx("Подтвердить отправку digest Premium/VIP?", "Confirm Premium/VIP digest send?"))) return;
     setReportSendingPeriod(period);
     try {
-      const result = await api.adminReportDigestSend({ period, force_send: true });
+      const result = await api.adminReportDigestSend({ period, force_send: true, access_level: reportDigestAccess });
       setReportDigestResult(result);
       notifySuccess(
         tx(
@@ -1957,13 +1966,20 @@ export function AdminPage({ withThree = false }: { withThree?: boolean } = {}) {
             </div>
 
             <div className="card-lite admin-report-digest-card">
-              <p className="stacked"><b>{tx("Premium/VIP digest рассылка", "Premium/VIP digest broadcast")}</b></p>
+              <p className="stacked"><b>{tx("Авто-отчеты по прогнозам (ручной запуск)", "Auto forecast reports (manual send)")}</b></p>
               <p className="stacked muted">
                 {tx(
-                  "Быстрый запуск статистики за период для активных Premium/VIP пользователей. Учитываются пользовательские настройки уведомлений digest.",
-                  "Quick performance digest send for active Premium/VIP users. User digest notification settings are respected.",
+                  "Запускает ту же автоматическую статистику, но по кнопке вручную. Учитываются пользовательские настройки digest-уведомлений.",
+                  "Runs the same automatic statistics manually on click. User digest notification settings are respected.",
                 )}
               </p>
+              <div className="admin-control-grid admin-report-digest-filter">
+                <select value={reportDigestAccess} onChange={(e) => setReportDigestAccess(e.target.value as ReportDigestAccess)}>
+                  <option value="all">{tx("Premium + VIP", "Premium + VIP")}</option>
+                  <option value="premium">{tx("Только Premium", "Premium only")}</option>
+                  <option value="vip">{tx("Только VIP", "VIP only")}</option>
+                </select>
+              </div>
               <div className="admin-quick-actions three admin-report-digest-actions">
                 {(["daily", "weekly", "monthly"] as ReportPeriod[]).map((period) => (
                   <button
@@ -1980,6 +1996,7 @@ export function AdminPage({ withThree = false }: { withThree?: boolean } = {}) {
               {reportDigestResult ? (
                 <p className="muted stacked">
                   {tx("Последний запуск", "Latest send")}: {reportPeriodLabel(reportDigestResult.period as ReportPeriod, language)} •
+                  {" "}{tx("доступ", "access")} {reportAccessLabel(reportDigestResult.access_level, language)} •
                   {" "}{tx("в очереди", "queued")} {reportDigestResult.queued} • Premium {reportDigestResult.queued_premium} • VIP {reportDigestResult.queued_vip} •
                   {" "}{tx("пропущено", "skipped")} {reportDigestResult.skipped}
                 </p>

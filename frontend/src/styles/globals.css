@@ -9414,6 +9414,10 @@ a:focus {
   font-weight: 700;
 }
 
+.pb-admin-v4 .admin-report-digest-filter {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .pb-admin-v4 .metrics-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -12369,6 +12373,68 @@ body {
 :root[data-theme="light"] .pb-admin-v4 .metrics-grid span,
 :root[data-theme="light"] .pb-admin-v4 .pb-admin-v4-kpis span {
   color: #4b617b;
+}
+
+:root[data-theme="light"] .pb-admin-v4 .badge {
+  border-color: #c8d7e9;
+  background: #f4f8ff;
+  color: #4a617d;
+}
+
+:root[data-theme="light"] .pb-admin-v4 .badge.pending,
+:root[data-theme="light"] .pb-admin-v4 .badge.info {
+  border-color: rgba(61, 130, 204, 0.42);
+  background: rgba(61, 130, 204, 0.14);
+  color: #2a5f93;
+}
+
+:root[data-theme="light"] .pb-admin-v4 .badge.won,
+:root[data-theme="light"] .pb-admin-v4 .badge.success,
+:root[data-theme="light"] .pb-admin-v4 .badge.succeeded {
+  border-color: rgba(21, 156, 96, 0.42);
+  background: rgba(21, 156, 96, 0.14);
+  color: #146a45;
+}
+
+:root[data-theme="light"] .pb-admin-v4 .badge.lost,
+:root[data-theme="light"] .pb-admin-v4 .badge.failed,
+:root[data-theme="light"] .pb-admin-v4 .badge.danger {
+  border-color: rgba(220, 71, 98, 0.44);
+  background: rgba(220, 71, 98, 0.14);
+  color: #9a1f3a;
+}
+
+:root[data-theme="light"] .pb-admin-v4 .badge.refund,
+:root[data-theme="light"] .pb-admin-v4 .badge.warning,
+:root[data-theme="light"] .pb-admin-v4 .badge.canceled {
+  border-color: rgba(204, 143, 44, 0.44);
+  background: rgba(204, 143, 44, 0.16);
+  color: #80581f;
+}
+
+:root[data-theme="light"] .pb-admin-v4 .admin-role-chip,
+:root[data-theme="light"] .pb-admin-v4 .admin-count-chip {
+  border-color: rgba(44, 119, 180, 0.36);
+  background: rgba(44, 119, 180, 0.13);
+  color: #24527e;
+}
+
+:root[data-theme="light"] .pb-admin-v4 .pb-admin-v4-scene-grid {
+  border-color: rgba(43, 97, 150, 0.2);
+  background:
+    linear-gradient(90deg, rgba(44, 119, 180, 0.16) 1px, transparent 1px),
+    linear-gradient(rgba(44, 119, 180, 0.12) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+:root[data-theme="light"] .pb-admin-v4 .pb-admin-v4-scene-beam {
+  background: linear-gradient(90deg, rgba(34, 176, 147, 0), rgba(34, 176, 147, 0.52), rgba(34, 176, 147, 0));
+}
+
+:root[data-theme="light"] .pb-admin-v4 .pb-admin-v4-scene-core {
+  border-color: rgba(255, 255, 255, 0.98);
+  background: radial-gradient(circle, #ffffff, rgba(34, 176, 147, 0.32));
+  box-shadow: 0 0 14px rgba(34, 176, 147, 0.46);
 }
 
 /* Startup loader for returning users */

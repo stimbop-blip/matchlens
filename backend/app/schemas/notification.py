@@ -51,6 +51,7 @@ class AdminDirectSendIn(NotificationButtonMixin):
 class AdminReportDigestIn(BaseModel):
     period: str = Field(default="daily")
     force_send: bool = Field(default=True)
+    access_level: str | None = Field(default=None)
 
 
 class BotNotificationOut(BaseModel):

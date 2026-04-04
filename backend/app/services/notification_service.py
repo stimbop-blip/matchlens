@@ -966,10 +966,21 @@ def _report_digest_message(
     )
 
 
-def queue_recurring_performance_report(db: Session, period: str, force_send: bool = False) -> dict:
+def queue_recurring_performance_report(
+    db: Session,
+    period: str,
+    force_send: bool = False,
+    access_level: str | None = None,
+) -> dict:
     bounds = _report_period_bounds(period)
     if not bounds:
         raise ValueError("Unsupported report period")
+
+    normalized_access = (access_level or "").strip().lower()
+    if normalized_access in {"", "all"}:
+        normalized_access = ""
+    if normalized_access and normalized_access not in {AccessLevel.premium.value, AccessLevel.vip.value}:
+        raise ValueError("Unsupported digest access level")
 
     window_start, window_end, bucket, title_period = bounds
     dedupe_cooldown_minutes = _report_dedupe_cooldown_minutes(period)
@@ -1013,6 +1024,9 @@ def queue_recurring_performance_report(db: Session, period: str, force_send: boo
         user_id = str(user.id)
         user_level = level_map.get(user_id, AccessLevel.free.value)
         if user_level not in {AccessLevel.premium.value, AccessLevel.vip.value}:
+            skipped += 1
+            continue
+        if normalized_access and user_level != normalized_access:
             skipped += 1
             continue
 
@@ -1061,17 +1075,19 @@ def queue_recurring_performance_report(db: Session, period: str, force_send: boo
 
     db.commit()
     logger.info(
-        "notification_report period=%s queued=%s skipped=%s skipped_dedupe=%s force_send=%s queued_premium=%s queued_vip=%s",
+        "notification_report period=%s queued=%s skipped=%s skipped_dedupe=%s force_send=%s access_level=%s queued_premium=%s queued_vip=%s",
         period,
         queued,
         skipped,
         skipped_dedupe,
         force_send,
+        normalized_access or "all",
         queued_by_level[AccessLevel.premium.value],
         queued_by_level[AccessLevel.vip.value],
     )
     return {
         "period": period,
+        "access_level": normalized_access or "all",
         "queued": queued,
         "queued_premium": queued_by_level[AccessLevel.premium.value],
         "queued_vip": queued_by_level[AccessLevel.vip.value],

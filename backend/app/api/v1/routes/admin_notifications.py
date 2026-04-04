@@ -128,6 +128,7 @@ def admin_report_digest_send(
             db,
             period=payload.period,
             force_send=payload.force_send,
+            access_level=payload.access_level,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
