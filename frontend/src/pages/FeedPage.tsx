@@ -152,11 +152,11 @@ export function FeedPage({ useThreeCards = false }: { useThreeCards?: boolean } 
 
   const groups = useMemo<GroupedDay[]>(() => {
     const sorted = [...items].sort((a, b) => {
-      const left = new Date(a.event_start_at).getTime();
-      const right = new Date(b.event_start_at).getTime();
+      const left = new Date(a.published_at || a.event_start_at).getTime();
+      const right = new Date(b.published_at || b.event_start_at).getTime();
       const leftSafe = Number.isNaN(left) ? 0 : left;
       const rightSafe = Number.isNaN(right) ? 0 : right;
-      return leftSafe - rightSafe;
+      return rightSafe - leftSafe;
     });
     const map = new Map<string, Prediction[]>();
     sorted.forEach((item) => {
