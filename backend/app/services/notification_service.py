@@ -936,7 +936,37 @@ def _flat_bank_profit(predictions: list[Prediction], stake_rub: float = 10_000.0
     return profit, won, lost, refund
 
 
-def queue_recurring_performance_report(db: Session, period: str) -> dict:
+def _report_period_window_label(window_start: datetime, window_end: datetime) -> str:
+    return f"{window_start.strftime('%d.%m.%Y')} - {window_end.strftime('%d.%m.%Y')} UTC"
+
+
+def _report_digest_title(access_level: str, title_period: str) -> str:
+    tier = "VIP" if access_level == AccessLevel.vip.value else "Premium"
+    return f"PIT BET • {tier} performance digest ({title_period})"
+
+
+def _report_digest_message(
+    *,
+    report: dict[str, float | int],
+    title_period: str,
+    window_start: datetime,
+    window_end: datetime,
+) -> str:
+    return (
+        f"Период: {title_period} ({_report_period_window_label(window_start, window_end)})\n"
+        "━━━━━━━━━━━━━━━━\n"
+        f"Публикаций: {report['published']}\n"
+        f"Закрыто: {report['settled']}\n"
+        f"W/L/R: {report['won']}/{report['lost']}/{report['refund']}\n"
+        f"Точность (без возвратов): {report['hit_rate']:.1f}%\n"
+        f"ROI (flat 10 000 RUB): {report['roi']:+.2f}%\n"
+        f"Итог по банку (flat 10 000 RUB): {report['profit']:+.0f} RUB\n"
+        "━━━━━━━━━━━━━━━━\n"
+        "Откройте PIT BET Mini App, чтобы посмотреть свежие сигналы и полный разбор статистики."
+    )
+
+
+def queue_recurring_performance_report(db: Session, period: str, force_send: bool = False) -> dict:
     bounds = _report_period_bounds(period)
     if not bounds:
         raise ValueError("Unsupported report period")
@@ -977,6 +1007,8 @@ def queue_recurring_performance_report(db: Session, period: str) -> dict:
 
     queued = 0
     skipped = 0
+    skipped_dedupe = 0
+    queued_by_level = {AccessLevel.premium.value: 0, AccessLevel.vip.value: 0}
     for user in users:
         user_id = str(user.id)
         user_level = level_map.get(user_id, AccessLevel.free.value)
@@ -1001,20 +1033,17 @@ def queue_recurring_performance_report(db: Session, period: str) -> dict:
             continue
 
         dedupe_key = f"report:{period}:{bucket}:{user_id}:{user_level}"
-        if _has_recent_dedupe(db, dedupe_key=dedupe_key, cooldown_minutes=dedupe_cooldown_minutes):
+        if not force_send and _has_recent_dedupe(db, dedupe_key=dedupe_key, cooldown_minutes=dedupe_cooldown_minutes):
+            skipped_dedupe += 1
             skipped += 1
             continue
 
-        title = f"PIT BET • {'Premium' if user_level == 'premium' else 'VIP'} digest {title_period}"
-        message = (
-            f"Период: {title_period}\n"
-            f"Публикаций: {report['published']}\n"
-            f"Закрыто: {report['settled']}\n"
-            f"W/L/R: {report['won']}/{report['lost']}/{report['refund']}\n"
-            f"Точность (без возвратов): {report['hit_rate']:.1f}%\n"
-            f"ROI (flat 10 000 RUB): {report['roi']:.2f}%\n"
-            f"Итог по банку (flat 10 000 RUB): {report['profit']:+.0f} RUB\n\n"
-            "Откройте PIT BET Mini App, чтобы посмотреть актуальные сигналы и статистику."
+        title = _report_digest_title(user_level, title_period)
+        message = _report_digest_message(
+            report=report,
+            title_period=title_period,
+            window_start=window_start,
+            window_end=window_end,
         )
 
         db.add(
@@ -1028,7 +1057,25 @@ def queue_recurring_performance_report(db: Session, period: str) -> dict:
             )
         )
         queued += 1
+        queued_by_level[user_level] += 1
 
     db.commit()
-    logger.info("notification_report period=%s queued=%s skipped=%s", period, queued, skipped)
-    return {"period": period, "queued": queued, "skipped": skipped}
+    logger.info(
+        "notification_report period=%s queued=%s skipped=%s skipped_dedupe=%s force_send=%s queued_premium=%s queued_vip=%s",
+        period,
+        queued,
+        skipped,
+        skipped_dedupe,
+        force_send,
+        queued_by_level[AccessLevel.premium.value],
+        queued_by_level[AccessLevel.vip.value],
+    )
+    return {
+        "period": period,
+        "queued": queued,
+        "queued_premium": queued_by_level[AccessLevel.premium.value],
+        "queued_vip": queued_by_level[AccessLevel.vip.value],
+        "skipped": skipped,
+        "skipped_dedupe": skipped_dedupe,
+        "force_send": force_send,
+    }

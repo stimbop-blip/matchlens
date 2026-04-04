@@ -37,6 +37,7 @@ type AccessFilter = "all" | Prediction["access_level"];
 type NewsFilter = "all" | "published" | "draft";
 type PromoFilter = "all" | "active" | "inactive";
 type MethodFilter = "all" | "active" | "inactive";
+type ReportPeriod = "daily" | "weekly" | "monthly";
 
 type PredictionDraft = {
   title: string;
@@ -169,6 +170,12 @@ function joinNewsPreviewAndBody(preview: string, body: string): string {
   if (!b) return p;
   if (b.startsWith(p)) return b;
   return `${p}\n\n${b}`;
+}
+
+function reportPeriodLabel(period: ReportPeriod, language: "ru" | "en"): string {
+  if (period === "daily") return language === "ru" ? "За день" : "Daily";
+  if (period === "weekly") return language === "ru" ? "За неделю" : "Weekly";
+  return language === "ru" ? "За месяц" : "Monthly";
 }
 
 function createEmptyPredictionDraft(): PredictionDraft {
@@ -452,6 +459,16 @@ export function AdminPage({ withThree = false }: { withThree?: boolean } = {}) {
     button_url?: string | null;
   } | null>(null);
   const [deliveryStats, setDeliveryStats] = useState<{ total: number; sent: number; failed: number; queued: number } | null>(null);
+  const [reportSendingPeriod, setReportSendingPeriod] = useState<ReportPeriod | null>(null);
+  const [reportDigestResult, setReportDigestResult] = useState<{
+    period: string;
+    queued: number;
+    queued_premium: number;
+    queued_vip: number;
+    skipped: number;
+    skipped_dedupe: number;
+    force_send: boolean;
+  } | null>(null);
   const [uploadingPredictionId, setUploadingPredictionId] = useState<string | null>(null);
 
   const isAdmin = operatorRole === "admin";
@@ -1172,6 +1189,26 @@ export function AdminPage({ withThree = false }: { withThree?: boolean } = {}) {
       setCampaignPreviewPayload(null);
     } catch (e) {
       notifyError(textError(e, tx("Не удалось запустить рассылку", "Failed to start campaign")));
+    }
+  };
+
+  const onSendReportDigest = async (period: ReportPeriod) => {
+    if (!window.confirm(tx("Подтвердить отправку digest Premium/VIP?", "Confirm Premium/VIP digest send?"))) return;
+    setReportSendingPeriod(period);
+    try {
+      const result = await api.adminReportDigestSend({ period, force_send: true });
+      setReportDigestResult(result);
+      notifySuccess(
+        tx(
+          `Digest отправлен: ${result.queued} (Premium ${result.queued_premium}, VIP ${result.queued_vip})`,
+          `Digest queued: ${result.queued} (Premium ${result.queued_premium}, VIP ${result.queued_vip})`,
+        ),
+      );
+      await loadAll();
+    } catch (e) {
+      notifyError(textError(e, tx("Не удалось отправить digest", "Failed to send digest")));
+    } finally {
+      setReportSendingPeriod(null);
     }
   };
 
@@ -1917,6 +1954,36 @@ export function AdminPage({ withThree = false }: { withThree?: boolean } = {}) {
                   <option value="vip">VIP</option>
                 </select>
               </div>
+            </div>
+
+            <div className="card-lite admin-report-digest-card">
+              <p className="stacked"><b>{tx("Premium/VIP digest рассылка", "Premium/VIP digest broadcast")}</b></p>
+              <p className="stacked muted">
+                {tx(
+                  "Быстрый запуск статистики за период для активных Premium/VIP пользователей. Учитываются пользовательские настройки уведомлений digest.",
+                  "Quick performance digest send for active Premium/VIP users. User digest notification settings are respected.",
+                )}
+              </p>
+              <div className="admin-quick-actions three admin-report-digest-actions">
+                {(["daily", "weekly", "monthly"] as ReportPeriod[]).map((period) => (
+                  <button
+                    key={period}
+                    className={period === "monthly" ? "btn ghost" : "btn"}
+                    type="button"
+                    disabled={reportSendingPeriod !== null}
+                    onClick={() => void onSendReportDigest(period)}
+                  >
+                    {reportSendingPeriod === period ? tx("Отправка...", "Sending...") : reportPeriodLabel(period, language)}
+                  </button>
+                ))}
+              </div>
+              {reportDigestResult ? (
+                <p className="muted stacked">
+                  {tx("Последний запуск", "Latest send")}: {reportPeriodLabel(reportDigestResult.period as ReportPeriod, language)} •
+                  {" "}{tx("в очереди", "queued")} {reportDigestResult.queued} • Premium {reportDigestResult.queued_premium} • VIP {reportDigestResult.queued_vip} •
+                  {" "}{tx("пропущено", "skipped")} {reportDigestResult.skipped}
+                </p>
+              ) : null}
             </div>
 
             <div className="admin-form admin-broadcast-form admin-broadcast-compact">

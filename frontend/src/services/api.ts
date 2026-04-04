@@ -678,4 +678,18 @@ export const api = {
       body: JSON.stringify(payload),
     }),
   adminNotificationStats: () => request<{ ok: boolean; total: number; sent: number; failed: number; queued: number }>("/admin/notifications/stats"),
+  adminReportDigestSend: (payload: { period: "daily" | "weekly" | "monthly"; force_send?: boolean }) =>
+    request<{
+      ok: boolean;
+      period: string;
+      queued: number;
+      queued_premium: number;
+      queued_vip: number;
+      skipped: number;
+      skipped_dedupe: number;
+      force_send: boolean;
+    }>("/admin/notifications/report-digest", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
 };

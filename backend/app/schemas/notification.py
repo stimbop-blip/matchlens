@@ -48,6 +48,11 @@ class AdminDirectSendIn(NotificationButtonMixin):
     user_id: str | None = None
 
 
+class AdminReportDigestIn(BaseModel):
+    period: str = Field(default="daily")
+    force_send: bool = Field(default=True)
+
+
 class BotNotificationOut(BaseModel):
     id: str
     telegram_id: int

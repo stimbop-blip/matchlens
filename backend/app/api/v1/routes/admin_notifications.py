@@ -4,8 +4,15 @@ from sqlalchemy.orm import Session
 from app.api.deps import require_admin
 from app.core.db import get_db
 from app.models.user import User
-from app.schemas.notification import AdminBroadcastIn, AdminCampaignPreviewIn, AdminCampaignSendIn, AdminDirectSendIn
-from app.services.notification_service import notification_delivery_stats, preview_campaign_recipients, queue_broadcast, queue_campaign, queue_direct_notification
+from app.schemas.notification import AdminBroadcastIn, AdminCampaignPreviewIn, AdminCampaignSendIn, AdminDirectSendIn, AdminReportDigestIn
+from app.services.notification_service import (
+    notification_delivery_stats,
+    preview_campaign_recipients,
+    queue_broadcast,
+    queue_campaign,
+    queue_direct_notification,
+    queue_recurring_performance_report,
+)
 
 router = APIRouter(prefix="/admin/notifications", tags=["admin"])
 
@@ -108,3 +115,20 @@ def admin_notifications_stats(
 ) -> dict:
     stats = notification_delivery_stats(db)
     return {"ok": True, **stats}
+
+
+@router.post("/report-digest")
+def admin_report_digest_send(
+    payload: AdminReportDigestIn,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_admin),
+) -> dict:
+    try:
+        result = queue_recurring_performance_report(
+            db,
+            period=payload.period,
+            force_send=payload.force_send,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"ok": True, **result}
