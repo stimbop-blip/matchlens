@@ -5,16 +5,16 @@ function cx(...items: Array<string | false | null | undefined>) {
   return items.filter(Boolean).join(" ");
 }
 
-const BASE_SEQUENCE = [874, 1123, 1378, 1567, 1894, 2143, 2388, 2617, 2896, 3142];
+const BASE_SEQUENCE = [1248, 1261, 1273, 1284, 1296, 1309, 1321, 1332, 1344, 1355, 1367, 1378];
 
 function nextDelayMs() {
-  return 400 + Math.floor(Math.random() * 201);
+  return 1100 + Math.floor(Math.random() * 601);
 }
 
 function nextValue(index: number) {
   const base = BASE_SEQUENCE[index % BASE_SEQUENCE.length];
-  const jitter = Math.floor(Math.random() * 31) - 15;
-  return Math.max(700, base + jitter);
+  const jitter = Math.floor(Math.random() * 7) - 3;
+  return Math.max(1000, base + jitter);
 }
 
 export function AIScanningLoader({
@@ -88,7 +88,7 @@ export function AIScanningLoader({
               initial={{ opacity: 0, y: 10, filter: "blur(4px)" }}
               animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
               exit={{ opacity: 0, y: -10, filter: "blur(4px)" }}
-              transition={{ duration: 0.28, ease: "easeOut" }}
+              transition={{ duration: 0.42, ease: "easeOut" }}
             >
               {value.toLocaleString("ru-RU")}
             </motion.strong>
