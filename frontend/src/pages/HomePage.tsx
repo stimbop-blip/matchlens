@@ -10,7 +10,8 @@ import { ErrorBoundary } from "../components/motion/ErrorBoundary";
 import { HeroPanel } from "../components/premium/HeroPanel";
 import { PremiumKpi } from "../components/premium/PremiumKpi";
 import { PremiumRing } from "../components/premium/PremiumRing";
-import { RocketLoader, SkeletonBlock, Sparkline } from "../components/ui";
+import { AIScanningLoader } from "../components/ui/AIScanningLoader";
+import { SkeletonBlock, Sparkline } from "../components/ui";
 import { api, type MyPayment, type NewsPost, type Prediction, type PublicStats, type ReferralStats } from "../services/api";
 
 type TodaySummary = {
@@ -595,7 +596,7 @@ export function HomePage() {
 
         {summaryLoading ? (
           <>
-            <RocketLoader title={t("home.loadingTitle")} subtitle={t("home.loadingSubtitle")} compact />
+            <AIScanningLoader compact />
             <div className="pb-overview-kpi-skeleton" aria-hidden="true">
               <SkeletonBlock className="h-96" />
               <SkeletonBlock className="h-84" />

@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { useI18n } from "../app/i18n";
 import { resolveSportKind, resolveSportLabel } from "../app/sport";
 import { sportBadgeDataUri } from "../app/sportArt";
+import { AIScanningLoader } from "./ui/AIScanningLoader";
 
 function cx(...items: Array<string | false | null | undefined>) {
   return items.filter(Boolean).join(" ");
@@ -29,24 +30,9 @@ export function RocketLoader({
   className?: string;
   compact?: boolean;
 }) {
-  return (
-    <div className={cx("pb-rocket-loader", compact && "compact", className)} role="status" aria-live="polite">
-      <div className="pb-rocket-visual" aria-hidden="true">
-        <span className="pb-rocket-tail" />
-        <span className="pb-rocket-mark">🚀</span>
-        <span className="pb-rocket-glow" />
-      </div>
-      <div className="pb-rocket-copy">
-        <strong>{title}</strong>
-        {subtitle ? <p>{subtitle}</p> : null}
-      </div>
-      <div className="pb-loader-shimmer" aria-hidden="true">
-        <span />
-        <span />
-        <span />
-      </div>
-    </div>
-  );
+  void title;
+  void subtitle;
+  return <AIScanningLoader compact={compact} className={className} />;
 }
 
 export function SkeletonBlock({ className }: { className?: string }) {

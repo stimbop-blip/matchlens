@@ -10,6 +10,7 @@ from app.schemas.user import (
     ConsentOut,
     ConsentUpdateIn,
     MeOut,
+    NotificationHistoryItemOut,
     NotificationSettingsOut,
     NotificationSettingsUpdateIn,
     ReferralOut,
@@ -18,6 +19,7 @@ from app.schemas.user import (
 )
 from app.services.notification_service import (
     get_notification_settings,
+    list_user_notification_history,
     get_user_preferences,
     update_notification_settings,
     update_user_preferences,
@@ -117,6 +119,16 @@ def patch_me_notification_settings(
 ) -> NotificationSettingsOut:
     updated = update_notification_settings(db, current_user, payload.model_dump())
     return NotificationSettingsOut(**updated)
+
+
+@router.get("/me/notifications", response_model=list[NotificationHistoryItemOut])
+def me_notifications(
+    limit: int = 30,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list[NotificationHistoryItemOut]:
+    rows = list_user_notification_history(db, current_user, limit=limit)
+    return [NotificationHistoryItemOut(**item) for item in rows]
 
 
 @router.get("/me/referral", response_model=ReferralOut)

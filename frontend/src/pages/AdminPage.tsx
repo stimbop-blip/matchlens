@@ -480,6 +480,39 @@ export function AdminPage({ withThree = false }: { withThree?: boolean } = {}) {
   } | null>(null);
   const [uploadingPredictionId, setUploadingPredictionId] = useState<string | null>(null);
 
+  const campaignTemplates = useMemo(
+    () => [
+      {
+        id: "digest_daily",
+        label: tx("Шаблон: daily digest", "Template: daily digest"),
+        title: tx("PIT BET • Daily performance digest", "PIT BET • Daily performance digest"),
+        message: tx(
+          "Отчет за последние 24 часа готов. Откройте Mini App и проверьте актуальные сигналы, ROI и итог по банку.",
+          "24h report is ready. Open Mini App to review latest signals, ROI, and bank summary.",
+        ),
+      },
+      {
+        id: "vip_weekly",
+        label: tx("Шаблон: VIP weekly", "Template: VIP weekly"),
+        title: tx("PIT BET • VIP weekly review", "PIT BET • VIP weekly review"),
+        message: tx(
+          "VIP-обзор за неделю готов: сильные сетапы, точность и динамика банка. Откройте приложение для полного отчета.",
+          "VIP weekly review is ready: strongest setups, hit rate, and bank dynamics. Open the app for full report.",
+        ),
+      },
+      {
+        id: "reactivate",
+        label: tx("Шаблон: вернуть в апп", "Template: re-engage"),
+        title: tx("PIT BET • Новые сигналы уже в ленте", "PIT BET • New signals are live"),
+        message: tx(
+          "Добавили свежие сигналы и обновили статистику. Зайдите в Mini App, чтобы не пропустить лучшие входы.",
+          "Fresh signals and updated stats are available. Open Mini App to catch the best entries.",
+        ),
+      },
+    ],
+    [tx],
+  );
+
   const isAdmin = operatorRole === "admin";
   const isSupport = operatorRole === "support";
 
@@ -1199,6 +1232,16 @@ export function AdminPage({ withThree = false }: { withThree?: boolean } = {}) {
     } catch (e) {
       notifyError(textError(e, tx("Не удалось запустить рассылку", "Failed to start campaign")));
     }
+  };
+
+  const applyCampaignTemplate = (templateId: string) => {
+    const template = campaignTemplates.find((item) => item.id === templateId);
+    if (!template) return;
+    setCampaignTitle(template.title);
+    setCampaignMessage(template.message);
+    setCampaignButtonText("");
+    setCampaignButtonUrl("");
+    notifyInfo(tx("Шаблон применен", "Template applied"));
   };
 
   const onSendReportDigest = async (period: ReportPeriod) => {
@@ -2001,6 +2044,17 @@ export function AdminPage({ withThree = false }: { withThree?: boolean } = {}) {
                   {" "}{tx("пропущено", "skipped")} {reportDigestResult.skipped}
                 </p>
               ) : null}
+            </div>
+
+            <div className="card-lite admin-report-digest-card">
+              <p className="stacked"><b>{tx("Быстрые шаблоны рассылки", "Quick campaign templates")}</b></p>
+              <div className="admin-quick-actions three admin-report-digest-actions">
+                {campaignTemplates.map((template) => (
+                  <button key={template.id} className="btn ghost" type="button" onClick={() => applyCampaignTemplate(template.id)}>
+                    {template.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="admin-form admin-broadcast-form admin-broadcast-compact">

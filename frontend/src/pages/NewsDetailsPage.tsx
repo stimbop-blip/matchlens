@@ -6,7 +6,8 @@ import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
 import { HeroPanel } from "../components/premium/HeroPanel";
 import { PremiumKpi } from "../components/premium/PremiumKpi";
-import { RocketLoader, SkeletonBlock } from "../components/ui";
+import { AIScanningLoader } from "../components/ui/AIScanningLoader";
+import { SkeletonBlock } from "../components/ui";
 import { api, type NewsPost } from "../services/api";
 
 function parseErrorMessage(error: unknown, fallback: string): string {
@@ -89,7 +90,7 @@ export function NewsDetailsPage() {
     <Layout>
       {loading ? (
         <section className="pb-premium-panel pb-reveal">
-          <RocketLoader title={t("news.article.loadingTitle")} subtitle={t("news.article.loadingSubtitle")} compact />
+          <AIScanningLoader compact />
           <div className="pb-overview-kpi-skeleton" aria-hidden="true">
             <SkeletonBlock className="h-96" />
             <SkeletonBlock className="h-110" />

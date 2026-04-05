@@ -786,6 +786,35 @@ def notification_delivery_stats(db: Session) -> dict:
     return {"total": total, "sent": sent, "failed": failed, "queued": queued}
 
 
+def list_user_notification_history(db: Session, user: User, limit: int = 30) -> list[dict]:
+    safe_limit = max(1, min(limit, 100))
+    rows = db.scalars(
+        select(Notification)
+        .where(Notification.user_id == user.id)
+        .where(Notification.status.in_(("sent", "failed")))
+        .order_by(desc(Notification.created_at))
+        .limit(safe_limit)
+    ).all()
+
+    payload: list[dict] = []
+    for row in rows:
+        payload.append(
+            {
+                "id": str(row.id),
+                "type": row.type,
+                "title": row.title,
+                "message": row.message,
+                "status": row.status,
+                "button_text": row.cta_text,
+                "button_url": row.cta_url,
+                "created_at": row.created_at,
+                "sent_at": row.sent_at,
+            }
+        )
+
+    return payload
+
+
 def pull_queued_notifications(db: Session, limit: int = 20) -> list[tuple[Notification, User]]:
     now = datetime.now(UTC)
     rows = db.execute(

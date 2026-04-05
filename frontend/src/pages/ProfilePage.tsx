@@ -7,7 +7,7 @@ import { LEGAL_TEXTS } from "../app/legal";
 import { resolveSubscriptionSnapshot } from "../app/subscription";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
-import { RocketLoader } from "../components/ui";
+import { AIScanningLoader } from "../components/ui/AIScanningLoader";
 import { api, type Me, type NotificationSettings, type ReferralStats, type SupportDialogStatus } from "../services/api";
 import { waitForTelegramInitData } from "../services/telegram";
 
@@ -243,7 +243,7 @@ export function ProfilePage() {
     return (
       <Layout>
         <section className="pb-premium-panel pb-reveal">
-          <RocketLoader title={t("profile.loadingTitle")} subtitle={t("profile.loadingSubtitle")} />
+          <AIScanningLoader />
         </section>
       </Layout>
     );

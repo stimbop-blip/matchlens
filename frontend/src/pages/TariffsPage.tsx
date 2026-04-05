@@ -4,7 +4,8 @@ import { useI18n } from "../app/i18n";
 import { resolveSubscriptionSnapshot } from "../app/subscription";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
-import { ActivityBand, AppShellSection, CTACluster, RocketLoader, SectionHeader, SkeletonBlock, StatusPill } from "../components/ui";
+import { AIScanningLoader } from "../components/ui/AIScanningLoader";
+import { ActivityBand, AppShellSection, CTACluster, SectionHeader, SkeletonBlock, StatusPill } from "../components/ui";
 import { api, type PaymentCreateResult, type PaymentMethod, type PaymentQuote, type Tariff } from "../services/api";
 
 type PlanCode = "premium" | "vip";
@@ -176,7 +177,7 @@ export function TariffsPage() {
     return (
       <Layout>
         <AppShellSection>
-          <RocketLoader title={t("tariffs.loadingTitle")} subtitle={t("tariffs.loadingSubtitle")} />
+          <AIScanningLoader />
           <div className="pb-plan-grid" aria-hidden="true">
             <article className="pb-plan-card pb-skeleton-card">
               <SkeletonBlock className="w-44" />

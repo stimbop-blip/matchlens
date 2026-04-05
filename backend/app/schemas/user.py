@@ -60,6 +60,18 @@ class NotificationSettingsUpdateIn(BaseModel):
     notify_report_monthly: bool | None = None
 
 
+class NotificationHistoryItemOut(BaseModel):
+    id: str
+    type: str
+    title: str
+    message: str
+    status: str
+    button_text: str | None
+    button_url: str | None
+    created_at: datetime
+    sent_at: datetime | None
+
+
 class ReferralOut(BaseModel):
     referral_code: str
     referral_link: str

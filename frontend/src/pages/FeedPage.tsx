@@ -9,7 +9,8 @@ import { ErrorBoundary } from "../components/motion/ErrorBoundary";
 import { HeroPanel } from "../components/premium/HeroPanel";
 import { SignalCard } from "../components/premium/SignalCard";
 import { PremiumKpi } from "../components/premium/PremiumKpi";
-import { RocketLoader, SkeletonBlock } from "../components/ui";
+import { AIScanningLoader } from "../components/ui/AIScanningLoader";
+import { SkeletonBlock } from "../components/ui";
 import { api, type Prediction } from "../services/api";
 import { triggerHaptic } from "../services/telegram";
 
@@ -332,7 +333,7 @@ export function FeedPage({ useThreeCards = false }: { useThreeCards?: boolean } 
 
       {loading ? (
         <section className="pb-premium-panel pb-feed-v4-loading pb-reveal">
-          <RocketLoader title={t("feed.loadingTitle")} subtitle={t("feed.loadingSubtitle")} compact />
+          <AIScanningLoader compact />
           <div className="pb-feed-v4-skeleton-grid" aria-hidden="true">
             <article className="pb-feed-v4-skeleton-card">
               <SkeletonBlock className="w-70" />

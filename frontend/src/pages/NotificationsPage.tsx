@@ -4,8 +4,9 @@ import { useI18n } from "../app/i18n";
 import { resolveSubscriptionSnapshot } from "../app/subscription";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
-import { AppShellSection, RocketLoader, SectionHeader } from "../components/ui";
-import { api, type NotificationSettings } from "../services/api";
+import { AIScanningLoader } from "../components/ui/AIScanningLoader";
+import { AppShellSection, SectionHeader } from "../components/ui";
+import { api, type NotificationHistoryItem, type NotificationSettings } from "../services/api";
 
 type SettingsKey = keyof NotificationSettings;
 
@@ -26,10 +27,12 @@ function countEnabledCategories(settings: NotificationSettings | null): number {
 }
 
 export function NotificationsPage() {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const [settings, setSettings] = useState<NotificationSettings | null>(null);
+  const [history, setHistory] = useState<NotificationHistoryItem[]>([]);
   const [subscriptionRaw, setSubscriptionRaw] = useState<{ tariff: string; status: string; ends_at: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [savingKey, setSavingKey] = useState<SettingsKey | null>(null);
   const [notice, setNotice] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
@@ -45,12 +48,35 @@ export function NotificationsPage() {
     return null;
   };
 
+  const formatDateTime = (value: string | null) => {
+    if (!value) return t("common.noDate");
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return value;
+    return parsed.toLocaleString(language === "ru" ? "ru-RU" : "en-US", {
+      day: "2-digit",
+      month: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
   const loadSettings = async () => {
     setLoading(true);
-    const [settingsRes, subscriptionRes] = await Promise.allSettled([api.myNotificationSettings(), api.mySubscription()]);
+    const [settingsRes, subscriptionRes, historyRes] = await Promise.allSettled([api.myNotificationSettings(), api.mySubscription(), api.myNotifications(30)]);
     setSettings(settingsRes.status === "fulfilled" ? settingsRes.value : null);
     setSubscriptionRaw(subscriptionRes.status === "fulfilled" ? subscriptionRes.value : null);
+    setHistory(historyRes.status === "fulfilled" ? historyRes.value : []);
     setLoading(false);
+  };
+
+  const refreshHistory = async () => {
+    setHistoryLoading(true);
+    try {
+      const rows = await api.myNotifications(30);
+      setHistory(rows);
+    } finally {
+      setHistoryLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -82,7 +108,7 @@ export function NotificationsPage() {
     return (
       <Layout>
         <section className="pb-premium-panel pb-reveal">
-          <RocketLoader title={t("common.loading")} subtitle={t("profile.notifications.subtitle")} />
+          <AIScanningLoader />
         </section>
       </Layout>
     );
@@ -167,6 +193,41 @@ export function NotificationsPage() {
         )}
 
         {notice ? <p className={`notice ${notice.type}`}>{notice.text}</p> : null}
+      </AppShellSection>
+
+      <AppShellSection>
+        <SectionHeader title={t("profile.notifications.historyTitle")} subtitle={t("profile.notifications.historySubtitle")} />
+        <div className="pb-notify-history-head">
+          <small className="muted">{t("profile.notifications.historyCount", { count: history.length })}</small>
+          <button type="button" className="btn ghost" disabled={historyLoading} onClick={() => void refreshHistory()}>
+            {historyLoading ? t("common.loading") : t("common.retry")}
+          </button>
+        </div>
+        {history.length === 0 ? (
+          <p className="muted">{t("profile.notifications.historyEmpty")}</p>
+        ) : (
+          <div className="pb-notify-history-list">
+            {history.map((item) => (
+              <article key={item.id} className="pb-notify-history-item">
+                <div className="pb-notify-history-meta">
+                  <strong>{item.title}</strong>
+                  <span>{formatDateTime(item.sent_at || item.created_at)}</span>
+                </div>
+                <p>{item.message}</p>
+                <div className="pb-notify-history-foot">
+                  <span className={item.status === "sent" ? "badge success" : "badge warning"}>
+                    {item.status === "sent" ? t("profile.notifications.historySent") : t("profile.notifications.historyFailed")}
+                  </span>
+                  {item.button_text && item.button_url ? (
+                    <a className="btn ghost" href={item.button_url} target="_blank" rel="noreferrer">
+                      {item.button_text}
+                    </a>
+                  ) : null}
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
       </AppShellSection>
 
       <AppDisclaimer />

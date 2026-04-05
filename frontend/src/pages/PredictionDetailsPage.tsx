@@ -7,8 +7,8 @@ import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
 import { HeroPanel } from "../components/premium/HeroPanel";
 import { PremiumKpi } from "../components/premium/PremiumKpi";
+import { AIScanningLoader } from "../components/ui/AIScanningLoader";
 import {
-  RocketLoader,
   SkeletonBlock,
   Sparkline,
   SportIcon,
@@ -154,7 +154,7 @@ export function PredictionDetailsPage() {
     <Layout>
       {loading ? (
         <section className="pb-premium-panel pb-reveal">
-          <RocketLoader title={t("prediction.loadingTitle")} subtitle={t("prediction.loadingSubtitle")} compact />
+          <AIScanningLoader compact />
           <div className="pb-overview-kpi-skeleton" aria-hidden="true">
             <SkeletonBlock className="h-96" />
             <SkeletonBlock className="h-86" />

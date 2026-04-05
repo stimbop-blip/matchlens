@@ -9,7 +9,7 @@ import { resolveSubscriptionSnapshot } from "./subscription";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
 import { PageTransition } from "../components/motion/PageTransition";
-import { RocketLoader } from "../components/ui";
+import { AIScanningLoader } from "../components/ui/AIScanningLoader";
 import { api, type NewsPost, type Prediction, type PublicStats } from "../services/api";
 
 function predictionRecency(prediction: Prediction): number {
@@ -255,7 +255,7 @@ export function Home() {
             </article>
           </div>
 
-          {loading ? <RocketLoader title={t("home.loadingTitle")} subtitle={t("home.loadingSubtitle")} compact /> : null}
+          {loading ? <AIScanningLoader compact /> : null}
 
           {!loading && displaySignals.length > 0 ? (
             <div className="pb-telegram-gallery-grid">

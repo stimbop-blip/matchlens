@@ -7,7 +7,8 @@ import { Layout } from "../components/Layout";
 import { HeroPanel } from "../components/premium/HeroPanel";
 import { PremiumKpi } from "../components/premium/PremiumKpi";
 import { PremiumRing } from "../components/premium/PremiumRing";
-import { RocketLoader, SkeletonBlock, Sparkline } from "../components/ui";
+import { AIScanningLoader } from "../components/ui/AIScanningLoader";
+import { SkeletonBlock, Sparkline } from "../components/ui";
 import { api, type PublicStats } from "../services/api";
 
 function parseErrorMessage(error: unknown, fallback: string): string {
@@ -130,7 +131,7 @@ export function StatsPage() {
 
       {loading ? (
         <section className="pb-premium-panel pb-reveal">
-          <RocketLoader title={t("stats.loadingTitle")} subtitle={t("stats.loadingSubtitle")} compact />
+          <AIScanningLoader compact />
           <div className="pb-stats-v4-skeleton" aria-hidden="true">
             <SkeletonBlock className="h-96" />
             <SkeletonBlock className="h-88" />

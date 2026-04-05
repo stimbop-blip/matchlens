@@ -330,6 +330,18 @@ export type NotificationSettings = {
   notify_report_monthly: boolean;
 };
 
+export type NotificationHistoryItem = {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  status: "sent" | "failed" | "queued";
+  button_text: string | null;
+  button_url: string | null;
+  created_at: string;
+  sent_at: string | null;
+};
+
 export type NewsPost = {
   id: string;
   title: string;
@@ -400,6 +412,7 @@ export const api = {
       body: JSON.stringify(payload),
     }),
   myNotificationSettings: () => request<NotificationSettings>("/users/me/notification-settings"),
+  myNotifications: (limit = 30) => request<NotificationHistoryItem[]>(`/users/me/notifications?limit=${limit}`),
   updateMyNotificationSettings: (payload: Partial<NotificationSettings>) =>
     request<NotificationSettings>("/users/me/notification-settings", {
       method: "PATCH",
