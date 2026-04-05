@@ -199,6 +199,8 @@ export function Home() {
           <h3 className="pb-telegram-gallery-title">{language === "ru" ? "Главная" : "Home"}</h3>
           <p className="pb-telegram-gallery-subtitle">{subtitleText}</p>
 
+          <AIScanningLoader className="pb-home-ai-hero" />
+
           <div className="pb-telegram-tools-grid">
             {quickActions.map((item) => (
               <Link key={item.to} to={item.to} className="pb-telegram-tool-card">
@@ -254,8 +256,6 @@ export function Home() {
               <strong>{stats?.wins ?? 0}</strong>
             </article>
           </div>
-
-          {loading ? <AIScanningLoader compact /> : null}
 
           {!loading && displaySignals.length > 0 ? (
             <div className="pb-telegram-gallery-grid">
