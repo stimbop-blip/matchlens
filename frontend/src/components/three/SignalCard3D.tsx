@@ -1,64 +1,96 @@
 import { motion } from "framer-motion";
-import { Clock, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
+
+import { resolveSportLabel, type SportLanguage } from "../../app/sport";
+import { resolvePredictionCover } from "../../app/sportArt";
+
+type CardStatus = "pending" | "won" | "lost" | "refund";
 
 export function SignalCard3D({
   to,
+  title,
+  league,
+  sport,
+  mode,
+  kickoff,
   signal,
+  odds,
+  oddsLabel,
+  risk,
+  status,
+  statusLabel,
+  accessLabel,
+  note,
+  language,
+  betScreenshot,
+  resultScreenshot,
 }: {
   to: string;
-  signal: {
-    confidence: number;
-    mode: "live" | "prematch";
-    match_name: string;
-    league: string | null;
-    odds: number;
-    bet_type: string;
-  };
+  title: string;
+  league: string;
+  sport: string;
+  mode: string;
+  kickoff: string;
+  signal: string;
+  odds: number;
+  oddsLabel: string;
+  risk: string;
+  status: CardStatus;
+  statusLabel: string;
+  accessLabel: string;
+  note: string;
+  language: SportLanguage;
+  betScreenshot?: string | null;
+  resultScreenshot?: string | null;
 }) {
-  const isHighConfidence = signal.confidence >= 85;
+  const oddsText = Number.isFinite(odds) ? odds.toFixed(2) : String(odds);
+  const sportName = resolveSportLabel(sport, language);
+  const cover = resolvePredictionCover({
+    sport,
+    betScreenshot,
+    resultScreenshot,
+    variant: "square",
+  });
 
   return (
-    <motion.div whileHover={{ scale: 1.02 }}>
-      <Link
-        to={to}
-        className={`block bg-[#1a2333] border rounded-3xl overflow-hidden shadow-xl transition-all ${
-          isHighConfidence ? "border-[#00f5d4] shadow-[0_0_0_4px_rgba(0,245,212,0.25)]" : "border-transparent"
-        }`}
-      >
-        <div className="h-44 bg-gradient-to-br from-[#1e2a44] to-[#0f172a] flex items-center justify-center relative">
-          <div className="text-[#00f5d4] text-[92px] opacity-20">
-            <Zap />
+    <motion.article whileHover={{ y: -4 }} whileTap={{ scale: 0.995 }} transition={{ duration: 0.16, ease: "easeOut" }}>
+      <Link to={to} className="pb-signal3d-card">
+        <div className="pb-signal3d-head">
+          <div>
+            <small>{resolveSportLabel(sport, language)}</small>
+            <p>{league}</p>
           </div>
-
-          <div className="absolute top-4 left-4 px-4 py-1 bg-black/70 backdrop-blur-md text-white text-xs font-medium rounded-2xl flex items-center gap-1">
-            <Clock size={14} />
-            {signal.mode === "live" ? "Лайв" : "Прематч"}
+          <div className="pb-signal-v2-badges">
+            <span className={`pb-signal-status ${status}`}>{statusLabel}</span>
+            <span className="pb-signal-access">{accessLabel}</span>
           </div>
-
-          {isHighConfidence && (
-            <div className="absolute top-4 right-4 px-3 py-1 bg-[#00f5d4] text-black text-xs font-bold rounded-2xl">{signal.confidence}%</div>
-          )}
         </div>
 
-        <div className="p-5">
-          <h3 className="text-lg font-semibold text-white line-clamp-2">{signal.match_name}</h3>
+        <h3>{title}</h3>
 
-          <p className="text-[#8ca4c8] text-sm mt-1">{signal.league || "Лига не указана"}</p>
-
-          <div className="mt-4 flex items-center justify-between">
-            <div>
-              <span className="text-[#00f5d4] text-3xl font-bold">{signal.odds}</span>
-              <span className="text-[#8ca4c8] text-xs ml-1">кэф</span>
-            </div>
-
-            <div className="text-right">
-              <span className="text-xs text-[#8ca4c8]">Ставка</span>
-              <p className="text-white font-medium text-sm">{signal.bet_type}</p>
-            </div>
+        <div className="pb-signal3d-core">
+          <div className="pb-signal3d-canvas pb-signal3d-sport-art" aria-hidden="true">
+            <img className="pb-signal3d-cover" src={cover.src} alt="" loading="lazy" />
+            {cover.fallback ? <span className="pb-signal3d-cover-chip">{sportName}</span> : null}
           </div>
+
+          <div className="pb-signal-v2-odds">
+            <small>{oddsLabel}</small>
+            <strong>{oddsText}</strong>
+          </div>
+        </div>
+
+        <div className="pb-signal-v2-meta">
+          <span>{mode}</span>
+          <span>{risk}</span>
+          <span>{kickoff}</span>
+        </div>
+
+        <div className="pb-signal-v2-foot">
+          <small>{signal}</small>
+          <p>{note}</p>
         </div>
       </Link>
-    </motion.div>
+    </motion.article>
   );
 }
