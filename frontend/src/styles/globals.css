@@ -12788,6 +12788,135 @@ body {
   box-shadow: 0 0 8px rgba(66, 133, 198, 0.4);
 }
 
+/* Premium signal cards refresh */
+
+.pb-signal3d-card {
+  border-radius: 22px;
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 16%, var(--border-subtle));
+  background:
+    radial-gradient(circle at 96% -20%, color-mix(in srgb, var(--accent-primary) 22%, transparent), transparent 58%),
+    linear-gradient(162deg, color-mix(in srgb, var(--surface-2) 95%, transparent), color-mix(in srgb, var(--surface-1) 98%, transparent));
+  box-shadow: 0 18px 34px color-mix(in srgb, black 24%, transparent);
+  padding: 10px;
+  display: grid;
+  gap: 10px;
+  transition: transform 0.16s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.pb-signal3d-card:hover {
+  border-color: color-mix(in srgb, var(--accent-primary) 38%, var(--border-subtle));
+  box-shadow:
+    0 22px 40px color-mix(in srgb, black 30%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--accent-primary) 18%, transparent);
+}
+
+.pb-signal3d-cover-wrap {
+  position: relative;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--border-subtle) 86%, transparent);
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+}
+
+.pb-signal3d-cover-wrap::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(6, 10, 20, 0.04) 44%, rgba(6, 10, 20, 0.46) 100%);
+}
+
+.pb-signal3d-cover-wrap .pb-signal-v2-badges {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  top: 10px;
+  display: flex;
+  justify-content: space-between;
+  z-index: 2;
+}
+
+.pb-signal3d-head {
+  display: grid;
+  gap: 2px;
+}
+
+.pb-signal3d-head small {
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.pb-signal3d-head p {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.pb-signal3d-card h3 {
+  font-size: 20px;
+  line-height: 1.22;
+}
+
+.pb-signal3d-core {
+  display: block;
+}
+
+.pb-signal3d-card .pb-signal-v2-odds {
+  min-width: 0;
+  width: fit-content;
+  padding: 10px 12px;
+  text-align: left;
+}
+
+.pb-signal3d-card .pb-signal-v2-odds strong {
+  font-size: 30px;
+}
+
+.pb-signal3d-card .pb-signal-v2-meta {
+  gap: 8px;
+}
+
+.pb-signal3d-card .pb-signal-v2-meta span {
+  font-size: 11px;
+  padding: 5px 10px;
+}
+
+.pb-signal3d-card .pb-signal-v2-foot p {
+  font-size: 13px;
+}
+
+.pb-telegram-gallery-card {
+  border-radius: 20px;
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 14%, var(--border-subtle));
+  background:
+    radial-gradient(circle at 96% -20%, color-mix(in srgb, var(--accent-primary) 18%, transparent), transparent 58%),
+    linear-gradient(164deg, color-mix(in srgb, var(--surface-2) 95%, transparent), color-mix(in srgb, var(--surface-1) 98%, transparent));
+  box-shadow: 0 16px 32px color-mix(in srgb, black 22%, transparent);
+  transition: transform 0.16s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.pb-telegram-gallery-card:hover {
+  border-color: color-mix(in srgb, var(--accent-primary) 34%, var(--border-subtle));
+  box-shadow:
+    0 22px 40px color-mix(in srgb, black 28%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--accent-primary) 16%, transparent);
+}
+
+:root[data-theme="light"] .pb-signal3d-card,
+:root[data-theme="light"] .pb-telegram-gallery-card {
+  border-color: #c7d8ea;
+  background:
+    radial-gradient(circle at 92% -18%, rgba(20, 175, 142, 0.14), transparent 56%),
+    linear-gradient(162deg, #ffffff, #eef5ff);
+  box-shadow: 0 14px 30px rgba(20, 38, 61, 0.12);
+}
+
+:root[data-theme="light"] .pb-signal3d-cover-wrap {
+  border-color: #ccdced;
+}
+
+:root[data-theme="light"] .pb-signal3d-cover-wrap::after {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 36%, rgba(18, 44, 76, 0.16) 100%);
+}
+
 /* AI scanning loader */
 
 .pb-ai-loader {

@@ -55,25 +55,25 @@ export function SignalCard3D({
   return (
     <motion.article whileHover={{ y: -4 }} whileTap={{ scale: 0.995 }} transition={{ duration: 0.16, ease: "easeOut" }}>
       <Link to={to} className="pb-signal3d-card">
-        <div className="pb-signal3d-head">
-          <div>
-            <small>{resolveSportLabel(sport, language)}</small>
-            <p>{league}</p>
-          </div>
+        <div className="pb-signal3d-cover-wrap" aria-hidden="true">
+          <img className="pb-signal3d-cover" src={cover.src} alt="" loading="lazy" />
+          {cover.fallback ? <span className="pb-signal3d-cover-chip">{sportName}</span> : null}
           <div className="pb-signal-v2-badges">
             <span className={`pb-signal-status ${status}`}>{statusLabel}</span>
             <span className="pb-signal-access">{accessLabel}</span>
           </div>
         </div>
 
+        <div className="pb-signal3d-head">
+          <div>
+            <small>{resolveSportLabel(sport, language)}</small>
+            <p>{league}</p>
+          </div>
+        </div>
+
         <h3>{title}</h3>
 
         <div className="pb-signal3d-core">
-          <div className="pb-signal3d-canvas pb-signal3d-sport-art" aria-hidden="true">
-            <img className="pb-signal3d-cover" src={cover.src} alt="" loading="lazy" />
-            {cover.fallback ? <span className="pb-signal3d-cover-chip">{sportName}</span> : null}
-          </div>
-
           <div className="pb-signal-v2-odds">
             <small>{oddsLabel}</small>
             <strong>{oddsText}</strong>
