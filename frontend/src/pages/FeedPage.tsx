@@ -380,29 +380,21 @@ export function FeedPage({ useThreeCards = false }: { useThreeCards?: boolean } 
                 {group.list.map((item) => (
                   <div key={item.id} className="pb-feed-v4-card-depth">
                     {useThreeCards ? (
-                      <ErrorBoundary fallback={<div className="pb-home-r3f-fallback">3D</div>}>
-                        <Suspense fallback={<div className="pb-home-r3f-fallback">3D</div>}>
-                          <SignalCard3D
-                            to={`/feed/${item.id}`}
-                            title={item.match_name}
-                            league={item.league || t("feed.noLeague")}
-                            sport={item.sport_type}
-                            mode={item.mode === "live" ? t("common.live") : t("common.prematch")}
-                            kickoff={formatDate(item.event_start_at, language)}
-                            signal={item.signal_type}
-                            odds={item.odds}
-                            oddsLabel={t("feed.label.odds")}
-                            risk={riskLabel(item.risk_level, t)}
-                            status={item.status}
-                            statusLabel={statusLabel(item.status, t)}
-                            accessLabel={accessLabel(item.access_level, t)}
-                            note={teaser(item.short_description, t("feed.teaserFallback"))}
-                            language={language}
-                            betScreenshot={item.bet_screenshot}
-                            resultScreenshot={item.result_screenshot}
-                          />
-                        </Suspense>
-                      </ErrorBoundary>
+                        <ErrorBoundary fallback={<div className="pb-home-r3f-fallback">3D</div>}>
+                          <Suspense fallback={<div className="pb-home-r3f-fallback">3D</div>}>
+                            <SignalCard3D
+                              to={`/feed/${item.id}`}
+                              signal={{
+                                confidence: item.risk_level === "high" ? 90 : item.risk_level === "low" ? 74 : 82,
+                                mode: item.mode,
+                                match_name: item.match_name,
+                                league: item.league,
+                                odds: Number.isFinite(item.odds) ? Number(item.odds.toFixed(2)) : item.odds,
+                                bet_type: item.signal_type,
+                              }}
+                            />
+                          </Suspense>
+                        </ErrorBoundary>
                     ) : (
                       <SignalCard
                         to={`/feed/${item.id}`}
