@@ -50,6 +50,7 @@ export function SignalCard3D({
     betScreenshot,
     resultScreenshot,
     variant: "square",
+    seed: `${to}:${title}:${league}`,
   });
 
   return (

@@ -56,6 +56,7 @@ function predictionImage(signal: Prediction): string {
     betScreenshot: signal.bet_screenshot,
     resultScreenshot: signal.result_screenshot,
     variant: "landscape",
+    seed: `${signal.id}:${signal.match_name}:${signal.league || ""}`,
   }).src;
 }
 
