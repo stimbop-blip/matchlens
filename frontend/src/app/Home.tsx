@@ -50,14 +50,18 @@ function accessLabel(level: Prediction["access_level"], t: (key: string) => stri
   return t("common.free");
 }
 
-function predictionImage(signal: Prediction): string {
+function predictionCover(signal: Prediction): { src: string; fallback: boolean } {
   return resolvePredictionCover({
     sport: signal.sport_type,
     betScreenshot: signal.bet_screenshot,
     resultScreenshot: signal.result_screenshot,
     variant: "landscape",
     seed: `${signal.id}:${signal.match_name}:${signal.league || ""}`,
-  }).src;
+  });
+}
+
+function formatOdds(value: number): string {
+  return Number.isFinite(value) ? value.toFixed(2) : String(value);
 }
 
 function previewNews(value: string, maxLength = 160): string {
@@ -260,29 +264,35 @@ export function Home() {
 
           {!loading && displaySignals.length > 0 ? (
             <div className="pb-telegram-gallery-grid">
-              {displaySignals.map((signal) => (
-                <Link
-                  key={signal.id}
-                  to={`/feed/${signal.id}`}
-                  className="pb-telegram-gallery-card"
-                >
-                  <div className="pb-telegram-gallery-cover-wrap" aria-hidden="true">
-                    <img className="pb-telegram-gallery-cover" src={predictionImage(signal)} alt={signal.match_name} loading="lazy" />
-                    <span className="pb-telegram-gallery-badge">{statusLabel(signal.status, t)}</span>
-                    <span className="pb-telegram-gallery-sport-pill">{resolveSportLabel(signal.sport_type, language)}</span>
-                  </div>
-                  <div className="pb-telegram-gallery-main">
-                    <strong>{signal.match_name}</strong>
-                    <p>{signal.league || t("feed.noLeague")}</p>
-                    <small>{signal.mode === "live" ? t("common.live") : t("common.prematch")}</small>
-                    <small className="pb-telegram-gallery-pick">{signal.signal_type}</small>
-                  </div>
-                  <div className="pb-telegram-gallery-foot">
-                    <span className="pb-telegram-gallery-odds">{Number.isFinite(signal.odds) ? signal.odds.toFixed(2) : String(signal.odds)}</span>
-                    <span className="pb-telegram-gallery-foot-label">{t("feed.label.odds")}</span>
-                  </div>
-                </Link>
-              ))}
+              {displaySignals.map((signal) => {
+                const cover = predictionCover(signal);
+                return (
+                  <Link key={signal.id} to={`/feed/${signal.id}`} className="pb-home-luxe-card">
+                    <div className="pb-home-luxe-media" aria-hidden="true">
+                      <img className="pb-home-luxe-image" src={cover.src} alt="" loading="lazy" />
+                      <span className={`pb-home-luxe-pill status ${signal.status}`}>{statusLabel(signal.status, t)}</span>
+                      <span className="pb-home-luxe-pill access">{accessLabel(signal.access_level, t)}</span>
+                      <div className="pb-home-luxe-media-row">
+                        <span>{resolveSportLabel(signal.sport_type, language)}</span>
+                        <span>{signal.mode === "live" ? t("common.live") : t("common.prematch")}</span>
+                      </div>
+                      {cover.fallback ? <span className="pb-home-luxe-art-tag">PIT BET ART</span> : null}
+                    </div>
+
+                    <div className="pb-home-luxe-body">
+                      <small className="pb-home-luxe-league">{signal.league || t("feed.noLeague")}</small>
+                      <strong className="pb-home-luxe-title">{signal.match_name}</strong>
+                      <div className="pb-home-luxe-foot">
+                        <span className="pb-home-luxe-pick">{signal.signal_type}</span>
+                        <div className="pb-home-luxe-odds-wrap">
+                          <small>{t("feed.label.odds")}</small>
+                          <b>{formatOdds(signal.odds)}</b>
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           ) : null}
 

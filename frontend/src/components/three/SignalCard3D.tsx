@@ -49,47 +49,43 @@ export function SignalCard3D({
     sport,
     betScreenshot,
     resultScreenshot,
-    variant: "square",
+    variant: "landscape",
     seed: `${to}:${title}:${league}`,
   });
 
   return (
-    <motion.article whileHover={{ y: -4 }} whileTap={{ scale: 0.995 }} transition={{ duration: 0.16, ease: "easeOut" }}>
-      <Link to={to} className="pb-signal3d-card">
-        <div className="pb-signal3d-cover-wrap" aria-hidden="true">
-          <img className="pb-signal3d-cover" src={cover.src} alt="" loading="lazy" />
-          {cover.fallback ? <span className="pb-signal3d-cover-chip">{sportName}</span> : null}
-          <div className="pb-signal-v2-badges">
-            <span className={`pb-signal-status ${status}`}>{statusLabel}</span>
-            <span className="pb-signal-access">{accessLabel}</span>
+    <motion.article whileHover={{ y: -3 }} whileTap={{ scale: 0.996 }} transition={{ duration: 0.16, ease: "easeOut" }}>
+      <Link to={to} className="pb-feed-luxe-card">
+        <div className="pb-feed-luxe-media" aria-hidden="true">
+          <img className="pb-feed-luxe-image" src={cover.src} alt="" loading="lazy" />
+          <span className={`pb-feed-luxe-pill status ${status}`}>{statusLabel}</span>
+          <span className="pb-feed-luxe-pill access">{accessLabel}</span>
+          <div className="pb-feed-luxe-media-row">
+            <span>{sportName}</span>
+            <span>{mode}</span>
           </div>
+          {cover.fallback ? <span className="pb-feed-luxe-art-tag">PIT BET ART</span> : null}
         </div>
 
-        <div className="pb-signal3d-head">
-          <div>
-            <small>{resolveSportLabel(sport, language)}</small>
-            <p>{league}</p>
+        <div className="pb-feed-luxe-body">
+          <small className="pb-feed-luxe-league">{league}</small>
+          <h3>{title}</h3>
+
+          <div className="pb-feed-luxe-core">
+            <div className="pb-feed-luxe-pick">
+              <small>{signal}</small>
+              <p>{note}</p>
+            </div>
+            <div className="pb-feed-luxe-odds">
+              <small>{oddsLabel}</small>
+              <strong>{oddsText}</strong>
+            </div>
           </div>
-        </div>
 
-        <h3>{title}</h3>
-
-        <div className="pb-signal3d-core">
-          <div className="pb-signal-v2-odds">
-            <small>{oddsLabel}</small>
-            <strong>{oddsText}</strong>
+          <div className="pb-feed-luxe-meta">
+            <span>{risk}</span>
+            <span>{kickoff}</span>
           </div>
-        </div>
-
-        <div className="pb-signal-v2-meta">
-          <span>{mode}</span>
-          <span>{risk}</span>
-          <span>{kickoff}</span>
-        </div>
-
-        <div className="pb-signal-v2-foot">
-          <small>{signal}</small>
-          <p>{note}</p>
         </div>
       </Link>
     </motion.article>

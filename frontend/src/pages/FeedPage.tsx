@@ -420,6 +420,8 @@ export function FeedPage({ useThreeCards = false }: { useThreeCards?: boolean } 
                         accessLabel={accessLabel(item.access_level, t)}
                         note={teaser(item.short_description, t("feed.teaserFallback"))}
                         language={language}
+                        betScreenshot={item.bet_screenshot}
+                        resultScreenshot={item.result_screenshot}
                       />
                     )}
                   </div>
