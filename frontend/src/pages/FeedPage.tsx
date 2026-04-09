@@ -400,6 +400,7 @@ export function FeedPage({ useThreeCards = false }: { useThreeCards?: boolean } 
                               language={language}
                               betScreenshot={item.bet_screenshot}
                               resultScreenshot={item.result_screenshot}
+                              highConfidence={item.risk_level === "low"}
                             />
                           </Suspense>
                         </ErrorBoundary>
@@ -422,6 +423,7 @@ export function FeedPage({ useThreeCards = false }: { useThreeCards?: boolean } 
                         language={language}
                         betScreenshot={item.bet_screenshot}
                         resultScreenshot={item.result_screenshot}
+                        highConfidence={item.risk_level === "low"}
                       />
                     )}
                   </div>

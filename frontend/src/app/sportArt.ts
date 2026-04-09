@@ -25,6 +25,7 @@ const SPORT_PALETTE: Record<SportKind, SportPalette> = {
 
 const COVER_CACHE = new Map<string, string>();
 const BADGE_CACHE = new Map<SportKind, string>();
+const FOOTBALL_DARK_COVER = "/images/sports/football-dark.png";
 
 function escapeSvgText(value: string): string {
   return value
@@ -406,6 +407,10 @@ export function resolvePredictionCover(options: {
   variant?: CoverVariant;
   seed?: string;
 }): { src: string; fallback: boolean } {
+  if (resolveSportKind(options.sport) === "football") {
+    return { src: FOOTBALL_DARK_COVER, fallback: false };
+  }
+
   const betScreenshot = cleanImage(options.betScreenshot);
   if (betScreenshot) {
     return { src: betScreenshot, fallback: false };

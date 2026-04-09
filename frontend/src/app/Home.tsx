@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Grid2x2, ListChecks, Newspaper, ShieldCheck, Sparkles, Wallet } from "lucide-react";
 
 import { useI18n } from "./i18n";
-import { resolveSportLabel } from "./sport";
+import { resolveSportKind, resolveSportLabel } from "./sport";
 import { resolvePredictionCover } from "./sportArt";
 import { resolveSubscriptionSnapshot } from "./subscription";
 import { AppDisclaimer } from "../components/AppDisclaimer";
@@ -266,9 +266,14 @@ export function Home() {
             <div className="pb-telegram-gallery-grid">
               {displaySignals.map((signal) => {
                 const cover = predictionCover(signal);
+                const isFootball = resolveSportKind(signal.sport_type) === "football";
                 return (
-                  <Link key={signal.id} to={`/feed/${signal.id}`} className="pb-home-luxe-card">
-                    <div className="pb-home-luxe-media" aria-hidden="true">
+                  <Link
+                    key={signal.id}
+                    to={`/feed/${signal.id}`}
+                    className={signal.risk_level === "low" ? "pb-home-luxe-card pb-home-luxe-card-neon" : "pb-home-luxe-card"}
+                  >
+                    <div className={isFootball ? "pb-home-luxe-media football" : "pb-home-luxe-media"} aria-hidden="true">
                       <img className="pb-home-luxe-image" src={cover.src} alt="" loading="lazy" />
                       <span className={`pb-home-luxe-pill status ${signal.status}`}>{statusLabel(signal.status, t)}</span>
                       <span className="pb-home-luxe-pill access">{accessLabel(signal.access_level, t)}</span>

@@ -13094,6 +13094,16 @@ body {
   z-index: 0;
 }
 
+.pb-feed-luxe-card-neon,
+.pb-home-luxe-card-neon {
+  border-color: color-mix(in srgb, #64f0ff 56%, var(--accent-primary) 44%);
+  box-shadow:
+    0 20px 36px color-mix(in srgb, black 26%, transparent),
+    0 0 0 1px color-mix(in srgb, #64f0ff 56%, transparent),
+    0 0 24px color-mix(in srgb, #64f0ff 24%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
 @media (hover: hover) {
   .pb-feed-luxe-card:hover,
   .pb-home-luxe-card:hover {
@@ -13102,6 +13112,14 @@ body {
     box-shadow:
       0 26px 44px color-mix(in srgb, black 34%, transparent),
       0 0 0 1px color-mix(in srgb, var(--accent-primary) 18%, transparent);
+  }
+
+  .pb-feed-luxe-card-neon:hover,
+  .pb-home-luxe-card-neon:hover {
+    box-shadow:
+      0 28px 46px color-mix(in srgb, black 34%, transparent),
+      0 0 0 1px color-mix(in srgb, #64f0ff 58%, transparent),
+      0 0 34px color-mix(in srgb, #64f0ff 28%, transparent);
   }
 
   .pb-feed-luxe-card:hover .pb-feed-luxe-image,
@@ -13121,6 +13139,24 @@ body {
     radial-gradient(circle at 84% 14%, rgba(128, 221, 255, 0.22), transparent 46%),
     radial-gradient(circle at 8% 86%, rgba(86, 208, 175, 0.16), transparent 42%),
     linear-gradient(162deg, rgba(9, 18, 30, 0.8), rgba(8, 14, 24, 0.94));
+}
+
+.pb-feed-luxe-media.football,
+.pb-home-luxe-media.football {
+  background: #040b16;
+}
+
+.pb-feed-luxe-media.football::before,
+.pb-home-luxe-media.football::before,
+.pb-feed-luxe-media.football::after,
+.pb-home-luxe-media.football::after {
+  display: none;
+}
+
+.pb-feed-luxe-media.football .pb-feed-luxe-image,
+.pb-home-luxe-media.football .pb-home-luxe-image {
+  object-position: center 42%;
+  transform: scale(1.01);
 }
 
 .pb-feed-luxe-media::before,
@@ -13382,6 +13418,16 @@ body {
     linear-gradient(168deg, #ffffff, #edf4ff);
   box-shadow:
     0 16px 32px rgba(22, 44, 72, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+:root[data-theme="light"] .pb-feed-luxe-card-neon,
+:root[data-theme="light"] .pb-home-luxe-card-neon {
+  border-color: #8cc7f6;
+  box-shadow:
+    0 16px 32px rgba(22, 44, 72, 0.14),
+    0 0 0 1px rgba(122, 201, 255, 0.48),
+    0 0 22px rgba(111, 199, 255, 0.24),
     inset 0 1px 0 rgba(255, 255, 255, 0.96);
 }
 
