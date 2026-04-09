@@ -13142,7 +13142,7 @@ body {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(182deg, rgba(6, 10, 18, 0.05) 34%, rgba(6, 10, 18, 0.56) 100%),
+    linear-gradient(182deg, rgba(6, 10, 18, 0.04) 34%, rgba(6, 10, 18, 0.44) 100%),
     radial-gradient(circle at 14% 0, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0));
 }
 
@@ -13406,7 +13406,7 @@ body {
 :root[data-theme="light"] .pb-feed-luxe-media::after,
 :root[data-theme="light"] .pb-home-luxe-media::after {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.02) 40%, rgba(18, 42, 72, 0.18) 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02) 40%, rgba(18, 42, 72, 0.14) 100%),
     linear-gradient(90deg, rgba(16, 32, 54, 0.08), rgba(16, 32, 54, 0));
 }
 

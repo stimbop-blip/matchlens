@@ -144,16 +144,35 @@ function sportDecorMarkup(kind: SportKind, width: number, height: number): strin
   </g>`;
 
   if (kind === "football") {
+    const ballCx = Math.round(width * 0.5);
+    const ballCy = Math.round(height * 0.56);
+    const ballR = Math.round(height * 0.21);
+    const seam = Math.max(2, Math.round(ballR * 0.055));
     return `${backdrop}
-      <g transform="translate(${Math.round(cx - 66)},${Math.round(cy - 66)})" filter="url(#shadowCard)">
-        <circle cx="66" cy="66" r="62" fill="url(#ballWhite)"/>
-        <path d="M66 34 84 46 79 66 53 66 48 46Z" fill="#09192d" fill-opacity="0.52"/>
-        <g fill="#09192d" fill-opacity="0.34"><circle cx="40" cy="58" r="7"/><circle cx="92" cy="58" r="7"/><circle cx="50" cy="90" r="7"/><circle cx="82" cy="90" r="7"/></g>
+      <g opacity="0.92">
+        <path d="M ${Math.round(width * -0.08)} ${Math.round(height * -0.06)} L ${Math.round(width * 0.7)} ${Math.round(height * 0.52)} L ${Math.round(width * 0.56)} ${Math.round(height * 0.66)} L ${Math.round(width * -0.14)} ${Math.round(height * 0.06)} Z" fill="url(#rayCool)"/>
+        <path d="M ${Math.round(width * -0.06)} ${Math.round(height * 0.02)} L ${Math.round(width * 0.74)} ${Math.round(height * 0.58)} L ${Math.round(width * 0.62)} ${Math.round(height * 0.7)} L ${Math.round(width * -0.1)} ${Math.round(height * 0.16)} Z" fill="url(#rayWarm)" fill-opacity="0.72"/>
       </g>
-      <path d="M ${Math.round(heroX + heroW * 0.12)} ${Math.round(heroY + heroH * 0.5)} H ${Math.round(heroX + heroW * 0.88)}" stroke="#ffffff" stroke-opacity="0.2" stroke-width="3"/>
-      <path d="M ${cx} ${heroY} V ${Math.round(heroY + heroH)}" stroke="#ffffff" stroke-opacity="0.2" stroke-width="3"/>
-      <circle cx="${cx}" cy="${Math.round(heroY + heroH * 0.5)}" r="${Math.round(heroH * 0.12)}" fill="none" stroke="#ffffff" stroke-opacity="0.24" stroke-width="3"/>
-      ${badge}`;
+      <g stroke="#9fd9ff" stroke-opacity="0.11" stroke-width="${Math.max(2, Math.round(width * 0.0022))}">
+        <path d="M ${Math.round(width * 0.45)} ${Math.round(height * 0.02)} L ${Math.round(width * 0.64)} ${Math.round(height * 0.16)}"/>
+        <path d="M ${Math.round(width * 0.58)} ${Math.round(height * 0.02)} L ${Math.round(width * 0.8)} ${Math.round(height * 0.2)}"/>
+        <path d="M ${Math.round(width * 0.72)} ${Math.round(height * 0.02)} L ${Math.round(width * 0.94)} ${Math.round(height * 0.2)}"/>
+        <path d="M ${Math.round(width * 0.52)} ${Math.round(height * 0.08)} L ${Math.round(width * 0.78)} ${Math.round(height * 0.28)}"/>
+      </g>
+      <g filter="url(#shadowCard)">
+        <circle cx="${ballCx}" cy="${ballCy}" r="${ballR}" fill="url(#footballBall)"/>
+        <circle cx="${ballCx}" cy="${ballCy}" r="${ballR}" fill="none" stroke="#d7ebff" stroke-opacity="0.18" stroke-width="2"/>
+        <g clip-path="url(#footballBallClip)" fill="none" stroke="#0b1a32" stroke-opacity="0.72" stroke-width="${seam}">
+          <path d="M ${Math.round(ballCx - ballR * 0.95)} ${ballCy} C ${Math.round(ballCx - ballR * 0.36)} ${Math.round(ballCy - ballR * 0.4)}, ${Math.round(ballCx + ballR * 0.32)} ${Math.round(ballCy - ballR * 0.4)}, ${Math.round(ballCx + ballR * 0.95)} ${ballCy}"/>
+          <path d="M ${Math.round(ballCx - ballR * 0.95)} ${ballCy} C ${Math.round(ballCx - ballR * 0.36)} ${Math.round(ballCy + ballR * 0.42)}, ${Math.round(ballCx + ballR * 0.32)} ${Math.round(ballCy + ballR * 0.42)}, ${Math.round(ballCx + ballR * 0.95)} ${ballCy}"/>
+          <path d="M ${ballCx} ${Math.round(ballCy - ballR * 0.95)} C ${Math.round(ballCx - ballR * 0.24)} ${Math.round(ballCy - ballR * 0.4)}, ${Math.round(ballCx - ballR * 0.24)} ${Math.round(ballCy + ballR * 0.4)}, ${ballCx} ${Math.round(ballCy + ballR * 0.95)}"/>
+          <path d="M ${ballCx} ${Math.round(ballCy - ballR * 0.95)} C ${Math.round(ballCx + ballR * 0.24)} ${Math.round(ballCy - ballR * 0.4)}, ${Math.round(ballCx + ballR * 0.24)} ${Math.round(ballCy + ballR * 0.4)}, ${ballCx} ${Math.round(ballCy + ballR * 0.95)}"/>
+        </g>
+        <path d="M ${ballCx} ${Math.round(ballCy - ballR * 0.33)} L ${Math.round(ballCx + ballR * 0.25)} ${Math.round(ballCy - ballR * 0.14)} L ${Math.round(ballCx + ballR * 0.16)} ${Math.round(ballCy + ballR * 0.18)} L ${Math.round(ballCx - ballR * 0.16)} ${Math.round(ballCy + ballR * 0.18)} L ${Math.round(ballCx - ballR * 0.25)} ${Math.round(ballCy - ballR * 0.14)} Z" fill="#0a1a32" fill-opacity="0.62"/>
+        <ellipse cx="${Math.round(ballCx - ballR * 0.24)}" cy="${Math.round(ballCy - ballR * 0.38)}" rx="${Math.round(ballR * 0.34)}" ry="${Math.round(ballR * 0.2)}" fill="#ffffff" fill-opacity="0.16"/>
+      </g>
+      <circle cx="${Math.round(width * 0.22)}" cy="${Math.round(height * 0.22)}" r="${Math.round(height * 0.06)}" fill="#7df4ff" fill-opacity="0.2"/>
+      <circle cx="${Math.round(width * 0.34)}" cy="${Math.round(height * 0.36)}" r="${Math.round(height * 0.026)}" fill="#ffb689" fill-opacity="0.32"/>`;
   }
 
   if (kind === "hockey") {
@@ -272,6 +291,9 @@ export function sportCoverDataUri(sport: string, variant: CoverVariant = "landsc
   const chipX = Math.round(width - (252 + chipShift * 30));
   const titleX = Math.round(chipX + chipWidth * (0.48 + titleShift * 0.08));
   const shardX = Math.round(width * (0.64 + shardShift * 0.16));
+  const footballBallCx = Math.round(width * 0.5);
+  const footballBallCy = Math.round(height * 0.56);
+  const footballBallR = Math.round(height * 0.21);
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${label}">
     <defs>
@@ -291,6 +313,22 @@ export function sportCoverDataUri(sport: string, variant: CoverVariant = "landsc
       <radialGradient id="badgeGlass" cx="0.32" cy="0.24" r="0.88">
         <stop offset="0%" stop-color="#ffffff" stop-opacity="0.36"/>
         <stop offset="100%" stop-color="#081325" stop-opacity="0.42"/>
+      </radialGradient>
+      <linearGradient id="rayCool" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#e8ffff" stop-opacity="0.66"/>
+        <stop offset="52%" stop-color="#84e4ff" stop-opacity="0.28"/>
+        <stop offset="100%" stop-color="#84e4ff" stop-opacity="0"/>
+      </linearGradient>
+      <linearGradient id="rayWarm" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#ffd2a8" stop-opacity="0.6"/>
+        <stop offset="52%" stop-color="#ff9b66" stop-opacity="0.24"/>
+        <stop offset="100%" stop-color="#ff9b66" stop-opacity="0"/>
+      </linearGradient>
+      <radialGradient id="footballBall" cx="0.34" cy="0.28" r="0.84">
+        <stop offset="0%" stop-color="#ffffff"/>
+        <stop offset="46%" stop-color="#dff0ff"/>
+        <stop offset="74%" stop-color="#7ca8c9"/>
+        <stop offset="100%" stop-color="#1f3856"/>
       </radialGradient>
       <linearGradient id="mesh" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0%" stop-color="#ffffff" stop-opacity="0.12"/>
@@ -328,6 +366,9 @@ export function sportCoverDataUri(sport: string, variant: CoverVariant = "landsc
         <stop offset="72%" stop-color="#dfeaf9"/>
         <stop offset="100%" stop-color="#b8c9df"/>
       </radialGradient>
+      <clipPath id="footballBallClip">
+        <circle cx="${footballBallCx}" cy="${footballBallCy}" r="${footballBallR}"/>
+      </clipPath>
       <filter id="shadowCard" x="-30%" y="-30%" width="160%" height="160%">
         <feDropShadow dx="0" dy="12" stdDeviation="12" flood-color="#030712" flood-opacity="0.48"/>
       </filter>
