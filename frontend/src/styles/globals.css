@@ -13129,9 +13129,10 @@ body {
   position: absolute;
   inset: 0;
   background:
-    repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.045) 0, rgba(255, 255, 255, 0.045) 1px, transparent 1px, transparent 11px),
+    radial-gradient(circle at 14% 12%, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0)),
+    radial-gradient(circle at 92% 80%, rgba(112, 232, 255, 0.16), rgba(112, 232, 255, 0)),
     linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0));
-  opacity: 0.32;
+  opacity: 0.38;
   pointer-events: none;
 }
 
@@ -13396,9 +13397,10 @@ body {
 :root[data-theme="light"] .pb-feed-luxe-media::before,
 :root[data-theme="light"] .pb-home-luxe-media::before {
   background:
-    repeating-linear-gradient(115deg, rgba(30, 62, 96, 0.045) 0, rgba(30, 62, 96, 0.045) 1px, transparent 1px, transparent 11px),
+    radial-gradient(circle at 14% 12%, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0)),
+    radial-gradient(circle at 92% 80%, rgba(80, 164, 210, 0.16), rgba(80, 164, 210, 0)),
     linear-gradient(180deg, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0));
-  opacity: 0.34;
+  opacity: 0.4;
 }
 
 :root[data-theme="light"] .pb-feed-luxe-media::after,

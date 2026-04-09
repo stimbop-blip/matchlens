@@ -127,23 +127,17 @@ function sportDecorMarkup(kind: SportKind, width: number, height: number): strin
     generic: "#bdeaff",
   };
 
-  const meshDots = Array.from({ length: 6 }, (_, row) => {
-    const y = Math.round(height * (0.2 + row * 0.11));
-    return `<path d="M ${Math.round(width * 0.1)} ${y} H ${Math.round(width * 0.9)}" stroke="#ffffff" stroke-opacity="0.08" stroke-width="1"/>`;
-  }).join("");
-
   const backdrop = `<g fill="none">
-    <rect x="${heroX}" y="${heroY}" width="${heroW}" height="${heroH}" rx="28" stroke="#ffffff" stroke-opacity="0.14" stroke-width="3"/>
-    <path d="M -20 ${Math.round(height * 0.76)} C ${Math.round(width * 0.2)} ${Math.round(height * 0.56)}, ${Math.round(width * 0.42)} ${Math.round(height * 0.92)}, ${Math.round(width * 0.66)} ${Math.round(height * 0.64)} S ${Math.round(width * 1.02)} ${Math.round(height * 0.74)}, ${width + 20} ${Math.round(height * 0.6)}" stroke="#ffffff" stroke-opacity="0.1" stroke-width="10"/>
-    <path d="M -20 ${Math.round(height * 0.84)} C ${Math.round(width * 0.18)} ${Math.round(height * 0.72)}, ${Math.round(width * 0.38)} ${Math.round(height * 0.95)}, ${Math.round(width * 0.6)} ${Math.round(height * 0.74)} S ${Math.round(width * 1.02)} ${Math.round(height * 0.82)}, ${width + 20} ${Math.round(height * 0.7)}" stroke="#ffffff" stroke-opacity="0.08" stroke-width="5"/>
-    <circle cx="${Math.round(width * 0.16)}" cy="${Math.round(height * 0.18)}" r="${Math.round(height * 0.09)}" fill="#ffffff" fill-opacity="0.1"/>
+    <rect x="${heroX}" y="${heroY}" width="${heroW}" height="${heroH}" rx="30" fill="url(#glassPane)" stroke="#ffffff" stroke-opacity="0.16" stroke-width="2.5"/>
+    <rect x="${Math.round(heroX + heroW * 0.03)}" y="${Math.round(heroY + heroH * 0.06)}" width="${Math.round(heroW * 0.94)}" height="${Math.round(heroH * 0.82)}" rx="24" fill="none" stroke="#ffffff" stroke-opacity="0.08" stroke-width="1.5"/>
+    <circle cx="${Math.round(width * 0.16)}" cy="${Math.round(height * 0.2)}" r="${Math.round(height * 0.09)}" fill="#ffffff" fill-opacity="0.1"/>
     <circle cx="${Math.round(width * 0.86)}" cy="${Math.round(height * 0.68)}" r="${Math.round(height * 0.12)}" fill="#ffffff" fill-opacity="0.08"/>
-    ${meshDots}
+    <path d="M ${Math.round(width * 0.74)} ${Math.round(height * 0.08)} L ${Math.round(width * 0.93)} ${Math.round(height * 0.22)} L ${Math.round(width * 0.84)} ${Math.round(height * 0.39)} L ${Math.round(width * 0.66)} ${Math.round(height * 0.23)} Z" fill="#ffffff" fill-opacity="0.06" stroke="#ffffff" stroke-opacity="0.1"/>
   </g>`;
 
-  const badge = `<g transform="translate(${Math.round(cx - 44)},${Math.round(cy - 44)})">
-    <circle cx="44" cy="44" r="42" fill="#ffffff" fill-opacity="0.18" stroke="#ffffff" stroke-opacity="0.28" stroke-width="2"/>
-    <circle cx="44" cy="44" r="30" fill="#ffffff" fill-opacity="0.2"/>
+  const badge = `<g transform="translate(${Math.round(cx - 44)},${Math.round(cy - 44)})" filter="url(#shadowCard)">
+    <circle cx="44" cy="44" r="42" fill="url(#badgeGlass)" stroke="#ffffff" stroke-opacity="0.22" stroke-width="2"/>
+    <circle cx="44" cy="44" r="30" fill="#081423" fill-opacity="0.3"/>
     <svg x="24" y="24" width="40" height="40" viewBox="0 0 24 24" aria-hidden="true">
       <path d="${icon}" fill="${accent[kind]}" fill-opacity="0.96" stroke="#ffffff" stroke-opacity="0.42" stroke-width="0.45"/>
     </svg>
@@ -151,6 +145,11 @@ function sportDecorMarkup(kind: SportKind, width: number, height: number): strin
 
   if (kind === "football") {
     return `${backdrop}
+      <g transform="translate(${Math.round(cx - 66)},${Math.round(cy - 66)})" filter="url(#shadowCard)">
+        <circle cx="66" cy="66" r="62" fill="url(#ballWhite)"/>
+        <path d="M66 34 84 46 79 66 53 66 48 46Z" fill="#09192d" fill-opacity="0.52"/>
+        <g fill="#09192d" fill-opacity="0.34"><circle cx="40" cy="58" r="7"/><circle cx="92" cy="58" r="7"/><circle cx="50" cy="90" r="7"/><circle cx="82" cy="90" r="7"/></g>
+      </g>
       <path d="M ${Math.round(heroX + heroW * 0.12)} ${Math.round(heroY + heroH * 0.5)} H ${Math.round(heroX + heroW * 0.88)}" stroke="#ffffff" stroke-opacity="0.2" stroke-width="3"/>
       <path d="M ${cx} ${heroY} V ${Math.round(heroY + heroH)}" stroke="#ffffff" stroke-opacity="0.2" stroke-width="3"/>
       <circle cx="${cx}" cy="${Math.round(heroY + heroH * 0.5)}" r="${Math.round(heroH * 0.12)}" fill="none" stroke="#ffffff" stroke-opacity="0.24" stroke-width="3"/>
@@ -167,7 +166,7 @@ function sportDecorMarkup(kind: SportKind, width: number, height: number): strin
   if (kind === "tennis") {
     return `${backdrop}
       <path d="M ${Math.round(width * 0.32)} ${Math.round(height * 0.62)} C ${Math.round(width * 0.44)} ${Math.round(height * 0.4)}, ${Math.round(width * 0.58)} ${Math.round(height * 0.78)}, ${Math.round(width * 0.72)} ${Math.round(height * 0.46)}" stroke="#ffffff" stroke-opacity="0.24" stroke-width="4" fill="none"/>
-      <circle cx="${Math.round(width * 0.66)}" cy="${Math.round(height * 0.46)}" r="${Math.round(height * 0.035)}" fill="${accent[kind]}" fill-opacity="0.95"/>
+      <circle cx="${Math.round(width * 0.66)}" cy="${Math.round(height * 0.46)}" r="${Math.round(height * 0.035)}" fill="url(#ballLime)"/>
       ${badge}`;
   }
 
@@ -181,6 +180,9 @@ function sportDecorMarkup(kind: SportKind, width: number, height: number): strin
 
   if (kind === "basketball") {
     return `${backdrop}
+      <g transform="translate(${Math.round(cx - 64)},${Math.round(cy - 64)})" filter="url(#shadowCard)">
+        <circle cx="64" cy="64" r="60" fill="url(#ballOrange)"/>
+      </g>
       <path d="M ${Math.round(width * 0.36)} ${cy} H ${Math.round(width * 0.64)}" stroke="#ffffff" stroke-opacity="0.28" stroke-width="3"/>
       <path d="M ${cx} ${Math.round(height * 0.34)} V ${Math.round(height * 0.66)}" stroke="#ffffff" stroke-opacity="0.26" stroke-width="3"/>
       <path d="M ${Math.round(width * 0.4)} ${Math.round(height * 0.36)} C ${Math.round(width * 0.5)} ${Math.round(height * 0.45)}, ${Math.round(width * 0.5)} ${Math.round(height * 0.55)}, ${Math.round(width * 0.4)} ${Math.round(height * 0.64)}" stroke="#ffffff" stroke-opacity="0.26" stroke-width="3" fill="none"/>
@@ -190,6 +192,7 @@ function sportDecorMarkup(kind: SportKind, width: number, height: number): strin
 
   if (kind === "volleyball") {
     return `${backdrop}
+      <circle cx="${cx}" cy="${cy}" r="${Math.round(height * 0.12)}" fill="url(#ballPearl)"/>
       <circle cx="${cx}" cy="${cy}" r="${Math.round(height * 0.12)}" fill="none" stroke="#ffffff" stroke-opacity="0.3" stroke-width="3"/>
       <path d="M ${Math.round(cx - height * 0.12)} ${cy} C ${Math.round(cx - height * 0.05)} ${Math.round(cy - height * 0.08)}, ${Math.round(cx + height * 0.05)} ${Math.round(cy - height * 0.08)}, ${Math.round(cx + height * 0.12)} ${cy}" stroke="#ffffff" stroke-opacity="0.3" stroke-width="3" fill="none"/>
       <path d="M ${Math.round(cx - height * 0.12)} ${cy} C ${Math.round(cx - height * 0.05)} ${Math.round(cy + height * 0.08)}, ${Math.round(cx + height * 0.05)} ${Math.round(cy + height * 0.08)}, ${Math.round(cx + height * 0.12)} ${cy}" stroke="#ffffff" stroke-opacity="0.3" stroke-width="3" fill="none"/>
@@ -224,7 +227,7 @@ function sportDecorMarkup(kind: SportKind, width: number, height: number): strin
 
   if (kind === "baseball") {
     return `${backdrop}
-      <circle cx="${cx}" cy="${cy}" r="${Math.round(height * 0.1)}" fill="#ffffff" fill-opacity="0.3"/>
+      <circle cx="${cx}" cy="${cy}" r="${Math.round(height * 0.1)}" fill="url(#ballPearl)"/>
       <path d="M ${Math.round(cx - height * 0.06)} ${Math.round(cy - height * 0.055)} C ${Math.round(cx - height * 0.022)} ${Math.round(cy - height * 0.02)}, ${Math.round(cx - height * 0.022)} ${Math.round(cy + height * 0.02)}, ${Math.round(cx - height * 0.06)} ${Math.round(cy + height * 0.055)}" stroke="#e27373" stroke-width="3" stroke-linecap="round" fill="none"/>
       <path d="M ${Math.round(cx + height * 0.06)} ${Math.round(cy - height * 0.055)} C ${Math.round(cx + height * 0.022)} ${Math.round(cy - height * 0.02)}, ${Math.round(cx + height * 0.022)} ${Math.round(cy + height * 0.02)}, ${Math.round(cx + height * 0.06)} ${Math.round(cy + height * 0.055)}" stroke="#e27373" stroke-width="3" stroke-linecap="round" fill="none"/>
       ${badge}`;
@@ -249,30 +252,26 @@ export function sportCoverDataUri(sport: string, variant: CoverVariant = "landsc
   const width = variant === "landscape" ? 1200 : 720;
   const height = variant === "landscape" ? 675 : 720;
   const visualSeed = seedKey || `${kind}:${variant}`;
-  const waveA = seedUnit(visualSeed, "waveA");
-  const waveB = seedUnit(visualSeed, "waveB");
-  const orbA = seedUnit(visualSeed, "orbA");
-  const orbB = seedUnit(visualSeed, "orbB");
-  const orbC = seedUnit(visualSeed, "orbC");
+  const glowA = seedUnit(visualSeed, "glowA");
+  const glowB = seedUnit(visualSeed, "glowB");
+  const glowC = seedUnit(visualSeed, "glowC");
   const titleShift = seedUnit(visualSeed, "title");
-  const lineShift = seedUnit(visualSeed, "line");
+  const chipShift = seedUnit(visualSeed, "chip");
+  const shardShift = seedUnit(visualSeed, "shard");
   const radius = variant === "landscape" ? 36 : 30;
-  const titleY = height - (variant === "landscape" ? 48 : 40);
+  const titleY = height - (variant === "landscape" ? 50 : 42);
   const titleSize = variant === "landscape" ? 28 : 26;
   const brandSize = variant === "landscape" ? 24 : 20;
-  const arcStartY = Math.round(height * (0.7 + (waveA - 0.5) * 0.12));
-  const arcMidY1 = Math.round(height * (0.52 + (waveB - 0.5) * 0.14));
-  const arcMidY2 = Math.round(height * (0.9 + (waveA - 0.5) * 0.08));
-  const arcMidY3 = Math.round(height * (0.62 + (waveB - 0.5) * 0.1));
-  const arcEndY = Math.round(height * (0.56 + (waveA - 0.5) * 0.14));
-  const orb1x = Math.round(width * (0.14 + orbA * 0.12));
-  const orb1y = Math.round(height * (0.18 + orbB * 0.16));
-  const orb2x = Math.round(width * (0.78 + orbC * 0.14));
-  const orb2y = Math.round(height * (0.66 + orbA * 0.18));
-  const orb3x = Math.round(width * (0.86 + orbB * 0.1));
-  const orb3y = Math.round(height * (0.1 + orbC * 0.2));
-  const titleX = Math.round(width - (112 + titleShift * 56));
-  const chipX = Math.round(width - (248 + lineShift * 26));
+  const lightA1x = Math.round(width * (0.74 + glowA * 0.14));
+  const lightA1y = Math.round(height * (0.08 + glowB * 0.16));
+  const lightA1r = Math.round(height * (0.3 + glowC * 0.12));
+  const lightA2x = Math.round(width * (0.12 + glowB * 0.18));
+  const lightA2y = Math.round(height * (0.7 + glowA * 0.14));
+  const lightA2r = Math.round(height * (0.24 + glowB * 0.1));
+  const chipWidth = 226;
+  const chipX = Math.round(width - (252 + chipShift * 30));
+  const titleX = Math.round(chipX + chipWidth * (0.48 + titleShift * 0.08));
+  const shardX = Math.round(width * (0.64 + shardShift * 0.16));
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${label}">
     <defs>
@@ -280,32 +279,74 @@ export function sportCoverDataUri(sport: string, variant: CoverVariant = "landsc
         <stop offset="0%" stop-color="${palette.start}"/>
         <stop offset="100%" stop-color="${palette.end}"/>
       </linearGradient>
-      <radialGradient id="glow" cx="0.84" cy="0.14" r="0.74">
-        <stop offset="0%" stop-color="${palette.glow}" stop-opacity="0.50"/>
+      <radialGradient id="ambient" cx="0.84" cy="0.12" r="0.78">
+        <stop offset="0%" stop-color="${palette.glow}" stop-opacity="0.56"/>
         <stop offset="100%" stop-color="${palette.glow}" stop-opacity="0"/>
       </radialGradient>
+      <linearGradient id="glassPane" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.12"/>
+        <stop offset="40%" stop-color="#ffffff" stop-opacity="0.03"/>
+        <stop offset="100%" stop-color="#ffffff" stop-opacity="0.08"/>
+      </linearGradient>
+      <radialGradient id="badgeGlass" cx="0.32" cy="0.24" r="0.88">
+        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.36"/>
+        <stop offset="100%" stop-color="#081325" stop-opacity="0.42"/>
+      </radialGradient>
       <linearGradient id="mesh" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.20"/>
+        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.12"/>
         <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
       </linearGradient>
       <linearGradient id="vignette" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0%" stop-color="#061021" stop-opacity="0"/>
-        <stop offset="100%" stop-color="#061021" stop-opacity="0.34"/>
+        <stop offset="100%" stop-color="#061021" stop-opacity="0.4"/>
       </linearGradient>
       <linearGradient id="topLight" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.28"/>
+        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.22"/>
         <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
       </linearGradient>
+      <linearGradient id="bottomShade" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#040a16" stop-opacity="0"/>
+        <stop offset="100%" stop-color="#040a16" stop-opacity="0.36"/>
+      </linearGradient>
+      <radialGradient id="ballWhite" cx="0.34" cy="0.28" r="0.84">
+        <stop offset="0%" stop-color="#ffffff"/>
+        <stop offset="74%" stop-color="#edf4ff"/>
+        <stop offset="100%" stop-color="#cad5e6"/>
+      </radialGradient>
+      <radialGradient id="ballOrange" cx="0.32" cy="0.28" r="0.86">
+        <stop offset="0%" stop-color="#ffd29f"/>
+        <stop offset="70%" stop-color="#f29a4d"/>
+        <stop offset="100%" stop-color="#c7641d"/>
+      </radialGradient>
+      <radialGradient id="ballLime" cx="0.34" cy="0.28" r="0.86">
+        <stop offset="0%" stop-color="#f1ffb6"/>
+        <stop offset="72%" stop-color="#bcf35d"/>
+        <stop offset="100%" stop-color="#8dbe38"/>
+      </radialGradient>
+      <radialGradient id="ballPearl" cx="0.34" cy="0.28" r="0.86">
+        <stop offset="0%" stop-color="#ffffff"/>
+        <stop offset="72%" stop-color="#dfeaf9"/>
+        <stop offset="100%" stop-color="#b8c9df"/>
+      </radialGradient>
+      <filter id="shadowCard" x="-30%" y="-30%" width="160%" height="160%">
+        <feDropShadow dx="0" dy="12" stdDeviation="12" flood-color="#030712" flood-opacity="0.48"/>
+      </filter>
+      <filter id="blurBloom" x="-25%" y="-25%" width="150%" height="150%">
+        <feGaussianBlur stdDeviation="28"/>
+      </filter>
     </defs>
     <rect x="0" y="0" width="${width}" height="${height}" rx="${radius}" fill="url(#bg)"/>
-    <rect x="0" y="0" width="${width}" height="${height}" rx="${radius}" fill="url(#glow)"/>
-    <path d="M-20 ${arcStartY} C ${Math.round(width * 0.2)} ${arcMidY1}, ${Math.round(width * 0.38)} ${arcMidY2}, ${Math.round(width * 0.64)} ${arcMidY3} S ${Math.round(width * 0.98)} ${Math.round(height * 0.68)}, ${width + 20} ${arcEndY}" fill="none" stroke="#ffffff" stroke-opacity="0.14" stroke-width="12"/>
+    <rect x="0" y="0" width="${width}" height="${height}" rx="${radius}" fill="url(#ambient)"/>
+    <g filter="url(#blurBloom)">
+      <circle cx="${lightA1x}" cy="${lightA1y}" r="${lightA1r}" fill="${palette.glow}" fill-opacity="0.34"/>
+      <circle cx="${lightA2x}" cy="${lightA2y}" r="${lightA2r}" fill="#ffffff" fill-opacity="0.14"/>
+    </g>
+    <path d="M ${shardX} ${Math.round(height * 0.1)} L ${Math.round(width * 0.98)} ${Math.round(height * 0.28)} L ${Math.round(width * 0.88)} ${Math.round(height * 0.58)} L ${Math.round(width * 0.68)} ${Math.round(height * 0.34)} Z" fill="#ffffff" fill-opacity="0.06"/>
+    <path d="M ${Math.round(width * 0.08)} ${Math.round(height * 0.88)} L ${Math.round(width * 0.28)} ${Math.round(height * 0.74)} L ${Math.round(width * 0.38)} ${Math.round(height * 0.94)} L ${Math.round(width * 0.16)} ${Math.round(height * 1.02)} Z" fill="#ffffff" fill-opacity="0.05"/>
     ${decor}
-    <circle cx="${orb1x}" cy="${orb1y}" r="${Math.round(height * 0.095)}" fill="#ffffff" fill-opacity="0.14"/>
-    <circle cx="${orb2x}" cy="${orb2y}" r="${Math.round(height * 0.13)}" fill="#ffffff" fill-opacity="0.12"/>
-    <circle cx="${orb3x}" cy="${orb3y}" r="${Math.round(height * 0.045)}" fill="#ffffff" fill-opacity="0.24"/>
     <rect x="0" y="0" width="${width}" height="${Math.round(height * 0.26)}" rx="${radius}" fill="url(#topLight)"/>
-    <rect x="${chipX}" y="${Math.round(height - 78)}" width="220" height="40" rx="20" fill="#0a1524" fill-opacity="0.36"/>
+    <rect x="0" y="${Math.round(height * 0.52)}" width="${width}" height="${Math.round(height * 0.48)}" fill="url(#bottomShade)"/>
+    <rect x="${chipX}" y="${Math.round(height - 82)}" width="${chipWidth}" height="42" rx="21" fill="#071426" fill-opacity="0.52" stroke="#ffffff" stroke-opacity="0.2"/>
     <text x="${titleX}" y="${titleY}" text-anchor="middle" dominant-baseline="middle" fill="${palette.chip}" font-size="${titleSize}" font-family="Satoshi, Manrope, Segoe UI, sans-serif" font-weight="700" letter-spacing="0.6">${label}</text>
     <text x="${Math.round(32)}" y="${Math.round(height - 24)}" fill="#ffffff" fill-opacity="0.72" font-size="${brandSize}" font-family="Satoshi, Manrope, Segoe UI, sans-serif" font-weight="700" letter-spacing="1.4">PIT BET</text>
     <rect x="0" y="0" width="${width}" height="${height}" rx="${radius}" fill="url(#mesh)"/>
