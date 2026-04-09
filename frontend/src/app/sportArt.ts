@@ -106,154 +106,133 @@ function seedUnit(seed: string, salt: string): number {
 
 function sportDecorMarkup(kind: SportKind, width: number, height: number): string {
   const cx = Math.round(width * 0.5);
-  const cy = Math.round(height * 0.52);
-  const stadiumTop = Math.round(height * 0.1);
-  const stadiumBottom = Math.round(height * 0.82);
-  const w = Math.round(width * 0.74);
-  const h = Math.round(height * 0.52);
-  const x = Math.round((width - w) * 0.5);
-  const y = Math.round(height * 0.2);
+  const cy = Math.round(height * 0.5);
+  const heroW = Math.round(width * 0.72);
+  const heroH = Math.round(height * 0.5);
+  const heroX = Math.round((width - heroW) * 0.5);
+  const heroY = Math.round(height * 0.2);
+  const icon = sportIconPath(kind);
 
-  const baseArena = `<g fill="none" stroke="#ffffff" stroke-opacity="0.18" stroke-width="5">
-    <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="24"/>
-    <path d="M ${Math.round(width * 0.03)} ${stadiumBottom} C ${Math.round(width * 0.24)} ${Math.round(height * 0.65)}, ${Math.round(width * 0.42)} ${Math.round(height * 0.96)}, ${Math.round(width * 0.62)} ${Math.round(height * 0.72)} S ${Math.round(width * 0.98)} ${Math.round(height * 0.78)}, ${Math.round(width * 1.02)} ${Math.round(height * 0.66)}"/>
+  const accent: Record<SportKind, string> = {
+    football: "#9fd7ff",
+    hockey: "#aee7ff",
+    tennis: "#dbff96",
+    table_tennis: "#ffd1ef",
+    basketball: "#ffd2a0",
+    volleyball: "#b6f6ff",
+    esports: "#bfd0ff",
+    darts: "#ffd4ad",
+    mma: "#ffd2d2",
+    baseball: "#c7fff1",
+    generic: "#bdeaff",
+  };
+
+  const meshDots = Array.from({ length: 6 }, (_, row) => {
+    const y = Math.round(height * (0.2 + row * 0.11));
+    return `<path d="M ${Math.round(width * 0.1)} ${y} H ${Math.round(width * 0.9)}" stroke="#ffffff" stroke-opacity="0.08" stroke-width="1"/>`;
+  }).join("");
+
+  const backdrop = `<g fill="none">
+    <rect x="${heroX}" y="${heroY}" width="${heroW}" height="${heroH}" rx="28" stroke="#ffffff" stroke-opacity="0.14" stroke-width="3"/>
+    <path d="M -20 ${Math.round(height * 0.76)} C ${Math.round(width * 0.2)} ${Math.round(height * 0.56)}, ${Math.round(width * 0.42)} ${Math.round(height * 0.92)}, ${Math.round(width * 0.66)} ${Math.round(height * 0.64)} S ${Math.round(width * 1.02)} ${Math.round(height * 0.74)}, ${width + 20} ${Math.round(height * 0.6)}" stroke="#ffffff" stroke-opacity="0.1" stroke-width="10"/>
+    <path d="M -20 ${Math.round(height * 0.84)} C ${Math.round(width * 0.18)} ${Math.round(height * 0.72)}, ${Math.round(width * 0.38)} ${Math.round(height * 0.95)}, ${Math.round(width * 0.6)} ${Math.round(height * 0.74)} S ${Math.round(width * 1.02)} ${Math.round(height * 0.82)}, ${width + 20} ${Math.round(height * 0.7)}" stroke="#ffffff" stroke-opacity="0.08" stroke-width="5"/>
+    <circle cx="${Math.round(width * 0.16)}" cy="${Math.round(height * 0.18)}" r="${Math.round(height * 0.09)}" fill="#ffffff" fill-opacity="0.1"/>
+    <circle cx="${Math.round(width * 0.86)}" cy="${Math.round(height * 0.68)}" r="${Math.round(height * 0.12)}" fill="#ffffff" fill-opacity="0.08"/>
+    ${meshDots}
+  </g>`;
+
+  const badge = `<g transform="translate(${Math.round(cx - 44)},${Math.round(cy - 44)})">
+    <circle cx="44" cy="44" r="42" fill="#ffffff" fill-opacity="0.18" stroke="#ffffff" stroke-opacity="0.28" stroke-width="2"/>
+    <circle cx="44" cy="44" r="30" fill="#ffffff" fill-opacity="0.2"/>
+    <svg x="24" y="24" width="40" height="40" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="${icon}" fill="${accent[kind]}" fill-opacity="0.96" stroke="#ffffff" stroke-opacity="0.42" stroke-width="0.45"/>
+    </svg>
   </g>`;
 
   if (kind === "football") {
-    return `${baseArena}
-      <g fill="none" stroke="#ffffff" stroke-opacity="0.24" stroke-width="4">
-        <line x1="${cx}" y1="${y}" x2="${cx}" y2="${y + h}"/>
-        <circle cx="${cx}" cy="${Math.round(y + h * 0.5)}" r="${Math.round(h * 0.14)}"/>
-      </g>
-      <g transform="translate(${Math.round(width * 0.5 - 52)},${Math.round(height * 0.44 - 52)})">
-        <circle cx="52" cy="52" r="50" fill="#f9fdff" fill-opacity="0.96"/>
-        <path d="M52 26 66 36 62 52 42 52 38 36Z" fill="#0d1b34" fill-opacity="0.52"/>
-        <g fill="#0d1b34" fill-opacity="0.35">
-          <circle cx="31" cy="45" r="6"/><circle cx="73" cy="45" r="6"/><circle cx="40" cy="71" r="6"/><circle cx="64" cy="71" r="6"/>
-        </g>
-      </g>`;
+    return `${backdrop}
+      <path d="M ${Math.round(heroX + heroW * 0.12)} ${Math.round(heroY + heroH * 0.5)} H ${Math.round(heroX + heroW * 0.88)}" stroke="#ffffff" stroke-opacity="0.2" stroke-width="3"/>
+      <path d="M ${cx} ${heroY} V ${Math.round(heroY + heroH)}" stroke="#ffffff" stroke-opacity="0.2" stroke-width="3"/>
+      <circle cx="${cx}" cy="${Math.round(heroY + heroH * 0.5)}" r="${Math.round(heroH * 0.12)}" fill="none" stroke="#ffffff" stroke-opacity="0.24" stroke-width="3"/>
+      ${badge}`;
   }
 
   if (kind === "hockey") {
-    return `${baseArena}
-      <g fill="none" stroke="#ffffff" stroke-opacity="0.24" stroke-width="4">
-        <line x1="${cx}" y1="${y}" x2="${cx}" y2="${y + h}"/>
-        <circle cx="${Math.round(x + w * 0.3)}" cy="${Math.round(y + h * 0.5)}" r="${Math.round(h * 0.09)}"/>
-        <circle cx="${Math.round(x + w * 0.7)}" cy="${Math.round(y + h * 0.5)}" r="${Math.round(h * 0.09)}"/>
-      </g>
-      <g transform="translate(${Math.round(width * 0.41)},${Math.round(height * 0.43)})">
-        <rect x="0" y="0" width="86" height="12" rx="6" fill="#0a1528" fill-opacity="0.66"/>
-        <path d="M64 2h10l-8 26h-9z" fill="#f8fbff" fill-opacity="0.86"/>
-      </g>`;
+    return `${backdrop}
+      <path d="M ${Math.round(width * 0.36)} ${Math.round(height * 0.58)} H ${Math.round(width * 0.66)}" stroke="#ffffff" stroke-opacity="0.26" stroke-width="8" stroke-linecap="round"/>
+      <path d="M ${Math.round(width * 0.62)} ${Math.round(height * 0.56)} h ${Math.round(width * 0.06)} l ${Math.round(-width * 0.025)} ${Math.round(height * 0.09)} h ${Math.round(-width * 0.06)} Z" fill="#ffffff" fill-opacity="0.56"/>
+      ${badge}`;
   }
 
   if (kind === "tennis") {
-    return `${baseArena}
-      <g fill="none" stroke="#ffffff" stroke-opacity="0.24" stroke-width="4">
-        <line x1="${cx}" y1="${y}" x2="${cx}" y2="${y + h}"/>
-        <line x1="${x}" y1="${Math.round(y + h * 0.5)}" x2="${x + w}" y2="${Math.round(y + h * 0.5)}"/>
-      </g>
-      <g transform="translate(${Math.round(width * 0.46)},${Math.round(height * 0.37)})" fill="none" stroke="#ffffff" stroke-opacity="0.8">
-        <ellipse cx="24" cy="34" rx="20" ry="26" stroke-width="6"/>
-        <rect x="18" y="58" width="10" height="24" rx="5" fill="#f2f8ff" fill-opacity="0.9" stroke="none"/>
-      </g>
-      <circle cx="${Math.round(width * 0.64)}" cy="${Math.round(height * 0.5)}" r="${Math.round(height * 0.04)}" fill="#f4ffbd"/>`;
+    return `${backdrop}
+      <path d="M ${Math.round(width * 0.32)} ${Math.round(height * 0.62)} C ${Math.round(width * 0.44)} ${Math.round(height * 0.4)}, ${Math.round(width * 0.58)} ${Math.round(height * 0.78)}, ${Math.round(width * 0.72)} ${Math.round(height * 0.46)}" stroke="#ffffff" stroke-opacity="0.24" stroke-width="4" fill="none"/>
+      <circle cx="${Math.round(width * 0.66)}" cy="${Math.round(height * 0.46)}" r="${Math.round(height * 0.035)}" fill="${accent[kind]}" fill-opacity="0.95"/>
+      ${badge}`;
   }
 
   if (kind === "table_tennis") {
-    return `${baseArena}
-      <g fill="none" stroke="#ffffff" stroke-opacity="0.22" stroke-width="4">
-        <line x1="${x}" y1="${Math.round(y + h * 0.5)}" x2="${x + w}" y2="${Math.round(y + h * 0.5)}"/>
-      </g>
-      <g transform="translate(${Math.round(width * 0.47)},${Math.round(height * 0.38)})">
-        <ellipse cx="22" cy="30" rx="20" ry="26" fill="#ff8fb0" fill-opacity="0.82"/>
-        <rect x="18" y="55" width="8" height="22" rx="4" fill="#e5f3ff" fill-opacity="0.9"/>
-      </g>
-      <circle cx="${Math.round(width * 0.62)}" cy="${Math.round(height * 0.51)}" r="${Math.round(height * 0.028)}" fill="#ffffff"/>`;
+    return `${backdrop}
+      <ellipse cx="${Math.round(width * 0.48)}" cy="${Math.round(height * 0.54)}" rx="${Math.round(width * 0.05)}" ry="${Math.round(height * 0.08)}" fill="${accent[kind]}" fill-opacity="0.82"/>
+      <rect x="${Math.round(width * 0.47)}" y="${Math.round(height * 0.61)}" width="${Math.round(width * 0.02)}" height="${Math.round(height * 0.09)}" rx="6" fill="#ffffff" fill-opacity="0.8"/>
+      <circle cx="${Math.round(width * 0.61)}" cy="${Math.round(height * 0.48)}" r="${Math.round(height * 0.024)}" fill="#ffffff" fill-opacity="0.96"/>
+      ${badge}`;
   }
 
   if (kind === "basketball") {
-    return `${baseArena}
-      <g fill="none" stroke="#ffffff" stroke-opacity="0.24" stroke-width="4">
-        <path d="M ${Math.round(x + 10)} ${cy} Q ${cx} ${Math.round(y - 26)} ${Math.round(x + w - 10)} ${cy}"/>
-        <path d="M ${Math.round(x + 10)} ${cy} Q ${cx} ${Math.round(y + h + 28)} ${Math.round(x + w - 10)} ${cy}"/>
-      </g>
-      <g transform="translate(${Math.round(width * 0.49 - 38)},${Math.round(height * 0.46 - 38)})">
-        <circle cx="38" cy="38" r="36" fill="#ffb061" fill-opacity="0.92"/>
-        <g fill="none" stroke="#7f4116" stroke-width="3" stroke-opacity="0.75">
-          <path d="M 2 38 H 74"/><path d="M 38 2 V 74"/><path d="M 10 12 C 44 28, 44 48, 10 64"/><path d="M 66 12 C 32 28, 32 48, 66 64"/>
-        </g>
-      </g>`;
+    return `${backdrop}
+      <path d="M ${Math.round(width * 0.36)} ${cy} H ${Math.round(width * 0.64)}" stroke="#ffffff" stroke-opacity="0.28" stroke-width="3"/>
+      <path d="M ${cx} ${Math.round(height * 0.34)} V ${Math.round(height * 0.66)}" stroke="#ffffff" stroke-opacity="0.26" stroke-width="3"/>
+      <path d="M ${Math.round(width * 0.4)} ${Math.round(height * 0.36)} C ${Math.round(width * 0.5)} ${Math.round(height * 0.45)}, ${Math.round(width * 0.5)} ${Math.round(height * 0.55)}, ${Math.round(width * 0.4)} ${Math.round(height * 0.64)}" stroke="#ffffff" stroke-opacity="0.26" stroke-width="3" fill="none"/>
+      <path d="M ${Math.round(width * 0.6)} ${Math.round(height * 0.36)} C ${Math.round(width * 0.5)} ${Math.round(height * 0.45)}, ${Math.round(width * 0.5)} ${Math.round(height * 0.55)}, ${Math.round(width * 0.6)} ${Math.round(height * 0.64)}" stroke="#ffffff" stroke-opacity="0.26" stroke-width="3" fill="none"/>
+      ${badge}`;
   }
 
   if (kind === "volleyball") {
-    return `${baseArena}
-      <g fill="none" stroke="#ffffff" stroke-opacity="0.24" stroke-width="4">
-        <line x1="${x}" y1="${cy}" x2="${x + w}" y2="${cy}"/>
-      </g>
-      <g transform="translate(${Math.round(width * 0.5 - 42)},${Math.round(height * 0.44 - 42)})">
-        <circle cx="42" cy="42" r="40" fill="#e9fbff" fill-opacity="0.9"/>
-        <g fill="none" stroke="#127b95" stroke-opacity="0.58" stroke-width="3">
-          <path d="M 8 42 C 24 22, 60 22, 76 42"/>
-          <path d="M 8 42 C 24 62, 60 62, 76 42"/>
-          <path d="M 24 8 C 42 18, 42 66, 24 76"/>
-          <path d="M 60 8 C 42 18, 42 66, 60 76"/>
-        </g>
-      </g>`;
+    return `${backdrop}
+      <circle cx="${cx}" cy="${cy}" r="${Math.round(height * 0.12)}" fill="none" stroke="#ffffff" stroke-opacity="0.3" stroke-width="3"/>
+      <path d="M ${Math.round(cx - height * 0.12)} ${cy} C ${Math.round(cx - height * 0.05)} ${Math.round(cy - height * 0.08)}, ${Math.round(cx + height * 0.05)} ${Math.round(cy - height * 0.08)}, ${Math.round(cx + height * 0.12)} ${cy}" stroke="#ffffff" stroke-opacity="0.3" stroke-width="3" fill="none"/>
+      <path d="M ${Math.round(cx - height * 0.12)} ${cy} C ${Math.round(cx - height * 0.05)} ${Math.round(cy + height * 0.08)}, ${Math.round(cx + height * 0.05)} ${Math.round(cy + height * 0.08)}, ${Math.round(cx + height * 0.12)} ${cy}" stroke="#ffffff" stroke-opacity="0.3" stroke-width="3" fill="none"/>
+      ${badge}`;
   }
 
   if (kind === "esports") {
-    return `${baseArena}
-      <g fill="none" stroke="#ffffff" stroke-opacity="0.22" stroke-width="4">
-        <path d="M ${Math.round(width * 0.18)} ${Math.round(height * 0.7)} H ${Math.round(width * 0.82)}"/>
-      </g>
-      <g transform="translate(${Math.round(width * 0.5 - 84)},${Math.round(height * 0.44 - 42)})">
-        <rect x="0" y="0" width="168" height="84" rx="30" fill="#0a1122" fill-opacity="0.62" stroke="#b8d7ff" stroke-opacity="0.46"/>
-        <circle cx="56" cy="42" r="12" fill="#ffffff" fill-opacity="0.9"/>
-        <circle cx="112" cy="36" r="8" fill="#9ad7ff"/>
-        <circle cx="128" cy="49" r="8" fill="#9ad7ff"/>
-      </g>`;
+    return `${backdrop}
+      <rect x="${Math.round(width * 0.41)}" y="${Math.round(height * 0.41)}" width="${Math.round(width * 0.18)}" height="${Math.round(height * 0.12)}" rx="22" fill="#071124" fill-opacity="0.64" stroke="#c2d7ff" stroke-opacity="0.44"/>
+      <circle cx="${Math.round(width * 0.46)}" cy="${Math.round(height * 0.47)}" r="${Math.round(height * 0.018)}" fill="#ffffff" fill-opacity="0.86"/>
+      <circle cx="${Math.round(width * 0.55)}" cy="${Math.round(height * 0.465)}" r="${Math.round(height * 0.012)}" fill="${accent[kind]}"/>
+      <circle cx="${Math.round(width * 0.57)}" cy="${Math.round(height * 0.49)}" r="${Math.round(height * 0.012)}" fill="${accent[kind]}"/>
+      ${badge}`;
   }
 
   if (kind === "darts") {
-    return `${baseArena}
-      <g transform="translate(${Math.round(width * 0.5 - 56)},${Math.round(height * 0.45 - 56)})">
-        <circle cx="56" cy="56" r="54" fill="#f6f9ff" fill-opacity="0.9"/>
-        <circle cx="56" cy="56" r="42" fill="none" stroke="#2b4f7e" stroke-opacity="0.5" stroke-width="6"/>
-        <circle cx="56" cy="56" r="28" fill="none" stroke="#2b4f7e" stroke-opacity="0.5" stroke-width="6"/>
-        <circle cx="56" cy="56" r="12" fill="#ff9d76"/>
-      </g>
-      <path d="M ${Math.round(width * 0.68)} ${Math.round(height * 0.34)} L ${Math.round(width * 0.56)} ${Math.round(height * 0.5)}" stroke="#ffffff" stroke-width="5" stroke-linecap="round"/>`;
+    return `${backdrop}
+      <circle cx="${cx}" cy="${cy}" r="${Math.round(height * 0.11)}" fill="#ffffff" fill-opacity="0.2"/>
+      <circle cx="${cx}" cy="${cy}" r="${Math.round(height * 0.08)}" fill="none" stroke="#ffffff" stroke-opacity="0.34" stroke-width="3"/>
+      <circle cx="${cx}" cy="${cy}" r="${Math.round(height * 0.045)}" fill="none" stroke="#ffffff" stroke-opacity="0.34" stroke-width="3"/>
+      <path d="M ${Math.round(width * 0.68)} ${Math.round(height * 0.36)} L ${Math.round(cx)} ${Math.round(cy)}" stroke="#ffffff" stroke-opacity="0.9" stroke-width="4" stroke-linecap="round"/>
+      ${badge}`;
   }
 
   if (kind === "mma") {
-    return `${baseArena}
-      <g fill="none" stroke="#ffffff" stroke-opacity="0.24" stroke-width="4">
-        <path d="M ${Math.round(x + 30)} ${y} H ${Math.round(x + w - 30)} L ${x + w} ${Math.round(y + 30)} V ${Math.round(y + h - 30)} L ${Math.round(x + w - 30)} ${y + h} H ${Math.round(x + 30)} L ${x} ${Math.round(y + h - 30)} V ${Math.round(y + 30)} Z"/>
-      </g>
-      <g transform="translate(${Math.round(width * 0.5 - 64)},${Math.round(height * 0.44 - 38)})">
-        <rect x="0" y="6" width="52" height="56" rx="16" fill="#ff8f8f" fill-opacity="0.8"/>
-        <rect x="76" y="6" width="52" height="56" rx="16" fill="#ffc5c5" fill-opacity="0.84"/>
-      </g>`;
+    return `${backdrop}
+      <path d="M ${Math.round(heroX + 36)} ${heroY} H ${Math.round(heroX + heroW - 36)} L ${heroX + heroW} ${Math.round(heroY + 36)} V ${Math.round(heroY + heroH - 36)} L ${Math.round(heroX + heroW - 36)} ${heroY + heroH} H ${Math.round(heroX + 36)} L ${heroX} ${Math.round(heroY + heroH - 36)} V ${Math.round(heroY + 36)} Z" fill="none" stroke="#ffffff" stroke-opacity="0.18" stroke-width="3"/>
+      <rect x="${Math.round(width * 0.44)}" y="${Math.round(height * 0.43)}" width="${Math.round(width * 0.042)}" height="${Math.round(height * 0.11)}" rx="12" fill="#ffb9b9" fill-opacity="0.82"/>
+      <rect x="${Math.round(width * 0.52)}" y="${Math.round(height * 0.43)}" width="${Math.round(width * 0.042)}" height="${Math.round(height * 0.11)}" rx="12" fill="#ffe0e0" fill-opacity="0.82"/>
+      ${badge}`;
   }
 
   if (kind === "baseball") {
-    return `${baseArena}
-      <g fill="none" stroke="#ffffff" stroke-opacity="0.24" stroke-width="4">
-        <path d="M ${cx} ${Math.round(y)} L ${Math.round(x + w)} ${cy} L ${cx} ${Math.round(y + h)} L ${x} ${cy} Z"/>
-      </g>
-      <g transform="translate(${Math.round(width * 0.5 - 44)},${Math.round(height * 0.45 - 44)})">
-        <circle cx="44" cy="44" r="42" fill="#ffffff" fill-opacity="0.92"/>
-        <path d="M 18 24 C 36 34, 36 54, 18 64" fill="none" stroke="#d46565" stroke-width="4" stroke-linecap="round"/>
-        <path d="M 70 24 C 52 34, 52 54, 70 64" fill="none" stroke="#d46565" stroke-width="4" stroke-linecap="round"/>
-      </g>`;
+    return `${backdrop}
+      <circle cx="${cx}" cy="${cy}" r="${Math.round(height * 0.1)}" fill="#ffffff" fill-opacity="0.3"/>
+      <path d="M ${Math.round(cx - height * 0.06)} ${Math.round(cy - height * 0.055)} C ${Math.round(cx - height * 0.022)} ${Math.round(cy - height * 0.02)}, ${Math.round(cx - height * 0.022)} ${Math.round(cy + height * 0.02)}, ${Math.round(cx - height * 0.06)} ${Math.round(cy + height * 0.055)}" stroke="#e27373" stroke-width="3" stroke-linecap="round" fill="none"/>
+      <path d="M ${Math.round(cx + height * 0.06)} ${Math.round(cy - height * 0.055)} C ${Math.round(cx + height * 0.022)} ${Math.round(cy - height * 0.02)}, ${Math.round(cx + height * 0.022)} ${Math.round(cy + height * 0.02)}, ${Math.round(cx + height * 0.06)} ${Math.round(cy + height * 0.055)}" stroke="#e27373" stroke-width="3" stroke-linecap="round" fill="none"/>
+      ${badge}`;
   }
 
-  return `${baseArena}
-    <g transform="translate(${Math.round(width * 0.5 - 70)},${Math.round(height * 0.42 - 48)})" fill="none" stroke="#ffffff" stroke-opacity="0.38" stroke-width="5">
-      <path d="M 0 80 C 30 42, 54 106, 86 62 C 108 34, 122 72, 140 44"/>
-      <path d="M 0 48 C 32 12, 56 74, 86 34 C 110 4, 124 42, 140 16"/>
-    </g>`;
+  return `${backdrop}
+    <path d="M ${Math.round(width * 0.3)} ${Math.round(height * 0.62)} C ${Math.round(width * 0.42)} ${Math.round(height * 0.44)}, ${Math.round(width * 0.56)} ${Math.round(height * 0.76)}, ${Math.round(width * 0.7)} ${Math.round(height * 0.52)}" stroke="#ffffff" stroke-opacity="0.3" stroke-width="4" fill="none"/>
+    ${badge}`;
 }
 
 export function sportCoverDataUri(sport: string, variant: CoverVariant = "landscape", seed = ""): string {
