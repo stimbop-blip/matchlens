@@ -1,15 +1,24 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
+import type { SyntheticEvent } from "react";
 
 import { resolveSportKind, resolveSportLabel, type SportLanguage } from "../../app/sport";
 
 type CardStatus = "pending" | "won" | "lost" | "refund";
 
 const FOOTBALL_HERO_IMAGE = "/images/sports/football-dark.png";
+const FOOTBALL_HERO_IMAGE_FALLBACK = "/images/sports/121321313131.jpg";
 
 function cleanImage(value: string | null | undefined): string | null {
   const trimmed = (value || "").trim();
   return trimmed ? trimmed : null;
+}
+
+function handleFootballHeroError(event: SyntheticEvent<HTMLImageElement>) {
+  const image = event.currentTarget;
+  if (image.dataset.fallbackApplied === "1") return;
+  image.dataset.fallbackApplied = "1";
+  image.src = FOOTBALL_HERO_IMAGE_FALLBACK;
 }
 
 export function SignalCard3D({
@@ -62,7 +71,13 @@ export function SignalCard3D({
     <motion.article whileHover={{ y: -3 }} whileTap={{ scale: 0.996 }} transition={{ duration: 0.16, ease: "easeOut" }}>
       <Link to={to} className={highConfidence ? "pb-feed-luxe-card pb-feed-luxe-card-neon" : "pb-feed-luxe-card"}>
         <div className={isFootball ? "pb-feed-luxe-media football" : "pb-feed-luxe-media"} aria-hidden="true">
-          <img className="pb-feed-luxe-image" src={coverSrc} alt="" loading="lazy" />
+          <img
+            className="pb-feed-luxe-image"
+            src={coverSrc}
+            alt=""
+            loading="lazy"
+            onError={isFootball ? handleFootballHeroError : undefined}
+          />
           <span className={`pb-feed-luxe-pill status ${status}`}>{statusLabel}</span>
           <span className="pb-feed-luxe-pill access">{accessLabel}</span>
           <div className="pb-feed-luxe-media-row">

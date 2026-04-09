@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type SyntheticEvent } from "react";
 import { Link } from "react-router-dom";
 import { Grid2x2, ListChecks, Newspaper, ShieldCheck, Sparkles, Wallet } from "lucide-react";
 
@@ -62,6 +62,15 @@ function predictionCover(signal: Prediction): { src: string; fallback: boolean }
 
 function formatOdds(value: number): string {
   return Number.isFinite(value) ? value.toFixed(2) : String(value);
+}
+
+const FOOTBALL_HERO_IMAGE_FALLBACK = "/images/sports/121321313131.jpg";
+
+function handleFootballHeroError(event: SyntheticEvent<HTMLImageElement>) {
+  const image = event.currentTarget;
+  if (image.dataset.fallbackApplied === "1") return;
+  image.dataset.fallbackApplied = "1";
+  image.src = FOOTBALL_HERO_IMAGE_FALLBACK;
 }
 
 function previewNews(value: string, maxLength = 160): string {
@@ -274,7 +283,13 @@ export function Home() {
                     className={signal.risk_level === "low" ? "pb-home-luxe-card pb-home-luxe-card-neon" : "pb-home-luxe-card"}
                   >
                     <div className={isFootball ? "pb-home-luxe-media football" : "pb-home-luxe-media"} aria-hidden="true">
-                      <img className="pb-home-luxe-image" src={cover.src} alt="" loading="lazy" />
+                      <img
+                        className="pb-home-luxe-image"
+                        src={cover.src}
+                        alt=""
+                        loading="lazy"
+                        onError={isFootball ? handleFootballHeroError : undefined}
+                      />
                       <span className={`pb-home-luxe-pill status ${signal.status}`}>{statusLabel(signal.status, t)}</span>
                       <span className="pb-home-luxe-pill access">{accessLabel(signal.access_level, t)}</span>
                       <div className="pb-home-luxe-media-row">
