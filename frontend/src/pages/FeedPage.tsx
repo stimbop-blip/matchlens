@@ -26,6 +26,13 @@ type GroupedDay = {
   list: Prediction[];
 };
 
+type HeroTrendPoint = {
+  x: number;
+  y: number;
+  status: Prediction["status"];
+  label: string;
+};
+
 const PREDICTIONS_LIMIT = 100;
 
 function parseErrorMessage(error: unknown, fallback: string): string {
@@ -98,6 +105,56 @@ function teaser(value: string | null | undefined, fallback: string) {
   if (!source) return fallback;
   if (source.length <= 150) return source;
   return `${source.slice(0, 147).trim()}...`;
+}
+
+function predictionTime(prediction: Prediction): number {
+  const parsed = new Date(prediction.published_at || prediction.event_start_at).getTime();
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
+function trendDelta(status: Prediction["status"]): number {
+  if (status === "won") return 1;
+  if (status === "lost") return -0.92;
+  if (status === "refund") return 0.16;
+  return 0.26;
+}
+
+function trendLabel(value: string, language: "ru" | "en"): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "--";
+  return date.toLocaleDateString(language === "ru" ? "ru-RU" : "en-US", {
+    day: "2-digit",
+    month: "2-digit",
+  });
+}
+
+function buildHeroTrend(items: Prediction[], language: "ru" | "en"): HeroTrendPoint[] {
+  if (items.length === 0) return [];
+
+  const sorted = [...items].sort((a, b) => predictionTime(a) - predictionTime(b));
+  const latest = sorted.slice(-12);
+  const series = latest.length === 1 ? [latest[0], latest[0]] : latest;
+
+  let cumulative = 0;
+  const steps = series.map((item) => {
+    cumulative += trendDelta(item.status);
+    return {
+      status: item.status,
+      score: cumulative,
+      label: trendLabel(item.event_start_at || item.published_at || "", language),
+    };
+  });
+
+  const minScore = Math.min(...steps.map((step) => step.score));
+  const maxScore = Math.max(...steps.map((step) => step.score));
+  const span = maxScore - minScore || 1;
+
+  return steps.map((step, index) => ({
+    x: steps.length === 1 ? 0 : index / (steps.length - 1),
+    y: 1 - (step.score - minScore) / span,
+    status: step.status,
+    label: step.label,
+  }));
 }
 
 export function FeedPage({ useThreeCards = false }: { useThreeCards?: boolean } = {}) {
@@ -200,11 +257,48 @@ export function FeedPage({ useThreeCards = false }: { useThreeCards?: boolean } 
   const premiumCount = items.filter((item) => item.access_level === "premium" || item.access_level === "vip").length;
   const pendingCount = items.filter((item) => item.status === "pending").length;
   const wonCount = items.filter((item) => item.status === "won").length;
-  const hitRate = items.length > 0 ? Math.round((wonCount / items.length) * 100) : 0;
+  const lostCount = items.filter((item) => item.status === "lost").length;
+  const refundCount = items.filter((item) => item.status === "refund").length;
   const heroBackdrop = useMemo(() => {
     const primarySport = items.find((item) => item.status === "pending")?.sport_type || items[0]?.sport_type || "football";
     return sportCoverDataUri(primarySport, "landscape");
   }, [items]);
+  const heroTrend = useMemo(() => buildHeroTrend(items, language), [items, language]);
+  const chart = useMemo(() => {
+    if (heroTrend.length === 0) return null;
+
+    const width = 1000;
+    const height = 264;
+    const padX = 40;
+    const padTop = 22;
+    const padBottom = 40;
+    const chartHeight = height - padTop - padBottom;
+
+    const points = heroTrend.map((point) => ({
+      x: padX + point.x * (width - padX * 2),
+      y: padTop + point.y * chartHeight,
+      status: point.status,
+      label: point.label,
+    }));
+
+    const linePath = points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`).join(" ");
+    const areaPath = `${linePath} L ${(width - padX).toFixed(2)} ${(height - padBottom).toFixed(2)} L ${padX.toFixed(2)} ${(height - padBottom).toFixed(2)} Z`;
+
+    const middleIndex = Math.floor((points.length - 1) / 2);
+    const xLabels = [points[0]?.label || "--", points[middleIndex]?.label || "--", points[points.length - 1]?.label || "--"];
+
+    return {
+      width,
+      height,
+      padX,
+      padTop,
+      padBottom,
+      points,
+      linePath,
+      areaPath,
+      xLabels,
+    };
+  }, [heroTrend]);
 
   return (
     <Layout>
@@ -214,29 +308,73 @@ export function FeedPage({ useThreeCards = false }: { useThreeCards?: boolean } 
           <img className="pb-feed-v4-hero-backdrop" src={heroBackdrop} alt="" loading="lazy" />
           <span className="pb-feed-v4-hero-overlay" />
           <span className="pb-feed-v4-hero-gloss" />
-          <div className="pb-feed-v4-hero-bars">
-            <span />
-            <span />
-            <span />
-            <span />
-            <span />
-          </div>
-          <div className="pb-feed-v4-hero-mark">
-            <span />
-            <span />
-            <span />
-          </div>
+
+          {chart ? (
+            <div className="pb-feed-v4-chart-wrap">
+              <svg className="pb-feed-v4-chart-svg" viewBox={`0 0 ${chart.width} ${chart.height}`} preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="pbFeedChartArea" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="rgba(120, 119, 255, 0.58)" />
+                    <stop offset="64%" stopColor="rgba(76, 178, 255, 0.34)" />
+                    <stop offset="100%" stopColor="rgba(76, 178, 255, 0.06)" />
+                  </linearGradient>
+                  <linearGradient id="pbFeedChartLine" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#8fe9ff" />
+                    <stop offset="52%" stopColor="#9b7bff" />
+                    <stop offset="100%" stopColor="#67d1ff" />
+                  </linearGradient>
+                </defs>
+
+                <line x1={chart.padX} y1={chart.padTop} x2={chart.width - chart.padX} y2={chart.padTop} className="pb-feed-v4-chart-gridline" />
+                <line
+                  x1={chart.padX}
+                  y1={Math.round((chart.height - chart.padBottom + chart.padTop) * 0.5)}
+                  x2={chart.width - chart.padX}
+                  y2={Math.round((chart.height - chart.padBottom + chart.padTop) * 0.5)}
+                  className="pb-feed-v4-chart-gridline"
+                />
+                <line
+                  x1={chart.padX}
+                  y1={chart.height - chart.padBottom}
+                  x2={chart.width - chart.padX}
+                  y2={chart.height - chart.padBottom}
+                  className="pb-feed-v4-chart-gridline"
+                />
+
+                <path d={chart.areaPath} className="pb-feed-v4-chart-area" />
+                <path d={chart.linePath} className="pb-feed-v4-chart-line" />
+
+                {chart.points.map((point, index) => (
+                  <g key={`${index}-${point.label}`}>
+                    <circle cx={point.x} cy={point.y} r={index === chart.points.length - 1 ? 8 : 6} className={`pb-feed-v4-chart-dot ${point.status}`} />
+                    <circle cx={point.x} cy={point.y} r={2.6} className="pb-feed-v4-chart-dot-core" />
+                  </g>
+                ))}
+              </svg>
+
+              <div className="pb-feed-v4-chart-axis">
+                <span>{chart.xLabels[0]}</span>
+                <span>{chart.xLabels[1]}</span>
+                <span>{chart.xLabels[2]}</span>
+              </div>
+            </div>
+          ) : (
+            <div className="pb-feed-v4-chart-empty">{language === "ru" ? "Нет данных для графика" : "No data for chart"}</div>
+          )}
         </div>
 
         <div className="pb-feed-v4-hero-status">
-          <span>
+          <span className="won">
             {t("feed.status.won")}: <b>{wonCount}</b>
           </span>
-          <span>
-            {t("feed.status.pending")}: <b>{pendingCount}</b>
+          <span className="lost">
+            {t("feed.status.lost")}: <b>{lostCount}</b>
           </span>
-          <span>
-            {t("home.performance.hit")}: <b>{hitRate}%</b>
+          <span className="refund">
+            {t("feed.status.refund")}: <b>{refundCount}</b>
+          </span>
+          <span className="pending">
+            {t("feed.status.pending")}: <b>{pendingCount}</b>
           </span>
         </div>
 
