@@ -11,7 +11,7 @@ const chartData = [
 
 export function SignalPerformanceChart() {
   return (
-    <div className="w-full bg-[#0f172a] rounded-3xl p-6 border border-[#1e2937] relative overflow-hidden">
+    <div className="w-full bg-[#0f172a] rounded-3xl p-6 border border-[#1e2937]">
       <div className="flex justify-between items-start mb-6">
         <div>
           <div className="inline-flex px-4 py-1.5 bg-[#1e2937] text-[#67e8f9] text-xs font-semibold rounded-2xl">
@@ -22,35 +22,28 @@ export function SignalPerformanceChart() {
         </div>
 
         <div className="text-right">
-          <div className="text-5xl font-bold text-white tracking-tighter">67%</div>
-          <div className="text-[#22d3ee] text-sm mt-1">СРЕДНЯЯ ТОЧНОСТЬ</div>
+          <div className="text-5xl font-bold text-white">67%</div>
+          <div className="text-[#22d3ee] text-sm">СРЕДНЯЯ ТОЧНОСТЬ</div>
         </div>
       </div>
 
       <div className="h-[260px]">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={chartData} margin={{ top: 20, right: 20, left: 0, bottom: 10 }}>
+          <AreaChart data={chartData}>
             <defs>
-              <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#22d3ee" stopOpacity={0.85} />
+              <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#22d3ee" stopOpacity={0.8} />
                 <stop offset="95%" stopColor="#22d3ee" stopOpacity={0.08} />
               </linearGradient>
             </defs>
 
-            <XAxis 
-              dataKey="date" 
-              axisLine={false} 
-              tickLine={false} 
-              tick={{ fill: "#64748b", fontSize: 12 }}
-              dy={10}
-            />
+            <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: "#64748b" }} />
 
             <Tooltip
               contentStyle={{
                 backgroundColor: "#1e2937",
                 border: "none",
                 borderRadius: "12px",
-                color: "#f1f5f9",
               }}
             />
 
@@ -59,9 +52,8 @@ export function SignalPerformanceChart() {
               dataKey="value"
               stroke="#22d3ee"
               strokeWidth={4}
-              fill="url(#areaGrad)"
-              dot={{ fill: "#0f172a", stroke: "#22d3ee", strokeWidth: 3.5, r: 6 }}
-              activeDot={{ r: 8.5, fill: "#22d3ee", stroke: "#0f172a", strokeWidth: 4 }}
+              fill="url(#grad)"
+              dot={{ fill: "#0f172a", stroke: "#22d3ee", r: 5 }}
             />
           </AreaChart>
         </ResponsiveContainer>
