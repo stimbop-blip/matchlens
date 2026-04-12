@@ -35,6 +35,10 @@ function nextStatus(current: string): string {
 }
 
 export function AIScanningLoader({ className = "", compact = false, fullscreen = false }: AIScanningLoaderProps) {
+  const [isLightTheme, setIsLightTheme] = useState(() => {
+    if (typeof document === "undefined") return false;
+    return document.documentElement.getAttribute("data-theme") === "light";
+  });
   const [matchCount, setMatchCount] = useState(1842);
   const [statusText, setStatusText] = useState(STATUSES[0]);
   const [progress, setProgress] = useState(67.2);
@@ -84,11 +88,89 @@ export function AIScanningLoader({ className = "", compact = false, fullscreen =
     };
   }, []);
 
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+
+    const root = document.documentElement;
+    const applyTheme = () => {
+      setIsLightTheme(root.getAttribute("data-theme") === "light");
+    };
+
+    applyTheme();
+
+    const observer = new MutationObserver(applyTheme);
+    observer.observe(root, { attributes: true, attributeFilter: ["data-theme"] });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
   const scannerSize = compact ? 142 : 168;
   const coreSize = compact ? 58 : 68;
   const valueSize = compact ? 44 : 54;
   const labelSize = compact ? 12 : 14;
   const progressLabel = `${Math.round(progress)}%`;
+
+  const palette = isLightTheme
+    ? {
+        panelBorder: "1px solid rgba(66, 128, 180, 0.34)",
+        panelBackground: "#eef5ff",
+        panelShadow: "0 22px 46px rgba(27, 58, 92, 0.16)",
+        panelOverlay: "linear-gradient(145deg, #ffffff 0%, #e9f3ff 52%, #f7fbff 100%)",
+        radarBorder: "1px solid rgba(72, 153, 211, 0.32)",
+        radarBackground: "radial-gradient(circle at 50% 54%, rgba(235, 246, 255, 0.96) 0%, rgba(223, 238, 252, 0.98) 100%)",
+        radarInset: "inset 0 0 26px rgba(82, 173, 224, 0.18)",
+        ringSoft: "rgba(98, 152, 210, 0.3)",
+        ringHard: "rgba(72, 180, 232, 0.42)",
+        sweepStrong: "rgba(47, 179, 227, 0.9)",
+        sweepSoft: "rgba(47, 179, 227, 0.26)",
+        beamTop: "rgba(20, 166, 216, 0.82)",
+        beamMid: "rgba(20, 166, 216, 0.38)",
+        beamGlow: "0 0 14px rgba(52, 179, 226, 0.56)",
+        dotFill: "rgba(42, 172, 217, 0.94)",
+        dotGlow: "0 0 8px rgba(42, 172, 217, 0.44)",
+        coreFill: "linear-gradient(145deg, #36c8ea 0%, #2aafe0 55%, #2e8dcb 100%)",
+        corePulseA: "0 0 34px rgba(50, 176, 228, 0.42)",
+        corePulseB: "0 0 58px rgba(50, 176, 228, 0.76)",
+        coreInner: "#f7fbff",
+        valueColor: "#163a61",
+        valueShadow: "0 0 18px rgba(98, 190, 237, 0.28)",
+        labelColor: "#4f6f91",
+        trackColor: "#c8d9ea",
+        barGradient: "linear-gradient(90deg, #25c6db 0%, #4487f2 100%)",
+        progressColor: "#59779a",
+        statusColor: "#2f7ca5",
+      }
+    : {
+        panelBorder: "1px solid rgba(31, 41, 55, 0.8)",
+        panelBackground: "#0a0b14",
+        panelShadow: "0 24px 52px rgba(0, 0, 0, 0.5)",
+        panelOverlay: "linear-gradient(140deg, #0a0b14 0%, #111827 48%, #0a0b14 100%)",
+        radarBorder: "1px solid rgba(82, 190, 228, 0.26)",
+        radarBackground: "radial-gradient(circle at 50% 54%, rgba(8, 25, 43, 0.9) 0%, rgba(2, 8, 16, 0.98) 100%)",
+        radarInset: "inset 0 0 26px rgba(52, 177, 214, 0.18)",
+        ringSoft: "rgba(86, 151, 212, 0.2)",
+        ringHard: "rgba(112, 222, 255, 0.28)",
+        sweepStrong: "rgba(75, 234, 255, 0.82)",
+        sweepSoft: "rgba(75, 234, 255, 0.22)",
+        beamTop: "rgba(165, 243, 252, 0.96)",
+        beamMid: "rgba(81, 221, 255, 0.54)",
+        beamGlow: "0 0 16px rgba(124, 242, 255, 0.76)",
+        dotFill: "rgba(162, 240, 255, 0.95)",
+        dotGlow: "0 0 10px rgba(162, 240, 255, 0.85)",
+        coreFill: "linear-gradient(145deg, #22d3ee 0%, #06b6d4 55%, #0891b2 100%)",
+        corePulseA: "0 0 42px rgba(34, 211, 238, 0.48)",
+        corePulseB: "0 0 72px rgba(34, 211, 238, 0.95)",
+        coreInner: "#09121f",
+        valueColor: "#f7fbff",
+        valueShadow: "0 0 24px rgba(110, 223, 255, 0.34)",
+        labelColor: "#9eb5cc",
+        trackColor: "#1f2937",
+        barGradient: "linear-gradient(90deg, #22d3ee 0%, #67e8f9 100%)",
+        progressColor: "#64748b",
+        statusColor: "#67e8f9",
+      };
 
   return (
     <div
@@ -111,9 +193,9 @@ export function AIScanningLoader({ className = "", compact = false, fullscreen =
           position: "relative",
           overflow: "hidden",
           borderRadius: compact ? 20 : 24,
-          border: "1px solid rgba(31, 41, 55, 0.8)",
-          background: "#0a0b14",
-          boxShadow: "0 24px 52px rgba(0, 0, 0, 0.5)",
+          border: palette.panelBorder,
+          background: palette.panelBackground,
+          boxShadow: palette.panelShadow,
           padding: compact ? "24px 20px" : "36px",
         }}
       >
@@ -122,7 +204,7 @@ export function AIScanningLoader({ className = "", compact = false, fullscreen =
           style={{
             position: "absolute",
             inset: 0,
-            background: "linear-gradient(140deg, #0a0b14 0%, #111827 48%, #0a0b14 100%)",
+            background: palette.panelOverlay,
           }}
         />
 
@@ -133,9 +215,9 @@ export function AIScanningLoader({ className = "", compact = false, fullscreen =
                 position: "absolute",
                 inset: 0,
                 borderRadius: "999px",
-                border: "1px solid rgba(82, 190, 228, 0.26)",
-                background: "radial-gradient(circle at 50% 54%, rgba(8, 25, 43, 0.9) 0%, rgba(2, 8, 16, 0.98) 100%)",
-                boxShadow: "inset 0 0 26px rgba(52, 177, 214, 0.18)",
+                border: palette.radarBorder,
+                background: palette.radarBackground,
+                boxShadow: palette.radarInset,
               }}
             />
 
@@ -146,7 +228,7 @@ export function AIScanningLoader({ className = "", compact = false, fullscreen =
                   position: "absolute",
                   inset,
                   borderRadius: "999px",
-                  border: `1px solid ${idx === 1 ? "rgba(112, 222, 255, 0.28)" : "rgba(86, 151, 212, 0.2)"}`,
+                  border: `1px solid ${idx === 1 ? palette.ringHard : palette.ringSoft}`,
                 }}
                 animate={{ opacity: [0.6, 1, 0.6], scale: [1, 1.01, 1] }}
                 transition={{ duration: 4.2 + idx * 0.8, repeat: Infinity, ease: "easeInOut" }}
@@ -159,7 +241,7 @@ export function AIScanningLoader({ className = "", compact = false, fullscreen =
                 inset: 0,
                 borderRadius: "999px",
                 background:
-                  "conic-gradient(from 0deg, rgba(75, 234, 255, 0.82) 0deg, rgba(75, 234, 255, 0.22) 54deg, rgba(75, 234, 255, 0) 128deg, rgba(75, 234, 255, 0) 360deg)",
+                  `conic-gradient(from 0deg, ${palette.sweepStrong} 0deg, ${palette.sweepSoft} 54deg, rgba(0, 0, 0, 0) 128deg, rgba(0, 0, 0, 0) 360deg)`,
                 WebkitMaskImage:
                   "radial-gradient(circle, transparent 0%, transparent 42%, black 49%, black 73%, transparent 79%, transparent 100%)",
                 maskImage: "radial-gradient(circle, transparent 0%, transparent 42%, black 49%, black 73%, transparent 79%, transparent 100%)",
@@ -185,8 +267,8 @@ export function AIScanningLoader({ className = "", compact = false, fullscreen =
                   transform: "translateY(-50%)",
                   borderRadius: "999px",
                   background:
-                    "linear-gradient(180deg, rgba(165, 243, 252, 0.96) 0%, rgba(81, 221, 255, 0.54) 56%, rgba(81, 221, 255, 0) 100%)",
-                  boxShadow: "0 0 16px rgba(124, 242, 255, 0.76)",
+                    `linear-gradient(180deg, ${palette.beamTop} 0%, ${palette.beamMid} 56%, rgba(0, 0, 0, 0) 100%)`,
+                  boxShadow: palette.beamGlow,
                 }}
               />
             </motion.div>
@@ -208,8 +290,8 @@ export function AIScanningLoader({ className = "", compact = false, fullscreen =
                   marginLeft: compact ? -2.5 : -3,
                   marginTop: compact ? -2.5 : -3,
                   borderRadius: "999px",
-                  background: "rgba(162, 240, 255, 0.95)",
-                  boxShadow: "0 0 10px rgba(162, 240, 255, 0.85)",
+                  background: palette.dotFill,
+                  boxShadow: palette.dotGlow,
                 }}
                 animate={{ opacity: [0.2, 1, 0.2], scale: [0.8, 1.16, 0.86] }}
                 transition={{ duration: 2.7, repeat: Infinity, ease: "easeInOut", delay: dot.delay }}
@@ -230,18 +312,18 @@ export function AIScanningLoader({ className = "", compact = false, fullscreen =
                   width: coreSize,
                   height: coreSize,
                   borderRadius: "999px",
-                  background: "linear-gradient(145deg, #22d3ee 0%, #06b6d4 55%, #0891b2 100%)",
+                  background: palette.coreFill,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  boxShadow: "0 0 62px rgba(34, 211, 238, 0.9)",
+                  boxShadow: palette.corePulseB,
                 }}
                 animate={{
                   scale: [1, 1.1, 1],
                   boxShadow: [
-                    "0 0 42px rgba(34, 211, 238, 0.48)",
-                    "0 0 72px rgba(34, 211, 238, 0.95)",
-                    "0 0 42px rgba(34, 211, 238, 0.48)",
+                    palette.corePulseA,
+                    palette.corePulseB,
+                    palette.corePulseA,
                   ],
                 }}
                 transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}
@@ -251,7 +333,7 @@ export function AIScanningLoader({ className = "", compact = false, fullscreen =
                     width: compact ? 18 : 24,
                     height: compact ? 18 : 24,
                     borderRadius: "999px",
-                    background: "#09121f",
+                    background: palette.coreInner,
                   }}
                 />
               </motion.div>
@@ -266,14 +348,14 @@ export function AIScanningLoader({ className = "", compact = false, fullscreen =
               exit={{ opacity: 0, y: -18, filter: "blur(4px)" }}
               transition={{ duration: 0.55, ease: "easeOut" }}
               style={{
-                color: "#f7fbff",
+                color: palette.valueColor,
                 fontFamily: "Satoshi, Manrope, Segoe UI, sans-serif",
                 fontSize: valueSize,
                 fontWeight: 700,
                 lineHeight: 1,
                 letterSpacing: -1.1,
                 fontVariantNumeric: "tabular-nums",
-                textShadow: "0 0 24px rgba(110, 223, 255, 0.34)",
+                textShadow: palette.valueShadow,
               }}
             >
               {matchCount.toLocaleString("ru-RU")}
@@ -283,7 +365,7 @@ export function AIScanningLoader({ className = "", compact = false, fullscreen =
           <p
             style={{
               margin: "4px 0 0",
-              color: "#9eb5cc",
+              color: palette.labelColor,
               fontSize: labelSize,
               fontWeight: 600,
               letterSpacing: 0.9,
@@ -294,14 +376,14 @@ export function AIScanningLoader({ className = "", compact = false, fullscreen =
           </p>
 
           <div style={{ width: "100%", maxWidth: compact ? 220 : 260, marginTop: compact ? 20 : 32 }}>
-            <div style={{ height: 1, background: "#1f2937", position: "relative" }}>
+            <div style={{ height: 1, background: palette.trackColor, position: "relative" }}>
               <motion.div
                 style={{
                   position: "absolute",
                   left: 0,
                   top: 0,
                   height: 1,
-                  background: "linear-gradient(90deg, #22d3ee 0%, #67e8f9 100%)",
+                  background: palette.barGradient,
                 }}
                 initial={{ width: "0%" }}
                 animate={{ width: `${progress}%` }}
@@ -313,7 +395,7 @@ export function AIScanningLoader({ className = "", compact = false, fullscreen =
                 marginTop: 6,
                 display: "flex",
                 justifyContent: "space-between",
-                color: "#64748b",
+                color: palette.progressColor,
                 fontSize: 11,
                 fontFamily: "Manrope, Segoe UI, sans-serif",
                 letterSpacing: 0.28,
@@ -332,7 +414,7 @@ export function AIScanningLoader({ className = "", compact = false, fullscreen =
               exit={{ opacity: 0 }}
               style={{
                 margin: `${compact ? 22 : 28}px 0 0`,
-                color: "#67e8f9",
+                color: palette.statusColor,
                 fontSize: 14,
                 fontWeight: 500,
                 letterSpacing: 0.9,

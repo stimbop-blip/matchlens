@@ -10126,14 +10126,14 @@ h4 {
   min-height: 232px;
   margin-bottom: 12px;
   border-radius: 20px;
-  border: 1px solid rgba(182, 209, 233, 0.58);
+  border: 1px solid rgba(80, 110, 146, 0.56);
   background:
-    radial-gradient(circle at 22% -34%, rgba(106, 198, 255, 0.24), transparent 56%),
-    radial-gradient(circle at 78% -22%, rgba(166, 124, 255, 0.18), transparent 54%),
-    linear-gradient(168deg, #fbfdff 0%, #eef5ff 58%, #f7faff 100%);
+    radial-gradient(circle at 22% -34%, rgba(99, 198, 255, 0.2), transparent 56%),
+    radial-gradient(circle at 78% -22%, rgba(144, 110, 255, 0.16), transparent 54%),
+    linear-gradient(170deg, #131c2f 0%, #10182a 54%, #0d1423 100%);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.96),
-    0 14px 28px rgba(20, 46, 78, 0.16);
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 16px 28px rgba(0, 0, 0, 0.34);
   overflow: hidden;
 }
 
@@ -10142,8 +10142,8 @@ h4 {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 72% 28%, rgba(121, 200, 255, 0.18), transparent 48%),
-    radial-gradient(circle at 42% 74%, rgba(148, 124, 255, 0.15), transparent 56%);
+    radial-gradient(circle at 72% 28%, rgba(104, 196, 255, 0.14), transparent 48%),
+    radial-gradient(circle at 42% 74%, rgba(140, 114, 250, 0.12), transparent 56%);
   pointer-events: none;
 }
 
@@ -10173,9 +10173,9 @@ h4 {
 
 .pb-feed-v4-chart-chip {
   border-radius: 999px;
-  border: 1px solid rgba(172, 196, 221, 0.64);
-  background: rgba(255, 255, 255, 0.8);
-  color: #60789a;
+  border: 1px solid rgba(106, 145, 182, 0.44);
+  background: rgba(13, 28, 49, 0.66);
+  color: #9fb6cf;
   font-size: 11px;
   font-weight: 700;
   padding: 4px 10px;
@@ -10203,14 +10203,14 @@ h4 {
 }
 
 .pb-feed-v4-chart-head-metrics small {
-  color: #6f88a7;
+  color: #9ab1ca;
   font-size: 10px;
   font-weight: 700;
   line-height: 1;
 }
 
 .pb-feed-v4-chart-head-metrics strong {
-  color: #1a2f4b;
+  color: #e4edfb;
   font-size: 15px;
   font-weight: 800;
   line-height: 1.1;
@@ -10231,7 +10231,7 @@ h4 {
 }
 
 .pb-feed-v4-chart-gridline {
-  stroke: rgba(92, 123, 153, 0.24);
+  stroke: rgba(112, 148, 184, 0.26);
   stroke-width: 1;
 }
 
@@ -10242,7 +10242,7 @@ h4 {
 
 .pb-feed-v4-chart-line {
   fill: none;
-  stroke: #1f2937;
+  stroke: #0d1420;
   stroke-width: 3.2;
   stroke-linecap: round;
   stroke-linejoin: round;
@@ -10250,21 +10250,21 @@ h4 {
 }
 
 .pb-feed-v4-chart-tag-value {
-  fill: #263549;
+  fill: #dbe8f8;
   font-size: 16px;
   font-weight: 800;
   letter-spacing: 0.2px;
 }
 
 .pb-feed-v4-chart-tag-hint {
-  fill: #6e86a4;
+  fill: #93acc7;
   font-size: 10px;
   font-weight: 700;
 }
 
 .pb-feed-v4-chart-dot-ring {
-  fill: rgba(255, 255, 255, 0.72);
-  stroke: rgba(114, 164, 210, 0.5);
+  fill: rgba(15, 32, 52, 0.74);
+  stroke: rgba(144, 193, 236, 0.56);
   stroke-width: 1.4;
 }
 
@@ -10331,7 +10331,7 @@ h4 {
 }
 
 .pb-feed-v4-chart-axis span {
-  color: #6f86a4;
+  color: #98b0cc;
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.2px;
@@ -10346,7 +10346,7 @@ h4 {
   inset: 0;
   display: grid;
   place-items: center;
-  color: #7087a4;
+  color: #9ab1cc;
   font-size: 12px;
   font-weight: 600;
 }
@@ -10359,16 +10359,16 @@ h4 {
 }
 
 .pb-feed-v4-hero-status span {
-  border: 1px solid rgba(178, 205, 230, 0.56);
+  border: 1px solid rgba(86, 120, 158, 0.5);
   border-radius: 12px;
-  background: rgba(247, 251, 255, 0.84);
+  background: rgba(13, 28, 47, 0.62);
   padding: 7px 8px;
-  color: #6f87a4;
+  color: #9fb6ce;
   font-size: 11px;
 }
 
 .pb-feed-v4-hero-status b {
-  color: #1e324f;
+  color: #e3ecf9;
 }
 
 .pb-feed-v4-hero-status span.won b {
@@ -12962,6 +12962,10 @@ body {
   color: #253a57;
 }
 
+:root[data-theme="light"] .pb-feed-v4-chart-tag-value {
+  fill: #253a57;
+}
+
 :root[data-theme="light"] .pb-feed-v4-chart-tag-hint {
   fill: #6882a1;
 }
@@ -12972,6 +12976,11 @@ body {
 
 :root[data-theme="light"] .pb-feed-v4-chart-dot-core {
   fill: #ffffff;
+}
+
+:root[data-theme="light"] .pb-feed-v4-chart-dot-ring {
+  fill: rgba(255, 255, 255, 0.72);
+  stroke: rgba(114, 164, 210, 0.5);
 }
 
 :root[data-theme="light"] .pb-feed-v4-chart-widget {
