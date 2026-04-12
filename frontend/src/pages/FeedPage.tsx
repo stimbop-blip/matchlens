@@ -29,6 +29,7 @@ type HeroTrendPoint = {
   x: number;
   y: number;
   score: number;
+  signal: number;
   won: number;
   lost: number;
   refund: number;
@@ -38,6 +39,10 @@ type HeroTrendPoint = {
 };
 
 const PREDICTIONS_LIMIT = 100;
+
+function clampNumber(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
 
 function parseErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error && error.message.trim()) return error.message;
@@ -161,6 +166,7 @@ function buildHeroTrend(items: Prediction[], language: "ru" | "en"): HeroTrendPo
   const series = latest.length === 1 ? [latest[0], latest[0]] : latest;
 
   let cumulative = 0;
+  let signal = 0;
   let won = 0;
   let lost = 0;
   let refund = 0;
@@ -173,9 +179,22 @@ function buildHeroTrend(items: Prediction[], language: "ru" | "en"): HeroTrendPo
     if (item.status === "pending") pending += 1;
 
     cumulative += trendDelta(item.status);
+    const oddsValue = Number(item.odds);
+    const oddsBias = Number.isFinite(oddsValue) ? clampNumber((oddsValue - 1.6) * 0.2, -0.42, 0.56) : 0;
+    const signalDelta =
+      item.status === "won"
+        ? 1.34 + oddsBias
+        : item.status === "lost"
+          ? -1.08 + oddsBias * 0.7
+          : item.status === "refund"
+            ? 0.26 + oddsBias * 0.55
+            : 0.44 + oddsBias * 0.4;
+    signal += signalDelta;
+
     return {
       status: item.status,
       score: cumulative,
+      signal,
       won,
       lost,
       refund,
@@ -192,6 +211,7 @@ function buildHeroTrend(items: Prediction[], language: "ru" | "en"): HeroTrendPo
     x: steps.length === 1 ? 0 : index / (steps.length - 1),
     y: 1 - (step.score - minScore) / span,
     score: step.score,
+    signal: step.signal,
     won: step.won,
     lost: step.lost,
     refund: step.refund,
@@ -319,6 +339,7 @@ export function FeedPage({ useThreeCards = false }: { useThreeCards?: boolean } 
       x: padX + point.x * (width - padX * 2),
       y: padTop + point.y * chartHeight,
       score: point.score,
+      signal: point.signal,
       won: point.won,
       lost: point.lost,
       refund: point.refund,
@@ -327,19 +348,28 @@ export function FeedPage({ useThreeCards = false }: { useThreeCards?: boolean } 
       label: point.label,
     }));
 
-    const linePath = smoothSvgPath(points);
-    const baseY = height - padBottom;
-    const areaPath = `${linePath} L ${points[points.length - 1].x.toFixed(2)} ${baseY.toFixed(2)} L ${points[0].x.toFixed(2)} ${baseY.toFixed(2)} Z`;
+    const signalMin = Math.min(...points.map((point) => point.signal));
+    const signalMax = Math.max(...points.map((point) => point.signal));
+    const signalSpan = signalMax - signalMin || 1;
+    const pointsWithSignal = points.map((point) => ({
+      ...point,
+      sy: padTop + (1 - (point.signal - signalMin) / signalSpan) * chartHeight,
+    }));
 
-    const axisIndices = [0, 0.2, 0.4, 0.6, 0.8, 1].map((part) => Math.round((points.length - 1) * part));
-    const axisLabels = axisIndices.map((index) => points[index]?.label || "--");
+    const linePath = smoothSvgPath(pointsWithSignal);
+    const signalPath = smoothSvgPath(pointsWithSignal.map((point) => ({ x: point.x, y: point.sy })));
+    const baseY = height - padBottom;
+    const areaPath = `${linePath} L ${pointsWithSignal[pointsWithSignal.length - 1].x.toFixed(2)} ${baseY.toFixed(2)} L ${pointsWithSignal[0].x.toFixed(2)} ${baseY.toFixed(2)} Z`;
+
+    const axisIndices = [0, 0.25, 0.5, 0.75, 1].map((part) => Math.round((pointsWithSignal.length - 1) * part));
+    const axisLabels = axisIndices.map((index) => pointsWithSignal[index]?.label || "--");
 
     const tagIndices = [0.2, 0.5, 0.82]
       .map((part) => Math.round((points.length - 1) * part))
       .filter((index, indexPos, all) => all.indexOf(index) === indexPos)
       .slice(0, 3);
     const tags = tagIndices.map((index) => {
-      const point = points[index];
+      const point = pointsWithSignal[index];
       return {
         x: point.x,
         y: point.y,
@@ -348,6 +378,10 @@ export function FeedPage({ useThreeCards = false }: { useThreeCards?: boolean } 
       };
     });
 
+    const latestPoint = pointsWithSignal[pointsWithSignal.length - 1];
+    const latestSignal = Number(latestPoint.signal.toFixed(1));
+    const trendShift = Number((latestPoint.score - pointsWithSignal[0].score).toFixed(1));
+
     return {
       width,
       height,
@@ -355,11 +389,14 @@ export function FeedPage({ useThreeCards = false }: { useThreeCards?: boolean } 
       padTop,
       padBottom,
       baseY,
-      points,
+      points: pointsWithSignal,
       linePath,
+      signalPath,
       areaPath,
       axisLabels,
       tags,
+      latestSignal,
+      trendShift,
     };
   }, [heroTrend]);
 
@@ -372,8 +409,8 @@ export function FeedPage({ useThreeCards = false }: { useThreeCards?: boolean } 
               <div className="pb-feed-v4-chart-shell">
                 <div className="pb-feed-v4-chart-head">
                   <div className="pb-feed-v4-chart-chip-row">
-                    <span className="pb-feed-v4-chart-chip active">{language === "ru" ? "Динамика" : "Trend"}</span>
-                    <span className="pb-feed-v4-chart-chip">{language === "ru" ? "Сигналы" : "Signals"}</span>
+                    <span className="pb-feed-v4-chart-chip active">{language === "ru" ? "Кривая" : "Curve"}</span>
+                    <span className="pb-feed-v4-chart-chip">{language === "ru" ? "Сигнал" : "Signal"}</span>
                   </div>
                   <div className="pb-feed-v4-chart-head-metrics">
                     <article>
@@ -392,65 +429,129 @@ export function FeedPage({ useThreeCards = false }: { useThreeCards?: boolean } 
                 </div>
 
                 <div className="pb-feed-v4-chart-main">
-                  <svg className="pb-feed-v4-chart-svg" viewBox={`0 0 ${chart.width} ${chart.height}`} preserveAspectRatio="none">
-                    <defs>
-                      <linearGradient id="pbFeedChartArea" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="rgba(113, 100, 255, 0.68)" />
-                        <stop offset="56%" stopColor="rgba(81, 193, 255, 0.44)" />
-                        <stop offset="100%" stopColor="rgba(81, 193, 255, 0.05)" />
-                      </linearGradient>
-                      <linearGradient id="pbFeedChartBloomA" x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0%" stopColor="rgba(106, 223, 255, 0.58)" />
-                        <stop offset="100%" stopColor="rgba(106, 223, 255, 0)" />
-                      </linearGradient>
-                      <linearGradient id="pbFeedChartBloomB" x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0%" stopColor="rgba(148, 102, 255, 0.56)" />
-                        <stop offset="100%" stopColor="rgba(148, 102, 255, 0)" />
-                      </linearGradient>
-                    </defs>
+                  <div className="pb-feed-v4-chart-plot">
+                    <motion.svg
+                      className="pb-feed-v4-chart-svg"
+                      viewBox={`0 0 ${chart.width} ${chart.height}`}
+                      preserveAspectRatio="none"
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.46, ease: "easeOut" }}
+                    >
+                      <defs>
+                        <linearGradient id="pbFeedChartArea" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="rgba(46, 211, 255, 0.72)" />
+                          <stop offset="52%" stopColor="rgba(55, 140, 255, 0.34)" />
+                          <stop offset="100%" stopColor="rgba(55, 140, 255, 0.04)" />
+                        </linearGradient>
+                        <linearGradient id="pbFeedChartSignal" x1="0" y1="0" x2="1" y2="0">
+                          <stop offset="0%" stopColor="rgba(86, 248, 205, 0.85)" />
+                          <stop offset="100%" stopColor="rgba(46, 211, 255, 0.95)" />
+                        </linearGradient>
+                        <linearGradient id="pbFeedChartBloomA" x1="0" y1="0" x2="1" y2="1">
+                          <stop offset="0%" stopColor="rgba(97, 233, 255, 0.54)" />
+                          <stop offset="100%" stopColor="rgba(97, 233, 255, 0)" />
+                        </linearGradient>
+                        <linearGradient id="pbFeedChartBloomB" x1="0" y1="0" x2="1" y2="1">
+                          <stop offset="0%" stopColor="rgba(87, 255, 196, 0.46)" />
+                          <stop offset="100%" stopColor="rgba(87, 255, 196, 0)" />
+                        </linearGradient>
+                      </defs>
 
-                    <line x1={chart.padX} y1={chart.padTop} x2={chart.width - chart.padX} y2={chart.padTop} className="pb-feed-v4-chart-gridline" />
-                    <line
-                      x1={chart.padX}
-                      y1={Math.round((chart.baseY + chart.padTop) * 0.5)}
-                      x2={chart.width - chart.padX}
-                      y2={Math.round((chart.baseY + chart.padTop) * 0.5)}
-                      className="pb-feed-v4-chart-gridline"
-                    />
-                    <line x1={chart.padX} y1={chart.baseY} x2={chart.width - chart.padX} y2={chart.baseY} className="pb-feed-v4-chart-gridline" />
+                      <line x1={chart.padX} y1={chart.padTop} x2={chart.width - chart.padX} y2={chart.padTop} className="pb-feed-v4-chart-gridline" />
+                      <line
+                        x1={chart.padX}
+                        y1={Math.round((chart.baseY + chart.padTop) * 0.5)}
+                        x2={chart.width - chart.padX}
+                        y2={Math.round((chart.baseY + chart.padTop) * 0.5)}
+                        className="pb-feed-v4-chart-gridline"
+                      />
+                      <line x1={chart.padX} y1={chart.baseY} x2={chart.width - chart.padX} y2={chart.baseY} className="pb-feed-v4-chart-gridline" />
 
-                    <ellipse cx={chart.points[Math.floor((chart.points.length - 1) * 0.18)]?.x || chart.padX} cy={chart.baseY - 26} rx="96" ry="56" fill="url(#pbFeedChartBloomA)" />
-                    <ellipse cx={chart.points[Math.floor((chart.points.length - 1) * 0.52)]?.x || chart.width * 0.5} cy={chart.baseY - 64} rx="104" ry="72" fill="url(#pbFeedChartBloomB)" />
-                    <ellipse cx={chart.points[Math.floor((chart.points.length - 1) * 0.82)]?.x || chart.width - chart.padX} cy={chart.baseY - 30} rx="98" ry="60" fill="url(#pbFeedChartArea)" />
+                      <ellipse cx={chart.points[Math.floor((chart.points.length - 1) * 0.18)]?.x || chart.padX} cy={chart.baseY - 26} rx="96" ry="56" fill="url(#pbFeedChartBloomA)" />
+                      <ellipse cx={chart.points[Math.floor((chart.points.length - 1) * 0.52)]?.x || chart.width * 0.5} cy={chart.baseY - 64} rx="104" ry="72" fill="url(#pbFeedChartBloomB)" />
+                      <ellipse cx={chart.points[Math.floor((chart.points.length - 1) * 0.82)]?.x || chart.width - chart.padX} cy={chart.baseY - 30} rx="98" ry="60" fill="url(#pbFeedChartArea)" />
 
-                    <path d={chart.areaPath} className="pb-feed-v4-chart-area" />
-                    <path d={chart.linePath} className="pb-feed-v4-chart-line" />
+                      <motion.path
+                        key={`area-${chart.areaPath}`}
+                        d={chart.areaPath}
+                        className="pb-feed-v4-chart-area"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 0.92 }}
+                        transition={{ duration: 0.7, ease: "easeOut" }}
+                      />
+                      <motion.path
+                        key={`signal-${chart.signalPath}`}
+                        d={chart.signalPath}
+                        className="pb-feed-v4-chart-line signal"
+                        initial={{ pathLength: 0, opacity: 0.18 }}
+                        animate={{ pathLength: 1, opacity: 0.9 }}
+                        transition={{ duration: 1.08, ease: "easeOut" }}
+                      />
+                      <motion.path
+                        key={`line-${chart.linePath}`}
+                        d={chart.linePath}
+                        className="pb-feed-v4-chart-line"
+                        initial={{ pathLength: 0, opacity: 0.24 }}
+                        animate={{ pathLength: 1, opacity: 1 }}
+                        transition={{ duration: 1.24, ease: "easeOut", delay: 0.08 }}
+                      />
 
-                    {chart.tags.map((tag, index) => (
-                      <g key={`${tag.hint}-${index}`} transform={`translate(${tag.x.toFixed(2)},${Math.max(24, tag.y - 18).toFixed(2)})`}>
-                        <text textAnchor="middle" className="pb-feed-v4-chart-tag-value">
-                          {tag.value}
-                        </text>
-                        <text y="18" textAnchor="middle" className="pb-feed-v4-chart-tag-hint">
-                          {tag.hint}
-                        </text>
-                      </g>
-                    ))}
+                      {chart.tags.map((tag, index) => (
+                        <g key={`${tag.hint}-${index}`} transform={`translate(${tag.x.toFixed(2)},${Math.max(24, tag.y - 18).toFixed(2)})`}>
+                          <text textAnchor="middle" className="pb-feed-v4-chart-tag-value">
+                            {tag.value}
+                          </text>
+                          <text y="18" textAnchor="middle" className="pb-feed-v4-chart-tag-hint">
+                            {tag.hint}
+                          </text>
+                        </g>
+                      ))}
 
-                    {chart.points.map((point, index) => (
-                      <g key={`${index}-${point.label}`}>
-                        <circle cx={point.x} cy={point.y} r={8} className="pb-feed-v4-chart-dot-ring" />
-                        <circle cx={point.x} cy={point.y} r={index === chart.points.length - 1 ? 5.4 : 4.6} className={`pb-feed-v4-chart-dot ${point.status}`} />
-                        <circle cx={point.x} cy={point.y} r={2.2} className="pb-feed-v4-chart-dot-core" />
-                      </g>
-                    ))}
-                  </svg>
+                      {chart.points.map((point, index) => {
+                        const isLastPoint = index === chart.points.length - 1;
+                        return (
+                          <g key={`${index}-${point.label}`}>
+                            {isLastPoint ? (
+                              <>
+                                <motion.circle
+                                  cx={point.x}
+                                  cy={point.y}
+                                  r={10}
+                                  className="pb-feed-v4-chart-dot-pulse"
+                                  initial={{ opacity: 0.18, r: 9 }}
+                                  animate={{ opacity: [0.45, 0.08, 0.45], r: [9, 16, 9] }}
+                                  transition={{ duration: 2.3, repeat: Infinity, ease: "easeInOut" }}
+                                />
+                                <motion.circle
+                                  cx={point.x}
+                                  cy={point.y}
+                                  r={14}
+                                  className="pb-feed-v4-chart-dot-pulse soft"
+                                  initial={{ opacity: 0.08, r: 13 }}
+                                  animate={{ opacity: [0.2, 0, 0.2], r: [13, 21, 13] }}
+                                  transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut", delay: 0.22 }}
+                                />
+                              </>
+                            ) : null}
+                            <circle cx={point.x} cy={point.sy} r={5} className="pb-feed-v4-chart-dot-ring signal" />
+                            <circle cx={point.x} cy={point.y} r={8} className="pb-feed-v4-chart-dot-ring" />
+                            <circle cx={point.x} cy={point.y} r={isLastPoint ? 5.4 : 4.6} className={`pb-feed-v4-chart-dot ${point.status}`} />
+                            <circle cx={point.x} cy={point.y} r={2.2} className="pb-feed-v4-chart-dot-core" />
+                          </g>
+                        );
+                      })}
+                    </motion.svg>
+                  </div>
 
-                  <aside className="pb-feed-v4-chart-widget">
+                  <aside className={chart.latestSignal >= 0 ? "pb-feed-v4-chart-widget positive" : "pb-feed-v4-chart-widget negative"}>
+                    <span className={chart.trendShift >= 0 ? "pb-feed-v4-chart-widget-shift up" : "pb-feed-v4-chart-widget-shift down"}>
+                      {chart.trendShift >= 0 ? "▲" : "▼"} {chart.trendShift > 0 ? `+${chart.trendShift}` : chart.trendShift}
+                    </span>
                     <small>{language === "ru" ? "Точность" : "Hit rate"}</small>
                     <strong>{hitRate}%</strong>
-                    <small>{language === "ru" ? "Сигналы" : "Signals"}</small>
-                    <strong>{items.length}</strong>
+                    <small>{language === "ru" ? "Индекс" : "Index"}</small>
+                    <strong>{chart.latestSignal > 0 ? `+${chart.latestSignal}` : chart.latestSignal}</strong>
                   </aside>
                 </div>
 

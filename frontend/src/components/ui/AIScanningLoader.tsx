@@ -113,13 +113,13 @@ export function AIScanningLoader({ className = "", compact = false, fullscreen =
   const progressLabel = `${Math.round(progress)}%`;
 
   const palette = isLightTheme
-    ? {
+      ? {
         panelBorder: "1px solid rgba(66, 128, 180, 0.34)",
-        panelBackground: "#eef5ff",
-        panelShadow: "0 22px 46px rgba(27, 58, 92, 0.16)",
-        panelOverlay: "linear-gradient(145deg, #ffffff 0%, #e9f3ff 52%, #f7fbff 100%)",
+        panelBackground: "#f6fbff",
+        panelShadow: "0 18px 40px rgba(45, 87, 128, 0.14)",
+        panelOverlay: "linear-gradient(145deg, #ffffff 0%, #f1f8ff 56%, #fbfdff 100%)",
         radarBorder: "1px solid rgba(72, 153, 211, 0.32)",
-        radarBackground: "radial-gradient(circle at 50% 54%, rgba(235, 246, 255, 0.96) 0%, rgba(223, 238, 252, 0.98) 100%)",
+        radarBackground: "radial-gradient(circle at 50% 54%, rgba(245, 252, 255, 0.98) 0%, rgba(230, 244, 255, 0.99) 100%)",
         radarInset: "inset 0 0 26px rgba(82, 173, 224, 0.18)",
         ringSoft: "rgba(98, 152, 210, 0.3)",
         ringHard: "rgba(72, 180, 232, 0.42)",
@@ -133,14 +133,14 @@ export function AIScanningLoader({ className = "", compact = false, fullscreen =
         coreFill: "linear-gradient(145deg, #36c8ea 0%, #2aafe0 55%, #2e8dcb 100%)",
         corePulseA: "0 0 34px rgba(50, 176, 228, 0.42)",
         corePulseB: "0 0 58px rgba(50, 176, 228, 0.76)",
-        coreInner: "#f7fbff",
+        coreInner: "#ffffff",
         valueColor: "#163a61",
         valueShadow: "0 0 18px rgba(98, 190, 237, 0.28)",
-        labelColor: "#4f6f91",
-        trackColor: "#c8d9ea",
+        labelColor: "#4c7097",
+        trackColor: "#d6e5f4",
         barGradient: "linear-gradient(90deg, #25c6db 0%, #4487f2 100%)",
-        progressColor: "#59779a",
-        statusColor: "#2f7ca5",
+        progressColor: "#6280a3",
+        statusColor: "#2b84af",
       }
     : {
         panelBorder: "1px solid rgba(31, 41, 55, 0.8)",

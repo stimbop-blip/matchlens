@@ -10224,10 +10224,46 @@ h4 {
   align-items: stretch;
 }
 
+.pb-feed-v4-chart-plot {
+  position: relative;
+  min-width: 0;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(91, 134, 176, 0.42);
+  background:
+    radial-gradient(circle at 18% 12%, rgba(58, 145, 228, 0.18), transparent 48%),
+    linear-gradient(164deg, rgba(10, 23, 39, 0.78), rgba(9, 18, 31, 0.88));
+}
+
+.pb-feed-v4-chart-plot::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(180deg, rgba(146, 184, 224, 0.08) 0 1px, transparent 1px 18px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.pb-feed-v4-chart-plot::after {
+  content: "";
+  position: absolute;
+  top: -22%;
+  left: -46%;
+  width: 48%;
+  height: 148%;
+  background: linear-gradient(102deg, rgba(255, 255, 255, 0) 0%, rgba(143, 230, 255, 0.24) 45%, rgba(255, 255, 255, 0) 100%);
+  transform: translateX(0) rotate(8deg);
+  animation: pbFeedChartSheen 8.6s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
 .pb-feed-v4-chart-svg {
   width: 100%;
   height: 150px;
   display: block;
+  position: relative;
+  z-index: 1;
 }
 
 .pb-feed-v4-chart-gridline {
@@ -10242,11 +10278,18 @@ h4 {
 
 .pb-feed-v4-chart-line {
   fill: none;
-  stroke: #0d1420;
-  stroke-width: 3.2;
+  stroke: #0e243d;
+  stroke-width: 3.1;
   stroke-linecap: round;
   stroke-linejoin: round;
-  filter: drop-shadow(0 2px 6px rgba(19, 42, 68, 0.26));
+  filter: drop-shadow(0 2px 7px rgba(20, 52, 84, 0.3));
+}
+
+.pb-feed-v4-chart-line.signal {
+  stroke: url(#pbFeedChartSignal);
+  stroke-width: 2.25;
+  stroke-dasharray: 8 7;
+  opacity: 0.9;
 }
 
 .pb-feed-v4-chart-tag-value {
@@ -10266,6 +10309,24 @@ h4 {
   fill: rgba(15, 32, 52, 0.74);
   stroke: rgba(144, 193, 236, 0.56);
   stroke-width: 1.4;
+}
+
+.pb-feed-v4-chart-dot-ring.signal {
+  fill: rgba(12, 50, 56, 0.58);
+  stroke: rgba(102, 241, 214, 0.52);
+  stroke-width: 1.1;
+}
+
+.pb-feed-v4-chart-dot-pulse {
+  fill: rgba(72, 227, 255, 0.14);
+  stroke: rgba(111, 236, 255, 0.46);
+  stroke-width: 1.2;
+}
+
+.pb-feed-v4-chart-dot-pulse.soft {
+  fill: rgba(73, 245, 205, 0.08);
+  stroke: rgba(95, 239, 205, 0.28);
+  stroke-width: 1;
 }
 
 .pb-feed-v4-chart-dot {
@@ -10305,6 +10366,37 @@ h4 {
   gap: 2px;
 }
 
+.pb-feed-v4-chart-widget.positive {
+  background: linear-gradient(145deg, #2fcde8 0%, #3f86f4 54%, #45dfb8 100%);
+}
+
+.pb-feed-v4-chart-widget.negative {
+  background: linear-gradient(145deg, #36c4e0 0%, #4c80dc 50%, #de738d 100%);
+}
+
+.pb-feed-v4-chart-widget-shift {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 2px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  background: rgba(8, 25, 44, 0.24);
+  color: rgba(255, 255, 255, 0.96);
+  padding: 2px 7px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.24px;
+}
+
+.pb-feed-v4-chart-widget-shift.up {
+  box-shadow: 0 0 10px rgba(100, 255, 216, 0.24);
+}
+
+.pb-feed-v4-chart-widget-shift.down {
+  box-shadow: 0 0 10px rgba(255, 160, 182, 0.2);
+}
+
 .pb-feed-v4-chart-widget small {
   color: rgba(241, 248, 255, 0.9);
   font-size: 9px;
@@ -10326,7 +10418,7 @@ h4 {
 .pb-feed-v4-chart-axis {
   margin-top: -4px;
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 4px;
 }
 
@@ -10349,6 +10441,23 @@ h4 {
   color: #9ab1cc;
   font-size: 12px;
   font-weight: 600;
+}
+
+@keyframes pbFeedChartSheen {
+  0% {
+    transform: translateX(0) rotate(8deg);
+    opacity: 0;
+  }
+  22% {
+    opacity: 0.48;
+  }
+  52% {
+    opacity: 0.22;
+  }
+  100% {
+    transform: translateX(320%) rotate(8deg);
+    opacity: 0;
+  }
 }
 
 .pb-feed-v4-hero-status {
@@ -12947,6 +13056,30 @@ body {
   stroke: rgba(41, 91, 138, 0.24);
 }
 
+:root[data-theme="light"] .pb-feed-v4-chart-plot {
+  border-color: rgba(121, 164, 206, 0.46);
+  background:
+    radial-gradient(circle at 20% 10%, rgba(76, 184, 220, 0.18), transparent 46%),
+    linear-gradient(164deg, rgba(247, 252, 255, 0.98), rgba(236, 245, 255, 0.96));
+}
+
+:root[data-theme="light"] .pb-feed-v4-chart-plot::before {
+  background: repeating-linear-gradient(180deg, rgba(97, 142, 184, 0.11) 0 1px, transparent 1px 18px);
+}
+
+:root[data-theme="light"] .pb-feed-v4-chart-plot::after {
+  background: linear-gradient(102deg, rgba(255, 255, 255, 0) 0%, rgba(127, 191, 255, 0.35) 45%, rgba(255, 255, 255, 0) 100%);
+}
+
+:root[data-theme="light"] .pb-feed-v4-chart-line {
+  stroke: #2b5276;
+  filter: drop-shadow(0 2px 6px rgba(73, 122, 172, 0.24));
+}
+
+:root[data-theme="light"] .pb-feed-v4-chart-line.signal {
+  opacity: 0.86;
+}
+
 :root[data-theme="light"] .pb-feed-v4-chart-chip {
   border-color: rgba(176, 198, 221, 0.72);
   color: #5d7695;
@@ -12983,9 +13116,37 @@ body {
   stroke: rgba(114, 164, 210, 0.5);
 }
 
+:root[data-theme="light"] .pb-feed-v4-chart-dot-ring.signal {
+  fill: rgba(238, 252, 248, 0.88);
+  stroke: rgba(66, 190, 170, 0.54);
+}
+
+:root[data-theme="light"] .pb-feed-v4-chart-dot-pulse {
+  fill: rgba(89, 203, 236, 0.2);
+  stroke: rgba(95, 201, 236, 0.42);
+}
+
+:root[data-theme="light"] .pb-feed-v4-chart-dot-pulse.soft {
+  fill: rgba(94, 220, 188, 0.16);
+  stroke: rgba(85, 199, 174, 0.28);
+}
+
 :root[data-theme="light"] .pb-feed-v4-chart-widget {
   border-color: rgba(255, 255, 255, 0.84);
   box-shadow: 0 10px 20px rgba(83, 128, 199, 0.24);
+}
+
+:root[data-theme="light"] .pb-feed-v4-chart-widget.positive {
+  background: linear-gradient(145deg, #34c6df 0%, #4d8df4 58%, #4ad5b8 100%);
+}
+
+:root[data-theme="light"] .pb-feed-v4-chart-widget.negative {
+  background: linear-gradient(145deg, #46c2de 0%, #5b84df 55%, #da7f98 100%);
+}
+
+:root[data-theme="light"] .pb-feed-v4-chart-widget-shift {
+  border-color: rgba(255, 255, 255, 0.58);
+  background: rgba(255, 255, 255, 0.22);
 }
 
 :root[data-theme="light"] .pb-feed-v4-hero-status span {
