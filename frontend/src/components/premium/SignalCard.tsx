@@ -7,7 +7,7 @@ import { resolveSportKind, resolveSportLabel, type SportLanguage } from "../../a
 type CardStatus = "pending" | "won" | "lost" | "refund";
 
 const FOOTBALL_HERO_IMAGE = "/images/sports/football-dark.png";
-const FOOTBALL_HERO_IMAGE_FALLBACK = "/images/sports/121321313131.jpg";
+const FOOTBALL_HERO_IMAGE_FALLBACK = "/images/sports/football-dark.png";
 
 function cleanImage(value: string | null | undefined): string | null {
   const trimmed = (value || "").trim();
