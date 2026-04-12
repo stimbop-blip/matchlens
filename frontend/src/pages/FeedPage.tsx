@@ -329,15 +329,15 @@ export function FeedPage({ useThreeCards = false }: { useThreeCards?: boolean } 
     if (heroTrend.length === 0) return null;
 
     const width = 1000;
-    const height = 264;
-    const padX = 40;
-    const padTop = 22;
-    const padBottom = 40;
-    const chartHeight = height - padTop - padBottom;
+    const height = 308;
+    const padX = 46;
+    const lineTop = 24;
+    const lineBottom = 184;
+    const chartHeight = lineBottom - lineTop;
+    const barsBaseY = 236;
 
-    const points = heroTrend.map((point) => ({
+    const source = heroTrend.map((point) => ({
       x: padX + point.x * (width - padX * 2),
-      y: padTop + point.y * chartHeight,
       score: point.score,
       signal: point.signal,
       won: point.won,
@@ -348,55 +348,70 @@ export function FeedPage({ useThreeCards = false }: { useThreeCards?: boolean } 
       label: point.label,
     }));
 
-    const signalMin = Math.min(...points.map((point) => point.signal));
-    const signalMax = Math.max(...points.map((point) => point.signal));
+    const scoreMin = Math.min(...source.map((point) => point.score));
+    const scoreMax = Math.max(...source.map((point) => point.score));
+    const scoreSpan = scoreMax - scoreMin || 1;
+    const signalMin = Math.min(...source.map((point) => point.signal));
+    const signalMax = Math.max(...source.map((point) => point.signal));
     const signalSpan = signalMax - signalMin || 1;
-    const pointsWithSignal = points.map((point) => ({
+    const points = source.map((point) => ({
       ...point,
-      sy: padTop + (1 - (point.signal - signalMin) / signalSpan) * chartHeight,
+      y: lineTop + (1 - (point.score - scoreMin) / scoreSpan) * chartHeight,
+      sy: lineTop + (1 - (point.signal - signalMin) / signalSpan) * chartHeight,
     }));
 
-    const linePath = smoothSvgPath(pointsWithSignal);
-    const signalPath = smoothSvgPath(pointsWithSignal.map((point) => ({ x: point.x, y: point.sy })));
-    const baseY = height - padBottom;
-    const areaPath = `${linePath} L ${pointsWithSignal[pointsWithSignal.length - 1].x.toFixed(2)} ${baseY.toFixed(2)} L ${pointsWithSignal[0].x.toFixed(2)} ${baseY.toFixed(2)} Z`;
+    const linePath = smoothSvgPath(points);
+    const signalPath = smoothSvgPath(points.map((point) => ({ x: point.x, y: point.sy })));
+    const areaBaseY = lineBottom + 10;
+    const areaPath = `${linePath} L ${points[points.length - 1].x.toFixed(2)} ${areaBaseY.toFixed(2)} L ${points[0].x.toFixed(2)} ${areaBaseY.toFixed(2)} Z`;
 
-    const axisIndices = [0, 0.25, 0.5, 0.75, 1].map((part) => Math.round((pointsWithSignal.length - 1) * part));
-    const axisLabels = axisIndices.map((index) => pointsWithSignal[index]?.label || "--");
-
-    const tagIndices = [0.2, 0.5, 0.82]
-      .map((part) => Math.round((points.length - 1) * part))
-      .filter((index, indexPos, all) => all.indexOf(index) === indexPos)
-      .slice(0, 3);
-    const tags = tagIndices.map((index) => {
-      const point = pointsWithSignal[index];
+    const barWidth = clampNumber((width - padX * 2) / (points.length * 2.9), 8, 15);
+    const bars = points.map((point, index) => {
+      const previous = points[index - 1];
+      const delta = index === 0 ? point.score : point.score - previous.score;
+      const heightValue = clampNumber(Math.abs(delta) * 22, 5, 30);
+      const positive = delta >= 0;
       return {
-        x: point.x,
-        y: point.y,
-        value: `${point.won}-${point.lost}`,
-        hint: point.label,
+        x: point.x - barWidth / 2,
+        y: positive ? barsBaseY - heightValue : barsBaseY,
+        width: barWidth,
+        height: heightValue,
+        positive,
+        status: point.status,
       };
     });
 
-    const latestPoint = pointsWithSignal[pointsWithSignal.length - 1];
+    const axisIndices = [0, 0.25, 0.5, 0.75, 1].map((part) => Math.round((points.length - 1) * part));
+    const axisLabels = axisIndices.map((index) => points[index]?.label || "--");
+    const gridY = [0, 0.33, 0.66, 1].map((part) => lineTop + part * (lineBottom - lineTop));
+
+    const latestPoint = points[points.length - 1];
+    const previousPoint = points[points.length - 2] || latestPoint;
     const latestSignal = Number(latestPoint.signal.toFixed(1));
-    const trendShift = Number((latestPoint.score - pointsWithSignal[0].score).toFixed(1));
+    const latestScore = Number(latestPoint.score.toFixed(1));
+    const trendShift = Number((latestPoint.score - points[0].score).toFixed(1));
+    const momentum = Number((latestPoint.score - previousPoint.score).toFixed(2));
+    const signalShift = Number((latestPoint.signal - points[0].signal).toFixed(1));
 
     return {
       width,
       height,
       padX,
-      padTop,
-      padBottom,
-      baseY,
-      points: pointsWithSignal,
+      lineTop,
+      lineBottom,
+      barsBaseY,
+      points,
+      bars,
       linePath,
       signalPath,
       areaPath,
       axisLabels,
-      tags,
+      gridY,
       latestSignal,
+      latestScore,
       trendShift,
+      momentum,
+      signalShift,
     };
   }, [heroTrend]);
 
@@ -404,109 +419,117 @@ export function FeedPage({ useThreeCards = false }: { useThreeCards?: boolean } 
     <Layout>
       <div className="pb-screen pb-screen-feed">
         <HeroPanel eyebrow="Signal Desk" title={t("feed.hero.title")} subtitle={t("feed.hero.subtitle")} right={<span className="pb-feed-v4-total">{items.length}</span>}>
-          <div className="pb-feed-v4-hero-scene" aria-hidden="true">
+          <div className="pb-feed-v5-hero-scene" aria-hidden="true">
             {chart ? (
-              <div className="pb-feed-v4-chart-shell">
-                <div className="pb-feed-v4-chart-head">
-                  <div className="pb-feed-v4-chart-chip-row">
-                    <span className="pb-feed-v4-chart-chip active">{language === "ru" ? "Кривая" : "Curve"}</span>
-                    <span className="pb-feed-v4-chart-chip">{language === "ru" ? "Сигнал" : "Signal"}</span>
+              <div className="pb-feed-v5-board">
+                <div className="pb-feed-v5-head">
+                  <div className="pb-feed-v5-legend">
+                    <span>
+                      <i className="curve" />
+                      {language === "ru" ? "Кривая ROI" : "ROI curve"}
+                    </span>
+                    <span>
+                      <i className="signal" />
+                      {language === "ru" ? "Сигнал" : "Signal"}
+                    </span>
+                    <span>
+                      <i className="bars" />
+                      {language === "ru" ? "Волатильность" : "Volatility"}
+                    </span>
                   </div>
-                  <div className="pb-feed-v4-chart-head-metrics">
+                  <div className="pb-feed-v5-snapshot">
                     <article>
                       <small>{language === "ru" ? "Победы" : "Wins"}</small>
                       <strong>{wonCount}</strong>
                     </article>
                     <article>
-                      <small>{language === "ru" ? "Поражения" : "Lost"}</small>
+                      <small>{language === "ru" ? "Пораж." : "Lost"}</small>
                       <strong>{lostCount}</strong>
                     </article>
                     <article>
-                      <small>{language === "ru" ? "Возвраты" : "Refund"}</small>
-                      <strong>{refundCount}</strong>
+                      <small>{language === "ru" ? "Live" : "Live"}</small>
+                      <strong>{liveCount}</strong>
                     </article>
                   </div>
                 </div>
 
-                <div className="pb-feed-v4-chart-main">
-                  <div className="pb-feed-v4-chart-plot">
+                <div className="pb-feed-v5-chart-main">
+                  <div className="pb-feed-v5-plot-shell">
                     <motion.svg
-                      className="pb-feed-v4-chart-svg"
+                      className="pb-feed-v5-svg"
                       viewBox={`0 0 ${chart.width} ${chart.height}`}
                       preserveAspectRatio="none"
-                      initial={{ opacity: 0, y: 6 }}
+                      initial={{ opacity: 0, y: 7 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.46, ease: "easeOut" }}
+                      transition={{ duration: 0.42, ease: "easeOut" }}
                     >
                       <defs>
-                        <linearGradient id="pbFeedChartArea" x1="0" y1="0" x2="0" y2="1">
+                        <linearGradient id="pbFeedV5Area" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="0%" stopColor="rgba(46, 211, 255, 0.72)" />
-                          <stop offset="52%" stopColor="rgba(55, 140, 255, 0.34)" />
+                          <stop offset="48%" stopColor="rgba(55, 140, 255, 0.34)" />
                           <stop offset="100%" stopColor="rgba(55, 140, 255, 0.04)" />
                         </linearGradient>
-                        <linearGradient id="pbFeedChartSignal" x1="0" y1="0" x2="1" y2="0">
+                        <linearGradient id="pbFeedV5MainLine" x1="0" y1="0" x2="1" y2="0">
+                          <stop offset="0%" stopColor="rgba(92, 247, 221, 0.94)" />
+                          <stop offset="100%" stopColor="rgba(53, 150, 255, 0.98)" />
+                        </linearGradient>
+                        <linearGradient id="pbFeedV5SignalLine" x1="0" y1="0" x2="1" y2="0">
                           <stop offset="0%" stopColor="rgba(86, 248, 205, 0.85)" />
                           <stop offset="100%" stopColor="rgba(46, 211, 255, 0.95)" />
                         </linearGradient>
-                        <linearGradient id="pbFeedChartBloomA" x1="0" y1="0" x2="1" y2="1">
+                        <linearGradient id="pbFeedV5BloomA" x1="0" y1="0" x2="1" y2="1">
                           <stop offset="0%" stopColor="rgba(97, 233, 255, 0.54)" />
                           <stop offset="100%" stopColor="rgba(97, 233, 255, 0)" />
                         </linearGradient>
-                        <linearGradient id="pbFeedChartBloomB" x1="0" y1="0" x2="1" y2="1">
+                        <linearGradient id="pbFeedV5BloomB" x1="0" y1="0" x2="1" y2="1">
                           <stop offset="0%" stopColor="rgba(87, 255, 196, 0.46)" />
                           <stop offset="100%" stopColor="rgba(87, 255, 196, 0)" />
                         </linearGradient>
                       </defs>
 
-                      <line x1={chart.padX} y1={chart.padTop} x2={chart.width - chart.padX} y2={chart.padTop} className="pb-feed-v4-chart-gridline" />
-                      <line
-                        x1={chart.padX}
-                        y1={Math.round((chart.baseY + chart.padTop) * 0.5)}
-                        x2={chart.width - chart.padX}
-                        y2={Math.round((chart.baseY + chart.padTop) * 0.5)}
-                        className="pb-feed-v4-chart-gridline"
-                      />
-                      <line x1={chart.padX} y1={chart.baseY} x2={chart.width - chart.padX} y2={chart.baseY} className="pb-feed-v4-chart-gridline" />
+                      {chart.gridY.map((line, index) => (
+                        <line key={index} x1={chart.padX} y1={line} x2={chart.width - chart.padX} y2={line} className="pb-feed-v5-gridline" />
+                      ))}
 
-                      <ellipse cx={chart.points[Math.floor((chart.points.length - 1) * 0.18)]?.x || chart.padX} cy={chart.baseY - 26} rx="96" ry="56" fill="url(#pbFeedChartBloomA)" />
-                      <ellipse cx={chart.points[Math.floor((chart.points.length - 1) * 0.52)]?.x || chart.width * 0.5} cy={chart.baseY - 64} rx="104" ry="72" fill="url(#pbFeedChartBloomB)" />
-                      <ellipse cx={chart.points[Math.floor((chart.points.length - 1) * 0.82)]?.x || chart.width - chart.padX} cy={chart.baseY - 30} rx="98" ry="60" fill="url(#pbFeedChartArea)" />
+                      <ellipse cx={chart.points[Math.floor((chart.points.length - 1) * 0.2)]?.x || chart.padX} cy={chart.barsBaseY - 34} rx="98" ry="58" fill="url(#pbFeedV5BloomA)" />
+                      <ellipse cx={chart.points[Math.floor((chart.points.length - 1) * 0.58)]?.x || chart.width * 0.5} cy={chart.barsBaseY - 74} rx="108" ry="76" fill="url(#pbFeedV5BloomB)" />
+
+                      {chart.bars.map((bar, index) => (
+                        <rect
+                          key={`${index}-${bar.status}`}
+                          x={bar.x}
+                          y={bar.y}
+                          width={bar.width}
+                          height={bar.height}
+                          rx="3"
+                          className={`pb-feed-v5-bar ${bar.positive ? "up" : "down"} ${bar.status}`}
+                        />
+                      ))}
 
                       <motion.path
                         key={`area-${chart.areaPath}`}
                         d={chart.areaPath}
-                        className="pb-feed-v4-chart-area"
+                        className="pb-feed-v5-area"
                         initial={{ opacity: 0 }}
-                        animate={{ opacity: 0.92 }}
+                        animate={{ opacity: 0.9 }}
                         transition={{ duration: 0.7, ease: "easeOut" }}
                       />
                       <motion.path
                         key={`signal-${chart.signalPath}`}
                         d={chart.signalPath}
-                        className="pb-feed-v4-chart-line signal"
+                        className="pb-feed-v5-line-signal"
                         initial={{ pathLength: 0, opacity: 0.18 }}
                         animate={{ pathLength: 1, opacity: 0.9 }}
-                        transition={{ duration: 1.08, ease: "easeOut" }}
+                        transition={{ duration: 1.06, ease: "easeOut" }}
                       />
                       <motion.path
                         key={`line-${chart.linePath}`}
                         d={chart.linePath}
-                        className="pb-feed-v4-chart-line"
+                        className="pb-feed-v5-line-main"
                         initial={{ pathLength: 0, opacity: 0.24 }}
                         animate={{ pathLength: 1, opacity: 1 }}
-                        transition={{ duration: 1.24, ease: "easeOut", delay: 0.08 }}
+                        transition={{ duration: 1.18, ease: "easeOut", delay: 0.08 }}
                       />
-
-                      {chart.tags.map((tag, index) => (
-                        <g key={`${tag.hint}-${index}`} transform={`translate(${tag.x.toFixed(2)},${Math.max(24, tag.y - 18).toFixed(2)})`}>
-                          <text textAnchor="middle" className="pb-feed-v4-chart-tag-value">
-                            {tag.value}
-                          </text>
-                          <text y="18" textAnchor="middle" className="pb-feed-v4-chart-tag-hint">
-                            {tag.hint}
-                          </text>
-                        </g>
-                      ))}
 
                       {chart.points.map((point, index) => {
                         const isLastPoint = index === chart.points.length - 1;
@@ -517,52 +540,58 @@ export function FeedPage({ useThreeCards = false }: { useThreeCards?: boolean } 
                                 <motion.circle
                                   cx={point.x}
                                   cy={point.y}
-                                  r={10}
-                                  className="pb-feed-v4-chart-dot-pulse"
+                                  r={9}
+                                  className="pb-feed-v5-point-pulse"
                                   initial={{ opacity: 0.18, r: 9 }}
-                                  animate={{ opacity: [0.45, 0.08, 0.45], r: [9, 16, 9] }}
-                                  transition={{ duration: 2.3, repeat: Infinity, ease: "easeInOut" }}
+                                  animate={{ opacity: [0.45, 0.08, 0.45], r: [9, 17, 9] }}
+                                  transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
                                 />
                                 <motion.circle
                                   cx={point.x}
                                   cy={point.y}
                                   r={14}
-                                  className="pb-feed-v4-chart-dot-pulse soft"
+                                  className="pb-feed-v5-point-pulse soft"
                                   initial={{ opacity: 0.08, r: 13 }}
                                   animate={{ opacity: [0.2, 0, 0.2], r: [13, 21, 13] }}
                                   transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut", delay: 0.22 }}
                                 />
                               </>
                             ) : null}
-                            <circle cx={point.x} cy={point.sy} r={5} className="pb-feed-v4-chart-dot-ring signal" />
-                            <circle cx={point.x} cy={point.y} r={8} className="pb-feed-v4-chart-dot-ring" />
-                            <circle cx={point.x} cy={point.y} r={isLastPoint ? 5.4 : 4.6} className={`pb-feed-v4-chart-dot ${point.status}`} />
-                            <circle cx={point.x} cy={point.y} r={2.2} className="pb-feed-v4-chart-dot-core" />
+                            <circle cx={point.x} cy={point.sy} r={4.4} className="pb-feed-v5-point-signal" />
+                            <circle cx={point.x} cy={point.y} r={7.2} className="pb-feed-v5-point-shell" />
+                            <circle cx={point.x} cy={point.y} r={isLastPoint ? 5.2 : 4.4} className={`pb-feed-v5-point ${point.status}`} />
+                            <circle cx={point.x} cy={point.y} r={2} className="pb-feed-v5-point-core" />
                           </g>
                         );
                       })}
                     </motion.svg>
+
+                    <div className={chart.momentum >= 0 ? "pb-feed-v5-float up" : "pb-feed-v5-float down"}>
+                      <small>{language === "ru" ? "Импульс" : "Momentum"}</small>
+                      <strong>{chart.momentum > 0 ? `+${chart.momentum}` : chart.momentum}</strong>
+                    </div>
                   </div>
 
-                  <aside className={chart.latestSignal >= 0 ? "pb-feed-v4-chart-widget positive" : "pb-feed-v4-chart-widget negative"}>
-                    <span className={chart.trendShift >= 0 ? "pb-feed-v4-chart-widget-shift up" : "pb-feed-v4-chart-widget-shift down"}>
-                      {chart.trendShift >= 0 ? "▲" : "▼"} {chart.trendShift > 0 ? `+${chart.trendShift}` : chart.trendShift}
-                    </span>
+                  <aside className={chart.latestSignal >= 0 ? "pb-feed-v5-widget positive" : "pb-feed-v5-widget negative"}>
                     <small>{language === "ru" ? "Точность" : "Hit rate"}</small>
                     <strong>{hitRate}%</strong>
-                    <small>{language === "ru" ? "Индекс" : "Index"}</small>
+                    <small>{language === "ru" ? "Тренд" : "Trend"}</small>
+                    <strong>{chart.trendShift > 0 ? `+${chart.trendShift}` : chart.trendShift}</strong>
+                    <small>{language === "ru" ? "Сигнал" : "Signal"}</small>
                     <strong>{chart.latestSignal > 0 ? `+${chart.latestSignal}` : chart.latestSignal}</strong>
+                    <small>{language === "ru" ? "Смена" : "Shift"}</small>
+                    <strong>{chart.signalShift > 0 ? `+${chart.signalShift}` : chart.signalShift}</strong>
                   </aside>
                 </div>
 
-                <div className="pb-feed-v4-chart-axis">
+                <div className="pb-feed-v5-axis">
                   {chart.axisLabels.map((label, index) => (
                     <span key={`${label}-${index}`}>{label}</span>
                   ))}
                 </div>
               </div>
             ) : (
-              <div className="pb-feed-v4-chart-empty">{language === "ru" ? "Нет данных для графика" : "No data for chart"}</div>
+              <div className="pb-feed-v5-empty">{language === "ru" ? "Нет данных для графика" : "No data for chart"}</div>
             )}
           </div>
 
