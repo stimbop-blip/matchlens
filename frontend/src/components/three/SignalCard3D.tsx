@@ -3,16 +3,12 @@ import { Link } from "react-router-dom";
 import type { SyntheticEvent } from "react";
 
 import { resolveSportKind, resolveSportLabel, type SportLanguage } from "../../app/sport";
+import { resolvePredictionCover } from "../../app/sportArt";
 
 type CardStatus = "pending" | "won" | "lost" | "refund";
 
 const FOOTBALL_HERO_IMAGE = "/images/sports/football-dark.png";
 const FOOTBALL_HERO_IMAGE_FALLBACK = "/images/sports/football-dark.png";
-
-function cleanImage(value: string | null | undefined): string | null {
-  const trimmed = (value || "").trim();
-  return trimmed ? trimmed : null;
-}
 
 function handleFootballHeroError(event: SyntheticEvent<HTMLImageElement>) {
   const image = event.currentTarget;
@@ -63,9 +59,14 @@ export function SignalCard3D({
   const oddsText = Number.isFinite(odds) ? odds.toFixed(2) : String(odds);
   const sportName = resolveSportLabel(sport, language);
   const isFootball = resolveSportKind(sport) === "football";
-  const coverSrc = isFootball
-    ? FOOTBALL_HERO_IMAGE
-    : cleanImage(betScreenshot) || cleanImage(resultScreenshot) || FOOTBALL_HERO_IMAGE;
+  const cover = resolvePredictionCover({
+    sport,
+    betScreenshot,
+    resultScreenshot,
+    variant: "landscape",
+    seed: `${to}:${title}:${league}`,
+  });
+  const coverSrc = isFootball ? FOOTBALL_HERO_IMAGE : cover.src;
 
   return (
     <motion.article whileHover={{ y: -3 }} whileTap={{ scale: 0.996 }} transition={{ duration: 0.16, ease: "easeOut" }}>
