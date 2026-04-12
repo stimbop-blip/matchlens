@@ -64,7 +64,7 @@ function formatOdds(value: number): string {
   return Number.isFinite(value) ? value.toFixed(2) : String(value);
 }
 
-const FOOTBALL_HERO_IMAGE_FALLBACK = "/images/sports/football-dark.png";
+const FOOTBALL_HERO_IMAGE_FALLBACK = "/images/sports/121321313131.jpg";
 
 function handleFootballHeroError(event: SyntheticEvent<HTMLImageElement>) {
   const image = event.currentTarget;
