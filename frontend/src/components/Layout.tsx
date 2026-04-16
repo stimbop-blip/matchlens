@@ -15,6 +15,10 @@ type PageMeta = {
   subtitleKey: string;
 };
 
+let cachedStaffRole: "admin" | "support" | null | undefined;
+let cachedStaffRoleAt = 0;
+const STAFF_ROLE_CACHE_TTL_MS = 120000;
+
 function pageMeta(pathname: string): PageMeta {
   if (pathname.startsWith("/feed/")) return { titleKey: "layout.title.signal", subtitleKey: "layout.subtitle.signal" };
   if (pathname.startsWith("/feed")) return { titleKey: "layout.title.feed", subtitleKey: "layout.subtitle.feed" };
@@ -46,18 +50,29 @@ export function Layout({ children }: PropsWithChildren) {
   useEffect(() => {
     let alive = true;
     const loadRole = async () => {
+      if (Date.now() - cachedStaffRoleAt < STAFF_ROLE_CACHE_TTL_MS && cachedStaffRole !== undefined) {
+        setStaffRole(cachedStaffRole);
+        return;
+      }
+
       try {
         const me = await api.me();
         if (!alive) return;
         if (me.role === "admin") {
+          cachedStaffRole = "admin";
           setStaffRole("admin");
         } else if (me.role === "support") {
+          cachedStaffRole = "support";
           setStaffRole("support");
         } else {
+          cachedStaffRole = null;
           setStaffRole(null);
         }
+        cachedStaffRoleAt = Date.now();
       } catch {
         if (!alive) return;
+        cachedStaffRole = null;
+        cachedStaffRoleAt = Date.now();
         setStaffRole(null);
       }
     };

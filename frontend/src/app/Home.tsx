@@ -228,6 +228,8 @@ export function Home() {
 
           <div className="pb-telegram-chip-row" role="tablist" aria-label={language === "ru" ? "Фильтр прогнозов" : "Forecast filter"}>
             <button
+              role="tab"
+              aria-selected={forecastFilter === "all"}
               type="button"
               className={forecastFilter === "all" ? "active" : ""}
               onClick={() => setForecastFilter("all")}
@@ -235,6 +237,8 @@ export function Home() {
               {language === "ru" ? "Все" : "All"}
             </button>
             <button
+              role="tab"
+              aria-selected={forecastFilter === "pending"}
               type="button"
               className={forecastFilter === "pending" ? "active" : ""}
               onClick={() => setForecastFilter("pending")}
@@ -242,6 +246,8 @@ export function Home() {
               {language === "ru" ? "В ожидании" : "Pending"}
             </button>
             <button
+              role="tab"
+              aria-selected={forecastFilter === "won"}
               type="button"
               className={forecastFilter === "won" ? "active" : ""}
               onClick={() => setForecastFilter("won")}

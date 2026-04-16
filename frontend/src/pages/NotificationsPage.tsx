@@ -215,8 +215,12 @@ export function NotificationsPage() {
                 </div>
                 <p>{item.message}</p>
                 <div className="pb-notify-history-foot">
-                  <span className={item.status === "sent" ? "badge success" : "badge warning"}>
-                    {item.status === "sent" ? t("profile.notifications.historySent") : t("profile.notifications.historyFailed")}
+                  <span className={item.status === "sent" ? "badge success" : item.status === "queued" ? "badge info" : "badge warning"}>
+                    {item.status === "sent"
+                      ? t("profile.notifications.historySent")
+                      : item.status === "queued"
+                        ? t("profile.notifications.historyQueued")
+                        : t("profile.notifications.historyFailed")}
                   </span>
                   {item.button_text && item.button_url ? (
                     <a className="btn ghost" href={item.button_url} target="_blank" rel="noreferrer">

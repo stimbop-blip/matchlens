@@ -1,21 +1,23 @@
 import { Home, User, Zap } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
+import { useI18n } from "../../app/i18n";
 import { useHaptics } from "../../hooks/useHaptics";
-
-const navItems = [
-  { to: "/", label: "Обзор", icon: Home },
-  { to: "/feed", label: "Сигналы", icon: Zap },
-  { to: "/profile", label: "Аккаунт", icon: User },
-];
 
 export function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useI18n();
   const h = useHaptics();
 
+  const navItems = [
+    { to: "/", label: t("layout.nav.home"), icon: Home },
+    { to: "/feed", label: t("layout.nav.feed"), icon: Zap },
+    { to: "/profile", label: t("layout.nav.profile"), icon: User },
+  ];
+
   return (
-    <nav className="pb-telegram-dock">
+    <nav className="pb-telegram-dock" aria-label={t("layout.nav.aria")}>
       <div className="pb-telegram-dock-row">
         {navItems.map((item) => {
           const isActive = location.pathname === item.to || (item.to !== "/" && location.pathname.startsWith(item.to));

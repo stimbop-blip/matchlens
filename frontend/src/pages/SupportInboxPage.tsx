@@ -78,6 +78,7 @@ export function SupportInboxPage() {
 
   const [dialogs, setDialogs] = useState<SupportDialogPreview[]>([]);
   const [listLoading, setListLoading] = useState(false);
+  const [queryInput, setQueryInput] = useState("");
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<DialogStatusFilter>("all");
   const [unreadOnly, setUnreadOnly] = useState(false);
@@ -199,6 +200,16 @@ export function SupportInboxPage() {
       alive = false;
     };
   }, []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setQuery(queryInput);
+    }, 260);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [queryInput]);
 
   useEffect(() => {
     if (checkingAccess || !isStaff) return;
@@ -387,7 +398,7 @@ export function SupportInboxPage() {
           <SectionHeader title={t("support.inbox.listTitle")} subtitle={t("support.inbox.listSubtitle")} />
 
           <div className="pb-support-filters">
-            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("support.inbox.searchPlaceholder")} />
+            <input value={queryInput} onChange={(event) => setQueryInput(event.target.value)} placeholder={t("support.inbox.searchPlaceholder")} />
             <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as DialogStatusFilter)}>
               <option value="all">{t("support.inbox.filter.all")}</option>
               <option value="open">{statusLabel("open", t)}</option>

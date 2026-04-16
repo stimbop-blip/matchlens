@@ -685,10 +685,21 @@ export function SegmentedTabs({
   options: Array<{ value: string; label: string }>;
   onChange: (next: string) => void;
 }) {
+  const tabsetId = useMemo(() => `seg-${Math.random().toString(36).slice(2, 8)}`, []);
+
   return (
-    <div className="pb-segmented-tabs" role="tablist">
+    <div className="pb-segmented-tabs" role="tablist" aria-orientation="horizontal">
       {options.map((option) => (
-        <button key={option.value} className={option.value === value ? "active" : ""} onClick={() => onChange(option.value)} type="button">
+        <button
+          key={option.value}
+          role="tab"
+          aria-selected={option.value === value}
+          aria-controls={`${tabsetId}-${option.value}`}
+          id={`${tabsetId}-tab-${option.value}`}
+          className={option.value === value ? "active" : ""}
+          onClick={() => onChange(option.value)}
+          type="button"
+        >
           {option.label}
         </button>
       ))}
