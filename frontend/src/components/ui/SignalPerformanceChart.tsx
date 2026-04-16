@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Area, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import type { Prediction } from "../../services/api";
 
@@ -35,13 +35,13 @@ export function SignalPerformanceChart({ items, language }: SignalPerformanceCha
 
   const chartData = useMemo(() => {
     const sorted = [...items].sort((a, b) => eventTime(a) - eventTime(b));
-    const recent = sorted.slice(-12);
+    const recent = sorted.slice(-14);
 
     let cumulativeWon = 0;
     let cumulativeLost = 0;
     let cumulativeRefund = 0;
 
-    const series = recent.map((item, index) => {
+    const rawSeries = recent.map((item, index) => {
       if (item.status === "won") cumulativeWon += 1;
       if (item.status === "lost") cumulativeLost += 1;
       if (item.status === "refund") cumulativeRefund += 1;
@@ -56,11 +56,15 @@ export function SignalPerformanceChart({ items, language }: SignalPerformanceCha
       };
     });
 
+    const series = rawSeries.map((point, index, arr) => {
+      const from = Math.max(0, index - 2);
+      const window = arr.slice(from, index + 1);
+      const avg = Math.round(window.reduce((sum, entry) => sum + entry.value, 0) / window.length);
+      return { ...point, avg };
+    });
+
     if (series.length === 0) {
-      return [
-        { slot: "1", day: "--", value: 0 },
-        { slot: "2", day: "--", value: 0 },
-      ];
+      return [{ slot: "1", day: "--", value: 0, avg: 0 }, { slot: "2", day: "--", value: 0, avg: 0 }];
     }
 
     if (series.length === 1) {
@@ -72,7 +76,9 @@ export function SignalPerformanceChart({ items, language }: SignalPerformanceCha
 
   const startValue = chartData[0]?.value ?? 0;
   const endValue = chartData[chartData.length - 1]?.value ?? 0;
+  const trendAvg = chartData[chartData.length - 1]?.avg ?? 0;
   const trendDelta = endValue - startValue;
+  const quality = Math.round(stats.hitRate * 0.72 + trendAvg * 0.28);
 
   return (
     <div
@@ -88,6 +94,30 @@ export function SignalPerformanceChart({ items, language }: SignalPerformanceCha
         padding: 18,
       }}
     >
+      <div
+        style={{
+          position: "absolute",
+          width: 180,
+          height: 180,
+          borderRadius: "50%",
+          right: -56,
+          top: -70,
+          background: "radial-gradient(circle, rgba(49,209,255,0.22), rgba(49,209,255,0))",
+          pointerEvents: "none",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          width: 160,
+          height: 160,
+          borderRadius: "50%",
+          left: -48,
+          bottom: -90,
+          background: "radial-gradient(circle, rgba(89,237,203,0.2), rgba(89,237,203,0))",
+          pointerEvents: "none",
+        }}
+      />
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 14 }}>
         <div>
           <div
@@ -106,7 +136,7 @@ export function SignalPerformanceChart({ items, language }: SignalPerformanceCha
           >
             {language === "ru" ? "ДИНАМИКА ТОЧНОСТИ" : "ACCURACY TREND"}
           </div>
-          <h3 style={{ color: "#f8fbff", fontSize: 22, fontWeight: 750, marginTop: 10, lineHeight: 1.08 }}>
+          <h3 style={{ color: "#f8fbff", fontSize: 24, fontWeight: 760, marginTop: 10, lineHeight: 1.08 }}>
             {language === "ru" ? "Рабочая лента сигналов" : "Signal performance"}
           </h3>
           <p style={{ color: "#8ca4c2", fontSize: 13, marginTop: 6 }}>
@@ -122,7 +152,7 @@ export function SignalPerformanceChart({ items, language }: SignalPerformanceCha
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8, marginBottom: 10 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8, marginBottom: 10 }}>
         <div style={{ border: "1px solid rgba(90, 137, 190, 0.35)", borderRadius: 12, padding: "7px 9px", background: "rgba(10, 23, 41, 0.54)" }}>
           <div style={{ color: "#7d97b7", fontSize: 10 }}>{language === "ru" ? "Тренд" : "Trend"}</div>
           <div style={{ color: trendDelta >= 0 ? "#66f2ca" : "#ff96a5", fontWeight: 700, fontSize: 18 }}>
@@ -130,14 +160,18 @@ export function SignalPerformanceChart({ items, language }: SignalPerformanceCha
           </div>
         </div>
         <div style={{ border: "1px solid rgba(90, 137, 190, 0.35)", borderRadius: 12, padding: "7px 9px", background: "rgba(10, 23, 41, 0.54)" }}>
-          <div style={{ color: "#7d97b7", fontSize: 10 }}>{language === "ru" ? "Сигналов" : "Signals"}</div>
-          <div style={{ color: "#cde8ff", fontWeight: 700, fontSize: 18 }}>{items.length}</div>
+          <div style={{ color: "#7d97b7", fontSize: 10 }}>{language === "ru" ? "Стабильность" : "Stability"}</div>
+          <div style={{ color: "#9dd7ff", fontWeight: 700, fontSize: 18 }}>{trendAvg}%</div>
+        </div>
+        <div style={{ border: "1px solid rgba(90, 137, 190, 0.35)", borderRadius: 12, padding: "7px 9px", background: "rgba(10, 23, 41, 0.54)" }}>
+          <div style={{ color: "#7d97b7", fontSize: 10 }}>{language === "ru" ? "Индекс" : "Index"}</div>
+          <div style={{ color: "#cde8ff", fontWeight: 700, fontSize: 18 }}>{quality}%</div>
         </div>
       </div>
 
       <div style={{ height: 248, margin: "0 -4px" }}>
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={chartData} margin={{ top: 8, right: 18, left: -8, bottom: 4 }}>
+          <ComposedChart data={chartData} margin={{ top: 8, right: 18, left: -8, bottom: 4 }}>
             <defs>
               <linearGradient id="signalAreaFill" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#22d3ee" stopOpacity={0.86} />
@@ -180,6 +214,16 @@ export function SignalPerformanceChart({ items, language }: SignalPerformanceCha
               }}
             />
 
+            <Line
+              type="monotone"
+              dataKey="avg"
+              stroke="rgba(148, 187, 230, 0.7)"
+              strokeWidth={2.1}
+              dot={false}
+              strokeDasharray="5 5"
+              isAnimationActive
+            />
+
             <Area
               type="monotone"
               dataKey="value"
@@ -190,7 +234,7 @@ export function SignalPerformanceChart({ items, language }: SignalPerformanceCha
               dot={{ fill: "#0b1424", stroke: "#22d3ee", strokeWidth: 3.2, r: 5.8 }}
               activeDot={{ r: 7.8, fill: "#22d3ee", stroke: "#081425", strokeWidth: 3.6 }}
             />
-          </AreaChart>
+          </ComposedChart>
         </ResponsiveContainer>
       </div>
 
