@@ -10555,8 +10555,7 @@ h4 {
 .pb-feed-v5-chart-main {
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 102px;
-  gap: 10px;
+  gap: 8px;
   align-items: stretch;
 }
 
@@ -10565,6 +10564,7 @@ h4 {
   min-width: 0;
   border-radius: 16px;
   overflow: hidden;
+  cursor: crosshair;
   border: 1px solid rgba(92, 142, 186, 0.46);
   background:
     radial-gradient(circle at 14% 6%, rgba(84, 179, 255, 0.18), transparent 46%),
@@ -10627,6 +10627,12 @@ h4 {
   stroke-linecap: round;
 }
 
+.pb-feed-v5-cursor-line {
+  stroke: rgba(128, 219, 255, 0.52);
+  stroke-width: 1.2;
+  stroke-dasharray: 4 5;
+}
+
 .pb-feed-v5-bar {
   opacity: 0.78;
 }
@@ -10659,9 +10665,18 @@ h4 {
   stroke-width: 1.3;
 }
 
+.pb-feed-v5-point-shell.active {
+  stroke: rgba(173, 235, 255, 0.86);
+  stroke-width: 1.6;
+}
+
 .pb-feed-v5-point {
   stroke: rgba(255, 255, 255, 0.96);
   stroke-width: 1.2;
+}
+
+.pb-feed-v5-point.active {
+  stroke-width: 1.5;
 }
 
 .pb-feed-v5-point.won {
@@ -10694,6 +10709,61 @@ h4 {
   fill: rgba(85, 242, 207, 0.08);
   stroke: rgba(105, 242, 210, 0.3);
   stroke-width: 1;
+}
+
+.pb-feed-v5-tooltip {
+  position: absolute;
+  transform: translate(-50%, -110%);
+  border-radius: 10px;
+  border: 1px solid rgba(150, 213, 247, 0.62);
+  background: rgba(6, 22, 38, 0.84);
+  box-shadow: 0 10px 18px rgba(3, 13, 22, 0.38);
+  padding: 6px 8px;
+  display: grid;
+  gap: 2px;
+  min-width: 132px;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.pb-feed-v5-tooltip.right {
+  transform: translate(-90%, -110%);
+}
+
+.pb-feed-v5-tooltip.left {
+  transform: translate(-10%, -110%);
+}
+
+.pb-feed-v5-tooltip small {
+  color: #9ab5d2;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.pb-feed-v5-tooltip strong {
+  color: #ebf6ff;
+  font-size: 12px;
+  line-height: 1.1;
+  font-weight: 800;
+}
+
+.pb-feed-v5-tooltip span {
+  color: #81f0cc;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14px;
+}
+
+.pb-feed-v5-tooltip.lost span {
+  color: #ffa7b5;
+}
+
+.pb-feed-v5-tooltip.pending span {
+  color: #8cd9ff;
+}
+
+.pb-feed-v5-tooltip.refund span {
+  color: #b3a5ff;
 }
 
 .pb-feed-v5-float {
@@ -10733,34 +10803,42 @@ h4 {
   color: #ff9fb0;
 }
 
-.pb-feed-v5-widget {
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  background: linear-gradient(145deg, #31cde8 0%, #3c8bf2 54%, #43d8b8 100%);
-  box-shadow: 0 10px 18px rgba(64, 124, 202, 0.28);
-  padding: 9px 9px 8px;
+.pb-feed-v5-kpi-rail {
   display: grid;
-  align-content: center;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.pb-feed-v5-kpi-rail article {
+  border-radius: 10px;
+  border: 1px solid rgba(106, 149, 188, 0.4);
+  background: linear-gradient(165deg, rgba(10, 28, 47, 0.68), rgba(9, 22, 37, 0.52));
+  padding: 6px 8px;
+  display: grid;
   justify-items: start;
   gap: 2px;
 }
 
-.pb-feed-v5-widget.negative {
-  background: linear-gradient(145deg, #39c3de 0%, #4d83df 52%, #de7d95 100%);
-}
-
-.pb-feed-v5-widget small {
-  color: rgba(244, 250, 255, 0.88);
+.pb-feed-v5-kpi-rail small {
+  color: rgba(194, 220, 244, 0.86);
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.18px;
 }
 
-.pb-feed-v5-widget strong {
-  color: #ffffff;
-  font-size: 19px;
+.pb-feed-v5-kpi-rail strong {
+  color: #f4f9ff;
+  font-size: 15px;
   line-height: 1;
   font-weight: 800;
+}
+
+.pb-feed-v5-kpi-rail article.up strong {
+  color: #78efca;
+}
+
+.pb-feed-v5-kpi-rail article.down strong {
+  color: #ff9bad;
 }
 
 .pb-feed-v5-axis {
@@ -10857,6 +10935,10 @@ h4 {
   stroke: rgba(116, 166, 214, 0.54);
 }
 
+:root[data-theme="light"] .pb-feed-v5-point-shell.active {
+  stroke: rgba(75, 154, 224, 0.84);
+}
+
 :root[data-theme="light"] .pb-feed-v5-point-signal {
   fill: rgba(80, 214, 180, 0.2);
   stroke: rgba(74, 196, 165, 0.56);
@@ -10870,6 +10952,36 @@ h4 {
 :root[data-theme="light"] .pb-feed-v5-point-pulse.soft {
   fill: rgba(86, 213, 181, 0.14);
   stroke: rgba(88, 195, 170, 0.26);
+}
+
+:root[data-theme="light"] .pb-feed-v5-tooltip {
+  border-color: rgba(150, 192, 228, 0.76);
+  background: rgba(250, 254, 255, 0.9);
+  box-shadow: 0 10px 18px rgba(59, 98, 143, 0.18);
+}
+
+:root[data-theme="light"] .pb-feed-v5-tooltip small {
+  color: #5f7d9c;
+}
+
+:root[data-theme="light"] .pb-feed-v5-tooltip strong {
+  color: #244666;
+}
+
+:root[data-theme="light"] .pb-feed-v5-tooltip span {
+  color: #1f9470;
+}
+
+:root[data-theme="light"] .pb-feed-v5-tooltip.lost span {
+  color: #d05368;
+}
+
+:root[data-theme="light"] .pb-feed-v5-tooltip.pending span {
+  color: #2d86ca;
+}
+
+:root[data-theme="light"] .pb-feed-v5-tooltip.refund span {
+  color: #6f59cb;
 }
 
 :root[data-theme="light"] .pb-feed-v5-float {
@@ -10893,13 +11005,25 @@ h4 {
   color: #d04f66;
 }
 
-:root[data-theme="light"] .pb-feed-v5-widget {
-  border-color: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 10px 18px rgba(89, 130, 198, 0.24);
+:root[data-theme="light"] .pb-feed-v5-kpi-rail article {
+  border-color: rgba(164, 192, 223, 0.7);
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.92), rgba(242, 249, 255, 0.86));
 }
 
-:root[data-theme="light"] .pb-feed-v5-widget small {
-  color: rgba(244, 250, 255, 0.94);
+:root[data-theme="light"] .pb-feed-v5-kpi-rail small {
+  color: #5f7d9d;
+}
+
+:root[data-theme="light"] .pb-feed-v5-kpi-rail strong {
+  color: #21415f;
+}
+
+:root[data-theme="light"] .pb-feed-v5-kpi-rail article.up strong {
+  color: #108f69;
+}
+
+:root[data-theme="light"] .pb-feed-v5-kpi-rail article.down strong {
+  color: #cd4e65;
 }
 
 :root[data-theme="light"] .pb-feed-v5-axis span,
@@ -10908,13 +11032,8 @@ h4 {
 }
 
 @media (max-width: 760px) {
-  .pb-feed-v5-chart-main {
-    grid-template-columns: minmax(0, 1fr) 92px;
-    gap: 8px;
-  }
-
-  .pb-feed-v5-widget strong {
-    font-size: 17px;
+  .pb-feed-v5-kpi-rail {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -10934,8 +11053,7 @@ h4 {
 
   .pb-feed-v5-snapshot article:last-child,
   .pb-feed-v5-legend span:last-child,
-  .pb-feed-v5-widget small:last-of-type,
-  .pb-feed-v5-widget strong:last-of-type {
+  .pb-feed-v5-kpi-rail article:last-child {
     display: none;
   }
 

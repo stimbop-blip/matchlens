@@ -234,6 +234,7 @@ export function FeedPage({ useThreeCards = false }: { useThreeCards?: boolean } 
   const [status, setStatus] = useState<StatusFilter>("all");
   const [risk, setRisk] = useState<RiskFilter>("all");
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [activeChartIndex, setActiveChartIndex] = useState<number | null>(null);
 
   const onFilterSelect = <T,>(setter: (value: T) => void, value: T) => {
     triggerHaptic("selection");
@@ -388,10 +389,10 @@ export function FeedPage({ useThreeCards = false }: { useThreeCards?: boolean } 
     const latestPoint = points[points.length - 1];
     const previousPoint = points[points.length - 2] || latestPoint;
     const latestSignal = Number(latestPoint.signal.toFixed(1));
-    const latestScore = Number(latestPoint.score.toFixed(1));
     const trendShift = Number((latestPoint.score - points[0].score).toFixed(1));
     const momentum = Number((latestPoint.score - previousPoint.score).toFixed(2));
     const signalShift = Number((latestPoint.signal - points[0].signal).toFixed(1));
+    const volatility = Number((bars.reduce((sum, bar) => sum + bar.height, 0) / (bars.length || 1)).toFixed(1));
 
     return {
       width,
@@ -408,12 +409,45 @@ export function FeedPage({ useThreeCards = false }: { useThreeCards?: boolean } 
       axisLabels,
       gridY,
       latestSignal,
-      latestScore,
       trendShift,
       momentum,
       signalShift,
+      volatility,
     };
   }, [heroTrend]);
+
+  useEffect(() => {
+    setActiveChartIndex(null);
+  }, [heroTrend]);
+
+  const selectedChartIndex = chart
+    ? activeChartIndex === null
+      ? chart.points.length - 1
+      : clampNumber(activeChartIndex, 0, chart.points.length - 1)
+    : -1;
+  const selectedPoint = chart ? chart.points[selectedChartIndex] : null;
+
+  const handleChartPointer = (clientX: number, target: HTMLDivElement) => {
+    if (!chart) return;
+    const bounds = target.getBoundingClientRect();
+    if (bounds.width <= 0) return;
+
+    const relativeX = clampNumber(clientX - bounds.left, 0, bounds.width);
+    const chartX = (relativeX / bounds.width) * chart.width;
+
+    let nextIndex = 0;
+    let bestDistance = Number.POSITIVE_INFINITY;
+
+    for (let i = 0; i < chart.points.length; i += 1) {
+      const distance = Math.abs(chart.points[i].x - chartX);
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        nextIndex = i;
+      }
+    }
+
+    setActiveChartIndex((prev) => (prev === nextIndex ? prev : nextIndex));
+  };
 
   return (
     <Layout>
@@ -447,14 +481,19 @@ export function FeedPage({ useThreeCards = false }: { useThreeCards?: boolean } 
                       <strong>{lostCount}</strong>
                     </article>
                     <article>
-                      <small>{language === "ru" ? "Live" : "Live"}</small>
-                      <strong>{liveCount}</strong>
+                      <small>{language === "ru" ? "Точность" : "Hit rate"}</small>
+                      <strong>{hitRate}%</strong>
                     </article>
                   </div>
                 </div>
 
                 <div className="pb-feed-v5-chart-main">
-                  <div className="pb-feed-v5-plot-shell">
+                  <div
+                    className="pb-feed-v5-plot-shell"
+                    onPointerMove={(event) => handleChartPointer(event.clientX, event.currentTarget)}
+                    onPointerDown={(event) => handleChartPointer(event.clientX, event.currentTarget)}
+                    onPointerLeave={() => setActiveChartIndex(null)}
+                  >
                     <motion.svg
                       className="pb-feed-v5-svg"
                       viewBox={`0 0 ${chart.width} ${chart.height}`}
@@ -531,11 +570,13 @@ export function FeedPage({ useThreeCards = false }: { useThreeCards?: boolean } 
                         transition={{ duration: 1.18, ease: "easeOut", delay: 0.08 }}
                       />
 
+                      {selectedPoint ? <line x1={selectedPoint.x} y1={chart.lineTop} x2={selectedPoint.x} y2={chart.barsBaseY + 20} className="pb-feed-v5-cursor-line" /> : null}
+
                       {chart.points.map((point, index) => {
-                        const isLastPoint = index === chart.points.length - 1;
+                        const isSelectedPoint = index === selectedChartIndex;
                         return (
                           <g key={`${index}-${point.label}`}>
-                            {isLastPoint ? (
+                            {isSelectedPoint ? (
                               <>
                                 <motion.circle
                                   cx={point.x}
@@ -558,13 +599,29 @@ export function FeedPage({ useThreeCards = false }: { useThreeCards?: boolean } 
                               </>
                             ) : null}
                             <circle cx={point.x} cy={point.sy} r={4.4} className="pb-feed-v5-point-signal" />
-                            <circle cx={point.x} cy={point.y} r={7.2} className="pb-feed-v5-point-shell" />
-                            <circle cx={point.x} cy={point.y} r={isLastPoint ? 5.2 : 4.4} className={`pb-feed-v5-point ${point.status}`} />
+                            <circle cx={point.x} cy={point.y} r={isSelectedPoint ? 8.2 : 7.2} className={`pb-feed-v5-point-shell ${isSelectedPoint ? "active" : ""}`} />
+                            <circle cx={point.x} cy={point.y} r={isSelectedPoint ? 5.5 : 4.4} className={`pb-feed-v5-point ${point.status} ${isSelectedPoint ? "active" : ""}`} />
                             <circle cx={point.x} cy={point.y} r={2} className="pb-feed-v5-point-core" />
                           </g>
                         );
                       })}
                     </motion.svg>
+
+                    {selectedPoint ? (
+                      <div
+                        className={`pb-feed-v5-tooltip ${selectedPoint.status} ${(selectedPoint.x / chart.width) > 0.62 ? "right" : "left"}`}
+                        style={{
+                          left: `${clampNumber((selectedPoint.x / chart.width) * 100, 12, 88)}%`,
+                          top: `${clampNumber((selectedPoint.y / chart.height) * 100 - 7, 7, 68)}%`,
+                        }}
+                      >
+                        <small>{selectedPoint.label}</small>
+                        <strong>{statusLabel(selectedPoint.status, t)}</strong>
+                        <span>
+                          ROI {selectedPoint.score > 0 ? `+${selectedPoint.score.toFixed(1)}` : selectedPoint.score.toFixed(1)} · SIG {selectedPoint.signal > 0 ? `+${selectedPoint.signal.toFixed(1)}` : selectedPoint.signal.toFixed(1)}
+                        </span>
+                      </div>
+                    ) : null}
 
                     <div className={chart.momentum >= 0 ? "pb-feed-v5-float up" : "pb-feed-v5-float down"}>
                       <small>{language === "ru" ? "Импульс" : "Momentum"}</small>
@@ -572,16 +629,24 @@ export function FeedPage({ useThreeCards = false }: { useThreeCards?: boolean } 
                     </div>
                   </div>
 
-                  <aside className={chart.latestSignal >= 0 ? "pb-feed-v5-widget positive" : "pb-feed-v5-widget negative"}>
-                    <small>{language === "ru" ? "Точность" : "Hit rate"}</small>
-                    <strong>{hitRate}%</strong>
-                    <small>{language === "ru" ? "Тренд" : "Trend"}</small>
-                    <strong>{chart.trendShift > 0 ? `+${chart.trendShift}` : chart.trendShift}</strong>
-                    <small>{language === "ru" ? "Сигнал" : "Signal"}</small>
-                    <strong>{chart.latestSignal > 0 ? `+${chart.latestSignal}` : chart.latestSignal}</strong>
-                    <small>{language === "ru" ? "Смена" : "Shift"}</small>
-                    <strong>{chart.signalShift > 0 ? `+${chart.signalShift}` : chart.signalShift}</strong>
-                  </aside>
+                  <div className="pb-feed-v5-kpi-rail">
+                    <article className={chart.trendShift >= 0 ? "up" : "down"}>
+                      <small>{language === "ru" ? "Тренд" : "Trend"}</small>
+                      <strong>{chart.trendShift > 0 ? `+${chart.trendShift}` : chart.trendShift}</strong>
+                    </article>
+                    <article className={chart.latestSignal >= 0 ? "up" : "down"}>
+                      <small>{language === "ru" ? "Сигнал" : "Signal"}</small>
+                      <strong>{chart.latestSignal > 0 ? `+${chart.latestSignal}` : chart.latestSignal}</strong>
+                    </article>
+                    <article>
+                      <small>{language === "ru" ? "Волатильность" : "Volatility"}</small>
+                      <strong>{chart.volatility}</strong>
+                    </article>
+                    <article>
+                      <small>{language === "ru" ? "Live" : "Live"}</small>
+                      <strong>{liveCount}</strong>
+                    </article>
+                  </div>
                 </div>
 
                 <div className="pb-feed-v5-axis">
