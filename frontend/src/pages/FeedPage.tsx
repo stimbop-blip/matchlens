@@ -234,7 +234,6 @@ export function FeedPage({ useThreeCards = false }: { useThreeCards?: boolean } 
   const [status, setStatus] = useState<StatusFilter>("all");
   const [risk, setRisk] = useState<RiskFilter>("all");
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-  const [activeChartIndex, setActiveChartIndex] = useState<number | null>(null);
 
   const onFilterSelect = <T,>(setter: (value: T) => void, value: T) => {
     triggerHaptic("selection");
@@ -416,38 +415,7 @@ export function FeedPage({ useThreeCards = false }: { useThreeCards?: boolean } 
     };
   }, [heroTrend]);
 
-  useEffect(() => {
-    setActiveChartIndex(null);
-  }, [heroTrend]);
-
-  const selectedChartIndex = chart
-    ? activeChartIndex === null
-      ? chart.points.length - 1
-      : clampNumber(activeChartIndex, 0, chart.points.length - 1)
-    : -1;
-  const selectedPoint = chart ? chart.points[selectedChartIndex] : null;
-
-  const handleChartPointer = (clientX: number, target: HTMLDivElement) => {
-    if (!chart) return;
-    const bounds = target.getBoundingClientRect();
-    if (bounds.width <= 0) return;
-
-    const relativeX = clampNumber(clientX - bounds.left, 0, bounds.width);
-    const chartX = (relativeX / bounds.width) * chart.width;
-
-    let nextIndex = 0;
-    let bestDistance = Number.POSITIVE_INFINITY;
-
-    for (let i = 0; i < chart.points.length; i += 1) {
-      const distance = Math.abs(chart.points[i].x - chartX);
-      if (distance < bestDistance) {
-        bestDistance = distance;
-        nextIndex = i;
-      }
-    }
-
-    setActiveChartIndex((prev) => (prev === nextIndex ? prev : nextIndex));
-  };
+  const selectedPoint = chart ? chart.points[chart.points.length - 1] : null;
 
   return (
     <Layout>
@@ -488,12 +456,7 @@ export function FeedPage({ useThreeCards = false }: { useThreeCards?: boolean } 
                 </div>
 
                 <div className="pb-feed-v5-chart-main">
-                  <div
-                    className="pb-feed-v5-plot-shell"
-                    onPointerMove={(event) => handleChartPointer(event.clientX, event.currentTarget)}
-                    onPointerDown={(event) => handleChartPointer(event.clientX, event.currentTarget)}
-                    onPointerLeave={() => setActiveChartIndex(null)}
-                  >
+                  <div className="pb-feed-v5-plot-shell">
                     <motion.svg
                       className="pb-feed-v5-svg"
                       viewBox={`0 0 ${chart.width} ${chart.height}`}
@@ -573,7 +536,7 @@ export function FeedPage({ useThreeCards = false }: { useThreeCards?: boolean } 
                       {selectedPoint ? <line x1={selectedPoint.x} y1={chart.lineTop} x2={selectedPoint.x} y2={chart.barsBaseY + 20} className="pb-feed-v5-cursor-line" /> : null}
 
                       {chart.points.map((point, index) => {
-                        const isSelectedPoint = index === selectedChartIndex;
+                        const isSelectedPoint = index === chart.points.length - 1;
                         return (
                           <g key={`${index}-${point.label}`}>
                             {isSelectedPoint ? (
