@@ -8,7 +8,12 @@ type SignalPerformanceChartProps = {
   language: "ru" | "en";
 };
 
-function shortDate(value: string, language: "ru" | "en"): string {
+function eventTime(item: Prediction): number {
+  const ts = new Date(item.published_at || item.event_start_at).getTime();
+  return Number.isNaN(ts) ? 0 : ts;
+}
+
+function formatDay(value: string, language: "ru" | "en"): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "--";
   return date.toLocaleDateString(language === "ru" ? "ru-RU" : "en-US", {
@@ -17,30 +22,28 @@ function shortDate(value: string, language: "ru" | "en"): string {
   });
 }
 
-function predictionTime(item: Prediction): number {
-  const parsed = new Date(item.published_at || item.event_start_at).getTime();
-  return Number.isNaN(parsed) ? 0 : parsed;
-}
-
 export function SignalPerformanceChart({ items, language }: SignalPerformanceChartProps) {
-  const wonCount = items.filter((item) => item.status === "won").length;
-  const lostCount = items.filter((item) => item.status === "lost").length;
-  const refundCount = items.filter((item) => item.status === "refund").length;
-  const pendingCount = items.filter((item) => item.status === "pending").length;
-
-  const settledCount = wonCount + lostCount + refundCount;
-  const hitRate = settledCount > 0 ? Math.round((wonCount / settledCount) * 100) : 0;
+  const stats = useMemo(() => {
+    const won = items.filter((item) => item.status === "won").length;
+    const lost = items.filter((item) => item.status === "lost").length;
+    const refund = items.filter((item) => item.status === "refund").length;
+    const pending = items.filter((item) => item.status === "pending").length;
+    const settled = won + lost + refund;
+    const hitRate = settled > 0 ? Math.round((won / settled) * 100) : 0;
+    return { won, lost, refund, pending, hitRate };
+  }, [items]);
 
   const chartData = useMemo(() => {
-    const sorted = [...items].sort((a, b) => predictionTime(a) - predictionTime(b));
+    const sorted = [...items].sort((a, b) => eventTime(a) - eventTime(b));
     const grouped = new Map<string, { date: string; won: number; lost: number; refund: number }>();
 
     sorted.forEach((item) => {
-      const date = shortDate(item.event_start_at || item.published_at || "", language);
-      if (!grouped.has(date)) {
-        grouped.set(date, { date, won: 0, lost: 0, refund: 0 });
+      const dateKey = formatDay(item.event_start_at || item.published_at || "", language);
+      if (!grouped.has(dateKey)) {
+        grouped.set(dateKey, { date: dateKey, won: 0, lost: 0, refund: 0 });
       }
-      const day = grouped.get(date);
+
+      const day = grouped.get(dateKey);
       if (!day) return;
 
       if (item.status === "won") day.won += 1;
@@ -52,27 +55,26 @@ export function SignalPerformanceChart({ items, language }: SignalPerformanceCha
     let cumulativeLost = 0;
     let cumulativeRefund = 0;
 
-    const series = Array.from(grouped.values()).slice(-6).map((day) => {
-      cumulativeWon += day.won;
-      cumulativeLost += day.lost;
-      cumulativeRefund += day.refund;
-      const settled = cumulativeWon + cumulativeLost + cumulativeRefund;
-      const value = settled > 0 ? Math.round((cumulativeWon / settled) * 100) : 0;
-      return {
-        date: day.date,
-        value,
-      };
-    });
+    const series = Array.from(grouped.values())
+      .slice(-7)
+      .map((day) => {
+        cumulativeWon += day.won;
+        cumulativeLost += day.lost;
+        cumulativeRefund += day.refund;
+        const settled = cumulativeWon + cumulativeLost + cumulativeRefund;
+        const value = settled > 0 ? Math.round((cumulativeWon / settled) * 100) : 0;
+        return { date: day.date, value };
+      });
 
     if (series.length === 0) {
-      return [{ date: "--", value: 0 }];
+      return [
+        { date: "--", value: 0 },
+        { date: "--", value: 0 },
+      ];
     }
 
     if (series.length === 1) {
-      return [
-        { date: series[0].date, value: series[0].value },
-        { date: series[0].date, value: series[0].value },
-      ];
+      return [series[0], series[0]];
     }
 
     return series;
@@ -82,66 +84,92 @@ export function SignalPerformanceChart({ items, language }: SignalPerformanceCha
     <div
       style={{
         width: "100%",
-        background: "linear-gradient(165deg, #0f172a, #0b1220)",
-        borderRadius: 24,
-        padding: 22,
-        border: "1px solid #1e2937",
-        position: "relative",
+        borderRadius: 26,
+        border: "1px solid rgba(46, 74, 114, 0.72)",
+        background:
+          "radial-gradient(circle at 82% -20%, rgba(44, 211, 238, 0.16), transparent 42%), radial-gradient(circle at 14% 112%, rgba(56, 189, 248, 0.12), transparent 48%), linear-gradient(164deg, #090f1b 0%, #070e19 52%, #07121f 100%)",
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06), 0 20px 44px rgba(2, 6, 14, 0.5)",
         overflow: "hidden",
+        position: "relative",
+        padding: 24,
       }}
     >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 14, marginBottom: 18 }}>
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 1,
+          background: "linear-gradient(90deg, rgba(34,211,238,0), rgba(34,211,238,0.4), rgba(34,211,238,0))",
+        }}
+      />
+
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 14, marginBottom: 20 }}>
         <div>
           <div
             style={{
               display: "inline-flex",
-              padding: "6px 14px",
-              background: "#1e2937",
-              color: "#67e8f9",
-              fontSize: 12,
-              fontWeight: 700,
+              alignItems: "center",
               borderRadius: 999,
+              padding: "6px 14px",
+              border: "1px solid rgba(83, 128, 185, 0.5)",
+              background: "rgba(16, 30, 48, 0.72)",
+              color: "#67e8f9",
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: 0.4,
             }}
           >
-            ДИНАМИКА ТОЧНОСТИ
+            {language === "ru" ? "ДИНАМИКА ТОЧНОСТИ" : "ACCURACY TREND"}
           </div>
-          <p style={{ color: "#94a3b8", fontSize: 14, marginTop: 10 }}>
-            {language === "ru" ? "По реальным результатам последних сигналов" : "Based on real outcomes of recent signals"}
+          <h3 style={{ color: "#ffffff", fontSize: 30, fontWeight: 700, marginTop: 14, lineHeight: 1.05 }}>
+            {language === "ru" ? "Рабочая лента сигналов" : "Signal performance stream"}
+          </h3>
+          <p style={{ color: "#8fa3bc", fontSize: 14, marginTop: 6 }}>
+            {language === "ru" ? "График построен по реальным результатам сигналов" : "Chart is based on real signal outcomes"}
           </p>
         </div>
 
         <div style={{ textAlign: "right", flexShrink: 0 }}>
-          <div style={{ fontSize: 50, fontWeight: 800, color: "#fff", letterSpacing: -1.5 }}>{hitRate}%</div>
-          <div style={{ color: "#22d3ee", fontSize: 12, marginTop: 2, fontWeight: 700 }}>СРЕДНЯЯ ТОЧНОСТЬ</div>
+          <div style={{ color: "#ffffff", fontSize: 56, lineHeight: 1, fontWeight: 800, letterSpacing: -2 }}>{stats.hitRate}%</div>
+          <div style={{ color: "#22d3ee", marginTop: 4, fontSize: 13, fontWeight: 700 }}>
+            {language === "ru" ? "СРЕДНЯЯ ТОЧНОСТЬ" : "AVERAGE ACCURACY"}
+          </div>
         </div>
       </div>
 
-      <div style={{ height: 260 }}>
+      <div style={{ height: 282, margin: "0 -6px" }}>
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={chartData} margin={{ top: 20, right: 20, left: 0, bottom: 10 }}>
+          <AreaChart data={chartData} margin={{ top: 10, right: 28, left: 0, bottom: 0 }}>
             <defs>
-              <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#22d3ee" stopOpacity={0.85} />
-                <stop offset="95%" stopColor="#22d3ee" stopOpacity={0.08} />
+              <linearGradient id="premiumArea" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#22d3ee" stopOpacity={0.84} />
+                <stop offset="100%" stopColor="#22d3ee" stopOpacity={0.03} />
               </linearGradient>
+              <filter id="premiumGlow" x="-20%" y="-20%" width="140%" height="140%">
+                <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor="#22d3ee" floodOpacity="0.46" />
+              </filter>
             </defs>
 
             <XAxis
               dataKey="date"
               axisLine={false}
               tickLine={false}
-              tick={{ fill: "#64748b", fontSize: 12 }}
-              dy={10}
+              tick={{ fill: "#5f738f", fontSize: 13 }}
+              dy={12}
             />
 
             <Tooltip
               formatter={(value) => [`${value}%`, language === "ru" ? "Точность" : "Accuracy"]}
               labelFormatter={(value) => `${language === "ru" ? "Дата" : "Date"}: ${value}`}
               contentStyle={{
-                backgroundColor: "#1e2937",
-                border: "none",
-                borderRadius: "14px",
-                color: "#f1f5f9",
+                backgroundColor: "#172237",
+                border: "1px solid rgba(95, 136, 186, 0.4)",
+                borderRadius: "12px",
+                color: "#e2e8f0",
+                padding: "10px 14px",
+                boxShadow: "0 20px 40px rgba(0, 0, 0, 0.55)",
               }}
             />
 
@@ -149,20 +177,41 @@ export function SignalPerformanceChart({ items, language }: SignalPerformanceCha
               type="natural"
               dataKey="value"
               stroke="#22d3ee"
-              strokeWidth={4.5}
-              fill="url(#areaGrad)"
-              dot={{ fill: "#0f172a", stroke: "#22d3ee", strokeWidth: 3.5, r: 6 }}
-              activeDot={{ r: 8.5, fill: "#22d3ee", stroke: "#0f172a", strokeWidth: 4 }}
+              strokeWidth={5}
+              fill="url(#premiumArea)"
+              filter="url(#premiumGlow)"
+              dot={{ fill: "#0a0f1c", stroke: "#22d3ee", strokeWidth: 4, r: 6.5 }}
+              activeDot={{ r: 9, fill: "#22d3ee", stroke: "#0a0f1c", strokeWidth: 4 }}
             />
           </AreaChart>
         </ResponsiveContainer>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 12, marginTop: 20, textAlign: "center" }}>
-        <div><div style={{ color: "#34d399", fontSize: 28, fontWeight: 700 }}>{wonCount}</div><div style={{ color: "#64748b", fontSize: 12 }}>{language === "ru" ? "Победы" : "Wins"}</div></div>
-        <div><div style={{ color: "#f87171", fontSize: 28, fontWeight: 700 }}>{lostCount}</div><div style={{ color: "#64748b", fontSize: 12 }}>{language === "ru" ? "Поражения" : "Lost"}</div></div>
-        <div><div style={{ color: "#fbbf24", fontSize: 28, fontWeight: 700 }}>{refundCount}</div><div style={{ color: "#64748b", fontSize: 12 }}>{language === "ru" ? "Возвраты" : "Refund"}</div></div>
-        <div><div style={{ color: "#38bdf8", fontSize: 28, fontWeight: 700 }}>{pendingCount}</div><div style={{ color: "#64748b", fontSize: 12 }}>{language === "ru" ? "В ожидании" : "Pending"}</div></div>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+          gap: 10,
+          marginTop: 18,
+          textAlign: "center",
+        }}
+      >
+        <div>
+          <div style={{ color: "#34d399", fontSize: 30, fontWeight: 700 }}>{stats.won}</div>
+          <div style={{ color: "#64748b", fontSize: 12 }}>{language === "ru" ? "Победы" : "Wins"}</div>
+        </div>
+        <div>
+          <div style={{ color: "#f87171", fontSize: 30, fontWeight: 700 }}>{stats.lost}</div>
+          <div style={{ color: "#64748b", fontSize: 12 }}>{language === "ru" ? "Поражения" : "Lost"}</div>
+        </div>
+        <div>
+          <div style={{ color: "#fbbf24", fontSize: 30, fontWeight: 700 }}>{stats.refund}</div>
+          <div style={{ color: "#64748b", fontSize: 12 }}>{language === "ru" ? "Возвраты" : "Refund"}</div>
+        </div>
+        <div>
+          <div style={{ color: "#38bdf8", fontSize: 30, fontWeight: 700 }}>{stats.pending}</div>
+          <div style={{ color: "#64748b", fontSize: 12 }}>{language === "ru" ? "В ожидании" : "Pending"}</div>
+        </div>
       </div>
     </div>
   );
