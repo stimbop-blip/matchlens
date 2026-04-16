@@ -69,6 +69,15 @@ export function StatsPage() {
   const roiText = `${(stats?.roi ?? 0).toFixed(1)}%`;
   const hitRateText = `${(stats?.hit_rate ?? 0).toFixed(1)}%`;
 
+  const tierShare = useMemo(
+    () =>
+      ringItems.map((item) => ({
+        ...item,
+        share: Math.round((item.value / ringTotal) * 100),
+      })),
+    [ringItems, ringTotal],
+  );
+
   const trendValues = useMemo<number[]>(() => {
     const slices = [pending, refunds, loses, wins];
     let running = 0;
@@ -92,27 +101,58 @@ export function StatsPage() {
   return (
     <Layout>
       <HeroPanel eyebrow="Performance Center" title={t("stats.hero.title")} subtitle={t("stats.hero.subtitle")} right={<span className="pb-stats-v4-live">{t("stats.hero.pulse")}</span>}>
-        <div className="pb-stats-v4-hero-scene" aria-hidden="true">
-          <span className="pb-stats-v4-hero-disc" />
-          <div className="pb-stats-v4-hero-pillars">
-            <span />
-            <span />
-            <span />
-            <span />
+        <div
+          style={{
+            borderRadius: 18,
+            border: "1px solid rgba(82, 126, 170, 0.5)",
+            background:
+              "radial-gradient(circle at 86% -25%, rgba(39, 211, 237, 0.18), transparent 46%), linear-gradient(160deg, rgba(9, 22, 36, 0.86), rgba(7, 16, 28, 0.94))",
+            padding: 12,
+            marginBottom: 10,
+            display: "grid",
+            gap: 10,
+          }}
+        >
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
+            <article style={{ border: "1px solid rgba(106, 151, 198, 0.35)", borderRadius: 11, background: "rgba(255, 255, 255, 0.03)", padding: "7px 9px" }}>
+              <small style={{ color: "#88a4c1", fontSize: 11 }}>{t("common.roi")}</small>
+              <strong style={{ display: "block", color: "#e7f6ff", fontSize: 20, lineHeight: 1.1 }}>{roiText}</strong>
+            </article>
+            <article style={{ border: "1px solid rgba(106, 151, 198, 0.35)", borderRadius: 11, background: "rgba(255, 255, 255, 0.03)", padding: "7px 9px" }}>
+              <small style={{ color: "#88a4c1", fontSize: 11 }}>{t("home.performance.hit")}</small>
+              <strong style={{ display: "block", color: "#73f0d0", fontSize: 20, lineHeight: 1.1 }}>{hitRateText}</strong>
+            </article>
+            <article style={{ border: "1px solid rgba(106, 151, 198, 0.35)", borderRadius: 11, background: "rgba(255, 255, 255, 0.03)", padding: "7px 9px" }}>
+              <small style={{ color: "#88a4c1", fontSize: 11 }}>{t("stats.kpi.total")}</small>
+              <strong style={{ display: "block", color: "#e7f6ff", fontSize: 20, lineHeight: 1.1 }}>{stats?.total ?? 0}</strong>
+            </article>
           </div>
-          <span className="pb-stats-v4-hero-glow" />
-        </div>
 
-        <div className="pb-stats-v4-hero-badges">
-          <span>
-            {t("common.roi")} <b>{roiText}</b>
-          </span>
-          <span>
-            {t("home.performance.hit")} <b>{hitRateText}</b>
-          </span>
-          <span>
-            {t("stats.kpi.total")} <b>{stats?.total ?? 0}</b>
-          </span>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
+            {tierShare.map((item) => {
+              const toneColor = item.tone === "premium" ? "#32dfbc" : item.tone === "vip" ? "#d7b67f" : "#7dc6ff";
+              return (
+                <article
+                  key={item.label}
+                  style={{
+                    border: `1px solid ${item.tone === "premium" ? "rgba(50, 223, 188, 0.42)" : item.tone === "vip" ? "rgba(215, 182, 127, 0.48)" : "rgba(125, 198, 255, 0.42)"}`,
+                    borderRadius: 11,
+                    background: "rgba(7, 21, 36, 0.66)",
+                    padding: "8px 9px",
+                    display: "grid",
+                    gap: 4,
+                  }}
+                >
+                  <span style={{ color: toneColor, fontSize: 11, fontWeight: 700 }}>{item.label}</span>
+                  <strong style={{ color: "#ecf8ff", fontSize: 19, lineHeight: 1 }}>{item.value}</strong>
+                  <div style={{ height: 5, borderRadius: 999, background: "rgba(255,255,255,0.08)", overflow: "hidden" }}>
+                    <span style={{ display: "block", height: "100%", width: `${Math.max(4, item.share)}%`, background: `linear-gradient(90deg, ${toneColor}, rgba(255,255,255,0.9))` }} />
+                  </div>
+                  <small style={{ color: "#87a0bd", fontSize: 10 }}>{item.share}%</small>
+                </article>
+              );
+            })}
+          </div>
         </div>
 
         <div className="pb-stats-v4-hero-grid">
