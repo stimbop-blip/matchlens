@@ -422,7 +422,7 @@ export function FeedPage({ useThreeCards = false }: { useThreeCards?: boolean } 
     <Layout>
       <div className="pb-screen pb-screen-feed">
         <HeroPanel eyebrow="Signal Desk" title={t("feed.hero.title")} subtitle={t("feed.hero.subtitle")} right={<span className="pb-feed-v4-total">{items.length}</span>}>
-          <SignalPerformanceChart />
+          <SignalPerformanceChart items={items} language={language} />
       </HeroPanel>
 
       <section className="pb-premium-panel pb-feed-v4-sticky pb-reveal">
