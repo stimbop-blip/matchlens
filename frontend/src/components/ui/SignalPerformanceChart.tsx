@@ -11,23 +11,43 @@ const chartData = [
 
 export function SignalPerformanceChart() {
   return (
-    <div className="w-full bg-[#0f172a] rounded-3xl p-6 border border-[#1e2937] relative overflow-hidden">
-      <div className="flex justify-between items-start mb-6">
+    <div
+      style={{
+        width: "100%",
+        background: "linear-gradient(165deg, #0f172a, #0b1220)",
+        borderRadius: 24,
+        padding: 22,
+        border: "1px solid #1e2937",
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 14, marginBottom: 18 }}>
         <div>
-          <div className="inline-flex px-4 py-1.5 bg-[#1e2937] text-[#67e8f9] text-xs font-semibold rounded-2xl">
+          <div
+            style={{
+              display: "inline-flex",
+              padding: "6px 14px",
+              background: "#1e2937",
+              color: "#67e8f9",
+              fontSize: 12,
+              fontWeight: 700,
+              borderRadius: 999,
+            }}
+          >
             ДИНАМИКА ТОЧНОСТИ
           </div>
-          <h3 className="text-white text-2xl font-semibold mt-4">Рабочая лента сигналов</h3>
-          <p className="text-[#94a3b8] text-sm mt-1">Прематч и лайв сигналы в рабочем формате</p>
+          <h3 style={{ color: "#fff", fontSize: 34, fontWeight: 700, marginTop: 14, lineHeight: 1.04 }}>Рабочая лента сигналов</h3>
+          <p style={{ color: "#94a3b8", fontSize: 14, marginTop: 6 }}>Прематч и лайв сигналы в рабочем формате</p>
         </div>
 
-        <div className="text-right">
-          <div className="text-5xl font-bold text-white tracking-tighter">67%</div>
-          <div className="text-[#22d3ee] text-sm mt-1">СРЕДНЯЯ ТОЧНОСТЬ</div>
+        <div style={{ textAlign: "right", flexShrink: 0 }}>
+          <div style={{ fontSize: 50, fontWeight: 800, color: "#fff", letterSpacing: -1.5 }}>67%</div>
+          <div style={{ color: "#22d3ee", fontSize: 12, marginTop: 2, fontWeight: 700 }}>СРЕДНЯЯ ТОЧНОСТЬ</div>
         </div>
       </div>
 
-      <div className="h-[260px]">
+      <div style={{ height: 260 }}>
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={chartData} margin={{ top: 20, right: 20, left: 0, bottom: 10 }}>
             <defs>
@@ -67,11 +87,11 @@ export function SignalPerformanceChart() {
         </ResponsiveContainer>
       </div>
 
-      <div className="grid grid-cols-4 gap-4 mt-6 text-center">
-        <div><div className="text-emerald-400 text-2xl font-semibold">2</div><div className="text-xs text-[#64748b]">Победы</div></div>
-        <div><div className="text-red-400 text-2xl font-semibold">0</div><div className="text-xs text-[#64748b]">Поражения</div></div>
-        <div><div className="text-amber-400 text-2xl font-semibold">1</div><div className="text-xs text-[#64748b]">Возвраты</div></div>
-        <div><div className="text-sky-400 text-2xl font-semibold">0</div><div className="text-xs text-[#64748b]">В ожидании</div></div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 12, marginTop: 20, textAlign: "center" }}>
+        <div><div style={{ color: "#34d399", fontSize: 28, fontWeight: 700 }}>2</div><div style={{ color: "#64748b", fontSize: 12 }}>Победы</div></div>
+        <div><div style={{ color: "#f87171", fontSize: 28, fontWeight: 700 }}>0</div><div style={{ color: "#64748b", fontSize: 12 }}>Поражения</div></div>
+        <div><div style={{ color: "#fbbf24", fontSize: 28, fontWeight: 700 }}>1</div><div style={{ color: "#64748b", fontSize: 12 }}>Возвраты</div></div>
+        <div><div style={{ color: "#38bdf8", fontSize: 28, fontWeight: 700 }}>0</div><div style={{ color: "#64748b", fontSize: 12 }}>В ожидании</div></div>
       </div>
     </div>
   );
