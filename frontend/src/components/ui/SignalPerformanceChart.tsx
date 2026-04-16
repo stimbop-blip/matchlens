@@ -12,7 +12,6 @@ const chartData = [
 export function SignalPerformanceChart() {
   return (
     <div className="w-full bg-[#0f172a] rounded-3xl p-6 border border-[#1e2937] relative overflow-hidden">
-      {/* Заголовок */}
       <div className="flex justify-between items-start mb-6">
         <div>
           <div className="inline-flex px-4 py-1.5 bg-[#1e2937] text-[#67e8f9] text-xs font-semibold rounded-2xl">
@@ -28,7 +27,6 @@ export function SignalPerformanceChart() {
         </div>
       </div>
 
-      {/* График */}
       <div className="h-[260px]">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={chartData} margin={{ top: 20, right: 20, left: 0, bottom: 10 }}>
@@ -53,7 +51,6 @@ export function SignalPerformanceChart() {
                 border: "none",
                 borderRadius: "14px",
                 color: "#f1f5f9",
-                boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
               }}
             />
 
@@ -63,41 +60,18 @@ export function SignalPerformanceChart() {
               stroke="#22d3ee"
               strokeWidth={4.5}
               fill="url(#areaGrad)"
-              dot={{
-                fill: "#0f172a",
-                stroke: "#22d3ee",
-                strokeWidth: 3.5,
-                r: 6,
-              }}
-              activeDot={{
-                r: 8.5,
-                fill: "#22d3ee",
-                stroke: "#0f172a",
-                strokeWidth: 4,
-              }}
+              dot={{ fill: "#0f172a", stroke: "#22d3ee", strokeWidth: 3.5, r: 6 }}
+              activeDot={{ r: 8.5, fill: "#22d3ee", stroke: "#0f172a", strokeWidth: 4 }}
             />
           </AreaChart>
         </ResponsiveContainer>
       </div>
 
-      {/* Статистика снизу */}
       <div className="grid grid-cols-4 gap-4 mt-6 text-center">
-        <div>
-          <div className="text-emerald-400 text-2xl font-semibold">2</div>
-          <div className="text-[#64748b] text-xs">Победы</div>
-        </div>
-        <div>
-          <div className="text-red-400 text-2xl font-semibold">0</div>
-          <div className="text-[#64748b] text-xs">Поражения</div>
-        </div>
-        <div>
-          <div className="text-amber-400 text-2xl font-semibold">1</div>
-          <div className="text-[#64748b] text-xs">Возвраты</div>
-        </div>
-        <div>
-          <div className="text-sky-400 text-2xl font-semibold">0</div>
-          <div className="text-[#64748b] text-xs">В ожидании</div>
-        </div>
+        <div><div className="text-emerald-400 text-2xl font-semibold">2</div><div className="text-xs text-[#64748b]">Победы</div></div>
+        <div><div className="text-red-400 text-2xl font-semibold">0</div><div className="text-xs text-[#64748b]">Поражения</div></div>
+        <div><div className="text-amber-400 text-2xl font-semibold">1</div><div className="text-xs text-[#64748b]">Возвраты</div></div>
+        <div><div className="text-sky-400 text-2xl font-semibold">0</div><div className="text-xs text-[#64748b]">В ожидании</div></div>
       </div>
     </div>
   );
