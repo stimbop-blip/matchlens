@@ -6,7 +6,7 @@ class Settings(BaseSettings):
 
     app_name: str = "PIT BET API"
     api_prefix: str = "/api/v1"
-    debug: bool = True
+    debug: bool = False
     database_url: str = "postgresql+psycopg://matchlens:matchlens@postgres:5432/matchlens"
     bot_token: str = ""
     bot_username: str = "your_bot"

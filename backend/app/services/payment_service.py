@@ -16,7 +16,7 @@ from app.models.payment_method import PaymentMethod
 from app.models.subscription import Subscription
 from app.models.tariff import Tariff
 from app.models.user import User
-from app.services.promo_service import consume_discount_for_payment
+from app.services.promo_service import consume_discount_for_payment, preview_discount_for_payment
 from app.services.referral_service import apply_referral_bonus_on_activation
 
 REFERRAL_FIRST_PURCHASE_DISCOUNT_PERCENT = 10
@@ -125,7 +125,7 @@ def quote_payment_for_tariff(
     access_level = _access_code(tariff.access_level)
 
     if promo_code:
-        promo_result = consume_discount_for_payment(db, user, tariff, promo_code, base_amount=original_amount)
+        promo_result = preview_discount_for_payment(db, user, tariff, promo_code, base_amount=original_amount)
         return {
             "tariff_code": tariff.code,
             "duration_days": duration,
@@ -205,6 +205,12 @@ def create_payment_for_tariff(
     db.add(payment)
     db.commit()
     db.refresh(payment)
+
+    # Активируем промокод только при реальном создании платежа (не при расчёте цены)
+    if promo_code and quote.get("applied_discount_source") == "promo":
+        consume_discount_for_payment(db, user, tariff, promo_code, base_amount=int(quote["original_amount_rub"]))
+        db.commit()
+
     return payment, quote, method
 
 

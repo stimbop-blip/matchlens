@@ -44,25 +44,42 @@ def upsert_user_by_telegram(db: Session, payload: dict) -> User:
 
     user = db.scalar(select(User).where(User.telegram_id == telegram_id))
     if user:
-        user.username = payload.get("username")
-        user.first_name = payload.get("first_name")
-        user.last_name = payload.get("last_name")
+        # Проверяем, изменились ли данные — чтобы не делать лишний commit на каждый запрос
+        dirty = False
+        new_username = payload.get("username")
+        new_first_name = payload.get("first_name")
+        new_last_name = payload.get("last_name")
+
+        if user.username != new_username:
+            user.username = new_username
+            dirty = True
+        if user.first_name != new_first_name:
+            user.first_name = new_first_name
+            dirty = True
+        if user.last_name != new_last_name:
+            user.last_name = new_last_name
+            dirty = True
         if not user.language_code:
             user.language_code = language_code
-        if is_owner_admin:
+            dirty = True
+        if is_owner_admin and user.role != UserRole.admin:
             user.role = UserRole.admin
+            dirty = True
 
         if not user.referral_code:
             user.referral_code = _generate_referral_code(db)
+            dirty = True
 
         if referral_code and not user.referred_by_user_id and referral_code != user.referral_code:
             referrer = db.scalar(select(User).where(User.referral_code == referral_code))
             if referrer and referrer.id != user.id:
                 user.referred_by_user_id = referrer.id
+                dirty = True
 
-        db.add(user)
-        db.commit()
-        db.refresh(user)
+        if dirty:
+            db.add(user)
+            db.commit()
+            db.refresh(user)
         return user
 
     referred_by_user_id = None

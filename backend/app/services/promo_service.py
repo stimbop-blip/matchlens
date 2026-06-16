@@ -168,7 +168,40 @@ def apply_promo_code(db: Session, user: User, code: str, tariff_code: str | None
     raise ValueError("Неподдерживаемый тип промокода")
 
 
+def preview_discount_for_payment(db: Session, user: User, tariff: Tariff, code: str | None, base_amount: int | None = None) -> dict:
+    """Только расчёт цены со скидкой. НЕ создаёт активацию промокода.
+    Используется при /payments/quote — юзер может посмотреть цену без потери промокода."""
+    base_price = int(base_amount if base_amount is not None else tariff.price_rub)
+    if not code:
+        return {
+            "promo_code": None,
+            "discount_rub": 0,
+            "final_price_rub": base_price,
+            "message": None,
+        }
+
+    promo = _get_promo_or_none(db, code)
+    if not promo:
+        raise ValueError("Промокод не найден")
+    if promo.kind not in DISCOUNT_KINDS:
+        raise ValueError("Этот промокод нельзя применить к оплате")
+
+    is_valid, reason = _validate_common(db, user, promo, tariff.code)
+    if not is_valid:
+        raise ValueError(reason or "Промокод недоступен")
+
+    discount_rub, final_price_rub = _discount_value(base_price, promo)
+
+    return {
+        "promo_code": promo.code,
+        "discount_rub": discount_rub,
+        "final_price_rub": final_price_rub,
+        "message": f"Промокод {promo.code} применен",
+    }
+
+
 def consume_discount_for_payment(db: Session, user: User, tariff: Tariff, code: str | None, base_amount: int | None = None) -> dict:
+    """Применяет промокод с созданием активации. Используется ТОЛЬКО при реальной оплате (create_payment)."""
     base_price = int(base_amount if base_amount is not None else tariff.price_rub)
     if not code:
         return {
