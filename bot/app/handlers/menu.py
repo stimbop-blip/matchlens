@@ -12,7 +12,7 @@ from aiogram.filters import Command
 from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message, ReplyKeyboardRemove, WebAppInfo
 
 from app.config import settings
-from app.keyboards.main_menu import main_menu_keyboard, section_nav_keyboard
+from app.keyboards.main_menu import main_menu_keyboard, reply_main_menu, reply_more_menu, section_nav_keyboard
 from app.services.container import get_backend_client
 from app.utils.texts import button, normalize_language, t
 
@@ -195,8 +195,10 @@ def _legacy_action_map() -> dict[str, str]:
         button("en", "admin"): "menu:admin",
         button("ru", "about"): "menu:about",
         button("en", "about"): "menu:about",
-        "Меню": "menu:main",
-        "Menu": "menu:main",
+        button("ru", "more"): "menu:more",
+        button("en", "more"): "menu:more",
+        t("ru", "nav_menu"): "menu:main",
+        t("en", "nav_menu"): "menu:main",
     }
 
 
@@ -237,6 +239,12 @@ async def _build_menu_screen(language: str, user_id: int | None) -> tuple[str, I
         t(language, "menu_intro"),
         main_menu_keyboard(language=language, is_admin=_is_admin(user_id)),
     )
+
+
+async def _build_more_screen(language: str) -> tuple[str, InlineKeyboardMarkup]:
+    """Заглушка-экран для раздела 'Ещё' — навигация заменяется Reply Keyboard.
+    Возвращаем короткий текст и пустую inline-клавиатуру."""
+    return (t(language, "more_intro"), InlineKeyboardMarkup(inline_keyboard=[]))
 
 
 async def _build_free_screen(language: str, user_id: int | None) -> tuple[str, InlineKeyboardMarkup]:
@@ -810,6 +818,8 @@ async def _build_screen(
         return await _build_admin_screen(language, user_id)
     if action == "menu:about":
         return await _build_about_screen(language)
+    if action == "menu:more":
+        return await _build_more_screen(language)
     return await _build_menu_screen(language, user_id)
 
 
@@ -889,6 +899,25 @@ async def open_legacy_button_flow(message: Message) -> None:
 
     user = message.from_user
     language = await _resolve_language(user.id if user else None, user.language_code if user else None)
+
+    # Кнопка "Ещё" → показываем дополнительное меню (Reply Keyboard)
+    if action == "menu:more":
+        text, markup = await _build_more_screen(language)
+        await message.answer(text, reply_markup=reply_more_menu(language=language), disable_web_page_preview=True)
+        return
+
+    # Кнопка "В меню" → возвращаем основное меню (Reply Keyboard)
+    if action == "menu:main":
+        text = t(language, "menu_intro")
+        await message.answer(
+            text,
+            reply_markup=main_menu_keyboard(language=language, is_admin=_is_admin(user.id if user else None)),
+            disable_web_page_preview=True,
+        )
+        with contextlib.suppress(Exception):
+            await message.answer(t(language, "menu_hint"), reply_markup=reply_main_menu(language=language))
+        return
+
     text, markup = await _build_screen(
         action,
         language=language,

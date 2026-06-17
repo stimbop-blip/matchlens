@@ -5,7 +5,7 @@ from aiogram.filters import CommandStart
 from aiogram.types import Message, ReplyKeyboardRemove
 
 from app.config import settings
-from app.keyboards.main_menu import main_menu_keyboard
+from app.keyboards.main_menu import main_menu_keyboard, reply_main_menu
 from app.services.container import get_backend_client
 from app.utils.texts import normalize_language, t
 
@@ -46,6 +46,7 @@ async def cmd_start(message: Message) -> None:
         if preferences:
             language = normalize_language(str(preferences.get("language") or language))
 
+    # Удаляем команду /start и временное сообщение очистки клавиатуры
     with contextlib.suppress(Exception):
         await message.delete()
 
@@ -53,8 +54,19 @@ async def cmd_start(message: Message) -> None:
     with contextlib.suppress(Exception):
         await cleanup.delete()
 
+    is_admin = bool(user and user.id in settings.admin_ids())
+
+    # Ответ: приветствие + inline-кнопка Mini App + постоянное нижнее меню (Reply Keyboard)
     await message.answer(
         t(language, "start_message"),
-        reply_markup=main_menu_keyboard(language=language, is_admin=bool(user and user.id in settings.admin_ids())),
+        reply_markup=main_menu_keyboard(language=language, is_admin=is_admin),
         disable_web_page_preview=True,
     )
+
+    # Показываем постоянное нижнее меню отдельным сообщением (пустой текст не отправить с reply_markup,
+    # поэтому используем короткую подсказку)
+    with contextlib.suppress(Exception):
+        await message.answer(
+            t(language, "menu_hint"),
+            reply_markup=reply_main_menu(language=language),
+        )

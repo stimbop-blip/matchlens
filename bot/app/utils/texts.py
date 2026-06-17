@@ -15,9 +15,13 @@ def normalize_language(value: str | None) -> Language:
 TEXTS: dict[Language, dict[str, str]] = {
     "ru": {
         "start_message": (
-            "<b>PIT BET — главное меню</b>\n\n"
-            "Открой приложение или выбери нужный раздел: бесплатные прогнозы, тарифы, профиль, статистика и сервисные функции."
+            "🏆 <b>Добро пожаловать в PIT BET</b>\n\n"
+            "Здесь живут отобранные сигналы, прозрачная статистика "
+            "и быстрый доступ к игре.\n\n"
+            "👇 Жми кнопку ниже, чтобы войти в приложение"
         ),
+        "menu_hint": "Меню внизу экрана — выбирай раздел 👇",
+        "more_intro": "📖 <b>Дополнительно</b>\n\nВыбирай раздел внизу экрана 👇",
         "menu_intro": (
             "<b>PIT BET — главное меню</b>\n"
             "Открой приложение или выбери нужный раздел."
@@ -224,9 +228,13 @@ TEXTS: dict[Language, dict[str, str]] = {
     },
     "en": {
         "start_message": (
-            "<b>PIT BET — Main Menu</b>\n\n"
-            "Open the app or choose a section: free signals, tariffs, profile, stats, and service features."
+            "🏆 <b>Welcome to PIT BET</b>\n\n"
+            "Curated signals, transparent stats, "
+            "and quick access to the game.\n\n"
+            "👇 Tap the button below to open the app"
         ),
+        "menu_hint": "Menu at the bottom — pick a section 👇",
+        "more_intro": "📖 <b>More</b>\n\nPick a section at the bottom 👇",
         "menu_intro": (
             "<b>PIT BET — Main Menu</b>\n"
             "Open the app or choose a section."
@@ -431,6 +439,7 @@ BUTTONS: dict[Language, dict[str, str]] = {
         "support": "🆘 Поддержка",
         "admin": "🛠 Админка",
         "about": "ℹ Как работает PIT BET",
+        "more": "⚙️ Ещё",
     },
     "en": {
         "news": "⚡ News",
@@ -444,6 +453,7 @@ BUTTONS: dict[Language, dict[str, str]] = {
         "support": "🆘 Support",
         "admin": "🛠 Admin",
         "about": "ℹ How PIT BET Works",
+        "more": "⚙️ More",
     },
 }
 
