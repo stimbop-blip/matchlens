@@ -583,63 +583,83 @@ input, textarea, button {
    DESIGN V2 — БЛОК 2: КАРТОЧКИ СИГНАЛОВ (PREMIUM)
    ═══════════════════════════════════════════════════════════════ */
 
-/* Цветная полоска слева по уровню доступа */
-.pb-signal-card[data-access="free"]::after,
-.pb-feed-luxe-card[data-access="free"]::after,
-.pb-home3d-match-card[data-access="free"] .pb-home3d-match-head::before {
-  background: linear-gradient(180deg, #67e8f9, transparent) !important;
+/* Карточки: data-access полоска — БЕЗ изменения padding (безопасно) */
+.pb-signal-card[data-access="free"],
+.pb-feed-luxe-card[data-access="free"] {
+  border-left: 3px solid rgba(103, 232, 249, 0.6) !important;
 }
-.pb-signal-card[data-access="premium"]::after,
-.pb-feed-luxe-card[data-access="premium"]::after,
-.pb-home3d-match-card[data-access="premium"] .pb-home3d-match-head::before {
-  background: linear-gradient(180deg, #fbbf24, transparent) !important;
+.pb-signal-card[data-access="premium"],
+.pb-feed-luxe-card[data-access="premium"] {
+  border-left: 3px solid rgba(251, 191, 36, 0.7) !important;
 }
-.pb-signal-card[data-access="vip"]::after,
-.pb-feed-luxe-card[data-access="vip"]::after,
-.pb-home3d-match-card[data-access="vip"] .pb-home3d-match-head::before {
-  background: linear-gradient(180deg, #a78bfa, transparent) !important;
+.pb-signal-card[data-access="vip"],
+.pb-feed-luxe-card[data-access="vip"] {
+  border-left: 3px solid rgba(167, 139, 250, 0.7) !important;
 }
 
-.pb-signal-card,
-.pb-feed-luxe-card {
-  position: relative !important;
-  padding-left: 16px !important;
-}
-
-.pb-signal-card::after,
-.pb-feed-luxe-card::after {
-  content: "" !important;
+/* Статус-иконка на карточке (абсолют, не ломает вёрстку) */
+.pb-feed-luxe-card[data-status="won"]::after,
+.pb-signal-card[data-status="won"]::after {
+  content: "✓" !important;
   position: absolute !important;
-  left: 0 !important;
-  top: 14px !important;
-  bottom: 14px !important;
-  width: 3px !important;
-  border-radius: 0 3px 3px 0 !important;
+  top: 10px !important;
+  right: 10px !important;
+  width: 22px !important;
+  height: 22px !important;
+  border-radius: 50% !important;
+  background: #34d399 !important;
+  color: #fff !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 0 12px rgba(52, 211, 153, 0.6) !important;
+  z-index: 5 !important;
+  animation: v2-pop-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
 }
 
-/* LIVE бейдж с пульсацией */
-.pb-live-badge,
-.pb-match-mode.live,
-.pb-home3d-match-mode.live {
+.pb-feed-luxe-card[data-status="lost"]::after,
+.pb-signal-card[data-status="lost"]::after {
+  content: "✕" !important;
+  position: absolute !important;
+  top: 10px !important;
+  right: 10px !important;
+  width: 22px !important;
+  height: 22px !important;
+  border-radius: 50% !important;
+  background: #f87171 !important;
+  color: #fff !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 0 12px rgba(248, 113, 113, 0.6) !important;
+  z-index: 5 !important;
+}
+
+@keyframes v2-pop-in {
+  0%   { transform: scale(0) rotate(-180deg); opacity: 0; }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+
+/* LIVE бейдж — только цвет/свечение, без padding */
+.pb-live-badge {
   position: relative !important;
   color: #ff4757 !important;
   font-weight: 700 !important;
-  font-size: 10px !important;
-  letter-spacing: 0.8px !important;
-  text-transform: uppercase !important;
-  padding-left: 14px !important;
+  padding-left: 12px !important;
 }
 
-.pb-live-badge::before,
-.pb-match-mode.live::before,
-.pb-home3d-match-mode.live::before {
+.pb-live-badge::before {
   content: "" !important;
   position: absolute !important;
   left: 0 !important;
   top: 50% !important;
   transform: translateY(-50%) !important;
-  width: 7px !important;
-  height: 7px !important;
+  width: 6px !important;
+  height: 6px !important;
   border-radius: 50% !important;
   background: #ff4757 !important;
   box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.7) !important;
@@ -668,52 +688,7 @@ input, textarea, button {
   box-shadow: 0 4px 12px var(--v2-glow), inset 0 1px 0 rgba(255,255,255,0.3) !important;
 }
 
-/* Confetti при победе */
-.pb-signal-card[data-status="won"] .pb-feed-luxe-cover,
-.pb-feed-luxe-card[data-status="won"] .pb-feed-luxe-cover {
-  position: relative !important;
-}
-
-.pb-signal-card[data-status="won"]::before,
-.pb-feed-luxe-card[data-status="won"]::before {
-  content: "✓" !important;
-  position: absolute !important;
-  top: 10px !important;
-  right: 10px !important;
-  width: 22px !important;
-  height: 22px !important;
-  border-radius: 50% !important;
-  background: #34d399 !important;
-  color: #fff !important;
-  font-size: 13px !important;
-  font-weight: 700 !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  box-shadow: 0 0 12px rgba(52, 211, 153, 0.6) !important;
-  z-index: 5 !important;
-  animation: v2-pop-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
-}
-
-.pb-signal-card[data-status="lost"]::before,
-.pb-feed-luxe-card[data-status="lost"]::before {
-  content: "✕" !important;
-  position: absolute !important;
-  top: 10px !important;
-  right: 10px !important;
-  width: 22px !important;
-  height: 22px !important;
-  border-radius: 50% !important;
-  background: #f87171 !important;
-  color: #fff !important;
-  font-size: 12px !important;
-  font-weight: 700 !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  box-shadow: 0 0 12px rgba(248, 113, 113, 0.6) !important;
-  z-index: 5 !important;
-}
+/* (статус-иконки перенесены выше через ::after — без дублей) */
 
 @keyframes v2-pop-in {
   0%   { transform: scale(0) rotate(-180deg); opacity: 0; }

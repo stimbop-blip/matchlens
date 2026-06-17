@@ -8,12 +8,18 @@ type AIScanningLoaderProps = {
 };
 
 const STATUSES = [
-  "ИИ сканирует live-данные",
-  "Синхронизация с букмекерами",
-  "Анализ движения коэффициентов",
-  "Обработка исторической статистики",
-  "Сравнение моделей предсказания",
-  "Выявление ценности ставок",
+  "Сканирование live-линий: 1xBet, Fonbet, Winline",
+  "Анализ коэффициентов АПЛ и Ла Лиги",
+  "Обработка xG-моделей последних 10 матчей",
+  "Сравнение движения линии: Pinnacle",
+  "Расчёт value по 12 букмекерским конторам",
+  "Поиск вилок и коридоров в live",
+  "Анализ формы команд: последние 5 игр",
+  "Сканирование инсайдов и составов",
+  "Выявление переоценённых исходов",
+  "Проверка H2H: личные встречи",
+  "Учёт погоды, судьи и мотивации",
+  "Финальная фильтрация по value-индексу",
 ];
 
 const MIN_MATCHES = 1240;
@@ -424,8 +430,99 @@ export function AIScanningLoader({ className = "", compact = false, fullscreen =
               {statusText}
             </motion.p>
           </AnimatePresence>
+
+          {/* Живая лента сканируемых матчей */}
+          <LiveMatchTicker compact={compact} isLightTheme={isLightTheme} />
         </div>
       </div>
     </div>
+  );
+}
+
+/* ─── Бегущая лента матчей ─────────────────────────────────── */
+const LIVE_MATCHES = [
+  { league: "АПЛ", home: "Арсенал", away: "Челси", odds: "1.85" },
+  { league: "Ла Лига", home: "Реал М", away: "Барселона", odds: "2.10" },
+  { league: "Серия А", home: "Интер", away: "Ювентус", odds: "2.45" },
+  { league: "Бундеслига", home: "Бавария", away: "Дортмунд", odds: "1.72" },
+  { league: "ЛЧ", home: "Ман Сити", away: "ПСЖ", odds: "1.95" },
+  { league: "Ла Лига", home: "Атлетико", away: "Севилья", odds: "2.30" },
+  { league: "АПЛ", home: "Ливерпуль", away: "Ман Юнайтед", odds: "2.05" },
+  { league: "Серия А", home: "Милан", away: "Наполи", odds: "2.55" },
+  { league: "РПЛ", home: "Зенит", away: "Спартак", odds: "1.90" },
+  { league: "ЛЧ", home: "Бавария", away: "Реал М", odds: "2.65" },
+];
+
+const SCAN_LABELS = ["VALUE FOUND", "SCANNING", "HIGH EDGE", "ANALYZING", "LINE MOVE"];
+
+function LiveMatchTicker({ compact, isLightTheme }: { compact: boolean; isLightTheme: boolean }) {
+  const [index, setIndex] = useState(0);
+  const [label, setLabel] = useState(SCAN_LABELS[1]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIndex((prev) => (prev + 1) % LIVE_MATCHES.length);
+      setLabel(SCAN_LABELS[Math.floor(Math.random() * SCAN_LABELS.length)]);
+    }, 1400);
+    return () => clearInterval(interval);
+  }, []);
+
+  const match = LIVE_MATCHES[index];
+  const labelColor = label === "VALUE FOUND" || label === "HIGH EDGE" ? "#34d399" : isLightTheme ? "#0891b2" : "#67e8f9";
+
+  return (
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={index}
+        initial={{ opacity: 0, x: 16 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: -16 }}
+        transition={{ duration: 0.35, ease: "easeOut" }}
+        style={{
+          marginTop: compact ? 14 : 18,
+          padding: "9px 13px",
+          borderRadius: 10,
+          background: isLightTheme ? "rgba(241, 248, 255, 0.8)" : "rgba(15, 28, 48, 0.55)",
+          border: `1px solid ${isLightTheme ? "rgba(98, 152, 210, 0.25)" : "rgba(82, 190, 228, 0.22)"}`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 10,
+          fontFamily: "Satoshi, Manrope, Segoe UI, sans-serif",
+        }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flex: 1 }}>
+          <span style={{ fontSize: 9, color: isLightTheme ? "#64748b" : "#6e86a4", fontWeight: 600, letterSpacing: 0.5 }}>
+            {match.league}
+          </span>
+          <span style={{ fontSize: 12, color: isLightTheme ? "#0f1729" : "#e4edf8", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            {match.home} <span style={{ color: isLightTheme ? "#94a3b8" : "#6e86a4", fontWeight: 400 }}>vs</span> {match.away}
+          </span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+          <span style={{ fontSize: 13, fontWeight: 800, color: isLightTheme ? "#0891b2" : "#67e8f9" }}>
+            {match.odds}
+          </span>
+          <motion.span
+            animate={{ opacity: [0.5, 1, 0.5] }}
+            transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
+            style={{
+              fontSize: 8,
+              fontWeight: 800,
+              letterSpacing: 0.6,
+              color: labelColor,
+              padding: "2px 6px",
+              borderRadius: 4,
+              background: label === "VALUE FOUND" || label === "HIGH EDGE"
+                ? "rgba(52, 211, 153, 0.15)"
+                : isLightTheme ? "rgba(8, 145, 178, 0.1)" : "rgba(103, 232, 249, 0.12)",
+              border: `1px solid ${labelColor}40`,
+            }}
+          >
+            {label}
+          </motion.span>
+        </div>
+      </motion.div>
+    </AnimatePresence>
   );
 }
