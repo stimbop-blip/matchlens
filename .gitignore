@@ -12,3 +12,4 @@ venv/
 *.egg-info/
 .pytest_cache/
 .mypy_cache/
+COMMIT_MSG.txt
