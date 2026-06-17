@@ -1,5 +1,5 @@
-import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import type { SyntheticEvent } from "react";
 
 import { resolveSportKind, resolveSportLabel, type SportLanguage } from "../../app/sport";
@@ -17,7 +17,7 @@ function handleFootballHeroError(event: SyntheticEvent<HTMLImageElement>) {
   image.src = FOOTBALL_HERO_IMAGE_FALLBACK;
 }
 
-export function SignalCard({
+export function SignalCard3D({
   to,
   title,
   league,
@@ -69,7 +69,7 @@ export function SignalCard({
   const coverSrc = isFootball ? FOOTBALL_HERO_IMAGE : cover.src;
 
   return (
-    <motion.article whileHover={{ y: -3 }} whileTap={{ scale: 0.995 }} transition={{ duration: 0.16, ease: "easeOut" }}>
+    <motion.article whileHover={{ y: -3 }} whileTap={{ scale: 0.996 }} transition={{ duration: 0.16, ease: "easeOut" }}>
       <Link to={to} className={highConfidence ? "pb-feed-luxe-card pb-feed-luxe-card-neon" : "pb-feed-luxe-card"}>
         <div className={isFootball ? "pb-feed-luxe-media football" : "pb-feed-luxe-media"} aria-hidden="true">
           <img
