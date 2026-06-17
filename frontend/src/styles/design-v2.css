@@ -740,3 +740,171 @@ input, textarea, button {
   text-transform: uppercase !important;
   margin-top: 3px !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   LIVE SCANNER V3 — живой AI-сканер для главной
+   ═══════════════════════════════════════════════════════════════ */
+
+.pb-live-scanner-v3 {
+  position: relative !important;
+  border-radius: 20px !important;
+  padding: 18px !important;
+  background: linear-gradient(165deg, rgba(11, 20, 36, 0.95), rgba(8, 17, 31, 0.98)) !important;
+  border: 1px solid rgba(34, 211, 238, 0.25) !important;
+  box-shadow: 0 14px 34px rgba(3, 8, 18, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+  overflow: hidden !important;
+}
+
+:root[data-theme="light"] .pb-live-scanner-v3 {
+  background: linear-gradient(165deg, #ffffff, #f4f7fc) !important;
+  border: 1px solid rgba(8, 145, 178, 0.2) !important;
+  box-shadow: 0 12px 28px rgba(30, 50, 90, 0.1) !important;
+}
+
+.pb-live-scanner-v3::before {
+  content: "" !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  height: 2px !important;
+  background: linear-gradient(90deg, transparent, #22d3ee, #a78bfa, #fbbf24, transparent) !important;
+  animation: v3-scan-line 3s linear infinite !important;
+}
+
+@keyframes v3-scan-line {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Шапка */
+.pb-ls-header-v3 {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  margin-bottom: 14px !important;
+}
+
+.pb-ls-live-dot-v3 {
+  width: 8px !important;
+  height: 8px !important;
+  border-radius: 50% !important;
+  background: #34d399 !important;
+  box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7) !important;
+  animation: v3-live-pulse-dot 1.6s infinite !important;
+}
+
+@keyframes v3-live-pulse-dot {
+  0%   { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7); }
+  70%  { box-shadow: 0 0 0 7px rgba(52, 211, 153, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); }
+}
+
+.pb-ls-title-v3 {
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  letter-spacing: 1.2px !important;
+  color: #22d3ee !important;
+  text-transform: uppercase !important;
+}
+
+:root[data-theme="light"] .pb-ls-title-v3 {
+  color: #0891b2 !important;
+}
+
+/* Эквалайзер */
+.pb-ls-eq-v3 {
+  display: flex !important;
+  align-items: flex-end !important;
+  justify-content: center !important;
+  gap: 2px !important;
+  height: 60px !important;
+  margin-bottom: 14px !important;
+  padding: 0 4px !important;
+}
+
+.pb-ls-eq-bar-v3 {
+  flex: 1 !important;
+  min-width: 3px !important;
+  max-width: 8px !important;
+  border-radius: 2px 2px 0 0 !important;
+  opacity: 0.85 !important;
+}
+
+/* Этап анализа */
+.pb-ls-stage-v3 {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 8px 0 !important;
+  font-size: 14px !important;
+}
+
+.pb-ls-stage-icon-v3 {
+  font-size: 18px !important;
+}
+
+.pb-ls-stage-label-v3 {
+  color: var(--text-primary, #f1f5ff) !important;
+  font-weight: 600 !important;
+}
+
+/* Прогресс-бар */
+.pb-ls-progress-track-v3 {
+  height: 3px !important;
+  background: rgba(120, 145, 180, 0.15) !important;
+  border-radius: 2px !important;
+  overflow: hidden !important;
+  margin-bottom: 14px !important;
+}
+
+.pb-ls-progress-fill-v3 {
+  height: 100% !important;
+  background: linear-gradient(90deg, #22d3ee, #a78bfa) !important;
+  border-radius: 2px !important;
+  box-shadow: 0 0 8px rgba(34, 211, 238, 0.5) !important;
+  transition: width 0.1s linear !important;
+}
+
+/* Метрики */
+.pb-ls-metrics-v3 {
+  display: grid !important;
+  grid-template-columns: repeat(4, 1fr) !important;
+  gap: 6px !important;
+}
+
+.pb-ls-metric-v3 {
+  text-align: center !important;
+  padding: 8px 4px !important;
+  background: rgba(120, 145, 180, 0.06) !important;
+  border-radius: 10px !important;
+}
+
+:root[data-theme="light"] .pb-ls-metric-v3 {
+  background: rgba(100, 120, 150, 0.05) !important;
+}
+
+.pb-ls-metric-value-v3 {
+  display: block !important;
+  font-size: 16px !important;
+  font-weight: 800 !important;
+  color: var(--text-primary, #f1f5ff) !important;
+  font-variant-numeric: tabular-nums !important;
+  letter-spacing: -0.3px !important;
+  line-height: 1.1 !important;
+}
+
+.pb-ls-metric-label-v3 {
+  display: block !important;
+  font-size: 9px !important;
+  font-weight: 600 !important;
+  color: var(--text-secondary, #8a9cbd) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.3px !important;
+  margin-top: 2px !important;
+}
+
+@media (max-width: 380px) {
+  .pb-ls-eq-bar-v3 { max-width: 6px !important; }
+  .pb-ls-metric-value-v3 { font-size: 14px !important; }
+}

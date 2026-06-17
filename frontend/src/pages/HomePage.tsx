@@ -6,6 +6,7 @@ import { resolveSportLabel } from "../app/sport";
 import { countPendingPayments, resolveSubscriptionSnapshot } from "../app/subscription";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
+import { LiveScanner } from "../components/live/LiveScanner";
 import { ErrorBoundary } from "../components/motion/ErrorBoundary";
 import { HeroPanel } from "../components/premium/HeroPanel";
 import { PremiumKpi } from "../components/premium/PremiumKpi";
@@ -496,6 +497,11 @@ export function HomePage() {
           </Link>
         </div>
       </HeroPanel>
+
+      {/* Живой AI-сканер — всегда виден */}
+      <div style={{ marginBottom: 14 }}>
+        <LiveScanner language={language} />
+      </div>
 
       {/* Матч дня */}
       {matchOfDay && !summaryLoading ? (
