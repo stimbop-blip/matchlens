@@ -399,6 +399,26 @@ export function HomePage() {
     return [...selected, ...fallback.slice(selected.length, 2)];
   }, [language, predictions, t]);
 
+  // Матч дня: pending-прогноз с максимальным кэфом
+  const matchOfDay = useMemo<FeaturedSignal | null>(() => {
+    const pending = predictions.filter((item) => item.status === "pending");
+    if (pending.length === 0) return null;
+    const best = pending.reduce((max, item) => (item.odds > max.odds ? item : max), pending[0]);
+    return {
+      id: best.id,
+      to: `/feed/${best.id}`,
+      matchName: best.match_name,
+      league: best.league || t("feed.noLeague"),
+      sportType: best.sport_type,
+      signal: best.signal_type,
+      odds: best.odds,
+      mode: best.mode,
+      accessLevel: best.access_level,
+      kickoff: formatDate(best.event_start_at, language, t("common.noDate")),
+      note: predictionTeaser(best.short_description, t("feed.teaserFallback")),
+    };
+  }, [predictions, language, t]);
+
   const pulseValues = useMemo(() => {
     const roi = stats?.roi ?? 0;
     const pending = stats?.pending ?? 0;
@@ -476,6 +496,36 @@ export function HomePage() {
           </Link>
         </div>
       </HeroPanel>
+
+      {/* Матч дня */}
+      {matchOfDay && !summaryLoading ? (
+        <Link className="pb-match-of-day-v3 pb-reveal" to={matchOfDay.to} style={{ display: "block", marginBottom: 14 }}>
+          <span className="pb-mod-badge-v3">⭐ {language === "ru" ? "Матч дня" : "Match of the day"}</span>
+          <h3 className="pb-mod-title-v3">{matchOfDay.matchName}</h3>
+          <p className="pb-mod-meta-v3">{matchOfDay.league} · {matchOfDay.kickoff}</p>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 14, gap: 12 }}>
+            <div>
+              <div style={{ fontSize: 13, color: "var(--text-secondary, #8a9cbd)", fontWeight: 600 }}>{matchOfDay.signal}</div>
+              <div style={{ fontSize: 11, color: "var(--text-secondary, #8a9cbd)", opacity: 0.7, marginTop: 2 }}>{tariffLabel(matchOfDay.accessLevel, t)}</div>
+            </div>
+            <div className="pb-mod-odds-v3">{matchOfDay.odds.toFixed(2)}</div>
+          </div>
+        </Link>
+      ) : null}
+
+      {/* Pulse-баннер с ROI */}
+      {stats && !coreLoading ? (
+        <div className="pb-pulse-banner-v3 pb-reveal" style={{ marginBottom: 14 }}>
+          <div>
+            <div className="pb-pulse-label-v3">{language === "ru" ? "ROI за период" : "Period ROI"}</div>
+            <div className="pb-pulse-value-v3">{(stats.roi ?? 0).toFixed(1)}%</div>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <div className="pb-pulse-label-v3">{language === "ru" ? "Точность" : "Hit rate"}</div>
+            <div className="pb-pulse-value-v3">{(stats.hit_rate ?? 0).toFixed(1)}%</div>
+          </div>
+        </div>
+      ) : null}
 
       <section className="pb-premium-panel pb-overview-featured pb-reveal">
         <div className="pb-premium-head">
