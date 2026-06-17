@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Area, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Area, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, ReferenceLine } from "recharts";
 
 import type { Prediction } from "../../services/api";
 
@@ -16,10 +16,11 @@ const ACCESS_COLOR: Record<AccessLevel, string> = {
   vip: "#a78bfa",
 };
 
-const ACCESS_BORDER: Record<AccessLevel, string> = {
-  free: "rgba(103, 232, 249, 0.42)",
-  premium: "rgba(251, 191, 36, 0.42)",
-  vip: "rgba(167, 139, 250, 0.44)",
+const STATUS_COLOR: Record<Prediction["status"], string> = {
+  won: "#34d399",
+  lost: "#f87171",
+  refund: "#fbbf24",
+  pending: "#38bdf8",
 };
 
 function eventTime(item: Prediction): number {
@@ -62,7 +63,7 @@ function computeTierStats(items: Prediction[], level: AccessLevel) {
   const refund = subset.filter((item) => item.status === "refund").length;
   const settled = won + lost + refund;
   const hitRate = settled > 0 ? Math.round((won / settled) * 100) : 0;
-  return { count: subset.length, hitRate };
+  return { count: subset.length, hitRate, won, lost };
 }
 
 export function SignalPerformanceChart({ items, language }: SignalPerformanceChartProps) {
@@ -79,6 +80,8 @@ export function SignalPerformanceChart({ items, language }: SignalPerformanceCha
       lost,
       refund,
       pending,
+      total: items.length,
+      settled,
       hitRate,
       free: computeTierStats(items, "free"),
       premium: computeTierStats(items, "premium"),
@@ -88,7 +91,7 @@ export function SignalPerformanceChart({ items, language }: SignalPerformanceCha
 
   const chartData = useMemo(() => {
     const sorted = [...items].sort((a, b) => eventTime(a) - eventTime(b));
-    const recent = sorted.slice(-16);
+    const recent = sorted.slice(-14);
 
     let cumulativeWon = 0;
     let cumulativeLost = 0;
@@ -136,125 +139,135 @@ export function SignalPerformanceChart({ items, language }: SignalPerformanceCha
   const endValue = chartData[chartData.length - 1]?.value ?? 0;
   const trendAvg = chartData[chartData.length - 1]?.avg ?? 0;
   const trendDelta = endValue - startValue;
-  const qualityIndex = Math.round(stats.hitRate * 0.7 + trendAvg * 0.3);
 
   const renderTierDot = (props: any) => {
     const { cx, cy, payload } = props;
-    const color = ACCESS_COLOR[(payload?.access as AccessLevel) || "free"];
+    if (cx == null || cy == null) return null;
+    const access = (payload?.access as AccessLevel) || "free";
+    const status = (payload?.status as Prediction["status"]) || "pending";
+    const accessColor = ACCESS_COLOR[access];
+    const statusColor = STATUS_COLOR[status];
     return (
       <g>
-        <circle cx={cx} cy={cy} r={7.2} fill="rgba(8,18,34,0.85)" stroke={color} strokeWidth={2.8} />
-        <circle cx={cx} cy={cy} r={2.4} fill={color} />
+        <circle cx={cx} cy={cy} r={8} fill="#0a1428" stroke={statusColor} strokeWidth={2.5} />
+        <circle cx={cx} cy={cy} r={3} fill={statusColor} />
+        <circle cx={cx} cy={cy} r={11} fill="none" stroke={accessColor} strokeWidth={1.2} opacity={0.45} />
       </g>
     );
   };
+
+  const isEmpty = items.length === 0;
 
   return (
     <div
       style={{
         width: "100%",
-        borderRadius: 24,
-        border: "1px solid rgba(56, 99, 147, 0.65)",
+        borderRadius: 20,
+        border: "1px solid rgba(56, 99, 147, 0.45)",
         background:
-          "radial-gradient(circle at 84% -18%, rgba(49, 209, 255, 0.18), transparent 40%), radial-gradient(circle at 6% 122%, rgba(80, 236, 203, 0.12), transparent 44%), linear-gradient(165deg, #091221 0%, #070f1d 55%, #081425 100%)",
-        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08), 0 16px 38px rgba(3, 8, 18, 0.5)",
+          "linear-gradient(165deg, #0b1424 0%, #08111f 60%, #0a1626 100%)",
+        boxShadow: "0 14px 34px rgba(3, 8, 18, 0.45), inset 0 1px 0 rgba(255,255,255,0.06)",
         overflow: "hidden",
         position: "relative",
         padding: 18,
       }}
     >
-      <div
-        style={{
-          position: "absolute",
-          width: 180,
-          height: 180,
-          borderRadius: "50%",
-          right: -56,
-          top: -70,
-          background: "radial-gradient(circle, rgba(49,209,255,0.22), rgba(49,209,255,0))",
-          pointerEvents: "none",
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          width: 160,
-          height: 160,
-          borderRadius: "50%",
-          left: -48,
-          bottom: -90,
-          background: "radial-gradient(circle, rgba(89,237,203,0.2), rgba(89,237,203,0))",
-          pointerEvents: "none",
-        }}
-      />
-
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 14 }}>
-        <div>
+      {/* Заголовок + главный KPI */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 16 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <div
             style={{
               display: "inline-flex",
               alignItems: "center",
+              gap: 6,
               borderRadius: 999,
-              padding: "5px 12px",
-              border: "1px solid rgba(98, 145, 205, 0.45)",
-              background: "rgba(11, 29, 52, 0.62)",
+              padding: "4px 11px",
+              border: "1px solid rgba(98, 145, 205, 0.4)",
+              background: "rgba(11, 29, 52, 0.6)",
               color: "#67e8f9",
               fontSize: 10,
               fontWeight: 700,
-              letterSpacing: 0.45,
+              letterSpacing: 0.4,
             }}
           >
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#34d399", display: "inline-block" }} />
             {language === "ru" ? "ДИНАМИКА ТОЧНОСТИ" : "ACCURACY TREND"}
           </div>
-          <h3 style={{ color: "#f8fbff", fontSize: 24, fontWeight: 760, marginTop: 10, lineHeight: 1.08 }}>
+          <h3 style={{ color: "#f8fbff", fontSize: 21, fontWeight: 720, marginTop: 10, lineHeight: 1.1 }}>
             {language === "ru" ? "Рабочая лента сигналов" : "Signal performance"}
           </h3>
-          <p style={{ color: "#8ca4c2", fontSize: 13, marginTop: 6 }}>
-            {language === "ru" ? "Реальная статистика + разрез по Premium и VIP" : "Real stats with Premium and VIP split"}
-          </p>
         </div>
 
         <div style={{ textAlign: "right", flexShrink: 0 }}>
-          <div style={{ color: "#ffffff", fontSize: 48, lineHeight: 1, fontWeight: 800, letterSpacing: -1.6 }}>{stats.hitRate}%</div>
-          <div style={{ color: "#22d3ee", marginTop: 2, fontSize: 11, fontWeight: 700 }}>
-            {language === "ru" ? "СРЕДНЯЯ ТОЧНОСТЬ" : "AVERAGE ACCURACY"}
+          <div style={{ display: "flex", alignItems: "baseline", gap: 2 }}>
+            <span style={{ color: "#ffffff", fontSize: 42, lineHeight: 1, fontWeight: 800, letterSpacing: -1.5 }}>
+              {stats.hitRate}
+            </span>
+            <span style={{ color: "#8ca4c2", fontSize: 18, fontWeight: 600 }}>%</span>
+          </div>
+          <div style={{ color: "#22d3ee", marginTop: 4, fontSize: 10, fontWeight: 700, letterSpacing: 0.3 }}>
+            {language === "ru" ? "ТОЧНОСТЬ" : "HIT RATE"}
           </div>
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8, marginBottom: 10 }}>
-        <div style={{ border: "1px solid rgba(90, 137, 190, 0.35)", borderRadius: 12, padding: "7px 9px", background: "rgba(10, 23, 41, 0.54)" }}>
-          <div style={{ color: "#7d97b7", fontSize: 10 }}>{language === "ru" ? "Дельта" : "Delta"}</div>
-          <div style={{ color: trendDelta >= 0 ? "#66f2ca" : "#ff96a5", fontWeight: 700, fontSize: 18 }}>
-            {trendDelta > 0 ? `+${trendDelta}` : trendDelta}%
+      {/* Сетка мини-KPI */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8, marginBottom: 14 }}>
+        <div style={{ border: "1px solid rgba(90, 137, 190, 0.3)", borderRadius: 12, padding: "8px 10px", background: "rgba(10, 23, 41, 0.5)" }}>
+          <div style={{ color: "#7d97b7", fontSize: 10 }}>{language === "ru" ? "Тренд" : "Trend"}</div>
+          <div style={{ color: trendDelta >= 0 ? "#34d399" : "#f87171", fontWeight: 700, fontSize: 17 }}>
+            {trendDelta > 0 ? "▲" : trendDelta < 0 ? "▼" : "—"} {Math.abs(trendDelta)}%
           </div>
         </div>
-        <div style={{ border: "1px solid rgba(90, 137, 190, 0.35)", borderRadius: 12, padding: "7px 9px", background: "rgba(10, 23, 41, 0.54)" }}>
+        <div style={{ border: "1px solid rgba(90, 137, 190, 0.3)", borderRadius: 12, padding: "8px 10px", background: "rgba(10, 23, 41, 0.5)" }}>
           <div style={{ color: "#7d97b7", fontSize: 10 }}>{language === "ru" ? "Стабильность" : "Stability"}</div>
-          <div style={{ color: "#9dd7ff", fontWeight: 700, fontSize: 18 }}>{trendAvg}%</div>
+          <div style={{ color: "#9dd7ff", fontWeight: 700, fontSize: 17 }}>{trendAvg}%</div>
         </div>
-        <div style={{ border: "1px solid rgba(90, 137, 190, 0.35)", borderRadius: 12, padding: "7px 9px", background: "rgba(10, 23, 41, 0.54)" }}>
-          <div style={{ color: "#7d97b7", fontSize: 10 }}>{language === "ru" ? "Индекс" : "Index"}</div>
-          <div style={{ color: "#cde8ff", fontWeight: 700, fontSize: 18 }}>{qualityIndex}%</div>
+        <div style={{ border: "1px solid rgba(90, 137, 190, 0.3)", borderRadius: 12, padding: "8px 10px", background: "rgba(10, 23, 41, 0.5)" }}>
+          <div style={{ color: "#7d97b7", fontSize: 10 }}>{language === "ru" ? "Всего" : "Total"}</div>
+          <div style={{ color: "#e9f3ff", fontWeight: 700, fontSize: 17 }}>{stats.total}</div>
         </div>
       </div>
 
-      <div style={{ height: 248, margin: "0 -4px" }}>
+      {/* График */}
+      <div style={{ height: 220, margin: "0 -4px", position: "relative" }}>
+        {isEmpty ? (
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#6e86a4",
+              fontSize: 13,
+              textAlign: "center",
+              gap: 8,
+            }}
+          >
+            <div style={{ fontSize: 32, opacity: 0.6 }}>📈</div>
+            <div>{language === "ru" ? "Пока нет данных для графика" : "No data yet"}</div>
+            <div style={{ fontSize: 11, opacity: 0.7 }}>
+              {language === "ru" ? "Добавьте прогнозы, чтобы увидеть динамику" : "Add predictions to see the trend"}
+            </div>
+          </div>
+        ) : null}
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={chartData} margin={{ top: 8, right: 18, left: -8, bottom: 4 }}>
+          <ComposedChart data={chartData} margin={{ top: 8, right: 16, left: -10, bottom: 4 }}>
             <defs>
               <linearGradient id="signalAreaFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#22d3ee" stopOpacity={0.86} />
-                <stop offset="68%" stopColor="#22d3ee" stopOpacity={0.18} />
+                <stop offset="0%" stopColor="#22d3ee" stopOpacity={0.55} />
                 <stop offset="100%" stopColor="#22d3ee" stopOpacity={0.02} />
               </linearGradient>
               <filter id="signalGlow" x="-20%" y="-30%" width="140%" height="160%">
-                <feDropShadow dx="0" dy="0" stdDeviation="3.4" floodColor="#22d3ee" floodOpacity="0.46" />
+                <feDropShadow dx="0" dy="0" stdDeviation="2.8" floodColor="#22d3ee" floodOpacity="0.4" />
               </filter>
             </defs>
 
-            <CartesianGrid strokeDasharray="3 8" stroke="rgba(92, 128, 170, 0.24)" vertical={false} />
+            <CartesianGrid strokeDasharray="3 8" stroke="rgba(92, 128, 170, 0.18)" vertical={false} />
             <YAxis hide domain={[0, 100]} />
+            <ReferenceLine y={50} stroke="rgba(148, 187, 230, 0.18)" strokeDasharray="2 6" />
             <XAxis
               dataKey="slot"
               axisLine={false}
@@ -264,38 +277,39 @@ export function SignalPerformanceChart({ items, language }: SignalPerformanceCha
                 const point = chartData.find((item) => item.slot === String(slot));
                 return point?.day || "--";
               }}
-              tick={{ fill: "#60789a", fontSize: 12 }}
-              dy={10}
+              tick={{ fill: "#60789a", fontSize: 11 }}
+              dy={8}
             />
 
             <Tooltip
               formatter={(value, _name, entry) => {
                 const row = entry?.payload;
                 const tier = accessLabel((row?.access as AccessLevel) || "free", language);
-                return [`${value}% · ${tier}`, language === "ru" ? "Точность" : "Accuracy"];
+                const status = statusLabel((row?.status as Prediction["status"]) || "pending", language);
+                return [`${value}% · ${tier} · ${status}`, language === "ru" ? "Точность" : "Hit rate"];
               }}
               labelFormatter={(slot) => {
                 const point = chartData.find((item) => item.slot === String(slot));
-                const status = point ? statusLabel(point.status, language) : "--";
-                return `${language === "ru" ? "Дата" : "Date"}: ${point?.day || "--"} · ${status}`;
+                return point?.day || "--";
               }}
               contentStyle={{
-                backgroundColor: "#152238",
-                border: "1px solid rgba(105, 151, 207, 0.4)",
-                borderRadius: "11px",
+                backgroundColor: "rgba(15, 28, 48, 0.96)",
+                border: "1px solid rgba(105, 151, 207, 0.35)",
+                borderRadius: "10px",
                 color: "#e4edf8",
-                padding: "9px 12px",
-                boxShadow: "0 14px 30px rgba(0, 0, 0, 0.5)",
+                padding: "8px 11px",
+                fontSize: 12,
+                boxShadow: "0 12px 28px rgba(0, 0, 0, 0.55)",
               }}
             />
 
             <Line
               type="monotone"
               dataKey="avg"
-              stroke="rgba(148, 187, 230, 0.72)"
-              strokeWidth={2.1}
+              stroke="rgba(148, 187, 230, 0.55)"
+              strokeWidth={1.8}
               dot={false}
-              strokeDasharray="5 5"
+              strokeDasharray="4 5"
               isAnimationActive
             />
 
@@ -303,60 +317,51 @@ export function SignalPerformanceChart({ items, language }: SignalPerformanceCha
               type="monotone"
               dataKey="value"
               stroke="#22d3ee"
-              strokeWidth={4.8}
+              strokeWidth={3.5}
               fill="url(#signalAreaFill)"
               filter="url(#signalGlow)"
               dot={renderTierDot}
-              activeDot={{ r: 7.8, fill: "#22d3ee", stroke: "#081425", strokeWidth: 3.6 }}
+              activeDot={{ r: 8, fill: "#22d3ee", stroke: "#081425", strokeWidth: 3 }}
             />
           </ComposedChart>
         </ResponsiveContainer>
       </div>
 
-      <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
+      {/* Легенда статусов */}
+      <div style={{ marginTop: 10, display: "flex", gap: 12, flexWrap: "wrap", fontSize: 11 }}>
+        {(Object.keys(STATUS_COLOR) as Prediction["status"][]).map((status) => (
+          <div key={status} style={{ display: "flex", alignItems: "center", gap: 5, color: "#8ca4c2" }}>
+            <span style={{ width: 8, height: 8, borderRadius: "50%", background: STATUS_COLOR[status], display: "inline-block" }} />
+            {statusLabel(status, language)}
+          </div>
+        ))}
+      </div>
+
+      {/* Карточки по уровням доступа */}
+      <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
         {(["free", "premium", "vip"] as AccessLevel[]).map((tier) => {
           const tierStats = stats[tier];
           const color = ACCESS_COLOR[tier];
-          const border = ACCESS_BORDER[tier];
           return (
             <article
               key={tier}
               style={{
-                border: `1px solid ${border}`,
+                border: `1px solid ${color}33`,
                 borderRadius: 12,
-                background: "rgba(10, 23, 41, 0.58)",
-                padding: "8px 9px",
+                background: `linear-gradient(160deg, ${color}0d, transparent)`,
+                padding: "10px 11px",
                 display: "grid",
-                gap: 2,
+                gap: 3,
               }}
             >
               <small style={{ color, fontWeight: 700, fontSize: 11 }}>{accessLabel(tier, language)}</small>
-              <strong style={{ color: "#e9f3ff", fontSize: 18, lineHeight: 1.1 }}>{tierStats.hitRate}%</strong>
-              <span style={{ color: "#6e86a4", fontSize: 11 }}>
-                {language === "ru" ? "Сигналы" : "Signals"}: {tierStats.count}
+              <strong style={{ color: "#e9f3ff", fontSize: 20, lineHeight: 1 }}>{tierStats.hitRate}%</strong>
+              <span style={{ color: "#6e86a4", fontSize: 10 }}>
+                {tierStats.won}W / {tierStats.lost}L
               </span>
             </article>
           );
         })}
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 8, marginTop: 10, textAlign: "center" }}>
-        <div>
-          <div style={{ color: "#34d399", fontSize: 26, fontWeight: 700 }}>{stats.won}</div>
-          <div style={{ color: "#6e86a4", fontSize: 11 }}>{language === "ru" ? "Победы" : "Wins"}</div>
-        </div>
-        <div>
-          <div style={{ color: "#f87171", fontSize: 26, fontWeight: 700 }}>{stats.lost}</div>
-          <div style={{ color: "#6e86a4", fontSize: 11 }}>{language === "ru" ? "Поражения" : "Lost"}</div>
-        </div>
-        <div>
-          <div style={{ color: "#fbbf24", fontSize: 26, fontWeight: 700 }}>{stats.refund}</div>
-          <div style={{ color: "#6e86a4", fontSize: 11 }}>{language === "ru" ? "Возвраты" : "Refund"}</div>
-        </div>
-        <div>
-          <div style={{ color: "#38bdf8", fontSize: 26, fontWeight: 700 }}>{stats.pending}</div>
-          <div style={{ color: "#6e86a4", fontSize: 11 }}>{language === "ru" ? "В ожидании" : "Pending"}</div>
-        </div>
       </div>
     </div>
   );
