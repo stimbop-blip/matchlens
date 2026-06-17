@@ -67,10 +67,19 @@ export function SignalCard({
     seed: `${to}:${title}:${league}`,
   });
   const coverSrc = isFootball ? FOOTBALL_HERO_IMAGE : cover.src;
+  const isLive = mode === "live";
+
+  // Определяем уровень доступа для цветной полоски
+  const accessLevel = accessLabel.toLowerCase().includes("vip") ? "vip" : accessLabel.toLowerCase().includes("premium") ? "premium" : "free";
 
   return (
     <motion.article whileHover={{ y: -3 }} whileTap={{ scale: 0.995 }} transition={{ duration: 0.16, ease: "easeOut" }}>
-      <Link to={to} className={highConfidence ? "pb-feed-luxe-card pb-feed-luxe-card-neon" : "pb-feed-luxe-card"}>
+      <Link
+        to={to}
+        className={highConfidence ? "pb-feed-luxe-card pb-feed-luxe-card-neon" : "pb-feed-luxe-card"}
+        data-access={accessLevel}
+        data-status={status}
+      >
         <div className={isFootball ? "pb-feed-luxe-media football" : "pb-feed-luxe-media"} aria-hidden="true">
           <img
             className="pb-feed-luxe-image"
@@ -83,7 +92,7 @@ export function SignalCard({
           <span className="pb-feed-luxe-pill access">{accessLabel}</span>
           <div className="pb-feed-luxe-media-row">
             <span>{sportName}</span>
-            <span>{mode}</span>
+            <span className={isLive ? "pb-match-mode live" : ""}>{mode}</span>
           </div>
         </div>
 
@@ -98,7 +107,7 @@ export function SignalCard({
             </div>
             <div className="pb-feed-luxe-odds">
               <small>{oddsLabel}</small>
-              <strong>{oddsText}</strong>
+              <div className="pb-odds-pill">{oddsText}</div>
             </div>
           </div>
 

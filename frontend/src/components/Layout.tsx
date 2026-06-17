@@ -1,7 +1,9 @@
 import { type PropsWithChildren, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 
 import { useI18n } from "../app/i18n";
+import { useTheme } from "../app/language";
 import { BottomNav } from "./layout/BottomNav";
 import { api } from "../services/api";
 import {
@@ -42,6 +44,7 @@ function pageMeta(pathname: string): PageMeta {
 
 export function Layout({ children }: PropsWithChildren) {
   const { t } = useI18n();
+  const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -103,6 +106,10 @@ export function Layout({ children }: PropsWithChildren) {
     };
   }, [location.pathname, navigate]);
 
+  const toggleTheme = () => {
+    setTheme(theme === "light" ? "dark" : "light");
+  };
+
   return (
     <div className="pb-app-shell">
       <div className="pb-backdrop-glow" aria-hidden="true" />
@@ -110,9 +117,27 @@ export function Layout({ children }: PropsWithChildren) {
       <header className="pb-app-header">
         <div className="pb-brand-row">
           <span className="pb-brand-chip">PIT BET</span>
-          {staffRole && location.pathname !== "/menu" ? (
-            <span className="pb-role-chip">{staffRole === "admin" ? t("layout.role.admin") : t("layout.role.support")}</span>
-          ) : null}
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {staffRole && location.pathname !== "/menu" ? (
+              <span className="pb-role-chip">{staffRole === "admin" ? t("layout.role.admin") : t("layout.role.support")}</span>
+            ) : null}
+            {/* Theme toggle */}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="pb-theme-toggle"
+              aria-label="Toggle theme"
+              style={{ border: "none" }}
+            >
+              <motion.div
+                className="pb-theme-toggle-thumb"
+                layout
+                transition={{ type: "spring", stiffness: 500, damping: 30 }}
+              >
+                {theme === "light" ? "☀" : "🌙"}
+              </motion.div>
+            </button>
+          </div>
         </div>
         <h1>{t(meta.titleKey)}</h1>
         <p>{t(meta.subtitleKey)}</p>
