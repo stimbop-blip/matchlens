@@ -10,6 +10,7 @@ import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
 import { PageTransition } from "../components/motion/PageTransition";
 import { AIScanningLoader } from "../components/ui/AIScanningLoader";
+import { LiveScanner } from "../components/live/LiveScanner";
 import { api, type NewsPost, type Prediction, type PublicStats } from "../services/api";
 
 function predictionRecency(prediction: Prediction): number {
@@ -213,7 +214,7 @@ export function Home() {
           <h3 className="pb-telegram-gallery-title">{language === "ru" ? "Главная" : "Home"}</h3>
           <p className="pb-telegram-gallery-subtitle">{subtitleText}</p>
 
-          <AIScanningLoader className="pb-home-ai-hero" />
+          <LiveScanner language={language} />
 
           <div className="pb-telegram-tools-grid">
             {quickActions.map((item) => (
