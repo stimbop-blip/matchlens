@@ -1072,3 +1072,110 @@ input, textarea, button {
 .pb-ls-pick-edge-v3 {
   font-variant-numeric: tabular-nums !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   BOTTOM NAV V3 — PILL-СТИЛЬ (как на референсе)
+   Активная: чёрный фон + белая иконка + текст (пилюля)
+   Неактивная: только иконка
+   ═══════════════════════════════════════════════════════════════ */
+
+.pb-nav-pill-v3 {
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  width: 100% !important;
+  max-width: 620px !important;
+  z-index: 100 !important;
+  padding: 10px 16px !important;
+  padding-bottom: max(10px, env(safe-area-inset-bottom)) !important;
+  background: color-mix(in srgb, var(--background, #0a0b14) 88%, transparent) !important;
+  backdrop-filter: blur(20px) saturate(1.5) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.5) !important;
+  border-top: 1px solid color-mix(in srgb, var(--border, #2a3345) 50%, transparent) !important;
+}
+
+:root[data-theme="light"] .pb-nav-pill-v3 {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-top: 1px solid rgba(0, 0, 0, 0.06) !important;
+}
+
+.pb-nav-pill-row-v3 {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-around !important;
+  gap: 8px !important;
+}
+
+.pb-nav-pill-btn-v3 {
+  flex: 1 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 46px !important;
+  border: none !important;
+  background: transparent !important;
+  cursor: pointer !important;
+  padding: 0 !important;
+  border-radius: 999px !important;
+  transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1) !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+.pb-nav-pill-btn-v3:active {
+  transform: scale(0.94) !important;
+}
+
+/* Активная кнопка — пилюля с фоном */
+.pb-nav-pill-active-inner-v3 {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  padding: 11px 18px !important;
+  border-radius: 999px !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  font-size: 13px !important;
+  letter-spacing: -0.01em !important;
+  white-space: nowrap !important;
+  /* Тёмная тема: чёрный фон (как на референсе) */
+  background: #0a0b14 !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Светлая тема: чёрная пилюля на белом фоне */
+:root[data-theme="light"] .pb-nav-pill-active-inner-v3 {
+  background: #0a0b14 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+}
+
+.pb-nav-pill-label-v3 {
+  display: inline-block !important;
+  overflow: hidden !important;
+}
+
+/* Неактивная кнопка — только иконка */
+.pb-nav-pill-inactive-inner-v3 {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 12px !important;
+  color: var(--text-secondary, #8a9cbd) !important;
+  opacity: 0.55 !important;
+  transition: opacity 0.2s !important;
+}
+
+:root[data-theme="light"] .pb-nav-pill-inactive-inner-v3 {
+  color: #6b7280 !important;
+  opacity: 0.5 !important;
+}
+
+.pb-nav-pill-btn-v3:hover .pb-nav-pill-inactive-inner-v3 {
+  opacity: 0.85 !important;
+}
+
+/* Скрываем старый док чтобы не дублировался */
+.pb-telegram-dock {
+  display: none !important;
+}
