@@ -1,4 +1,3 @@
-import { Home, User, Zap } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -12,9 +11,9 @@ export function BottomNav() {
   const h = useHaptics();
 
   const navItems = [
-    { to: "/", label: t("layout.nav.home"), icon: Home },
-    { to: "/feed", label: t("layout.nav.feed"), icon: Zap },
-    { to: "/profile", label: t("layout.nav.profile"), icon: User },
+    { to: "/", label: t("layout.nav.home"), emoji: "🏠" },
+    { to: "/feed", label: t("layout.nav.feed"), emoji: "⚡" },
+    { to: "/profile", label: t("layout.nav.profile"), emoji: "👤" },
   ];
 
   return (
@@ -31,7 +30,7 @@ export function BottomNav() {
                 h.tap();
                 navigate(item.to);
               }}
-              className={isActive ? "pb-nav-pill-btn-v3 active" : "pb-nav-pill-btn-v3"}
+              className="pb-nav-pill-btn-v3"
             >
               {isActive ? (
                 <motion.div
@@ -39,7 +38,7 @@ export function BottomNav() {
                   className="pb-nav-pill-active-inner-v3"
                   transition={{ type: "spring", stiffness: 380, damping: 30 }}
                 >
-                  <item.icon size={19} strokeWidth={2.4} />
+                  <span className="pb-nav-pill-emoji-v3">{item.emoji}</span>
                   <AnimatePresence>
                     <motion.span
                       initial={{ opacity: 0, width: 0 }}
@@ -54,7 +53,7 @@ export function BottomNav() {
                 </motion.div>
               ) : (
                 <div className="pb-nav-pill-inactive-inner-v3">
-                  <item.icon size={21} strokeWidth={2} />
+                  <span className="pb-nav-pill-emoji-v3">{item.emoji}</span>
                 </div>
               )}
             </button>
