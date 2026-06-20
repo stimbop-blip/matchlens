@@ -9,11 +9,10 @@ type LiveScannerProps = {
  * Премиум AI-сканер для главной страницы.
  *
  * Реалистичная симуляция работы нейросети:
- * - Цифры растут плавно (не прыгают хаотично)
- * - Кэфы "найденных" ставок реалистичны (1.65–3.40)
- * - Этапы идут последовательно, как реальный анализ
- * - Прогресс привязан к этапам
- * - Эквалайзер + wave + живые метрики
+ * - Цифры растут плавно (smoothApproach)
+ * - Этапы идут последовательно
+ * - На поздних этапах показывает "найденные паттерны"
+ *   (тип аномалии + confidence %), а не конкретные матчи
  */
 
 const STAGES_RU = [
@@ -34,34 +33,29 @@ const STAGES_EN = [
   { label: "Filtering and selecting signals", icon: "⚡", progress: 96 },
 ];
 
-// Реалистичные "найденные" ставки (как настоящий сканер бы показал)
-const FOUND_PICKS_RU = [
-  { league: "АПЛ", match: "Арсенал — Челси", odds: 1.85, type: "ТБ 2.5" },
-  { league: "Ла Лига", match: "Реал — Бетис", odds: 1.72, type: "П1" },
-  { league: "Серия А", match: "Интер — Эмполи", odds: 1.65, type: "ИТБ 1.5" },
-  { league: "Бундеслига", match: "Бавария — Аугсбург", odds: 2.10, type: "ТБ 3.5" },
-  { league: "ЛЧ", match: "Ман Сити — Интер", odds: 2.45, type: "П1" },
-  { league: "Ла Лига", match: "Барселона — Сельта", odds: 1.95, type: "ТБ 2.5" },
-  { league: "АПЛ", match: "Ливерпуль — Брайтон", odds: 2.25, type: "ИТБ 1.5" },
-  { league: "Серия А", match: "Милан — Лечче", odds: 2.30, type: "ТБ 2.5" },
+// Найденные паттерны (что ИИ обнаружил, без конкретных матчей)
+const PATTERNS_RU = [
+  { type: "Аномалия движения линии", confidence: 87, edge: "+8.2%", icon: "📈" },
+  { type: "Value-разрыв коэффициентов", confidence: 91, edge: "+11.4%", icon: "💎" },
+  { type: "Перекос вероятностей", confidence: 78, edge: "+6.1%", icon: "⚖️" },
+  { type: "Прогруз на аутсайдера", confidence: 84, edge: "+9.7%", icon: "🔥" },
+  { type: "Несоответствие xG и кэфа", confidence: 89, edge: "+10.3%", icon: "🎯" },
+  { type: "Падение коэффициента", confidence: 82, edge: "+7.8%", icon: "📉" },
 ];
 
-const FOUND_PICKS_EN = [
-  { league: "EPL", match: "Arsenal — Chelsea", odds: 1.85, type: "O 2.5" },
-  { league: "La Liga", match: "Real — Betis", odds: 1.72, type: "W1" },
-  { league: "Serie A", match: "Inter — Empoli", odds: 1.65, type: "TO 1.5" },
-  { league: "Bundesliga", match: "Bayern — Augsburg", odds: 2.10, type: "O 3.5" },
-  { league: "UCL", match: "Man City — Inter", odds: 2.45, type: "W1" },
-  { league: "La Liga", match: "Barcelona — Celta", odds: 1.95, type: "O 2.5" },
-  { league: "EPL", match: "Liverpool — Brighton", odds: 2.25, type: "TO 1.5" },
-  { league: "Serie A", match: "Milan — Lecce", odds: 2.30, type: "O 2.5" },
+const PATTERNS_EN = [
+  { type: "Line movement anomaly", confidence: 87, edge: "+8.2%", icon: "📈" },
+  { type: "Odds value gap", confidence: 91, edge: "+11.4%", icon: "💎" },
+  { type: "Probability skew", confidence: 78, edge: "+6.1%", icon: "⚖️" },
+  { type: "Outsider money influx", confidence: 84, edge: "+9.7%", icon: "🔥" },
+  { type: "xG / odds mismatch", confidence: 89, edge: "+10.3%", icon: "🎯" },
+  { type: "Odds drop detected", confidence: 82, edge: "+7.8%", icon: "📉" },
 ];
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-// Плавная интерполяция к целевому значению (как реальный счётчик)
 function smoothApproach(current: number, target: number, speed = 0.18): number {
   return current + (target - current) * speed;
 }
@@ -69,17 +63,16 @@ function smoothApproach(current: number, target: number, speed = 0.18): number {
 export function LiveScanner({ language = "ru" }: LiveScannerProps) {
   const isRu = language === "en" ? false : true;
   const stages = isRu ? STAGES_RU : STAGES_EN;
-  const picks = isRu ? FOUND_PICKS_RU : FOUND_PICKS_EN;
+  const patterns = isRu ? PATTERNS_RU : PATTERNS_EN;
 
   const [stageIndex, setStageIndex] = useState(0);
   const [scannedLines, setScannedLines] = useState(0);
   const [foundValue, setFoundValue] = useState(0);
   const [accuracy, setAccuracy] = useState(71.4);
   const [roi, setRoi] = useState(14.2);
-  const [currentPick, setCurrentPick] = useState(0);
+  const [currentPattern, setCurrentPattern] = useState(0);
   const [barHeights, setBarHeights] = useState<number[]>(Array(32).fill(30));
 
-  // Таргеты для плавного приближения
   const targets = useRef({
     lines: 1400,
     value: 6,
@@ -87,17 +80,14 @@ export function LiveScanner({ language = "ru" }: LiveScannerProps) {
     roi: 14.5,
   });
 
-  // Главный цикл — этапы анализа (последовательные)
+  // Этапы (последовательные)
   useEffect(() => {
     const interval = setInterval(() => {
       setStageIndex((prev) => {
         const next = (prev + 1) % stages.length;
-        // На каждом новом этапе — новые таргеты
         if (next === 0) {
-          // Новый цикл — обнуляем
           targets.current = { lines: 1200 + Math.random() * 400, value: 4 + Math.random() * 6, accuracy: 70 + Math.random() * 8, roi: 10 + Math.random() * 10 };
         } else if (next === stages.length - 1) {
-          // Финальный этап — лучшие результаты
           targets.current = { lines: 2400 + Math.random() * 500, value: 8 + Math.random() * 8, accuracy: 76 + Math.random() * 6, roi: 16 + Math.random() * 8 };
         }
         return next;
@@ -106,7 +96,7 @@ export function LiveScanner({ language = "ru" }: LiveScannerProps) {
     return () => clearInterval(interval);
   }, [stages.length]);
 
-  // Плавная анимация счётчиков (60fps ощущение)
+  // Плавные счётчики
   useEffect(() => {
     const interval = setInterval(() => {
       setScannedLines((prev) => Math.round(smoothApproach(prev, targets.current.lines, 0.08)));
@@ -120,14 +110,12 @@ export function LiveScanner({ language = "ru" }: LiveScannerProps) {
     return () => clearInterval(interval);
   }, []);
 
-  // Эквалайзер — новые высоты каждые 120мс (плавный wave)
+  // Эквалайзер wave
   useEffect(() => {
     const interval = setInterval(() => {
       setBarHeights((prev) => {
         const next = [...prev];
-        // Сдвигаем влево (wave effect)
         next.shift();
-        // Новое значение справа — зависит от этапа (позже = выше активность)
         const intensity = 0.4 + (stageIndex / stages.length) * 0.6;
         const base = 20 + Math.random() * 40 * intensity;
         const peak = Math.random() < 0.15 ? 70 + Math.random() * 30 : base;
@@ -138,18 +126,18 @@ export function LiveScanner({ language = "ru" }: LiveScannerProps) {
     return () => clearInterval(interval);
   }, [stageIndex, stages.length]);
 
-  // "Найденные" ставки — сменяются на финальных этапах
+  // Смена паттернов (на поздних этапах)
   useEffect(() => {
     if (stageIndex >= 3) {
       const interval = setInterval(() => {
-        setCurrentPick((prev) => (prev + 1) % picks.length);
-      }, 1600);
+        setCurrentPattern((prev) => (prev + 1) % patterns.length);
+      }, 1800);
       return () => clearInterval(interval);
     }
-  }, [stageIndex, picks.length]);
+  }, [stageIndex, patterns.length]);
 
   const stage = stages[stageIndex];
-  const pick = picks[currentPick];
+  const pattern = patterns[currentPattern];
   const roiColor = roi >= 0 ? "#34d399" : "#f87171";
   const roiStr = roi >= 0 ? `+${roi.toFixed(1)}` : roi.toFixed(1);
 
@@ -160,7 +148,6 @@ export function LiveScanner({ language = "ru" }: LiveScannerProps) {
       transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
       className="pb-live-scanner-v3"
     >
-      {/* Декоративное свечение */}
       <div className="pb-ls-glow-v3" aria-hidden="true" />
 
       {/* Шапка */}
@@ -173,7 +160,7 @@ export function LiveScanner({ language = "ru" }: LiveScannerProps) {
         <span className="pb-ls-cycle-v3">#{stageIndex + 1}/{stages.length}</span>
       </div>
 
-      {/* Эквалайзер — плавный wave */}
+      {/* Эквалайзер */}
       <div className="pb-ls-eq-v3">
         {barHeights.map((h, i) => {
           const colorIdx = (i + stageIndex) % 3;
@@ -196,7 +183,7 @@ export function LiveScanner({ language = "ru" }: LiveScannerProps) {
         })}
       </div>
 
-      {/* Текущий этап */}
+      {/* Этап */}
       <AnimatePresence mode="wait">
         <motion.div
           key={stageIndex}
@@ -211,7 +198,7 @@ export function LiveScanner({ language = "ru" }: LiveScannerProps) {
         </motion.div>
       </AnimatePresence>
 
-      {/* Прогресс-бар привязан к этапу */}
+      {/* Прогресс */}
       <div className="pb-ls-progress-track-v3">
         <motion.div
           className="pb-ls-progress-fill-v3"
@@ -220,11 +207,11 @@ export function LiveScanner({ language = "ru" }: LiveScannerProps) {
         />
       </div>
 
-      {/* "Найденная" ставка (на поздних этапах) */}
+      {/* Найденный паттерн (на этапах 4-6) */}
       <AnimatePresence>
         {stageIndex >= 3 ? (
           <motion.div
-            key={currentPick}
+            key={currentPattern}
             initial={{ opacity: 0, y: 8, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8 }}
@@ -232,15 +219,19 @@ export function LiveScanner({ language = "ru" }: LiveScannerProps) {
             className="pb-ls-pick-v3"
           >
             <div className="pb-ls-pick-info-v3">
-              <span className="pb-ls-pick-league-v3">{pick.league}</span>
-              <span className="pb-ls-pick-match-v3">{pick.match}</span>
-              <span className="pb-ls-pick-type-v3">{pick.type}</span>
+              <span className="pb-ls-pick-type-v3" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ fontSize: 16 }}>{pattern.icon}</span>
+                {pattern.type}
+              </span>
+              <span className="pb-ls-pick-edge-v3" style={{ color: "#34d399", fontSize: 12, fontWeight: 700, marginTop: 3 }}>
+                {isRu ? "Перевес" : "Edge"}: {pattern.edge}
+              </span>
             </div>
-            <div className="pb-ls-pick-odds-v3">
-              <span className="pb-ls-pick-odds-label-v3">{isRu ? "КЭФ" : "ODDS"}</span>
-              <span className="pb-ls-pick-odds-value-v3">{pick.odds.toFixed(2)}</span>
+            <div className="pb-ls-pick-confidence-v3">
+              <span className="pb-ls-pick-confidence-label-v3">{isRu ? "УВЕРЕННОСТЬ" : "CONFIDENCE"}</span>
+              <span className="pb-ls-pick-confidence-value-v3">{pattern.confidence}%</span>
             </div>
-            <span className="pb-ls-pick-tag-v3">VALUE</span>
+            <span className="pb-ls-pick-tag-v3">DETECTED</span>
           </motion.div>
         ) : null}
       </AnimatePresence>
@@ -253,7 +244,7 @@ export function LiveScanner({ language = "ru" }: LiveScannerProps) {
         </div>
         <div className="pb-ls-metric-v3">
           <span className="pb-ls-metric-value-v3" style={{ color: "#34d399" }}>{foundValue.toFixed(0)}</span>
-          <span className="pb-ls-metric-label-v3">{isRu ? "value" : "value"}</span>
+          <span className="pb-ls-metric-label-v3">value</span>
         </div>
         <div className="pb-ls-metric-v3">
           <span className="pb-ls-metric-value-v3">{accuracy.toFixed(1)}%</span>
