@@ -1,4 +1,5 @@
 import contextlib
+from typing import Any
 
 from aiogram import Router
 from aiogram.filters import CommandStart
@@ -25,12 +26,40 @@ def _extract_referral_code(text: str | None) -> str | None:
     return code or None
 
 
+def _format_stat_line(stats: dict[str, Any] | None, language: str) -> str:
+    """Форматирует строку реальной статистики для стартового сообщения."""
+    if not stats:
+        # Фолбэк, если бэкенд недоступен
+        return ""
+
+    hit_rate = stats.get("hit_rate", 0)
+    roi = stats.get("roi", 0)
+    total = stats.get("total", 0)
+    pending = stats.get("pending", 0)
+    wins = stats.get("wins", 0)
+
+    # ROI с плюсом если положительный
+    roi_str = f"+{roi:.1f}%" if roi >= 0 else f"{roi:.1f}%"
+
+    if language == "ru":
+        return (
+            f"📊 Точность: <b>{hit_rate:.0f}%</b>  |  💰 ROI: <b>{roi_str}</b>\n"
+            f"🎯 Сигналов всего: <b>{total}</b>  |  ⏳ В игре: <b>{pending}</b>  |  ✅ Побед: <b>{wins}</b>"
+        )
+    return (
+        f"📊 Hit rate: <b>{hit_rate:.0f}%</b>  |  💰 ROI: <b>{roi_str}</b>\n"
+        f"🎯 Total signals: <b>{total}</b>  |  ⏳ Live: <b>{pending}</b>  |  ✅ Won: <b>{wins}</b>"
+    )
+
+
 @router.message(CommandStart())
 async def cmd_start(message: Message) -> None:
     user = message.from_user
     backend_client = get_backend_client()
     referral_code = _extract_referral_code(message.text)
     language = normalize_language(user.language_code if user else None)
+
+    stats = None
     if backend_client and user:
         await backend_client.sync_user(
             {
@@ -46,7 +75,20 @@ async def cmd_start(message: Message) -> None:
         if preferences:
             language = normalize_language(str(preferences.get("language") or language))
 
-    # Удаляем команду /start и временное сообщение очистки клавиатуры
+        # Получаем реальную статистику
+        stats = await backend_client.get_public_stats()
+
+    # Формируем сообщение с реальными цифрами
+    stat_line = _format_stat_line(stats, language)
+    if stat_line:
+        # Подставляем реальные цифры в шаблон
+        intro = t(language, "start_message")
+        start_text = f"{intro}\n\n{stat_line}"
+    else:
+        # Если бэкенд недоступен — без статистики
+        start_text = t(language, "start_message")
+
+    # Удаляем команду /start
     with contextlib.suppress(Exception):
         await message.delete()
 
@@ -56,17 +98,16 @@ async def cmd_start(message: Message) -> None:
 
     is_admin = bool(user and user.id in settings.admin_ids())
 
-    # Ответ: приветствие + inline-кнопка Mini App + постоянное нижнее меню (Reply Keyboard)
+    # Ответ: приветствие + inline-кнопки (БЕЗ «Быстрый доступ»)
     await message.answer(
-        t(language, "start_message"),
+        start_text,
         reply_markup=main_menu_keyboard(language=language, is_admin=is_admin),
         disable_web_page_preview=True,
     )
 
-    # Показываем постоянное нижнее меню отдельным сообщением (пустой текст не отправить с reply_markup,
-    # поэтому используем короткую подсказку)
+    # Показываем постоянное нижнее меню (3 кнопки)
     with contextlib.suppress(Exception):
         await message.answer(
-            t(language, "menu_hint"),
+            "👇",
             reply_markup=reply_main_menu(language=language),
         )

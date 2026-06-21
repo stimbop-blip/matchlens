@@ -13,10 +13,10 @@ from app.utils.texts import button, normalize_language, t
 
 
 def reply_main_menu(language: str = "ru") -> ReplyKeyboardMarkup:
-    """Постоянное нижнее меню — всегда висит над полем ввода.
+    """Постоянное нижнее меню — 3 главные кнопки + настройки.
 
-    Не может содержать WebApp-кнопку (ограничение Telegram),
-    поэтому Mini App открывается через inline-кнопку в ответе бота.
+    Чисто и понятно: Сигналы / Тарифы / Профиль
+    Mini App открывается через inline-кнопку в ответе бота.
     """
     lang = normalize_language(language)
     return ReplyKeyboardMarkup(
@@ -24,14 +24,7 @@ def reply_main_menu(language: str = "ru") -> ReplyKeyboardMarkup:
             [
                 KeyboardButton(text=button(lang, "free")),
                 KeyboardButton(text=button(lang, "tariffs")),
-            ],
-            [
-                KeyboardButton(text=button(lang, "stats")),
                 KeyboardButton(text=button(lang, "profile")),
-            ],
-            [
-                KeyboardButton(text=button(lang, "referrals")),
-                KeyboardButton(text=button(lang, "more")),
             ],
         ],
         resize_keyboard=True,
@@ -40,30 +33,12 @@ def reply_main_menu(language: str = "ru") -> ReplyKeyboardMarkup:
 
 
 def reply_more_menu(language: str = "ru") -> ReplyKeyboardMarkup:
-    """Дополнительное меню (открывается по кнопке 'Ещё')."""
-    lang = normalize_language(language)
-    return ReplyKeyboardMarkup(
-        keyboard=[
-            [
-                KeyboardButton(text=button(lang, "news")),
-                KeyboardButton(text=button(lang, "support")),
-            ],
-            [
-                KeyboardButton(text=button(lang, "notifications")),
-                KeyboardButton(text=button(lang, "settings")),
-            ],
-            [
-                KeyboardButton(text=button(lang, "about")),
-                KeyboardButton(text=t(lang, "nav_menu")),
-            ],
-        ],
-        resize_keyboard=True,
-        is_persistent=True,
-    )
+    """Доп. меню (совместимость) — то же что и main."""
+    return reply_main_menu(language)
 
 
 def mini_app_inline_button(language: str = "ru", path: str | None = None) -> InlineKeyboardMarkup:
-    """Inline-кнопка для открытия Mini App (одна, крупная)."""
+    """Inline-кнопка для открытия Mini App."""
     lang = normalize_language(language)
     base = settings.mini_app_url.strip().rstrip("/")
     url = f"{base}{path}" if path else settings.mini_app_url
@@ -74,19 +49,30 @@ def mini_app_inline_button(language: str = "ru", path: str | None = None) -> Inl
     )
 
 
-def main_menu_keyboard(language: str = "ru", is_admin: bool = False) -> InlineKeyboardMarkup:
-    """Совместимость: возвращает inline-кнопку Mini App для /start.
+def start_inline_keyboard(language: str = "ru", is_admin: bool = False) -> InlineKeyboardMarkup:
+    """Inline-кнопки под стартовым сообщением.
 
-    Сейчас основная навигация — через Reply Keyboard (reply_main_menu),
-    а эта функция даёт крупную inline-кнопку входа в приложение под приветствием.
+    Главная — Mini App (большая), снизу — быстрый доступ к настройкам.
     """
     lang = normalize_language(language)
     rows: list[list[InlineKeyboardButton]] = [
-        [InlineKeyboardButton(text=t(lang, "open_mini_app"), web_app=WebAppInfo(url=settings.mini_app_url))],
+        # Главная CTA — открыть ленту сигналов
+        [InlineKeyboardButton(text=f"🚀 {t(lang, 'open_mini_app')}", web_app=WebAppInfo(url=settings.mini_app_url))],
+        # Быстрые ссылки (смайлики уже внутри текстов)
+        [
+            InlineKeyboardButton(text=button(lang, "stats"), callback_data="menu:stats"),
+            InlineKeyboardButton(text=t(lang, "settings_language"), callback_data="menu:settings:language"),
+            InlineKeyboardButton(text=t(lang, "settings_open_notifications"), callback_data="menu:settings:notifications"),
+        ],
     ]
     if is_admin:
         rows.append([InlineKeyboardButton(text=button(lang, "admin"), callback_data="menu:admin")])
     return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def main_menu_keyboard(language: str = "ru", is_admin: bool = False) -> InlineKeyboardMarkup:
+    """Совместимость со старым вызовом — делегирует в start_inline_keyboard."""
+    return start_inline_keyboard(language=language, is_admin=is_admin)
 
 
 def section_nav_keyboard(
@@ -97,11 +83,7 @@ def section_nav_keyboard(
     primary_button: tuple[str, str] | None = None,
     primary_is_web_app: bool = True,
 ) -> InlineKeyboardMarkup:
-    """Навигация внутри раздела: опциональная главная кнопка.
-
-    В новой схеме 'Назад/В меню' убраны (навигация через Reply Keyboard),
-    но функция сохранена для совместимости с существующими экранами.
-    """
+    """Навигация внутри раздела."""
     lang = normalize_language(language)
     rows: list[list[InlineKeyboardButton]] = []
     if primary_button:

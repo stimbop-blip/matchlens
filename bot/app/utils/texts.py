@@ -15,12 +15,12 @@ def normalize_language(value: str | None) -> Language:
 TEXTS: dict[Language, dict[str, str]] = {
     "ru": {
         "start_message": (
-            "🏆 <b>Добро пожаловать в PIT BET</b>\n\n"
-            "Здесь живут отобранные сигналы, прозрачная статистика "
-            "и быстрый доступ к игре.\n\n"
-            "👇 Жми кнопку ниже, чтобы войти в приложение"
+            "🏆 <b>PIT BET</b> — AI-сканер value-ставок\n\n"
+            "Нейросеть анализирует 2000+ матчей в реальном времени "
+            "и ловит переоценённые коэффициенты.\n\n"
+            "👇 Жми кнопку, чтобы открыть ленту сигналов"
         ),
-        "menu_hint": "Меню внизу экрана — выбирай раздел 👇",
+        "menu_hint": "👇",
         "more_intro": "📖 <b>Дополнительно</b>\n\nВыбирай раздел внизу экрана 👇",
         "menu_intro": (
             "<b>PIT BET — главное меню</b>\n"
@@ -228,12 +228,12 @@ TEXTS: dict[Language, dict[str, str]] = {
     },
     "en": {
         "start_message": (
-            "🏆 <b>Welcome to PIT BET</b>\n\n"
-            "Curated signals, transparent stats, "
-            "and quick access to the game.\n\n"
-            "👇 Tap the button below to open the app"
+            "🏆 <b>PIT BET</b> — AI value-bet scanner\n\n"
+            "Neural network analyzes 2000+ matches in real time "
+            "and catches overpriced odds.\n\n"
+            "👇 Tap to open the signals feed"
         ),
-        "menu_hint": "Menu at the bottom — pick a section 👇",
+        "menu_hint": "👇 Quick access",
         "more_intro": "📖 <b>More</b>\n\nPick a section at the bottom 👇",
         "menu_intro": (
             "<b>PIT BET — Main Menu</b>\n"
