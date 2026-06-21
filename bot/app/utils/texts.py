@@ -15,12 +15,15 @@ def normalize_language(value: str | None) -> Language:
 TEXTS: dict[Language, dict[str, str]] = {
     "ru": {
         "start_message": (
-            "🏆 <b>PIT BET</b> — AI-сканер value-ставок\n\n"
-            "Нейросеть анализирует 2000+ матчей в реальном времени "
-            "и ловит переоценённые коэффициенты.\n\n"
-            "👇 Жми кнопку, чтобы открыть ленту сигналов"
+            "💎 <b>PIT BET</b> — аналитика ставок нового уровня\n\n"
+            "Здесь нет «гаражных прогнозов от васи».\n"
+            "Есть нейросеть, которая:\n\n"
+            "  · сканирует линии в реальном времени\n"
+            "  · ловит переоценённые коэффициенты\n"
+            "  · фильтрует шум и оставляет value\n\n"
+            "Прозрачно. Точно. Без воды."
         ),
-        "menu_hint": "👇",
+        "menu_hint": "",
         "more_intro": "📖 <b>Дополнительно</b>\n\nВыбирай раздел внизу экрана 👇",
         "menu_intro": (
             "<b>PIT BET — главное меню</b>\n"
@@ -28,9 +31,9 @@ TEXTS: dict[Language, dict[str, str]] = {
         ),
         "nav_back": "Назад",
         "nav_menu": "В меню",
-        "open_mini_app": "📱 Открыть PIT BET",
-        "open_news": "📱 Открыть PIT BET",
-        "open_feed": "📱 Открыть PIT BET",
+        "open_mini_app": "🚀 Открывай приложение",
+        "open_news": "🚀 Открывай приложение",
+        "open_feed": "🚀 Открывай приложение",
         "open_stats": "📈 Открыть статистику",
         "open_profile": "👤 Открыть профиль",
         "open_tariffs": "💎 Открыть тарифы",
@@ -228,12 +231,15 @@ TEXTS: dict[Language, dict[str, str]] = {
     },
     "en": {
         "start_message": (
-            "🏆 <b>PIT BET</b> — AI value-bet scanner\n\n"
-            "Neural network analyzes 2000+ matches in real time "
-            "and catches overpriced odds.\n\n"
-            "👇 Tap to open the signals feed"
+            "💎 <b>PIT BET</b> — next-level betting analytics\n\n"
+            "No more «garage predictions from some guy».\n"
+            "Just a neural network that:\n\n"
+            "  · scans lines in real time\n"
+            "  · catches overpriced odds\n"
+            "  · filters noise and keeps value\n\n"
+            "Transparent. Precise. No BS."
         ),
-        "menu_hint": "👇 Quick access",
+        "menu_hint": "",
         "more_intro": "📖 <b>More</b>\n\nPick a section at the bottom 👇",
         "menu_intro": (
             "<b>PIT BET — Main Menu</b>\n"
@@ -241,9 +247,9 @@ TEXTS: dict[Language, dict[str, str]] = {
         ),
         "nav_back": "Back",
         "nav_menu": "Menu",
-        "open_mini_app": "📱 Open PIT BET",
-        "open_news": "📱 Open PIT BET",
-        "open_feed": "📱 Open PIT BET",
+        "open_mini_app": "🚀 Open the app",
+        "open_news": "🚀 Open the app",
+        "open_feed": "🚀 Open the app",
         "open_stats": "📈 Open stats",
         "open_profile": "👤 Open profile",
         "open_tariffs": "💎 Open tariffs",

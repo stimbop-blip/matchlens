@@ -98,16 +98,16 @@ async def cmd_start(message: Message) -> None:
 
     is_admin = bool(user and user.id in settings.admin_ids())
 
-    # Ответ: приветствие + inline-кнопки (БЕЗ «Быстрый доступ»)
+    # Ответ: приветствие + inline-кнопки
     await message.answer(
         start_text,
         reply_markup=main_menu_keyboard(language=language, is_admin=is_admin),
         disable_web_page_preview=True,
     )
 
-    # Показываем постоянное нижнее меню (3 кнопки)
+    # Показываем постоянное нижнее меню (3 кнопки) — без лишнего текста
     with contextlib.suppress(Exception):
         await message.answer(
-            "👇",
+            " ",
             reply_markup=reply_main_menu(language=language),
         )
