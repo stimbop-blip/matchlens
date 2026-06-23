@@ -1,6 +1,16 @@
 from pydantic import BaseModel, Field
 
 
+class AccessStatsOut(BaseModel):
+    total: int = 0
+    wins: int = 0
+    loses: int = 0
+    refunds: int = 0
+    pending: int = 0
+    hit_rate: float = 0.0
+    roi: float = 0.0
+
+
 class BotUserSyncIn(BaseModel):
     telegram_id: int
     username: str | None = None
@@ -25,6 +35,8 @@ class PublicStatsOut(BaseModel):
     hit_rate: float = 0
     winrate: float
     roi: float
+    by_access: dict[str, int] = Field(default_factory=dict)
+    by_access_detail: dict[str, AccessStatsOut] = Field(default_factory=dict)
 
 
 class BotPredictionShortOut(BaseModel):
