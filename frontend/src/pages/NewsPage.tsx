@@ -93,8 +93,6 @@ export function NewsPage() {
     [items],
   );
 
-  const featured = ordered[0];
-  const rest = ordered.slice(1);
   const tabs: Tab[] = ["all", "pit", "bets"];
 
   return (
@@ -130,54 +128,29 @@ export function NewsPage() {
       ) : null}
 
       {!loading && !error && ordered.length > 0 ? (
-        <>
-          {/* Свежая новость — крупная featured-карточка */}
-          {featured ? (
-            <Link className="pb-news-featured" to={`/news/${featured.id}`}>
-              {featured.cover_url ? (
-                <img className="pb-news-featured-img" src={featured.cover_url} alt="" />
-              ) : null}
-              <span className="pb-news-featured-overlay" />
-              <div className="pb-news-featured-body">
-                <span className={`pb-news-featured-badge ${categoryKey(featured.category)}`}>
-                  {t(`news.cat.${categoryKey(featured.category)}`)}
-                </span>
-                <h3 className="pb-news-featured-title">{featured.title}</h3>
-                {featured.summary ? <p className="pb-news-featured-summary">{featured.summary}</p> : null}
-                <div className="pb-news-featured-meta">
-                  <span>{formatDate(featured.published_at, language, t("common.noDate"))}</span>
+        <div className="pb-news-list2">
+          {ordered.map((item) => (
+            <Link key={item.id} className="pb-news-card2" to={`/news/${item.id}`}>
+              {/* миниатюра СЛЕВА */}
+              <div className={`pb-news-card2-thumb ${item.cover_url ? "" : "fallback"}`}>
+                {item.cover_url ? <img src={item.cover_url} alt="" loading="lazy" /> : null}
+              </div>
+              {/* текст справа */}
+              <div className="pb-news-card2-text">
+                <h4 className="pb-news-card2-title">{item.title}</h4>
+                {item.summary ? <p className="pb-news-card2-summary">{item.summary}</p> : null}
+                <div className="pb-news-card2-meta">
+                  <span className={`pb-news-cat-chip ${categoryKey(item.category)}`}>
+                    {t(`news.cat.${categoryKey(item.category)}`)}
+                  </span>
+                  <span>{formatDate(item.published_at, language, t("common.noDate"))}</span>
                   <span className="dot" />
-                  <span>{t("news.minRead", { min: readMinutes(featured.body) })}</span>
+                  <span>{t("news.minRead", { min: readMinutes(item.body) })}</span>
                 </div>
               </div>
             </Link>
-          ) : null}
-
-          {/* Остальные — компактные карточки */}
-          {rest.length > 0 ? (
-            <div className="pb-news-list2">
-              {rest.map((item) => (
-                <Link key={item.id} className="pb-news-card2" to={`/news/${item.id}`}>
-                  <div className="pb-news-card2-text">
-                    <h4 className="pb-news-card2-title">{item.title}</h4>
-                    {item.summary ? <p className="pb-news-card2-summary">{item.summary}</p> : null}
-                    <div className="pb-news-card2-meta">
-                      <span className={`pb-news-cat-chip ${categoryKey(item.category)}`}>
-                        {t(`news.cat.${categoryKey(item.category)}`)}
-                      </span>
-                      <span>{formatDate(item.published_at, language, t("common.noDate"))}</span>
-                      <span className="dot" />
-                      <span>{t("news.minRead", { min: readMinutes(item.body) })}</span>
-                    </div>
-                  </div>
-                  <div className={`pb-news-card2-thumb ${item.cover_url ? "" : "fallback"}`}>
-                    {item.cover_url ? <img src={item.cover_url} alt="" loading="lazy" /> : null}
-                  </div>
-                </Link>
-              ))}
-            </div>
-          ) : null}
-        </>
+          ))}
+        </div>
       ) : null}
 
       {/* Кнопка добавления для персонала */}
