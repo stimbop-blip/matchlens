@@ -24,6 +24,7 @@ const STAFF_ROLE_CACHE_TTL_MS = 120000;
 function pageMeta(pathname: string): PageMeta {
   if (pathname.startsWith("/feed/")) return { titleKey: "layout.title.signal", subtitleKey: "layout.subtitle.signal" };
   if (pathname.startsWith("/feed")) return { titleKey: "layout.title.feed", subtitleKey: "layout.subtitle.feed" };
+  if (pathname.startsWith("/chat")) return { titleKey: "layout.title.chat", subtitleKey: "layout.subtitle.chat" };
   if (pathname.startsWith("/stats")) return { titleKey: "layout.title.stats", subtitleKey: "layout.subtitle.stats" };
   if (pathname.startsWith("/profile/notifications")) return { titleKey: "profile.notifications.title", subtitleKey: "profile.notifications.subtitle" };
   if (pathname.startsWith("/profile")) return { titleKey: "layout.title.profile", subtitleKey: "layout.subtitle.profile" };

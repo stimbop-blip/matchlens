@@ -8,6 +8,7 @@ from app.api.v1.router import api_router
 from app.core.config import settings
 from app.core.db import Base, SessionLocal, engine
 from app.models import (  # noqa: F401
+    ChatMessage,
     NewsPost,
     Notification,
     Payment,
@@ -49,6 +50,7 @@ def on_startup() -> None:
         SupportDialog.__table__.create(bind=conn, checkfirst=True)
         SupportMessage.__table__.create(bind=conn, checkfirst=True)
         SupportActionLog.__table__.create(bind=conn, checkfirst=True)
+        ChatMessage.__table__.create(bind=conn, checkfirst=True)
 
         users_table_exists = conn.execute(text("SELECT to_regclass('public.users')")).scalar()
         if users_table_exists:

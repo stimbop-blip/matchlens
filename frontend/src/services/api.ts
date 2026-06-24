@@ -165,6 +165,22 @@ export type SupportDialogDetail = {
   context: SupportDialogContext | null;
 };
 
+export type ChatMessage = {
+  id: string;
+  author_user_id: string;
+  author_role: "user" | "support" | "admin";
+  author_name: string;
+  author_username: string | null;
+  author_initials?: string;
+  body: string;
+  created_at: string;
+  mine: boolean;
+};
+
+export type ChatHistory = {
+  messages: ChatMessage[];
+};
+
 export type SupportActionLog = {
   id: string;
   actor_user_id: string | null;
@@ -466,6 +482,13 @@ export const api = {
     request<SupportDialogDetail>("/support/my-dialog/messages", {
       method: "POST",
       body: JSON.stringify(payload),
+    }),
+
+  chatHistory: (limit = 200) => request<ChatHistory>(`/chat/messages?limit=${limit}`),
+  chatSend: (body: string) =>
+    request<ChatMessage>("/chat/messages", {
+      method: "POST",
+      body: JSON.stringify({ body }),
     }),
 
   supportDialogs: (params?: { q?: string; status?: SupportDialogStatus | "all"; unread_only?: boolean; limit?: number }) => {

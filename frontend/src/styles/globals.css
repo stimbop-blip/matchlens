@@ -14520,3 +14520,393 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+/* ============================================================
+   НОВАЯ ПЛАВАЮЩАЯ НАВИГАЦИЯ (5 кнопок, центр «Сигналы»)
+   ============================================================ */
+.pb-dock {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+  display: flex;
+  justify-content: center;
+  padding: 0 14px calc(10px + env(safe-area-inset-bottom, 0px));
+  pointer-events: none;
+}
+
+.pb-dock-bar {
+  position: relative;
+  width: 100%;
+  max-width: 460px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  align-items: end;
+  gap: 2px;
+  padding: 8px 6px 6px;
+  border-radius: 26px;
+  background: var(--pb-dock-bg, color-mix(in srgb, var(--surface) 82%, transparent));
+  border: 1px solid var(--pb-dock-border, var(--border-subtle));
+  box-shadow: var(--pb-dock-shadow, 0 12px 40px rgba(0, 0, 0, 0.35));
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  pointer-events: auto;
+}
+
+/* фон/тени в тёмной и светлой теме */
+.pb-dock-bar {
+  --pb-dock-bg: color-mix(in srgb, var(--surface) 84%, transparent);
+  --pb-dock-border: var(--border-subtle);
+  --pb-dock-shadow: 0 16px 44px rgba(0, 0, 0, 0.42);
+  --pb-dock-label: var(--text-secondary);
+  --pb-dock-label-active: var(--accent);
+  --pb-dock-icon: var(--text-secondary);
+  --pb-dock-icon-active: var(--accent);
+}
+
+:root[data-theme="light"] .pb-dock-bar {
+  --pb-dock-bg: color-mix(in srgb, #ffffff 92%, transparent);
+  --pb-dock-border: #e4e8f2;
+  --pb-dock-shadow: 0 14px 40px rgba(20, 30, 60, 0.14);
+  --pb-dock-label: #6b7186;
+  --pb-dock-label-active: #0099ff;
+  --pb-dock-icon: #7a8094;
+  --pb-dock-icon-active: #0099ff;
+}
+
+/* обычная кнопка сбоку */
+.pb-dock-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 2px 4px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--pb-dock-icon);
+  transition: color 0.2s ease, transform 0.15s ease;
+}
+
+.pb-dock-item.active {
+  color: var(--pb-dock-icon-active);
+}
+
+.pb-dock-item:active {
+  transform: scale(0.92);
+}
+
+.pb-dock-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 26px;
+  transition: transform 0.2s ease;
+}
+
+.pb-dock-item.active .pb-dock-icon {
+  transform: translateY(-1px);
+}
+
+/* подпись */
+.pb-dock-label {
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.2px;
+  color: var(--pb-dock-label);
+  transition: color 0.2s ease;
+}
+
+.pb-dock-label.active {
+  color: var(--pb-dock-label-active);
+}
+
+/* ----- ПАРЯЩАЯ ЦЕНТРАЛЬНАЯ КНОПКА «СИГНАЛЫ» ----- */
+.pb-dock-center {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 0 2px 4px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.pb-dock-center-inner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  margin-top: -26px;
+  border-radius: 50%;
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-secondary) 100%);
+  box-shadow:
+    0 10px 26px rgba(0, 153, 255, 0.5),
+    0 4px 12px rgba(0, 217, 184, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -3px 8px rgba(0, 0, 0, 0.18);
+  z-index: 2;
+}
+
+/* мягкое свечение под кнопкой */
+.pb-dock-center-glow {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 55%, transparent) 0%, transparent 68%);
+  filter: blur(8px);
+  opacity: 0.85;
+  z-index: 1;
+  pointer-events: none;
+  animation: pb-dock-pulse 3s ease-in-out infinite;
+}
+
+.pb-dock-center.active .pb-dock-center-inner {
+  box-shadow:
+    0 12px 30px rgba(0, 153, 255, 0.62),
+    0 4px 14px rgba(0, 217, 184, 0.45),
+    0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+@keyframes pb-dock-pulse {
+  0%, 100% { opacity: 0.55; transform: translateX(-50%) scale(1); }
+  50% { opacity: 0.9; transform: translateX(-50%) scale(1.08); }
+}
+
+.pb-dock-center .pb-dock-label.active {
+  color: var(--pb-dock-label-active);
+}
+
+@media (max-width: 360px) {
+  .pb-dock-center-inner {
+    width: 54px;
+    height: 54px;
+    margin-top: -22px;
+  }
+  .pb-dock-label {
+    font-size: 9px;
+  }
+}
+
+/* ============================================================
+   СТРАНИЦА ЧАТА СООБЩЕСТВА
+   ============================================================ */
+.pb-chat-hero .pb-chat-online {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.pb-chat-online-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #34d97a;
+  box-shadow: 0 0 0 0 rgba(52, 217, 122, 0.6);
+  animation: pb-chat-online-pulse 2s infinite;
+}
+
+@keyframes pb-chat-online-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(52, 217, 122, 0.55); }
+  70% { box-shadow: 0 0 0 7px rgba(52, 217, 122, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(52, 217, 122, 0); }
+}
+
+.pb-chat-shell {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-2xl);
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-soft);
+  overflow: hidden;
+}
+
+.pb-chat-thread {
+  min-height: 380px;
+  max-height: calc(100vh - 360px);
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  scroll-behavior: smooth;
+}
+
+.pb-chat-message {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+  max-width: 100%;
+  animation: pb-chat-msg-in 0.25s ease;
+}
+
+.pb-chat-message.mine {
+  flex-direction: row-reverse;
+}
+
+@keyframes pb-chat-msg-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.pb-chat-avatar {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.3px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.18);
+}
+
+.pb-chat-bubble-wrap {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  max-width: 76%;
+}
+
+.pb-chat-message.mine .pb-chat-bubble-wrap {
+  align-items: flex-end;
+}
+
+.pb-chat-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  flex-wrap: wrap;
+}
+
+.pb-chat-meta strong {
+  font-size: 12px;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.pb-chat-time {
+  opacity: 0.7;
+}
+
+.pb-chat-badge {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  line-height: 1;
+}
+
+.pb-chat-badge.admin {
+  background: color-mix(in srgb, #ff5470 22%, transparent);
+  color: #ff5470;
+}
+
+.pb-chat-badge.support {
+  background: color-mix(in srgb, var(--accent-secondary) 22%, transparent);
+  color: var(--accent-secondary);
+}
+
+.pb-chat-bubble {
+  padding: 10px 14px;
+  border-radius: 18px;
+  font-size: 14px;
+  line-height: 1.4;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+.pb-chat-message.them .pb-chat-bubble {
+  background: var(--card);
+  color: var(--text-primary);
+  border-bottom-left-radius: 6px;
+}
+
+.pb-chat-message.mine .pb-chat-bubble {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-secondary) 100%);
+  color: #fff;
+  border-bottom-right-radius: 6px;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--accent-secondary) 35%, transparent);
+}
+
+/* поле ввода */
+.pb-chat-composer {
+  display: flex;
+  gap: 10px;
+  padding: 12px;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--surface);
+}
+
+.pb-chat-composer input {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+  color: var(--input-text);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.pb-chat-composer input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.pb-chat-composer input::placeholder {
+  color: var(--text-secondary);
+}
+
+.pb-chat-send {
+  flex: 0 0 auto;
+  padding: 0 20px;
+  border: none;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-secondary) 100%);
+  cursor: pointer;
+  transition: transform 0.15s ease, opacity 0.2s ease;
+}
+
+.pb-chat-send:hover:not(:disabled) {
+  transform: scale(1.04);
+}
+
+.pb-chat-send:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+

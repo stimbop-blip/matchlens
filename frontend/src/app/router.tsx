@@ -11,6 +11,8 @@ const Profile = lazy(() => import("./Profile").then((module) => ({ default: modu
 const Tariffs = lazy(() => import("./Tariffs").then((module) => ({ default: module.Tariffs })));
 const Admin = lazy(() => import("./Admin").then((module) => ({ default: module.Admin })));
 
+const ChatPage = lazy(() => import("../pages/ChatPage").then((module) => ({ default: module.ChatPage })));
+
 const GatePage = lazy(() => import("../pages/GatePage").then((module) => ({ default: module.GatePage })));
 const LanguagePage = lazy(() => import("../pages/LanguagePage").then((module) => ({ default: module.LanguagePage })));
 const MenuPage = lazy(() => import("../pages/MenuPage").then((module) => ({ default: module.MenuPage })));
@@ -42,6 +44,7 @@ export function AppRouter() {
     if (!normalized) return null;
     if (normalized === "support" || normalized === "support/chat") return "/support";
     if (normalized === "feed" || normalized === "signals") return "/feed";
+    if (normalized === "chat") return "/chat";
     if (normalized === "profile") return "/profile";
     if (normalized === "notifications" || normalized === "profile/notifications") return "/profile/notifications";
     if (normalized === "tariffs") return "/tariffs";
@@ -155,6 +158,7 @@ export function AppRouter() {
         <Route path="/" element={<Home />} />
         <Route path="/feed" element={<Signals />} />
         <Route path="/feed/:predictionId" element={<PredictionDetailsPage />} />
+        <Route path="/chat" element={<ChatPage />} />
         <Route path="/stats" element={<StatsPage />} />
         <Route path="/tariffs" element={<Tariffs />} />
         <Route path="/profile/notifications" element={<NotificationsPage />} />
