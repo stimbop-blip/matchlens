@@ -147,6 +147,18 @@ def on_startup() -> None:
             if "result_screenshot" not in prediction_columns:
                 conn.execute(text("ALTER TABLE predictions ADD COLUMN result_screenshot TEXT"))
 
+        news_table_exists = conn.execute(text("SELECT to_regclass('public.news_posts')")).scalar()
+        if news_table_exists:
+            news_columns = {
+                row[0]
+                for row in conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name = 'news_posts'"))
+            }
+            if "summary" not in news_columns:
+                conn.execute(text("ALTER TABLE news_posts ADD COLUMN summary TEXT"))
+            if "cover_url" not in news_columns:
+                conn.execute(text("ALTER TABLE news_posts ADD COLUMN cover_url VARCHAR(1024)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_news_posts_category ON news_posts (category)"))
+
         payment_table_exists = conn.execute(text("SELECT to_regclass('public.payments')")).scalar()
         if payment_table_exists:
             payment_columns = {

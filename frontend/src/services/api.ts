@@ -365,10 +365,14 @@ export type NotificationHistoryItem = {
   sent_at: string | null;
 };
 
+export type NewsCategory = "pit" | "bets";
+
 export type NewsPost = {
   id: string;
   title: string;
   body: string;
+  summary?: string | null;
+  cover_url?: string | null;
   category: string;
   is_published: boolean;
   published_at: string | null;
@@ -459,7 +463,8 @@ export const api = {
   },
   prediction: (id: string) => request<Prediction>(`/predictions/${id}`),
   stats: () => request<PublicStats>("/stats/overview"),
-  news: () => request<NewsPost[]>("/news"),
+  news: (category?: "pit" | "bets" | "all") =>
+    request<NewsPost[]>(category && category !== "all" ? `/news?category=${category}` : "/news"),
   myReferral: () => request<ReferralStats>("/users/me/referral"),
   applyPromoCode: (payload: { code: string; tariff_code?: "free" | "premium" | "vip" }) =>
     request<PromoApplyResult>("/promocodes/apply", {
@@ -626,12 +631,29 @@ export const api = {
 
   adminStats: () => request<AdminStats>("/admin/stats"),
   adminNews: () => request<NewsPost[]>("/admin/news"),
-  adminCreateNews: (payload: { title: string; body: string; category?: string; is_published?: boolean }) =>
+  adminCreateNews: (payload: {
+    title: string;
+    body: string;
+    summary?: string;
+    cover_url?: string;
+    category?: string;
+    is_published?: boolean;
+  }) =>
     request<NewsPost>("/admin/news", {
       method: "POST",
       body: JSON.stringify(payload),
     }),
-  adminUpdateNews: (id: string, payload: { title?: string; body?: string; category?: string; is_published?: boolean }) =>
+  adminUpdateNews: (
+    id: string,
+    payload: {
+      title?: string;
+      body?: string;
+      summary?: string;
+      cover_url?: string;
+      category?: string;
+      is_published?: boolean;
+    },
+  ) =>
     request<NewsPost>(`/admin/news/${id}`, {
       method: "PATCH",
       body: JSON.stringify(payload),
