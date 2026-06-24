@@ -12228,7 +12228,7 @@ body {
 }
 
 .pb-scene {
-  padding: 14px 12px 128px;
+  padding: 14px 12px 140px;
   display: grid;
   gap: 12px;
 }
@@ -14522,7 +14522,7 @@ body {
 }
 
 /* ============================================================
-   НОВАЯ ПЛАВАЮЩАЯ НАВИГАЦИЯ (5 кнопок, центр «Сигналы»)
+   НИЖНЯЯ НАВИГАЦИЯ — сплошная панель + парящая FAB «Сигналы»
    ============================================================ */
 .pb-dock {
   position: fixed;
@@ -14530,58 +14530,60 @@ body {
   right: 0;
   bottom: 0;
   z-index: 60;
-  display: flex;
-  justify-content: center;
-  padding: 0 14px calc(10px + env(safe-area-inset-bottom, 0px));
   pointer-events: none;
 }
 
+/* Единая панель во всю ширину экрана с notch-вырезом по центру */
 .pb-dock-bar {
   position: relative;
-  width: 100%;
-  max-width: 460px;
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  align-items: end;
-  gap: 2px;
-  padding: 8px 6px 6px;
-  border-radius: 26px;
-  background: var(--pb-dock-bg, color-mix(in srgb, var(--surface) 82%, transparent));
-  border: 1px solid var(--pb-dock-border, var(--border-subtle));
-  box-shadow: var(--pb-dock-shadow, 0 12px 40px rgba(0, 0, 0, 0.35));
-  backdrop-filter: blur(22px) saturate(160%);
-  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  align-items: center;
+  width: 100%;
+  height: 64px;
+  padding: 0 4px calc(env(safe-area-inset-bottom, 0px));
+  background: var(--pb-dock-bg);
+  border-top: 1px solid var(--pb-dock-border);
+  box-shadow: var(--pb-dock-shadow);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
   pointer-events: auto;
+  /* вырез-впадина (notch) по центру сверху под парящую кнопку */
+  --notch-w: 76px;
+  --notch-h: 38px;
+  -webkit-mask-image: radial-gradient(circle 38px at 50% 0, transparent 98%, #000 100%);
+  mask-image: radial-gradient(circle 38px at 50% 0, transparent 98%, #000 100%);
 }
 
-/* фон/тени в тёмной и светлой теме */
+/* тема-зависимые цвета панели */
 .pb-dock-bar {
-  --pb-dock-bg: color-mix(in srgb, var(--surface) 84%, transparent);
+  --pb-dock-bg: color-mix(in srgb, var(--surface) 86%, transparent);
   --pb-dock-border: var(--border-subtle);
-  --pb-dock-shadow: 0 16px 44px rgba(0, 0, 0, 0.42);
+  --pb-dock-shadow: 0 -6px 30px rgba(0, 0, 0, 0.32);
   --pb-dock-label: var(--text-secondary);
-  --pb-dock-label-active: var(--accent);
+  --pb-dock-label-active: var(--accent-secondary);
   --pb-dock-icon: var(--text-secondary);
-  --pb-dock-icon-active: var(--accent);
+  --pb-dock-icon-active: var(--accent-secondary);
 }
 
 :root[data-theme="light"] .pb-dock-bar {
-  --pb-dock-bg: color-mix(in srgb, #ffffff 92%, transparent);
+  --pb-dock-bg: color-mix(in srgb, #ffffff 96%, transparent);
   --pb-dock-border: #e4e8f2;
-  --pb-dock-shadow: 0 14px 40px rgba(20, 30, 60, 0.14);
+  --pb-dock-shadow: 0 -6px 24px rgba(20, 30, 60, 0.10);
   --pb-dock-label: #6b7186;
-  --pb-dock-label-active: #0099ff;
+  --pb-dock-label-active: #0066ff;
   --pb-dock-icon: #7a8094;
-  --pb-dock-icon-active: #0099ff;
+  --pb-dock-icon-active: #0066ff;
 }
 
-/* обычная кнопка сбоку */
+/* обычная боковая кнопка */
 .pb-dock-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
-  padding: 6px 2px 4px;
+  justify-content: center;
+  gap: 4px;
+  height: 100%;
   border: none;
   background: transparent;
   cursor: pointer;
@@ -14594,14 +14596,14 @@ body {
 }
 
 .pb-dock-item:active {
-  transform: scale(0.92);
+  transform: scale(0.9);
 }
 
 .pb-dock-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 26px;
+  height: 24px;
   transition: transform 0.2s ease;
 }
 
@@ -14609,7 +14611,7 @@ body {
   transform: translateY(-1px);
 }
 
-/* подпись */
+/* подписи под иконками */
 .pb-dock-label {
   font-size: 10px;
   font-weight: 600;
@@ -14619,83 +14621,100 @@ body {
   transition: color 0.2s ease;
 }
 
-.pb-dock-label.active {
+.pb-dock-item.active .pb-dock-label {
   color: var(--pb-dock-label-active);
 }
 
-/* ----- ПАРЯЩАЯ ЦЕНТРАЛЬНАЯ КНОПКА «СИГНАЛЫ» ----- */
-.pb-dock-center {
-  position: relative;
+/* пустой слот-разделитель под парящую кнопку */
+.pb-dock-notch-slot {
+  height: 100%;
+}
+
+/* ----- ПАРЯЩАЯ FAB «СИГНАЛЫ» ----- */
+.pb-dock-fab {
+  position: absolute;
+  left: 50%;
+  bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
-  padding: 0 2px 4px;
+  gap: 4px;
   border: none;
   background: transparent;
   cursor: pointer;
+  pointer-events: auto;
+  z-index: 61;
 }
 
-.pb-dock-center-inner {
+.pb-dock-fab-inner {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 60px;
-  height: 60px;
-  margin-top: -26px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
   color: #fff;
-  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-secondary) 100%);
+  background: linear-gradient(135deg, #2f80ff 0%, #0066ff 55%, #1e4dd6 100%);
   box-shadow:
-    0 10px 26px rgba(0, 153, 255, 0.5),
-    0 4px 12px rgba(0, 217, 184, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.45),
-    inset 0 -3px 8px rgba(0, 0, 0, 0.18);
+    0 12px 28px rgba(0, 102, 255, 0.55),
+    0 5px 14px rgba(0, 102, 255, 0.4),
+    inset 0 2px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -4px 10px rgba(0, 20, 80, 0.35);
   z-index: 2;
 }
 
-/* мягкое свечение под кнопкой */
-.pb-dock-center-glow {
+/* мягкое пульсирующее свечение под кнопкой */
+.pb-dock-fab-glow {
   position: absolute;
-  top: -20px;
+  top: -8px;
   left: 50%;
   transform: translateX(-50%);
-  width: 76px;
-  height: 76px;
+  width: 88px;
+  height: 88px;
   border-radius: 50%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 55%, transparent) 0%, transparent 68%);
-  filter: blur(8px);
-  opacity: 0.85;
+  background: radial-gradient(circle, rgba(0, 102, 255, 0.5) 0%, transparent 66%);
+  filter: blur(10px);
+  opacity: 0.7;
   z-index: 1;
   pointer-events: none;
-  animation: pb-dock-pulse 3s ease-in-out infinite;
+  animation: pb-dock-fab-pulse 3s ease-in-out infinite;
 }
 
-.pb-dock-center.active .pb-dock-center-inner {
+.pb-dock-fab.active .pb-dock-fab-inner {
   box-shadow:
-    0 12px 30px rgba(0, 153, 255, 0.62),
-    0 4px 14px rgba(0, 217, 184, 0.45),
-    0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    0 14px 32px rgba(0, 102, 255, 0.68),
+    0 6px 16px rgba(0, 102, 255, 0.5),
+    0 0 0 4px color-mix(in srgb, #0066ff 28%, transparent),
+    inset 0 2px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -4px 10px rgba(0, 20, 80, 0.35);
 }
 
-@keyframes pb-dock-pulse {
-  0%, 100% { opacity: 0.55; transform: translateX(-50%) scale(1); }
-  50% { opacity: 0.9; transform: translateX(-50%) scale(1.08); }
+@keyframes pb-dock-fab-pulse {
+  0%, 100% { opacity: 0.5; transform: translateX(-50%) scale(1); }
+  50% { opacity: 0.85; transform: translateX(-50%) scale(1.12); }
 }
 
-.pb-dock-center .pb-dock-label.active {
+.pb-dock-fab-label {
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--pb-dock-label);
+  transition: color 0.2s ease;
+}
+
+.pb-dock-fab-label.active {
   color: var(--pb-dock-label-active);
 }
 
 @media (max-width: 360px) {
-  .pb-dock-center-inner {
-    width: 54px;
-    height: 54px;
-    margin-top: -22px;
+  .pb-dock-fab-inner {
+    width: 58px;
+    height: 58px;
   }
-  .pb-dock-label {
+  .pb-dock-label,
+  .pb-dock-fab-label {
     font-size: 9px;
   }
 }
