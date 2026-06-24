@@ -115,7 +115,7 @@ export function Layout({ children }: PropsWithChildren) {
     <div className="pb-app-shell">
       <div className="pb-backdrop-glow" aria-hidden="true" />
 
-      <header className={`pb-app-header${isHome ? " pb-app-header-home" : ""}`}>
+      <header className={`pb-app-header${isHome ? " pb-app-header-home" : " pb-app-header-minimal"}`}>
         <div className="pb-brand-row">
           <span className="pb-brand-chip">PIT BET</span>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -123,15 +123,15 @@ export function Layout({ children }: PropsWithChildren) {
               <span className="pb-role-chip">{staffRole === "admin" ? t("layout.role.admin") : t("layout.role.support")}</span>
             ) : null}
             {isHome ? <GiftBox /> : null}
-            <button
-              type="button"
-              onClick={() => setTheme(nextTheme)}
-              className={isHome ? "pb-theme-icon-btn" : "pb-theme-toggle"}
-              aria-label="Toggle theme"
-              style={{ border: "none", cursor: "pointer", padding: 0, background: "transparent" }}
-            >
-              {isHome ? (
-                theme === "light" ? (
+            {isHome ? (
+              <button
+                type="button"
+                onClick={() => setTheme(nextTheme)}
+                className="pb-theme-icon-btn"
+                aria-label="Toggle theme"
+                style={{ border: "none", cursor: "pointer", padding: 0, background: "transparent" }}
+              >
+                {theme === "light" ? (
                   <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <circle cx="12" cy="12" r="4.2" fill="#f5a524" />
                     {[
@@ -151,17 +151,17 @@ export function Layout({ children }: PropsWithChildren) {
                   <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" fill="#a78bfa" />
                   </svg>
-                )
-              ) : (
-                <motion.div layout transition={{ type: "spring", stiffness: 500, damping: 30 }} className="pb-theme-toggle-thumb">
-                  {theme === "light" ? "☀️" : "🌙"}
-                </motion.div>
-              )}
-            </button>
+                )}
+              </button>
+            ) : null}
           </div>
         </div>
-        <h1>{t(meta.titleKey)}</h1>
-        <p>{t(meta.subtitleKey)}</p>
+        {isHome ? (
+          <>
+            <h1>{t(meta.titleKey)}</h1>
+            <p>{t(meta.subtitleKey)}</p>
+          </>
+        ) : null}
       </header>
 
       <main key={location.pathname} className="pb-scene">
