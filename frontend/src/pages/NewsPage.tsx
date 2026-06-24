@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { useI18n } from "../app/i18n";
@@ -28,7 +28,7 @@ function readMinutes(body: string): number {
   return Math.max(1, Math.round(words / 190));
 }
 
-function categoryKey(category: string): string {
+function categoryKey(category: string): "pit" | "bets" {
   return category === "bets" ? "bets" : "pit";
 }
 
@@ -43,42 +43,50 @@ export function NewsPage() {
   const [editorOpen, setEditorOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
 
-  useEffect(() => {
-    let alive = true;
+  const load = useCallback(() => {
     setLoading(true);
     setError("");
-
     api
       .news(tab)
-      .then((list) => {
-        if (!alive) return;
-        setItems(list);
-      })
+      .then((list) => setItems(list))
       .catch((e: unknown) => {
-        if (!alive) return;
         setItems([]);
         setError(parseErrorMessage(e, t("news.error")));
       })
-      .finally(() => {
-        if (!alive) return;
-        setLoading(false);
-      });
+      .finally(() => setLoading(false));
+  }, [tab, t]);
 
-    return () => {
-      alive = false;
-    };
-  }, [tab, reloadKey, t]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   useEffect(() => {
     api
       .me()
-      .then((me) => {
-        setIsStaff(Boolean(me.role === "admin" || me.role === "support" || me.is_admin || me.is_support));
-      })
+      .then((me) => setIsStaff(Boolean(me.role === "admin" || me.role === "support" || me.is_admin || me.is_support)))
       .catch(() => undefined);
   }, []);
 
-  const visibleItems = useMemo(
+  // после создания/редактирования — переключаемся на «Все» и перечитываем,
+  // чтобы свежая новость точно появилась в списке
+  const handleSaved = useCallback(() => {
+    setTab("all");
+    setReloadKey((p) => p + 1);
+  }, []);
+
+  // перечитывание срабатывает по reloadKey
+  useEffect(() => {
+    if (reloadKey === 0) return;
+    void api
+      .news("all")
+      .then((list) => {
+        setItems(list);
+        setTab("all");
+      })
+      .catch(() => undefined);
+  }, [reloadKey]);
+
+  const ordered = useMemo(
     () =>
       [...items].sort((a, b) => {
         const left = new Date(a.published_at || 0).getTime() || 0;
@@ -88,6 +96,8 @@ export function NewsPage() {
     [items],
   );
 
+  const featured = ordered[0];
+  const rest = ordered.slice(1);
   const tabs: Tab[] = ["all", "pit", "bets"];
 
   return (
@@ -107,58 +117,80 @@ export function NewsPage() {
         ))}
       </div>
 
-      {/* Список карточек */}
       {loading ? <p className="pb-empty-state">{t("news.loading")}</p> : null}
 
       {!loading && error ? (
         <div className="pb-error-state">
           <p>{error}</p>
-          <button className="pb-btn pb-btn-ghost" type="button" onClick={() => setReloadKey((p) => p + 1)}>
+          <button className="pb-btn pb-btn-ghost" type="button" onClick={load}>
             {t("common.retry")}
           </button>
         </div>
       ) : null}
 
-      {!loading && !error && visibleItems.length === 0 ? (
+      {!loading && !error && ordered.length === 0 ? (
         <p className="pb-empty-state">{t("news.empty")}</p>
       ) : null}
 
-      {!loading && !error && visibleItems.length > 0 ? (
-        <div className="pb-news-list2">
-          {visibleItems.map((item) => (
-            <Link key={item.id} className="pb-news-card2" to={`/news/${item.id}`}>
-              <div className={`pb-news-card2-cover ${item.cover_url ? "" : "fallback"}`}>
-                {item.cover_url ? <img src={item.cover_url} alt="" loading="lazy" /> : null}
-                <span className={`pb-news-card2-badge ${categoryKey(item.category)}`}>
-                  {t(`news.cat.${categoryKey(item.category)}`)}
+      {!loading && !error && ordered.length > 0 ? (
+        <>
+          {/* Свежая новость — крупная featured-карточка */}
+          {featured ? (
+            <Link className="pb-news-featured" to={`/news/${featured.id}`}>
+              {featured.cover_url ? (
+                <img className="pb-news-featured-img" src={featured.cover_url} alt="" />
+              ) : null}
+              <span className="pb-news-featured-overlay" />
+              <div className="pb-news-featured-body">
+                <span className={`pb-news-featured-badge ${categoryKey(featured.category)}`}>
+                  {t(`news.cat.${categoryKey(featured.category)}`)}
                 </span>
-              </div>
-              <div className="pb-news-card2-body">
-                <h3 className="pb-news-card2-title">{item.title}</h3>
-                {item.summary ? <p className="pb-news-card2-summary">{item.summary}</p> : null}
-                <div className="pb-news-card2-meta">
-                  <span>{formatDate(item.published_at, language, t("common.noDate"))}</span>
+                <h3 className="pb-news-featured-title">{featured.title}</h3>
+                {featured.summary ? <p className="pb-news-featured-summary">{featured.summary}</p> : null}
+                <div className="pb-news-featured-meta">
+                  <span>{formatDate(featured.published_at, language, t("common.noDate"))}</span>
                   <span className="dot" />
-                  <span>{t("news.minRead", { min: readMinutes(item.body) })}</span>
+                  <span>{t("news.minRead", { min: readMinutes(featured.body) })}</span>
                 </div>
               </div>
             </Link>
-          ))}
-        </div>
+          ) : null}
+
+          {/* Остальные — компактные карточки */}
+          {rest.length > 0 ? (
+            <div className="pb-news-list2">
+              {rest.map((item) => (
+                <Link key={item.id} className="pb-news-card2" to={`/news/${item.id}`}>
+                  <div className="pb-news-card2-text">
+                    <h4 className="pb-news-card2-title">{item.title}</h4>
+                    {item.summary ? <p className="pb-news-card2-summary">{item.summary}</p> : null}
+                    <div className="pb-news-card2-meta">
+                      <span className={`pb-news-cat-chip ${categoryKey(item.category)}`}>
+                        {t(`news.cat.${categoryKey(item.category)}`)}
+                      </span>
+                      <span>{formatDate(item.published_at, language, t("common.noDate"))}</span>
+                      <span className="dot" />
+                      <span>{t("news.minRead", { min: readMinutes(item.body) })}</span>
+                    </div>
+                  </div>
+                  <div className={`pb-news-card2-thumb ${item.cover_url ? "" : "fallback"}`}>
+                    {item.cover_url ? <img src={item.cover_url} alt="" loading="lazy" /> : null}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : null}
+        </>
       ) : null}
 
-      {/* Плавающая кнопка добавления для персонала */}
+      {/* Кнопка добавления для персонала */}
       {isStaff ? (
         <button type="button" className="pb-news-fab-add" onClick={() => setEditorOpen(true)}>
           ＋ {t("news.editor.add")}
         </button>
       ) : null}
 
-      <NewsEditor
-        open={editorOpen}
-        onClose={() => setEditorOpen(false)}
-        onSaved={() => setReloadKey((p) => p + 1)}
-      />
+      <NewsEditor open={editorOpen} onClose={() => setEditorOpen(false)} onSaved={handleSaved} />
     </Layout>
   );
 }
