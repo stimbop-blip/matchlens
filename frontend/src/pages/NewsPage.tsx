@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { useI18n } from "../app/i18n";
@@ -43,22 +43,32 @@ export function NewsPage() {
   const [editorOpen, setEditorOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
 
-  const load = useCallback(() => {
+  // ГЛАВНОЕ: НЕ зависим от `t` (она пересоздаётся каждый рендер → бесконечный цикл).
+  // Сообщение ошибки формируем в catch через ref, а не в зависимостях колбэка.
+  const errorFallback = useRef(t("news.error"));
+  errorFallback.current = t("news.error");
+
+  useEffect(() => {
+    let alive = true;
     setLoading(true);
     setError("");
     api
       .news(tab)
-      .then((list) => setItems(list))
-      .catch((e: unknown) => {
-        setItems([]);
-        setError(parseErrorMessage(e, t("news.error")));
+      .then((list) => {
+        if (alive) setItems(list);
       })
-      .finally(() => setLoading(false));
-  }, [tab, t]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
+      .catch((e: unknown) => {
+        if (!alive) return;
+        setItems([]);
+        setError(parseErrorMessage(e, errorFallback.current));
+      })
+      .finally(() => {
+        if (alive) setLoading(false);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [tab, reloadKey]);
 
   useEffect(() => {
     api
@@ -67,24 +77,11 @@ export function NewsPage() {
       .catch(() => undefined);
   }, []);
 
-  // после создания/редактирования — переключаемся на «Все» и перечитываем,
-  // чтобы свежая новость точно появилась в списке
-  const handleSaved = useCallback(() => {
+  // после создания/редактирования — переключаемся на «Все» и перечитываем
+  const handleSaved = () => {
     setTab("all");
     setReloadKey((p) => p + 1);
-  }, []);
-
-  // перечитывание срабатывает по reloadKey
-  useEffect(() => {
-    if (reloadKey === 0) return;
-    void api
-      .news("all")
-      .then((list) => {
-        setItems(list);
-        setTab("all");
-      })
-      .catch(() => undefined);
-  }, [reloadKey]);
+  };
 
   const ordered = useMemo(
     () =>
@@ -122,7 +119,7 @@ export function NewsPage() {
       {!loading && error ? (
         <div className="pb-error-state">
           <p>{error}</p>
-          <button className="pb-btn pb-btn-ghost" type="button" onClick={load}>
+          <button className="pb-btn pb-btn-ghost" type="button" onClick={() => setReloadKey((p) => p + 1)}>
             {t("common.retry")}
           </button>
         </div>

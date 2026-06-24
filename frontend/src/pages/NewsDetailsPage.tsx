@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { useI18n } from "../app/i18n";
@@ -53,6 +53,10 @@ export function NewsDetailsPage() {
   const [isStaff, setIsStaff] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
 
+  // НЕ зависим от `t` (пересоздаётся каждый рендер → бесконечный цикл загрузки)
+  const errorFallback = useRef(t("news.error"));
+  errorFallback.current = t("news.error");
+
   useEffect(() => {
     let alive = true;
     setLoading(true);
@@ -67,7 +71,7 @@ export function NewsDetailsPage() {
       .catch((e: unknown) => {
         if (!alive) return;
         setItems([]);
-        setError(parseErrorMessage(e, t("news.error")));
+        setError(parseErrorMessage(e, errorFallback.current));
       })
       .finally(() => {
         if (!alive) return;
@@ -77,7 +81,7 @@ export function NewsDetailsPage() {
     return () => {
       alive = false;
     };
-  }, [reloadKey, t]);
+  }, [reloadKey]);
 
   useEffect(() => {
     api
