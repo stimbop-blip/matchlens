@@ -378,6 +378,18 @@ export type NewsPost = {
   published_at: string | null;
 };
 
+export type AdCampaign = {
+  id: string;
+  title: string;
+  body: string;
+  image_url?: string | null;
+  cta_text?: string | null;
+  cta_url?: string | null;
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
+};
+
 export type ReferralStats = {
   referral_code: string;
   referral_link: string;
@@ -465,6 +477,7 @@ export const api = {
   stats: () => request<PublicStats>("/stats/overview"),
   news: (category?: "pit" | "bets" | "all") =>
     request<NewsPost[]>(category && category !== "all" ? `/news?category=${category}` : "/news"),
+  adsActive: () => request<AdCampaign[]>("/ads/active"),
   myReferral: () => request<ReferralStats>("/users/me/referral"),
   applyPromoCode: (payload: { code: string; tariff_code?: "free" | "premium" | "vip" }) =>
     request<PromoApplyResult>("/promocodes/apply", {
@@ -660,6 +673,40 @@ export const api = {
     }),
   adminDeleteNews: (id: string) =>
     request<{ ok: boolean }>(`/admin/news/${id}`, {
+      method: "DELETE",
+    }),
+  adminAds: () => request<AdCampaign[]>("/admin/ads"),
+  adminCreateAd: (payload: {
+    title: string;
+    body: string;
+    image_url?: string;
+    cta_text?: string;
+    cta_url?: string;
+    is_active?: boolean;
+    sort_order?: number;
+  }) =>
+    request<AdCampaign>("/admin/ads", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  adminUpdateAd: (
+    id: string,
+    payload: {
+      title?: string;
+      body?: string;
+      image_url?: string;
+      cta_text?: string;
+      cta_url?: string;
+      is_active?: boolean;
+      sort_order?: number;
+    },
+  ) =>
+    request<AdCampaign>(`/admin/ads/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+  adminDeleteAd: (id: string) =>
+    request<{ ok: boolean }>(`/admin/ads/${id}`, {
       method: "DELETE",
     }),
   adminPromoCodes: () => request<AdminPromoCode[]>("/admin/promocodes"),

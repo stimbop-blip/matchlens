@@ -1,3 +1,4 @@
+from app.models.ad_campaign import AdCampaign
 from app.models.chat_message import ChatMessage
 from app.models.news_post import NewsPost
 from app.models.notification import Notification
@@ -16,6 +17,7 @@ from app.models.user import User
 from app.models.user_settings import UserSettings
 
 __all__ = [
+    "AdCampaign",
     "ChatMessage",
     "Payment",
     "PaymentMethod",

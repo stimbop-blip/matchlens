@@ -11,6 +11,7 @@ import {
   type AdminStats,
   type AdminSubscription,
   type AdminUser,
+  type AdCampaign,
   type NewsPost,
   type PaymentMethod,
   type Prediction,
@@ -18,7 +19,7 @@ import {
 
 const ROIChart3D = lazy(() => import("../components/three/ROIChart3D").then((module) => ({ default: module.ROIChart3D })));
 
-type TabKey = "predictions" | "users" | "subscriptions" | "payments" | "payment_methods" | "news" | "promocodes" | "broadcasts" | "events";
+type TabKey = "predictions" | "users" | "subscriptions" | "payments" | "payment_methods" | "news" | "ads" | "promocodes" | "broadcasts" | "events";
 
 const TABS: Array<{ key: TabKey; ru: string; en: string }> = [
   { key: "predictions", ru: "Прогнозы", en: "Predictions" },
@@ -27,6 +28,7 @@ const TABS: Array<{ key: TabKey; ru: string; en: string }> = [
   { key: "payments", ru: "Платежи", en: "Payments" },
   { key: "payment_methods", ru: "Способы оплаты", en: "Payment methods" },
   { key: "news", ru: "Новости", en: "News" },
+  { key: "ads", ru: "Реклама", en: "Ads" },
   { key: "promocodes", ru: "Промокоды", en: "Promo codes" },
   { key: "broadcasts", ru: "Рассылки", en: "Campaigns" },
   { key: "events", ru: "Статистика", en: "Stats" },
@@ -69,6 +71,16 @@ type NewsDraft = {
   body: string;
   category: string;
   is_published: boolean;
+};
+
+type AdDraft = {
+  title: string;
+  body: string;
+  image_url: string;
+  cta_text: string;
+  cta_url: string;
+  is_active: boolean;
+  sort_order: string;
 };
 
 type PromoDraft = {
@@ -257,6 +269,30 @@ function createNewsDraftFromItem(item: NewsPost): NewsDraft {
   };
 }
 
+function createEmptyAdDraft(): AdDraft {
+  return {
+    title: "",
+    body: "",
+    image_url: "",
+    cta_text: "",
+    cta_url: "",
+    is_active: true,
+    sort_order: "0",
+  };
+}
+
+function createAdDraftFromItem(item: AdCampaign): AdDraft {
+  return {
+    title: item.title || "",
+    body: item.body || "",
+    image_url: item.image_url || "",
+    cta_text: item.cta_text || "",
+    cta_url: item.cta_url || "",
+    is_active: item.is_active,
+    sort_order: String(item.sort_order ?? 0),
+  };
+}
+
 function createEmptyPromoDraft(): PromoDraft {
   return {
     code: "",
@@ -399,6 +435,7 @@ export function AdminPage({ withThree = false }: { withThree?: boolean } = {}) {
   const [payments, setPayments] = useState<AdminPayment[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [news, setNews] = useState<NewsPost[]>([]);
+  const [ads, setAds] = useState<AdCampaign[]>([]);
   const [promoCodes, setPromoCodes] = useState<AdminPromoCode[]>([]);
   const [stats, setStats] = useState<AdminStats | null>(null);
 
@@ -438,6 +475,12 @@ export function AdminPage({ withThree = false }: { withThree?: boolean } = {}) {
   const [newsSheetId, setNewsSheetId] = useState<string | null>(null);
   const [newsDraft, setNewsDraft] = useState<NewsDraft>(createEmptyNewsDraft());
   const [newsSaving, setNewsSaving] = useState(false);
+
+  const [adSheetMode, setAdSheetMode] = useState<"closed" | "create" | "edit">("closed");
+  const [adSheetId, setAdSheetId] = useState<string | null>(null);
+  const [adDraft, setAdDraft] = useState<AdDraft>(createEmptyAdDraft());
+  const [adSaving, setAdSaving] = useState(false);
+  const [adQuery, setAdQuery] = useState("");
 
   const [promoSheetMode, setPromoSheetMode] = useState<"closed" | "create" | "edit">("closed");
   const [promoSheetId, setPromoSheetId] = useState<string | null>(null);
@@ -534,13 +577,14 @@ export function AdminPage({ withThree = false }: { withThree?: boolean } = {}) {
   };
 
   const loadAll = async () => {
-    const [p, u, s, pay, paymentMethodList, n, promos, st, notifStats] = await Promise.allSettled([
+    const [p, u, s, pay, paymentMethodList, n, adList, promos, st, notifStats] = await Promise.allSettled([
       api.adminPredictions(),
       api.adminUsers(),
       api.adminSubscriptions(),
       api.adminPayments(),
       api.adminPaymentMethods(),
       api.adminNews(),
+      api.adminAds(),
       api.adminPromoCodes(),
       api.adminStats(),
       api.adminNotificationStats(),
@@ -552,6 +596,7 @@ export function AdminPage({ withThree = false }: { withThree?: boolean } = {}) {
     setPayments(pay.status === "fulfilled" ? pay.value : []);
     setPaymentMethods(paymentMethodList.status === "fulfilled" ? paymentMethodList.value : []);
     setNews(n.status === "fulfilled" ? n.value : []);
+    setAds(adList.status === "fulfilled" ? adList.value : []);
     setPromoCodes(promos.status === "fulfilled" ? promos.value : []);
     setStats(st.status === "fulfilled" ? st.value : null);
     setDeliveryStats(notifStats.status === "fulfilled" ? notifStats.value : null);
@@ -661,6 +706,12 @@ export function AdminPage({ withThree = false }: { withThree?: boolean } = {}) {
       return base.includes(q);
     });
   }, [news, newsQuery, newsStatusFilter]);
+
+  const visibleAds = useMemo(() => {
+    const q = adQuery.trim().toLowerCase();
+    if (!q) return ads;
+    return ads.filter((item) => `${item.title} ${item.body} ${item.cta_text ?? ""}`.toLowerCase().includes(q));
+  }, [ads, adQuery]);
 
   const visiblePromos = useMemo(() => {
     const q = promoQuery.trim().toLowerCase();
@@ -978,6 +1029,82 @@ export function AdminPage({ withThree = false }: { withThree?: boolean } = {}) {
       await loadAll();
     } catch (e) {
       notifyError(textError(e, tx("Не удалось удалить новость", "Failed to delete news post")));
+    }
+  };
+
+  const openAdCreate = () => {
+    setAdDraft(createEmptyAdDraft());
+    setAdSheetId(null);
+    setAdSheetMode("create");
+  };
+
+  const openAdEdit = (item: AdCampaign) => {
+    setAdDraft(createAdDraftFromItem(item));
+    setAdSheetId(item.id);
+    setAdSheetMode("edit");
+  };
+
+  const closeAdSheet = () => {
+    setAdSheetMode("closed");
+    setAdSheetId(null);
+    setAdSaving(false);
+  };
+
+  const onSaveAdDraft = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const title = adDraft.title.trim();
+    const body = adDraft.body.trim();
+    if (!title || !body) {
+      notifyError(tx("Заполните заголовок и текст", "Fill title and text"));
+      return;
+    }
+
+    const payload = {
+      title,
+      body,
+      image_url: adDraft.image_url.trim() || undefined,
+      cta_text: adDraft.cta_text.trim() || undefined,
+      cta_url: adDraft.cta_url.trim() || undefined,
+      is_active: adDraft.is_active,
+      sort_order: Number(adDraft.sort_order) || 0,
+    };
+
+    setAdSaving(true);
+    try {
+      if (adSheetMode === "create") {
+        await api.adminCreateAd(payload);
+        notifySuccess(tx("Реклама добавлена", "Ad created"));
+      } else if (adSheetMode === "edit" && adSheetId) {
+        await api.adminUpdateAd(adSheetId, payload);
+        notifySuccess(tx("Реклама обновлена", "Ad updated"));
+      }
+      closeAdSheet();
+      await loadAll();
+    } catch (e) {
+      notifyError(textError(e, tx("Не удалось сохранить рекламу", "Failed to save ad")));
+    } finally {
+      setAdSaving(false);
+    }
+  };
+
+  const onToggleAd = async (item: AdCampaign) => {
+    try {
+      await api.adminUpdateAd(item.id, { is_active: !item.is_active });
+      notifySuccess(item.is_active ? tx("Реклама отключена", "Ad disabled") : tx("Реклама включена", "Ad enabled"));
+      await loadAll();
+    } catch (e) {
+      notifyError(textError(e, tx("Не удалось обновить рекламу", "Failed to update ad")));
+    }
+  };
+
+  const onDeleteAd = async (adId: string) => {
+    if (!window.confirm(tx("Удалить рекламу?", "Delete ad?"))) return;
+    try {
+      await api.adminDeleteAd(adId);
+      notifySuccess(tx("Реклама удалена", "Ad deleted"));
+      await loadAll();
+    } catch (e) {
+      notifyError(textError(e, tx("Не удалось удалить рекламу", "Failed to delete ad")));
     }
   };
 
@@ -1932,6 +2059,54 @@ export function AdminPage({ withThree = false }: { withThree?: boolean } = {}) {
           </div>
         ) : null}
 
+        {tab === "ads" && isAdmin ? (
+          <div className="admin-panel">
+            <div className="admin-control-bar">
+              <div className="admin-control-top">
+                <button className="btn" type="button" onClick={openAdCreate}>
+                  {tx("Добавить рекламу", "Add ad")}
+                </button>
+                <span className="admin-count-chip">{visibleAds.length}</span>
+              </div>
+              <div className="admin-control-grid">
+                <input value={adQuery} onChange={(e) => setAdQuery(e.target.value)} placeholder={tx("Поиск по рекламе", "Search ads")} />
+              </div>
+            </div>
+            <p className="muted" style={{ margin: "0 0 8px", fontSize: 12 }}>
+              {tx("Показывается в popup по тапу на подарок 🎁 на главной", "Shown in the popup when tapping the gift 🎁 on the home screen")}
+            </p>
+
+            <div className="admin-list admin-list-compact">
+              {visibleAds.map((item) => (
+                <article key={item.id} className="prediction-card admin-item admin-card-compact">
+                  <div className="prediction-top admin-card-title-row">
+                    <strong>{item.title}</strong>
+                    <span className={`badge ${item.is_active ? "success" : "pending"}`}>{item.is_active ? tx("Активна", "Active") : tx("Выключена", "Inactive")}</span>
+                  </div>
+                  {item.image_url ? <img src={item.image_url} alt="" style={{ width: "100%", maxHeight: 120, objectFit: "cover", borderRadius: 8, marginTop: 6 }} /> : null}
+                  <p className="stacked">{toShortText(item.body, 160)}</p>
+                  <div className="admin-meta-row">
+                    <span>{tx("кнопка", "button")}: {item.cta_text || "—"}</span>
+                    <span>{tx("сортировка", "sort")}: {item.sort_order}</span>
+                  </div>
+                  <div className="admin-quick-actions">
+                    <button className="btn ghost" type="button" onClick={() => openAdEdit(item)}>
+                      {tx("Редактировать", "Edit")}
+                    </button>
+                    <button className="btn" type="button" onClick={() => void onToggleAd(item)}>
+                      {item.is_active ? tx("Отключить", "Disable") : tx("Включить", "Enable")}
+                    </button>
+                    <button className="btn danger" type="button" onClick={() => void onDeleteAd(item.id)}>
+                      {tx("Удалить", "Delete")}
+                    </button>
+                  </div>
+                </article>
+              ))}
+              {!loading && visibleAds.length === 0 ? <p className="admin-empty">{tx("Реклама не найдена", "No ads found")}</p> : null}
+            </div>
+          </div>
+        ) : null}
+
         {tab === "promocodes" && isAdmin ? (
           <div className="admin-panel">
             <div className="admin-control-bar">
@@ -2331,6 +2506,39 @@ export function AdminPage({ withThree = false }: { withThree?: boolean } = {}) {
             </button>
             <button className="btn" type="submit" disabled={newsSaving}>
               {newsSaving ? tx("Сохраняем...", "Saving...") : tx("Сохранить", "Save")}
+            </button>
+          </div>
+        </form>
+      </AdminSheet>
+
+      <AdminSheet
+        open={adSheetMode !== "closed"}
+        title={adSheetMode === "create" ? tx("Новая реклама", "New ad") : tx("Редактирование рекламы", "Edit ad")}
+        onClose={closeAdSheet}
+      >
+        <form className="admin-sheet-form" onSubmit={onSaveAdDraft}>
+          <section className="admin-editor-section">
+            <h4>{tx("Реклама в подарок", "Gift ad")}</h4>
+            <input value={adDraft.title} onChange={(e) => setAdDraft((prev) => ({ ...prev, title: e.target.value }))} placeholder={tx("Заголовок", "Title")} required />
+            <textarea value={adDraft.body} onChange={(e) => setAdDraft((prev) => ({ ...prev, body: e.target.value }))} rows={6} placeholder={tx("Текст рекламы", "Ad text")} required />
+            <input value={adDraft.image_url} onChange={(e) => setAdDraft((prev) => ({ ...prev, image_url: e.target.value }))} placeholder={tx("URL картинки (обложка)", "Image URL (cover)")} />
+            {adDraft.image_url ? <img src={adDraft.image_url} alt="" style={{ width: "100%", maxHeight: 120, objectFit: "cover", borderRadius: 8, marginTop: 4 }} /> : null}
+            <div className="admin-grid-2">
+              <input value={adDraft.cta_text} onChange={(e) => setAdDraft((prev) => ({ ...prev, cta_text: e.target.value }))} placeholder={tx("Текст кнопки", "Button text")} />
+              <input value={adDraft.cta_url} onChange={(e) => setAdDraft((prev) => ({ ...prev, cta_url: e.target.value }))} placeholder={tx("Ссылка кнопки", "Button URL")} />
+            </div>
+            <input type="number" value={adDraft.sort_order} onChange={(e) => setAdDraft((prev) => ({ ...prev, sort_order: e.target.value }))} placeholder={tx("Сортировка", "Sort order")} />
+            <label className="switch-row" style={{ padding: "0 4px" }}>
+              <span>{tx("Активна", "Active")}</span>
+              <input type="checkbox" checked={adDraft.is_active} onChange={(e) => setAdDraft((prev) => ({ ...prev, is_active: e.target.checked }))} />
+            </label>
+          </section>
+          <div className="admin-sheet-footer">
+            <button className="btn ghost" type="button" onClick={closeAdSheet}>
+              {tx("Отмена", "Cancel")}
+            </button>
+            <button className="btn" type="submit" disabled={adSaving}>
+              {adSaving ? tx("Сохраняем...", "Saving...") : tx("Сохранить", "Save")}
             </button>
           </div>
         </form>

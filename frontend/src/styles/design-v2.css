@@ -1244,3 +1244,233 @@ input, textarea, button {
   opacity: 0.7 !important;
   filter: grayscale(0.3) !important;
 }
+
+/* ─── GIFT BOX (подарок на главной → popup рекламы) ───────────── */
+.pb-gift-btn {
+  position: relative !important;
+  width: 42px !important;
+  height: 42px !important;
+  border-radius: 50% !important;
+  border: 1px solid rgba(34, 211, 238, 0.35) !important;
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.22), transparent 55%),
+    linear-gradient(140deg, rgba(34, 211, 238, 0.22), rgba(167, 139, 250, 0.22)) !important;
+  box-shadow: 0 6px 16px rgba(34, 211, 238, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  overflow: hidden !important;
+  flex: 0 0 auto !important;
+}
+
+.pb-gift-emoji {
+  font-size: 22px !important;
+  line-height: 1 !important;
+  display: inline-block !important;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25)) !important;
+}
+
+.pb-gift-dot {
+  position: absolute !important;
+  top: 4px !important;
+  right: 5px !important;
+  width: 9px !important;
+  height: 9px !important;
+  border-radius: 50% !important;
+  background: #ff4d6d !important;
+  border: 2px solid var(--v2-surface, #0d1117) !important;
+  box-shadow: 0 0 0 0 rgba(255, 77, 109, 0.6) !important;
+  animation: pb-gift-pulse 1.6s infinite !important;
+  z-index: 2 !important;
+}
+
+@keyframes pb-gift-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(255, 77, 109, 0.6); }
+  70% { box-shadow: 0 0 0 8px rgba(255, 77, 109, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 77, 109, 0); }
+}
+
+.pb-gift-shine {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 40% !important;
+  height: 100% !important;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.45), transparent) !important;
+  transform: skewX(-18deg) !important;
+  pointer-events: none !important;
+  opacity: 0.7 !important;
+}
+
+/* ─── AD POPUP ─────────────────────────────────────────────────── */
+.pb-ad-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9999 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 24px !important;
+  background: rgba(4, 6, 12, 0.72) !important;
+  backdrop-filter: blur(6px) !important;
+  -webkit-backdrop-filter: blur(6px) !important;
+}
+
+.pb-ad-card {
+  position: relative !important;
+  width: 100% !important;
+  max-width: 360px !important;
+  border-radius: 22px !important;
+  overflow: hidden !important;
+  background: var(--v2-surface, #121722) !important;
+  border: 1px solid var(--v2-border-bright, rgba(255, 255, 255, 0.1)) !important;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5) !important;
+}
+
+.pb-ad-close {
+  position: absolute !important;
+  top: 10px !important;
+  right: 10px !important;
+  z-index: 3 !important;
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+  border: none !important;
+  background: rgba(0, 0, 0, 0.45) !important;
+  color: #fff !important;
+  font-size: 22px !important;
+  line-height: 1 !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+.pb-ad-cover {
+  width: 100% !important;
+  aspect-ratio: 16 / 9 !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-color: #0d1117 !important;
+  position: relative !important;
+}
+
+.pb-ad-cover-fallback {
+  background:
+    radial-gradient(circle at 30% 25%, rgba(34, 211, 238, 0.35), transparent 55%),
+    linear-gradient(140deg, rgba(167, 139, 250, 0.3), rgba(34, 211, 238, 0.2)) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.pb-ad-cover-emoji {
+  font-size: 56px !important;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.35)) !important;
+}
+
+.pb-ad-cover-tag {
+  position: absolute !important;
+  top: 12px !important;
+  left: 12px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: #fff !important;
+  background: rgba(0, 0, 0, 0.5) !important;
+  padding: 4px 10px !important;
+  border-radius: 999px !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+.pb-ad-body {
+  padding: 18px 20px 22px !important;
+}
+
+.pb-ad-title {
+  font-size: 18px !important;
+  font-weight: 760 !important;
+  color: var(--v2-text, #fff) !important;
+  margin: 0 0 8px !important;
+  line-height: 1.25 !important;
+}
+
+.pb-ad-text {
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+  color: var(--v2-text-muted, #8a9cbd) !important;
+  margin: 0 0 16px !important;
+  white-space: pre-wrap !important;
+  word-break: break-word !important;
+}
+
+.pb-ad-cta {
+  width: 100% !important;
+  padding: 13px 16px !important;
+  border-radius: 14px !important;
+  border: none !important;
+  background: linear-gradient(135deg, #22d3ee, #a78bfa) !important;
+  color: #06121a !important;
+  font-size: 15px !important;
+  font-weight: 750 !important;
+  cursor: pointer !important;
+  box-shadow: 0 8px 20px rgba(34, 211, 238, 0.35) !important;
+}
+
+:root[data-theme="light"] .pb-ad-card {
+  background: #ffffff !important;
+}
+
+/* ─── ТЕМА: круглая кнопка-иконка (только на главной) ──────────── */
+.pb-theme-icon-btn {
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 50% !important;
+  border: 1px solid var(--v2-border-bright, rgba(255, 255, 255, 0.12)) !important;
+  background: var(--v2-surface-2, rgba(20, 23, 33, 0.8)) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  padding: 0 !important;
+  flex: 0 0 auto !important;
+  transition: transform 0.18s ease, background 0.3s ease !important;
+}
+
+.pb-theme-icon-btn:active {
+  transform: scale(0.9) !important;
+}
+
+.pb-theme-icon-btn svg {
+  width: 19px !important;
+  height: 19px !important;
+  display: block !important;
+}
+
+:root[data-theme="light"] .pb-theme-icon-btn {
+  background: rgba(241, 244, 248, 0.95) !important;
+}
+
+/* Компактный hero на главной — без 3D-трофи и market-pulse */
+.pb-overview-hero-stats-compact {
+  margin-top: 6px !important;
+}
+
+.pb-overview-hero-stats-compact article {
+  padding: 7px 8px !important;
+}
+
+.pb-overview-hero-stats-compact strong {
+  font-size: 16px !important;
+}
+
+/* На главной скрываем дублирующий заголовок/подзаголовок шапки — hero уже всё показывает */
+.pb-app-header-home h1,
+.pb-app-header-home > p {
+  display: none !important;
+}
+
+.pb-app-header-home {
+  padding-bottom: 6px !important;
+}

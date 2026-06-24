@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { useI18n } from "../app/i18n";
 import { useTheme } from "../app/language";
 import { BottomNav } from "./layout/BottomNav";
+import { GiftBox } from "./GiftBox";
 import { api } from "../services/api";
 import {
   configureTelegramBackButton,
@@ -107,31 +108,55 @@ export function Layout({ children }: PropsWithChildren) {
     };
   }, [location.pathname, navigate]);
 
+  const isHome = location.pathname === "/";
+  const nextTheme = theme === "light" ? "dark" : "light";
+
   return (
     <div className="pb-app-shell">
       <div className="pb-backdrop-glow" aria-hidden="true" />
 
-      <header className="pb-app-header">
+      <header className={`pb-app-header${isHome ? " pb-app-header-home" : ""}`}>
         <div className="pb-brand-row">
           <span className="pb-brand-chip">PIT BET</span>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {staffRole && location.pathname !== "/menu" ? (
               <span className="pb-role-chip">{staffRole === "admin" ? t("layout.role.admin") : t("layout.role.support")}</span>
             ) : null}
+            {isHome ? <GiftBox /> : null}
             <button
               type="button"
-              onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-              className="pb-theme-toggle"
+              onClick={() => setTheme(nextTheme)}
+              className={isHome ? "pb-theme-icon-btn" : "pb-theme-toggle"}
               aria-label="Toggle theme"
               style={{ border: "none", cursor: "pointer", padding: 0, background: "transparent" }}
             >
-              <motion.div
-                layout
-                transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                className="pb-theme-toggle-thumb"
-              >
-                {theme === "light" ? "☀️" : "🌙"}
-              </motion.div>
+              {isHome ? (
+                theme === "light" ? (
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <circle cx="12" cy="12" r="4.2" fill="#f5a524" />
+                    {[
+                      [12, 2.5],
+                      [12, 21.5],
+                      [2.5, 12],
+                      [21.5, 12],
+                      [5.6, 5.6],
+                      [18.4, 18.4],
+                      [5.6, 18.4],
+                      [18.4, 5.6],
+                    ].map(([x, y], i) => (
+                      <line key={i} x1={x} y1={y} x2={12 + (x - 12) * 0.55} y2={12 + (y - 12) * 0.55} stroke="#f5a524" strokeWidth="2" strokeLinecap="round" />
+                    ))}
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" fill="#a78bfa" />
+                  </svg>
+                )
+              ) : (
+                <motion.div layout transition={{ type: "spring", stiffness: 500, damping: 30 }} className="pb-theme-toggle-thumb">
+                  {theme === "light" ? "☀️" : "🌙"}
+                </motion.div>
+              )}
             </button>
           </div>
         </div>

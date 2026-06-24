@@ -39,7 +39,6 @@ type FeaturedSignal = {
   note: string;
 };
 
-const HomeHeroScene3D = lazy(() => import("../components/three/HomeScenes").then((module) => ({ default: module.HomeHeroScene3D })));
 const HomeSignalScene3D = lazy(() => import("../components/three/HomeScenes").then((module) => ({ default: module.HomeSignalScene3D })));
 const HomeSubscriptionScene3D = lazy(() => import("../components/three/HomeScenes").then((module) => ({ default: module.HomeSubscriptionScene3D })));
 
@@ -420,12 +419,6 @@ export function HomePage() {
     };
   }, [predictions, language, t]);
 
-  const pulseValues = useMemo(() => {
-    const roi = stats?.roi ?? 0;
-    const pending = stats?.pending ?? 0;
-    return [52, 55, 58, 56, 60, 63, 61, 66, 68, 71].map((value, idx) => value + Math.round(roi / 11) + (pending > 0 ? idx % 2 : 0));
-  }, [stats?.roi, stats?.pending]);
-
   const performanceWave = useMemo(() => {
     const total = Math.max(1, stats?.total ?? 1);
     const wins = stats?.wins ?? 0;
@@ -453,36 +446,19 @@ export function HomePage() {
         subtitle={t("home.hero.subheadline")}
         right={<span className={`pb-tier-pill ${sub.tariff}`}>{tariffLabel(sub.tariff, t)}</span>}
       >
-        <div className="pb-overview-hero-3d">
-          <div className="pb-overview-trophy-3d" aria-hidden="true">
-            <ErrorBoundary fallback={<div className="pb-home3d-canvas-fallback" />}>
-              <Suspense fallback={<div className="pb-home3d-canvas-fallback" />}>
-                <HomeHeroScene3D />
-              </Suspense>
-            </ErrorBoundary>
-          </div>
-          <div className="pb-overview-hero-stats">
-            <article>
-              <small>{t("common.roi")}</small>
-              <strong>{roiText}</strong>
-            </article>
-            <article>
-              <small>{t("home.performance.hit")}</small>
-              <strong>{hitRateText}</strong>
-            </article>
-            <article>
-              <small>{t("home.today.active")}</small>
-              <strong>{today.activeSignals}</strong>
-            </article>
-          </div>
-        </div>
-
-        <div className="pb-overview-market-shell">
-          <div className="pb-overview-market-head">
-            <span>{t("home.hero.marketPulse")}</span>
-            <span className="pb-overview-live-tag">{t("home.hero.marketTag")}</span>
-          </div>
-          <Sparkline values={pulseValues} className="pb-overview-sparkline" />
+        <div className="pb-overview-hero-stats pb-overview-hero-stats-compact">
+          <article>
+            <small>{t("common.roi")}</small>
+            <strong>{roiText}</strong>
+          </article>
+          <article>
+            <small>{t("home.performance.hit")}</small>
+            <strong>{hitRateText}</strong>
+          </article>
+          <article>
+            <small>{t("home.today.active")}</small>
+            <strong>{today.activeSignals}</strong>
+          </article>
         </div>
 
         <div className="pb-overview-hero-actions">
