@@ -129,27 +129,28 @@ export function NewsPage() {
 
       {!loading && !error && ordered.length > 0 ? (
         <div className="pb-news-list2">
-          {ordered.map((item) => (
-            <Link key={item.id} className="pb-news-card2" to={`/news/${item.id}`}>
-              {/* миниатюра СЛЕВА */}
-              <div className={`pb-news-card2-thumb ${item.cover_url ? "" : "fallback"}`}>
-                {item.cover_url ? <img src={item.cover_url} alt="" loading="lazy" /> : null}
-              </div>
-              {/* текст справа */}
-              <div className="pb-news-card2-text">
-                <h4 className="pb-news-card2-title">{item.title}</h4>
-                {item.summary ? <p className="pb-news-card2-summary">{item.summary}</p> : null}
-                <div className="pb-news-card2-meta">
-                  <span className={`pb-news-cat-chip ${categoryKey(item.category)}`}>
-                    {t(`news.cat.${categoryKey(item.category)}`)}
-                  </span>
-                  <span>{formatDate(item.published_at, language, t("common.noDate"))}</span>
-                  <span className="dot" />
-                  <span>{t("news.minRead", { min: readMinutes(item.body) })}</span>
+          {ordered.map((item) => {
+            const cat = categoryKey(item.category);
+            return (
+              <Link key={item.id} className="pb-news-card2" to={`/news/${item.id}`}>
+                {/* обложка СВЕРХУ */}
+                <div className={`pb-news-card2-cover ${item.cover_url ? "" : "fallback"}`}>
+                  {item.cover_url ? <img src={item.cover_url} alt="" loading="lazy" /> : null}
+                  <span className={`pb-news-card2-badge ${cat}`}>{t(`news.cat.${cat}`)}</span>
                 </div>
-              </div>
-            </Link>
-          ))}
+                {/* контент снизу */}
+                <div className="pb-news-card2-body">
+                  <h3 className="pb-news-card2-title">{item.title}</h3>
+                  {item.summary ? <p className="pb-news-card2-summary">{item.summary}</p> : null}
+                  <div className="pb-news-card2-meta">
+                    <span>{formatDate(item.published_at, language, t("common.noDate"))}</span>
+                    <span className="dot" />
+                    <span>{t("news.minRead", { min: readMinutes(item.body) })}</span>
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
         </div>
       ) : null}
 
