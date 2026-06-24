@@ -1,6 +1,6 @@
 import { getTelegramInitData, waitForTelegramInitData } from "./telegram";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
+const API_URL = import.meta.env.VITE_API_URL || "https://matchlens-backend.onrender.com/api/v1";
 const REQUEST_INITDATA_TIMEOUT_MS = 1200;
 
 let initDataWaitPromise: Promise<string> | null = null;
