@@ -6,12 +6,21 @@ from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
 
 from app.models.chat_message import ChatMessage
+from app.models.enums import UserRole
 from app.models.user import User
 
 logger = logging.getLogger(__name__)
 
 MAX_CHAT_MESSAGE_CHARS = 500
 CHAT_HISTORY_LIMIT = 200
+
+
+class ChatBlockedError(Exception):
+    """Пользователь заблокирован и не может писать в чат."""
+
+
+class ChatNotFoundError(Exception):
+    """Сообщение не найдено."""
 
 
 def _display_name(user: User | None) -> str:
@@ -31,7 +40,9 @@ def _initials(user: User | None) -> str:
     name = _display_name(user)
     if name.startswith("@"):
         name = name[1:]
-    parts = [p for p in name.replace(str(user.telegram_id) if user else "", "").split() if p]
+    tg = str(user.telegram_id) if user else ""
+    name = name.replace(tg, "").strip()
+    parts = [p for p in name.split() if p]
     if not parts:
         return "?"
     if len(parts) == 1:
@@ -56,6 +67,7 @@ def _serialize(item: ChatMessage, author: User | None, viewer: User) -> dict:
         "author_name": _display_name(author),
         "author_username": author.username if author else None,
         "author_initials": _initials(author),
+        "author_blocked": bool(author.is_blocked) if author else False,
         "body": item.body,
         "created_at": item.created_at,
         "mine": bool(author is not None and author.id == viewer.id),
@@ -78,6 +90,9 @@ def list_recent_messages(db: Session, viewer: User, limit: int = CHAT_HISTORY_LI
 
 
 def send_message(db: Session, author: User, body: str) -> dict:
+    if getattr(author, "is_blocked", False):
+        raise ChatBlockedError("Вы заблокированы в чате")
+
     cleaned = _clean_body(body)
 
     message = ChatMessage(
@@ -90,3 +105,36 @@ def send_message(db: Session, author: User, body: str) -> dict:
     db.refresh(message)
 
     return _serialize(message, author, author)
+
+
+def delete_message(db: Session, *, message_id: str, actor: User) -> dict:
+    """Удалить сообщение. Доступ: админ/поддержка или автор сообщения."""
+    message = db.get(ChatMessage, message_id)
+    if message is None:
+        raise ChatNotFoundError("Сообщение не найдено")
+
+    is_staff = getattr(actor, "role", None) in {UserRole.admin, UserRole.support} or any(
+        getattr(actor, attr, False) for attr in ("is_admin", "is_support")
+    )
+    if not is_staff and str(message.author_user_id) != str(actor.id):
+        raise PermissionError("Недостаточно прав для удаления сообщения")
+
+    db.delete(message)
+    db.commit()
+    return {"deleted": True, "id": message_id}
+
+
+def set_user_blocked(db: Session, *, target_user_id: str, blocked: bool) -> dict:
+    """Заблокировать/разблокировать пользователя (модерация чата)."""
+    target = db.get(User, target_user_id)
+    if target is None:
+        raise ChatNotFoundError("Пользователь не найден")
+
+    target.is_blocked = bool(blocked)
+    db.commit()
+    db.refresh(target)
+    return {
+        "user_id": str(target.id),
+        "is_blocked": target.is_blocked,
+        "name": _display_name(target),
+    }

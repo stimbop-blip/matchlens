@@ -13,6 +13,8 @@ class ChatMessageOut(BaseModel):
     author_role: str
     author_name: str
     author_username: str | None
+    author_initials: str = "?"
+    author_blocked: bool = False
     body: str
     created_at: datetime
     mine: bool = False
@@ -20,3 +22,14 @@ class ChatMessageOut(BaseModel):
 
 class ChatHistoryOut(BaseModel):
     messages: list[ChatMessageOut]
+
+
+class ChatDeleteResultOut(BaseModel):
+    deleted: bool
+    id: str
+
+
+class ChatBlockResultOut(BaseModel):
+    user_id: str
+    is_blocked: bool
+    name: str

@@ -6,6 +6,7 @@ import { LanguageProvider } from "./app/language";
 import { initTelegramWebApp } from "./services/telegram";
 import "./styles/globals.css";
 import "./styles/design-v2.css";
+import "./styles/bottom-nav.css";
 
 async function bootstrap() {
   await initTelegramWebApp();

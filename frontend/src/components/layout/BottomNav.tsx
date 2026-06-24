@@ -11,14 +11,6 @@ type NavItem = {
   Icon: typeof HomeIcon;
 };
 
-// 5 слотов: 2 слева, центр (FAB), 2 справа. Центр — пустой слот под парящую кнопку.
-const SIDE_ITEMS: NavItem[] = [
-  { to: "/", labelKey: "layout.nav.home", Icon: HomeIcon },
-  { to: "/chat", labelKey: "layout.nav.chat", Icon: ChatIcon },
-  { to: "/news", labelKey: "layout.nav.news", Icon: NewsIcon },
-  { to: "/profile", labelKey: "layout.nav.profile", Icon: ProfileIcon },
-];
-
 export function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -28,69 +20,76 @@ export function BottomNav() {
   const isActive = (to: string) =>
     to === "/" ? location.pathname === "/" : location.pathname.startsWith(to);
 
+  const left: NavItem[] = [
+    { to: "/", labelKey: "layout.nav.home", Icon: HomeIcon },
+    { to: "/chat", labelKey: "layout.nav.chat", Icon: ChatIcon },
+  ];
+  const right: NavItem[] = [
+    { to: "/news", labelKey: "layout.nav.news", Icon: NewsIcon },
+    { to: "/profile", labelKey: "layout.nav.profile", Icon: ProfileIcon },
+  ];
+
   const centerActive = isActive("/feed");
-  const [home, chat, news, profile] = SIDE_ITEMS;
+
+  const renderSide = (item: NavItem) => {
+    const active = isActive(item.to);
+    const { Icon } = item;
+    return (
+      <button
+        key={item.to}
+        type="button"
+        onClick={() => {
+          h.tap();
+          navigate(item.to);
+        }}
+        className={`pb-dock-item ${active ? "active" : ""}`}
+        aria-label={t(item.labelKey)}
+        aria-current={active ? "page" : undefined}
+      >
+        <span className="pb-dock-icon">
+          <Icon active={active} />
+        </span>
+        <span className="pb-dock-label">{t(item.labelKey)}</span>
+      </button>
+    );
+  };
 
   return (
     <nav className="pb-dock" aria-label={t("layout.nav.aria")}>
-      {/* Единая панель во весь экран с notch-вырезом по центру сверху */}
       <div className="pb-dock-bar">
-        <button
-          type="button"
-          onClick={() => { h.tap(); navigate(home.to); }}
-          className={`pb-dock-item ${isActive(home.to) ? "active" : ""}`}
-          aria-label={t(home.labelKey)}
-        >
-          <span className="pb-dock-icon"><home.Icon active={isActive(home.to)} /></span>
-          <span className="pb-dock-label">{t(home.labelKey)}</span>
-        </button>
+        {/* SVG-впадина (notch) под парящую кнопку — рисует дугу цвета панели */}
+        <div className="pb-dock-notch-bg" aria-hidden="true">
+          <svg viewBox="0 0 78 30" preserveAspectRatio="none">
+            <path
+              d="M0 30 L0 8 Q39 -22 78 8 L78 30 Z"
+              fill="var(--pb-nav-bg)"
+            />
+          </svg>
+        </div>
 
-        <button
-          type="button"
-          onClick={() => { h.tap(); navigate(chat.to); }}
-          className={`pb-dock-item ${isActive(chat.to) ? "active" : ""}`}
-          aria-label={t(chat.labelKey)}
-        >
-          <span className="pb-dock-icon"><chat.Icon active={isActive(chat.to)} /></span>
-          <span className="pb-dock-label">{t(chat.labelKey)}</span>
-        </button>
+        {/* 5 слотов: 2 слева · центр (notch) · 2 справа */}
+        {left.map(renderSide)}
 
-        {/* пустой слот под парящую FAB */}
         <span className="pb-dock-notch-slot" aria-hidden="true" />
 
-        <button
-          type="button"
-          onClick={() => { h.tap(); navigate(news.to); }}
-          className={`pb-dock-item ${isActive(news.to) ? "active" : ""}`}
-          aria-label={t(news.labelKey)}
-        >
-          <span className="pb-dock-icon"><news.Icon active={isActive(news.to)} /></span>
-          <span className="pb-dock-label">{t(news.labelKey)}</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => { h.tap(); navigate(profile.to); }}
-          className={`pb-dock-item ${isActive(profile.to) ? "active" : ""}`}
-          aria-label={t(profile.labelKey)}
-        >
-          <span className="pb-dock-icon"><profile.Icon active={isActive(profile.to)} /></span>
-          <span className="pb-dock-label">{t(profile.labelKey)}</span>
-        </button>
+        {right.map(renderSide)}
       </div>
 
-      {/* Парящая центральная FAB «Сигналы» над вырезом */}
+      {/* Парящая FAB «Сигналы» над впадиной */}
       <button
         type="button"
-        onClick={() => { h.tap(); navigate("/feed"); }}
+        onClick={() => {
+          h.tap();
+          navigate("/feed");
+        }}
         className={`pb-dock-fab ${centerActive ? "active" : ""}`}
         aria-label={t("layout.nav.feed")}
+        aria-current={centerActive ? "page" : undefined}
       >
-        <span className="pb-dock-fab-glow" aria-hidden="true" />
         <motion.span
           className="pb-dock-fab-inner"
-          whileTap={{ scale: 0.9 }}
-          transition={{ type: "spring", stiffness: 500, damping: 22 }}
+          whileTap={{ scale: 0.88 }}
+          transition={{ type: "spring", stiffness: 500, damping: 20 }}
         >
           <SignalsIcon active={true} />
         </motion.span>

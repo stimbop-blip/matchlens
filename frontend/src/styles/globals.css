@@ -14522,204 +14522,6 @@ body {
 }
 
 /* ============================================================
-   НИЖНЯЯ НАВИГАЦИЯ — сплошная панель + парящая FAB «Сигналы»
-   ============================================================ */
-.pb-dock {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 60;
-  pointer-events: none;
-}
-
-/* Единая панель во всю ширину экрана с notch-вырезом по центру */
-.pb-dock-bar {
-  position: relative;
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  align-items: center;
-  width: 100%;
-  height: 64px;
-  padding: 0 4px calc(env(safe-area-inset-bottom, 0px));
-  background: var(--pb-dock-bg);
-  border-top: 1px solid var(--pb-dock-border);
-  box-shadow: var(--pb-dock-shadow);
-  backdrop-filter: blur(24px) saturate(160%);
-  -webkit-backdrop-filter: blur(24px) saturate(160%);
-  pointer-events: auto;
-  /* вырез-впадина (notch) по центру сверху под парящую кнопку */
-  --notch-w: 76px;
-  --notch-h: 38px;
-  -webkit-mask-image: radial-gradient(circle 38px at 50% 0, transparent 98%, #000 100%);
-  mask-image: radial-gradient(circle 38px at 50% 0, transparent 98%, #000 100%);
-}
-
-/* тема-зависимые цвета панели */
-.pb-dock-bar {
-  --pb-dock-bg: color-mix(in srgb, var(--surface) 86%, transparent);
-  --pb-dock-border: var(--border-subtle);
-  --pb-dock-shadow: 0 -6px 30px rgba(0, 0, 0, 0.32);
-  --pb-dock-label: var(--text-secondary);
-  --pb-dock-label-active: var(--accent-secondary);
-  --pb-dock-icon: var(--text-secondary);
-  --pb-dock-icon-active: var(--accent-secondary);
-}
-
-:root[data-theme="light"] .pb-dock-bar {
-  --pb-dock-bg: color-mix(in srgb, #ffffff 96%, transparent);
-  --pb-dock-border: #e4e8f2;
-  --pb-dock-shadow: 0 -6px 24px rgba(20, 30, 60, 0.10);
-  --pb-dock-label: #6b7186;
-  --pb-dock-label-active: #0066ff;
-  --pb-dock-icon: #7a8094;
-  --pb-dock-icon-active: #0066ff;
-}
-
-/* обычная боковая кнопка */
-.pb-dock-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  height: 100%;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  color: var(--pb-dock-icon);
-  transition: color 0.2s ease, transform 0.15s ease;
-}
-
-.pb-dock-item.active {
-  color: var(--pb-dock-icon-active);
-}
-
-.pb-dock-item:active {
-  transform: scale(0.9);
-}
-
-.pb-dock-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 24px;
-  transition: transform 0.2s ease;
-}
-
-.pb-dock-item.active .pb-dock-icon {
-  transform: translateY(-1px);
-}
-
-/* подписи под иконками */
-.pb-dock-label {
-  font-size: 10px;
-  font-weight: 600;
-  line-height: 1;
-  letter-spacing: 0.2px;
-  color: var(--pb-dock-label);
-  transition: color 0.2s ease;
-}
-
-.pb-dock-item.active .pb-dock-label {
-  color: var(--pb-dock-label-active);
-}
-
-/* пустой слот-разделитель под парящую кнопку */
-.pb-dock-notch-slot {
-  height: 100%;
-}
-
-/* ----- ПАРЯЩАЯ FAB «СИГНАЛЫ» ----- */
-.pb-dock-fab {
-  position: absolute;
-  left: 50%;
-  bottom: calc(28px + env(safe-area-inset-bottom, 0px));
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  pointer-events: auto;
-  z-index: 61;
-}
-
-.pb-dock-fab-inner {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  color: #fff;
-  background: linear-gradient(135deg, #2f80ff 0%, #0066ff 55%, #1e4dd6 100%);
-  box-shadow:
-    0 12px 28px rgba(0, 102, 255, 0.55),
-    0 5px 14px rgba(0, 102, 255, 0.4),
-    inset 0 2px 0 rgba(255, 255, 255, 0.45),
-    inset 0 -4px 10px rgba(0, 20, 80, 0.35);
-  z-index: 2;
-}
-
-/* мягкое пульсирующее свечение под кнопкой */
-.pb-dock-fab-glow {
-  position: absolute;
-  top: -8px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 88px;
-  height: 88px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(0, 102, 255, 0.5) 0%, transparent 66%);
-  filter: blur(10px);
-  opacity: 0.7;
-  z-index: 1;
-  pointer-events: none;
-  animation: pb-dock-fab-pulse 3s ease-in-out infinite;
-}
-
-.pb-dock-fab.active .pb-dock-fab-inner {
-  box-shadow:
-    0 14px 32px rgba(0, 102, 255, 0.68),
-    0 6px 16px rgba(0, 102, 255, 0.5),
-    0 0 0 4px color-mix(in srgb, #0066ff 28%, transparent),
-    inset 0 2px 0 rgba(255, 255, 255, 0.5),
-    inset 0 -4px 10px rgba(0, 20, 80, 0.35);
-}
-
-@keyframes pb-dock-fab-pulse {
-  0%, 100% { opacity: 0.5; transform: translateX(-50%) scale(1); }
-  50% { opacity: 0.85; transform: translateX(-50%) scale(1.12); }
-}
-
-.pb-dock-fab-label {
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 1;
-  color: var(--pb-dock-label);
-  transition: color 0.2s ease;
-}
-
-.pb-dock-fab-label.active {
-  color: var(--pb-dock-label-active);
-}
-
-@media (max-width: 360px) {
-  .pb-dock-fab-inner {
-    width: 58px;
-    height: 58px;
-  }
-  .pb-dock-label,
-  .pb-dock-fab-label {
-    font-size: 9px;
-  }
-}
-
-/* ============================================================
    СТРАНИЦА ЧАТА СООБЩЕСТВА
    ============================================================ */
 .pb-chat-hero .pb-chat-online {
@@ -14929,3 +14731,85 @@ body {
   cursor: not-allowed;
 }
 
+
+/* ----- Модерация: кнопка ⋯, меню, баннер блокировки ----- */
+.pb-chat-menu-btn {
+  margin-left: auto;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 16px;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 8px;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+
+.pb-chat-menu-btn:hover {
+  opacity: 1;
+  background: color-mix(in srgb, var(--text-secondary) 12%, transparent);
+}
+
+.pb-chat-menu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: 6px;
+  min-width: 180px;
+  padding: 6px;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 5;
+}
+
+.pb-chat-menu button {
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.pb-chat-menu button:hover {
+  background: color-mix(in srgb, var(--text-secondary) 12%, transparent);
+}
+
+.pb-chat-menu button.danger {
+  color: #ff4d6d;
+}
+
+.pb-chat-menu button.danger:hover {
+  background: color-mix(in srgb, #ff4d6d 14%, transparent);
+}
+
+.pb-chat-blocked-banner {
+  padding: 16px;
+  margin: 12px;
+  text-align: center;
+  border-radius: 14px;
+  background: color-mix(in srgb, #ff4d6d 14%, transparent);
+  color: #ff4d6d;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.pb-chat-badge.blocked {
+  background: color-mix(in srgb, #ff4d6d 18%, transparent);
+  color: #ff4d6d;
+}
+
+.pb-chat-bubble-wrap {
+  position: relative;
+}

@@ -71,6 +71,8 @@ def on_startup() -> None:
                 conn.execute(text("ALTER TABLE users ADD COLUMN accepted_at TIMESTAMPTZ"))
             if "accepted_version" not in user_columns:
                 conn.execute(text("ALTER TABLE users ADD COLUMN accepted_version VARCHAR(16)"))
+            if "is_blocked" not in user_columns:
+                conn.execute(text("ALTER TABLE users ADD COLUMN is_blocked BOOLEAN DEFAULT FALSE NOT NULL"))
 
             conn.execute(text("UPDATE users SET accepted_18_plus = FALSE WHERE accepted_18_plus IS NULL"))
             conn.execute(text("UPDATE users SET accepted_rules = FALSE WHERE accepted_rules IS NULL"))

@@ -172,6 +172,7 @@ export type ChatMessage = {
   author_name: string;
   author_username: string | null;
   author_initials?: string;
+  author_blocked?: boolean;
   body: string;
   created_at: string;
   mine: boolean;
@@ -179,6 +180,12 @@ export type ChatMessage = {
 
 export type ChatHistory = {
   messages: ChatMessage[];
+};
+
+export type ChatBlockResult = {
+  user_id: string;
+  is_blocked: boolean;
+  name: string;
 };
 
 export type SupportActionLog = {
@@ -490,6 +497,14 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ body }),
     }),
+  chatDeleteMessage: (messageId: string) =>
+    request<{ deleted: boolean; id: string }>(`/chat/messages/${messageId}`, {
+      method: "DELETE",
+    }),
+  chatBlockUser: (userId: string) =>
+    request<ChatBlockResult>(`/chat/users/${userId}/block`, { method: "POST" }),
+  chatUnblockUser: (userId: string) =>
+    request<ChatBlockResult>(`/chat/users/${userId}/unblock`, { method: "POST" }),
 
   supportDialogs: (params?: { q?: string; status?: SupportDialogStatus | "all"; unread_only?: boolean; limit?: number }) => {
     const search = new URLSearchParams();

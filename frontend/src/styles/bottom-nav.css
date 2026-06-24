@@ -1,0 +1,177 @@
+/* ============================================================
+   НИЖНЯЯ НАВИГАЦИЯ — сплошная панель + парящая FAB «Сигналы»
+   Чистый минималистичный дизайн (референс-скрин)
+   ============================================================ */
+
+.pb-dock {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+  pointer-events: none;
+  /* поднимаем панель на safe-area для iPhone */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ---- Контейнер-впадина: фон панели с дугой под FAB ---- */
+.pb-dock-notch-bg {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  transform: translateX(-50%);
+  width: 78px;
+  height: 30px;
+  overflow: visible;
+  pointer-events: none;
+}
+.pb-dock-notch-bg svg {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+
+/* ---- Единая панель во весь экран ---- */
+.pb-dock-bar {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  align-items: center;
+  width: 100%;
+  height: 62px;
+  background: var(--pb-nav-bg);
+  border-top: 0.5px solid var(--pb-nav-border);
+  box-shadow: 0 -1px 0 var(--pb-nav-border);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  pointer-events: auto;
+}
+
+/* тема-зависимые цвета */
+:root[data-theme="dark"] {
+  --pb-nav-bg: color-mix(in srgb, #0e1118 78%, transparent);
+  --pb-nav-border: rgba(255, 255, 255, 0.06);
+  --pb-nav-label: #6b7280;
+  --pb-nav-label-active: #ffffff;
+  --pb-nav-icon: #6b7280;
+  --pb-nav-icon-active: #0066ff;
+}
+:root[data-theme="light"] {
+  --pb-nav-bg: color-mix(in srgb, #ffffff 90%, transparent);
+  --pb-nav-border: rgba(0, 0, 0, 0.06);
+  --pb-nav-label: #9ca3af;
+  --pb-nav-label-active: #111827;
+  --pb-nav-icon: #9ca3af;
+  --pb-nav-icon-active: #0066ff;
+}
+
+/* ---- Боковая кнопка ---- */
+.pb-dock-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  height: 100%;
+  padding: 6px 2px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--pb-nav-icon);
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.18s ease;
+}
+
+.pb-dock-item.active {
+  color: var(--pb-nav-icon-active);
+}
+
+.pb-dock-item:active {
+  transform: scale(0.9);
+}
+
+.pb-dock-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+  width: 24px;
+}
+
+.pb-dock-label {
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.1px;
+  color: var(--pb-nav-label);
+  transition: color 0.18s ease;
+}
+
+.pb-dock-item.active .pb-dock-label {
+  color: var(--pb-nav-label-active);
+}
+
+/* пустой слот-разделитель под парящую кнопку */
+.pb-dock-notch-slot {
+  height: 100%;
+  pointer-events: none;
+}
+
+/* ---- Парящая FAB «Сигналы» ---- */
+.pb-dock-fab {
+  position: absolute;
+  left: 50%;
+  bottom: calc(26px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  pointer-events: auto;
+  z-index: 61;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pb-dock-fab-inner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  color: #ffffff;
+  background: linear-gradient(160deg, #2f80ff 0%, #0066ff 50%, #1850d8 100%);
+  box-shadow:
+    0 8px 20px rgba(0, 102, 255, 0.45),
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -2px 6px rgba(0, 20, 80, 0.3);
+  transition: box-shadow 0.2s ease;
+}
+
+.pb-dock-fab.active .pb-dock-fab-inner {
+  box-shadow:
+    0 8px 22px rgba(0, 102, 255, 0.55),
+    0 0 0 4px rgba(0, 102, 255, 0.18),
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -2px 6px rgba(0, 20, 80, 0.3);
+}
+
+.pb-dock-fab-label {
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--pb-nav-label);
+  transition: color 0.18s ease;
+}
+
+.pb-dock-fab-label.active {
+  color: var(--pb-nav-icon-active);
+}
