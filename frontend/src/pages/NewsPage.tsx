@@ -114,10 +114,13 @@ export function NewsPage() {
 
       {loading ? (
         <div className="pb-news-list2" aria-hidden="true">
+          <div className="pb-news-featured pb-news-skeleton">
+            <div className="pb-news-featured-cover pb-news-card2-cover fallback" />
+          </div>
           {[0, 1, 2].map((i) => (
-            <div key={i} className="pb-news-card2 pb-news-skeleton">
-              <div className="pb-news-card2-cover fallback" />
-              <div className="pb-news-card2-body">
+            <div key={i} className="pb-news-row pb-news-skeleton">
+              <div className="pb-news-row-thumb pb-news-card2-cover fallback" />
+              <div className="pb-news-row-body">
                 <span className="pb-news-skel-line pb-news-skel-title" />
                 <span className="pb-news-skel-line pb-news-skel-text" />
                 <span className="pb-news-skel-line pb-news-skel-meta" />
@@ -142,20 +145,39 @@ export function NewsPage() {
 
       {!loading && !error && ordered.length > 0 ? (
         <div className="pb-news-list2">
-          {ordered.map((item) => {
+          {ordered.map((item, idx) => {
             const cat = categoryKey(item.category);
+            const isFeatured = idx === 0 && tab === "all";
+            if (isFeatured) {
+              return (
+                <Link key={item.id} className="pb-news-featured" to={`/news/${item.id}`}>
+                  <div className={`pb-news-featured-cover ${item.cover_url ? "" : "fallback"}`}>
+                    {item.cover_url ? <img src={item.cover_url} alt="" loading="lazy" /> : null}
+                    <div className="pb-news-featured-overlay" />
+                    <span className={`pb-news-featured-badge ${cat}`}>{t(`news.cat.${cat}`)}</span>
+                  </div>
+                  <div className="pb-news-featured-body">
+                    <h3 className="pb-news-featured-title">{item.title}</h3>
+                    {item.summary ? <p className="pb-news-featured-summary">{item.summary}</p> : null}
+                    <div className="pb-news-featured-meta">
+                      <span>{formatDate(item.published_at, language, t("common.noDate"))}</span>
+                      <span className="dot" />
+                      <span>{t("news.minRead", { min: readMinutes(item.body) })}</span>
+                    </div>
+                  </div>
+                </Link>
+              );
+            }
             return (
-              <Link key={item.id} className="pb-news-card2" to={`/news/${item.id}`}>
-                {/* обложка СВЕРХУ */}
-                <div className={`pb-news-card2-cover ${item.cover_url ? "" : "fallback"}`}>
+              <Link key={item.id} className="pb-news-row" to={`/news/${item.id}`}>
+                <div className={`pb-news-row-thumb ${item.cover_url ? "" : "fallback"}`}>
                   {item.cover_url ? <img src={item.cover_url} alt="" loading="lazy" /> : null}
-                  <span className={`pb-news-card2-badge ${cat}`}>{t(`news.cat.${cat}`)}</span>
+                  <span className={`pb-news-row-badge ${cat}`}>{t(`news.cat.${cat}`)}</span>
                 </div>
-                {/* контент снизу */}
-                <div className="pb-news-card2-body">
-                  <h3 className="pb-news-card2-title">{item.title}</h3>
-                  {item.summary ? <p className="pb-news-card2-summary">{item.summary}</p> : null}
-                  <div className="pb-news-card2-meta">
+                <div className="pb-news-row-body">
+                  <h3 className="pb-news-row-title">{item.title}</h3>
+                  {item.summary ? <p className="pb-news-row-summary">{item.summary}</p> : null}
+                  <div className="pb-news-row-meta">
                     <span>{formatDate(item.published_at, language, t("common.noDate"))}</span>
                     <span className="dot" />
                     <span>{t("news.minRead", { min: readMinutes(item.body) })}</span>
