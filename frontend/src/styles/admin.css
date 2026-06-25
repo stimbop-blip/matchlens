@@ -494,31 +494,39 @@
 }
 
 /* ===================================================================
-   Закреплённые табы админки — вынесены из .pb-premium-panel.
-   Раньше табы лежали ВНУТРИ панели с backdrop-filter: blur(),
-   который создаёт содержащий блок и ломает position: sticky:
-   при скролле табы оставляли «призрачные» следы и наползали на
-   контент (см. скриншот бага). Теперь табы — прямой потомок
-   .pb-screen-admin, без вложенности в backdrop-filter.
+   Полоса табов админки — position: fixed (надёжно в WebView Telegram).
+   Раньше использовали position: sticky ВНУТРИ .pb-premium-panel: её
+   backdrop-filter + transform-анимация (pb-reveal) создавали containing
+   block и заставляли sticky «ездить»/дрожать при скролле. Fixed-полоса
+   приклеена к вьюпорту и не зависит от вложенности/предков.
    =================================================================== */
 
-/* На /admin верхняя шапка приложения скрыта (только spacer),
-   поэтому прижимаем табы к верху вьюпорта с минимальным отступом. */
-.admin-tabs-wrap.admin-tabs-floating {
-  position: sticky;
+/* Подкладка: занимает высоту фиксированной полосы, чтобы контент под
+   ней не начинался под табами и не «прыгал». */
+.admin-tabs-spacer {
+  height: calc(var(--admin-tabs-h, 120px) + 12px);
+}
+
+/* Сама зафиксированная полоса. */
+.admin-tabs-wrap.admin-tabs-fixed {
+  position: fixed;
   top: 6px;
-  z-index: 18;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(560px, 100%);
+  z-index: 25;
   margin: 0;
   padding: 8px;
   border-radius: 14px;
   border: 1px solid color-mix(in srgb, var(--border-soft) 90%, transparent);
-  /* НЕ используем backdrop-filter: он и портил рендер. Полупрозрачный
-     фон достаточен, чтобы контент под табами читался под прилипшей полосой. */
-  background: color-mix(in srgb, var(--surface-1) 94%, transparent);
+  /* НЕ backdrop-filter — он провоцировал рендер-баги в WebView.
+     Плотный полупрозрачный фон + лёгкая тень дают нужный контраст. */
+  background: color-mix(in srgb, var(--surface-1) 96%, transparent);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
 }
 
 @media (max-width: 760px) {
-  .admin-tabs-wrap.admin-tabs-floating {
+  .admin-tabs-wrap.admin-tabs-fixed {
     top: 6px;
     padding: 7px;
   }

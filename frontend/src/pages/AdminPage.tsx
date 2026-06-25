@@ -130,10 +130,14 @@ export function AdminPage() {
           />
         </section>
 
-        {/* Табы вынесены ИЗ .pb-premium-panel (там backdrop-filter, который
-            ломает sticky и оставляет «призрачные» следы при скролле в TG).
-            Теперь это прямой потомок .pb-screen-admin — без содержащего блока. */}
-        <div className="admin-tabs-wrap admin-tabs-mobile admin-tabs-floating">
+        {/* Spacer: занимает место, которое займёт зафиксированная полоса табов,
+            чтобы контент под ней не «прыгал» и не закрывался. */}
+        <div className="admin-tabs-spacer" aria-hidden="true" />
+
+        {/* Полоса табов зафиксирована сверху вьюпорта. Раньше был position: sticky
+            внутри панели с backdrop-filter — в WebView Telegram он «ездил» и дрожал
+            при скролле. Fixed надёжно фиксирует полосу в любом WebView. */}
+        <div className="admin-tabs-wrap admin-tabs-mobile admin-tabs-fixed">
           <div className="admin-tabs" role="tablist" aria-label={tx("Разделы админки", "Admin sections")}>
             {TABS.map((item) => (
               <button
