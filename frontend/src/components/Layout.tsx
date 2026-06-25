@@ -115,15 +115,15 @@ export function Layout({ children }: PropsWithChildren) {
     <div className="pb-app-shell">
       <div className="pb-backdrop-glow" aria-hidden="true" />
 
-      <header className={`pb-app-header${isHome ? " pb-app-header-home" : " pb-app-header-minimal"}`}>
-        <div className="pb-brand-row">
-          <span className="pb-brand-chip">PIT BET</span>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            {staffRole && location.pathname !== "/menu" ? (
-              <span className="pb-role-chip">{staffRole === "admin" ? t("layout.role.admin") : t("layout.role.support")}</span>
-            ) : null}
-            {isHome ? <GiftBox /> : null}
-            {isHome ? (
+      {isHome ? (
+        <header className="pb-app-header pb-app-header-home">
+          <div className="pb-brand-row">
+            <span className="pb-brand-chip">PIT BET</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {staffRole && location.pathname !== "/menu" ? (
+                <span className="pb-role-chip">{staffRole === "admin" ? t("layout.role.admin") : t("layout.role.support")}</span>
+              ) : null}
+              <GiftBox />
               <button
                 type="button"
                 onClick={() => setTheme(nextTheme)}
@@ -153,16 +153,14 @@ export function Layout({ children }: PropsWithChildren) {
                   </svg>
                 )}
               </button>
-            ) : null}
+            </div>
           </div>
-        </div>
-        {isHome ? (
-          <>
-            <h1>{t(meta.titleKey)}</h1>
-            <p>{t(meta.subtitleKey)}</p>
-          </>
-        ) : null}
-      </header>
+          <h1>{t(meta.titleKey)}</h1>
+          <p>{t(meta.subtitleKey)}</p>
+        </header>
+      ) : (
+        <div className="pb-app-header-spacer" aria-hidden="true" />
+      )}
 
       <main key={location.pathname} className="pb-scene">
         {children}
