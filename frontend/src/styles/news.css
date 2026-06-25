@@ -435,3 +435,67 @@
 .pb-news-editor-btn:disabled {
   opacity: 0.5;
 }
+
+/* ── Скелетон при загрузке новостей (чтобы не было пустого экрана) ── */
+.pb-news-skeleton {
+  pointer-events: none !important;
+  opacity: 1 !important;
+}
+
+.pb-news-skel-line {
+  display: block !important;
+  border-radius: 7px !important;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--surface-3, #1c2230) 70%, transparent) 25%,
+    color-mix(in srgb, var(--surface-3, #1c2230) 40%, transparent) 50%,
+    color-mix(in srgb, var(--surface-3, #1c2230) 70%, transparent) 75%
+  ) !important;
+  background-size: 200% 100% !important;
+  animation: pb-news-skel 1.3s ease-in-out infinite !important;
+}
+
+.pb-news-skel-title {
+  width: 75% !important;
+  height: 16px !important;
+  margin-bottom: 8px !important;
+}
+
+.pb-news-skel-text {
+  width: 95% !important;
+  height: 12px !important;
+  margin-bottom: 6px !important;
+}
+
+.pb-news-skel-meta {
+  width: 40% !important;
+  height: 11px !important;
+  margin-top: 10px !important;
+}
+
+.pb-news-skeleton .pb-news-card2-cover.fallback {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--surface-3, #1c2230) 70%, transparent) 25%,
+    color-mix(in srgb, var(--surface-3, #1c2230) 40%, transparent) 50%,
+    color-mix(in srgb, var(--surface-3, #1c2230) 70%, transparent) 75%
+  ) !important;
+  background-size: 200% 100% !important;
+  animation: pb-news-skel 1.3s ease-in-out infinite !important;
+}
+
+@keyframes pb-news-skel {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+:root[data-theme="light"] .pb-news-skel-line,
+:root[data-theme="light"] .pb-news-skeleton .pb-news-card2-cover.fallback {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, #e2e8f0 70%, transparent) 25%,
+    color-mix(in srgb, #f1f5f9 40%, transparent) 50%,
+    color-mix(in srgb, #e2e8f0 70%, transparent) 75%
+  ) !important;
+  background-size: 200% 100% !important;
+}

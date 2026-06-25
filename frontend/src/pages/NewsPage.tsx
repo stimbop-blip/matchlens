@@ -112,7 +112,20 @@ export function NewsPage() {
         ))}
       </div>
 
-      {loading ? <p className="pb-empty-state">{t("news.loading")}</p> : null}
+      {loading ? (
+        <div className="pb-news-list2" aria-hidden="true">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="pb-news-card2 pb-news-skeleton">
+              <div className="pb-news-card2-cover fallback" />
+              <div className="pb-news-card2-body">
+                <span className="pb-news-skel-line pb-news-skel-title" />
+                <span className="pb-news-skel-line pb-news-skel-text" />
+                <span className="pb-news-skel-line pb-news-skel-meta" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : null}
 
       {!loading && error ? (
         <div className="pb-error-state">
