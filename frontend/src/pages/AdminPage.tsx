@@ -128,28 +128,33 @@ export function AdminPage() {
             promoCodes={state.promoCodes}
             onAddPrediction={onAddPredictionFromDashboard}
           />
+        </section>
 
-          <div className="admin-tabs-wrap admin-tabs-mobile">
-            <div className="admin-tabs" role="tablist" aria-label={tx("Разделы админки", "Admin sections")}>
-              {TABS.map((item) => (
-                <button
-                  type="button"
-                  key={item.key}
-                  role="tab"
-                  aria-selected={tab === item.key}
-                  className={tab === item.key ? "tab active" : "tab"}
-                  onClick={() => {
-                    triggerHaptic("selection");
-                    setTab(item.key);
-                  }}
-                >
-                  <span className="tab-emoji" aria-hidden="true">{item.emoji}</span>
-                  {isRu ? item.ru : item.en}
-                </button>
-              ))}
-            </div>
+        {/* Табы вынесены ИЗ .pb-premium-panel (там backdrop-filter, который
+            ломает sticky и оставляет «призрачные» следы при скролле в TG).
+            Теперь это прямой потомок .pb-screen-admin — без содержащего блока. */}
+        <div className="admin-tabs-wrap admin-tabs-mobile admin-tabs-floating">
+          <div className="admin-tabs" role="tablist" aria-label={tx("Разделы админки", "Admin sections")}>
+            {TABS.map((item) => (
+              <button
+                type="button"
+                key={item.key}
+                role="tab"
+                aria-selected={tab === item.key}
+                className={tab === item.key ? "tab active" : "tab"}
+                onClick={() => {
+                  triggerHaptic("selection");
+                  setTab(item.key);
+                }}
+              >
+                <span className="tab-emoji" aria-hidden="true">{item.emoji}</span>
+                {isRu ? item.ru : item.en}
+              </button>
+            ))}
           </div>
+        </div>
 
+        <section className="pb-premium-panel pb-admin-shell pb-admin-mobile pb-admin-v4">
           {message ? <p className={`notice admin-toast ${messageTone}`}>{message}</p> : null}
           {loading ? <p className="muted">{tx("Обновляем данные...", "Refreshing data...")}</p> : null}
 

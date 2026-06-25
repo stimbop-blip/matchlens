@@ -492,3 +492,34 @@
     top: 6px;
   }
 }
+
+/* ===================================================================
+   Закреплённые табы админки — вынесены из .pb-premium-panel.
+   Раньше табы лежали ВНУТРИ панели с backdrop-filter: blur(),
+   который создаёт содержащий блок и ломает position: sticky:
+   при скролле табы оставляли «призрачные» следы и наползали на
+   контент (см. скриншот бага). Теперь табы — прямой потомок
+   .pb-screen-admin, без вложенности в backdrop-filter.
+   =================================================================== */
+
+/* На /admin верхняя шапка приложения скрыта (только spacer),
+   поэтому прижимаем табы к верху вьюпорта с минимальным отступом. */
+.admin-tabs-wrap.admin-tabs-floating {
+  position: sticky;
+  top: 6px;
+  z-index: 18;
+  margin: 0;
+  padding: 8px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--border-soft) 90%, transparent);
+  /* НЕ используем backdrop-filter: он и портил рендер. Полупрозрачный
+     фон достаточен, чтобы контент под табами читался под прилипшей полосой. */
+  background: color-mix(in srgb, var(--surface-1) 94%, transparent);
+}
+
+@media (max-width: 760px) {
+  .admin-tabs-wrap.admin-tabs-floating {
+    top: 6px;
+    padding: 7px;
+  }
+}
