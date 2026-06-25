@@ -2197,10 +2197,10 @@ a:focus {
 }
 
 .pb-scene {
-  margin-top: 14px;
+  margin-top: 0;
   display: grid;
   gap: 12px;
-  animation: pb-scene-rise 0.35s ease;
+  animation: pb-scene-rise 0.3s ease;
 }
 
 .pb-panel,
@@ -3652,11 +3652,9 @@ a:focus {
 @keyframes pb-scene-rise {
   from {
     opacity: 0;
-    transform: translateY(6px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 

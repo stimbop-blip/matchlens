@@ -1526,10 +1526,9 @@ input, textarea, button {
   padding-bottom: 6px !important;
 }
 
-/* На всех не-главных разделах шапки (PIT BET / роль) нет совсем — только отступ сверху */
+/* На всех не-главных разделах шапки нет совсем. Контент сразу вверху. */
 .pb-app-header-spacer {
-  height: 12px !important;
-  flex: 0 0 auto !important;
+  height: 0 !important;
 }
 
 
