@@ -114,9 +114,11 @@ export function NewsPage() {
 
       {loading ? (
         <div className="pb-news-list2" aria-hidden="true">
-          <div className="pb-news-featured pb-news-skeleton">
-            <div className="pb-news-featured-cover pb-news-card2-cover fallback" />
-          </div>
+          {tab === "all" ? (
+            <div className="pb-news-featured pb-news-skeleton">
+              <div className="pb-news-featured-cover pb-news-card2-cover fallback" />
+            </div>
+          ) : null}
           {[0, 1, 2].map((i) => (
             <div key={i} className="pb-news-row pb-news-skeleton">
               <div className="pb-news-row-thumb pb-news-card2-cover fallback" />
