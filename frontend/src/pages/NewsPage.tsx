@@ -114,11 +114,9 @@ export function NewsPage() {
 
       {loading ? (
         <div className="pb-news-list2" aria-hidden="true">
-          {tab === "all" ? (
-            <div className="pb-news-featured pb-news-skeleton">
-              <div className="pb-news-featured-cover pb-news-card2-cover fallback" />
-            </div>
-          ) : null}
+          <div className="pb-news-featured pb-news-skeleton">
+            <div className="pb-news-featured-cover pb-news-card2-cover fallback" />
+          </div>
           {[0, 1, 2].map((i) => (
             <div key={i} className="pb-news-row pb-news-skeleton">
               <div className="pb-news-row-thumb pb-news-card2-cover fallback" />
@@ -149,7 +147,7 @@ export function NewsPage() {
         <div className="pb-news-list2">
           {ordered.map((item, idx) => {
             const cat = categoryKey(item.category);
-            const isFeatured = idx === 0 && tab === "all";
+            const isFeatured = idx === 0;
             if (isFeatured) {
               return (
                 <Link key={item.id} className="pb-news-featured" to={`/news/${item.id}`}>
