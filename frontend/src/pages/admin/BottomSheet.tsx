@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 type BottomSheetProps = {
   open: boolean;
@@ -50,7 +51,14 @@ export function BottomSheet({ open, title, onClose, children }: BottomSheetProps
 
   if (!mounted) return null;
 
-  return (
+  // Рендерим в document.body через портал.
+  // Это критично: .pb-premium-panel (предок шторки в админке) имеет
+  // backdrop-filter: blur(...), а любой backdrop-filter/filter/transform/will-change
+  // на предке создаёт containing block для position:fixed. Из-за этого шторка
+  // позиционировалась относительно панели, а не вьюпорта — выезжала криво,
+  // затемнение было частичным (просвечивал текст карточек), фон листался,
+  // а кнопка × не попадала по тапу. Портал разрывает эту цепочку.
+  return createPortal(
     <div
       className={`admin-sheet-backdrop bs-bottom ${visible ? "visible" : ""}`}
       role="presentation"
@@ -72,6 +80,7 @@ export function BottomSheet({ open, title, onClose, children }: BottomSheetProps
         </div>
         <div className="admin-sheet-body">{children}</div>
       </section>
-    </div>
+    </div>,
+    document.body,
   );
 }

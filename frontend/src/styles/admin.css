@@ -86,6 +86,25 @@
   border-radius: 11px;
 }
 
+/* Кнопка очистки застрявшего черновика */
+.admin-clear-draft {
+  margin: 4px auto 2px;
+  padding: 8px 14px;
+  border: 1px dashed color-mix(in srgb, var(--text-muted) 50%, transparent);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.admin-clear-draft:hover {
+  color: var(--text-secondary);
+  border-color: color-mix(in srgb, var(--text-muted) 80%, transparent);
+}
+
 /* ----- Чипы быстрых пресетов времени ----- */
 
 .admin-time-presets {

@@ -430,6 +430,23 @@ export function PredictionSheet({
             )}
           </button>
         </div>
+
+        {/* Очистка застрявшего черновика — чтобы старые подсказки не мешали */}
+        {mode === "create" ? (
+          <button
+            type="button"
+            className="admin-clear-draft"
+            onClick={() => {
+              if (!window.confirm(tx("Очистить черновик и начать заново?", "Clear the draft and start over?"))) return;
+              clearStoredDraft();
+              setDraft(createEmptyPredictionDraft());
+              setSportCustomMode(false);
+              hydratedRef.current = true;
+            }}
+          >
+            {tx("🗑 Очистить черновик", "🗑 Clear draft")}
+          </button>
+        ) : null}
       </form>
     </BottomSheet>
   );
