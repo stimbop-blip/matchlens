@@ -1,49 +1,18 @@
-import { Suspense, lazy, useEffect, useMemo, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 
 import { useI18n } from "../app/i18n";
 import { AppDisclaimer } from "../components/AppDisclaimer";
 import { Layout } from "../components/Layout";
-import { ErrorBoundary } from "../components/motion/ErrorBoundary";
-import { HeroPanel } from "../components/premium/HeroPanel";
 import { SignalCard } from "../components/premium/SignalCard";
-import { PremiumKpi } from "../components/premium/PremiumKpi";
-import { AIScanningLoader } from "../components/ui/AIScanningLoader";
-import { SignalPerformanceChart } from "../components/ui/SignalPerformanceChart";
 import { SkeletonBlock } from "../components/ui";
 import { api, type Prediction } from "../services/api";
 import { triggerHaptic } from "../services/telegram";
 
-const SignalCard3D = lazy(() => import("../components/three/SignalCard3D").then((module) => ({ default: module.SignalCard3D })));
-
-type AccessFilter = "all" | "free" | "premium" | "vip";
-type ModeFilter = "all" | "live" | "prematch";
-type StatusFilter = "all" | "pending" | "won" | "lost" | "refund";
-type RiskFilter = "all" | "low" | "medium" | "high";
-
-type GroupedDay = {
-  key: string;
-  list: Prediction[];
-};
-
-type HeroTrendPoint = {
-  x: number;
-  y: number;
-  score: number;
-  signal: number;
-  won: number;
-  lost: number;
-  refund: number;
-  pending: number;
-  status: Prediction["status"];
-  label: string;
-};
+type QuickFilter = "all" | "live" | "soon" | "won" | "vip";
 
 const PREDICTIONS_LIMIT = 100;
-
-function clampNumber(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
-}
 
 function parseErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error && error.message.trim()) return error.message;
@@ -63,11 +32,9 @@ function formatDate(value: string, language: "ru" | "en") {
 
 function dayHeading(key: string, language: "ru" | "en", t: (key: string) => string) {
   if (key === "unknown") return t("common.noDate");
-
   const [y, m, d] = key.split("-").map(Number);
   const date = new Date(y, (m || 1) - 1, d || 1);
   if (Number.isNaN(date.getTime())) return t("common.noDate");
-
   const now = new Date();
   const target = new Date(date.getFullYear(), date.getMonth(), date.getDate());
   const current = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -75,11 +42,7 @@ function dayHeading(key: string, language: "ru" | "en", t: (key: string) => stri
   if (diff === 0) return t("feed.day.today");
   if (diff === 1) return t("feed.day.tomorrow");
   if (diff === -1) return t("feed.day.yesterday");
-  return target.toLocaleDateString(language === "ru" ? "ru-RU" : "en-US", {
-    day: "numeric",
-    month: "long",
-    weekday: "long",
-  });
+  return target.toLocaleDateString(language === "ru" ? "ru-RU" : "en-US", { day: "numeric", month: "long" });
 }
 
 function dayKey(value: string): string {
@@ -117,110 +80,7 @@ function teaser(value: string | null | undefined, fallback: string) {
   return `${source.slice(0, 147).trim()}...`;
 }
 
-function predictionTime(prediction: Prediction): number {
-  const parsed = new Date(prediction.published_at || prediction.event_start_at).getTime();
-  return Number.isNaN(parsed) ? 0 : parsed;
-}
-
-function trendDelta(status: Prediction["status"]): number {
-  if (status === "won") return 1;
-  if (status === "lost") return -0.92;
-  if (status === "refund") return 0.16;
-  return 0.26;
-}
-
-function trendLabel(value: string, language: "ru" | "en"): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "--";
-  return date.toLocaleDateString(language === "ru" ? "ru-RU" : "en-US", {
-    day: "2-digit",
-    month: "2-digit",
-  });
-}
-
-function smoothSvgPath(points: Array<{ x: number; y: number }>): string {
-  if (points.length === 0) return "";
-  if (points.length === 1) return `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`;
-
-  let path = `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`;
-  for (let i = 1; i < points.length; i += 1) {
-    const p0 = points[i - 1];
-    const p1 = points[i];
-    const pPrev = points[i - 2] || p0;
-    const pNext = points[i + 1] || p1;
-
-    const cp1x = p0.x + (p1.x - pPrev.x) / 6;
-    const cp1y = p0.y + (p1.y - pPrev.y) / 6;
-    const cp2x = p1.x - (pNext.x - p0.x) / 6;
-    const cp2y = p1.y - (pNext.y - p0.y) / 6;
-    path += ` C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)}, ${cp2x.toFixed(2)} ${cp2y.toFixed(2)}, ${p1.x.toFixed(2)} ${p1.y.toFixed(2)}`;
-  }
-
-  return path;
-}
-
-function buildHeroTrend(items: Prediction[], language: "ru" | "en"): HeroTrendPoint[] {
-  if (items.length === 0) return [];
-
-  const sorted = [...items].sort((a, b) => predictionTime(a) - predictionTime(b));
-  const latest = sorted.slice(-12);
-  const series = latest.length === 1 ? [latest[0], latest[0]] : latest;
-
-  let cumulative = 0;
-  let signal = 0;
-  let won = 0;
-  let lost = 0;
-  let refund = 0;
-  let pending = 0;
-
-  const steps = series.map((item) => {
-    if (item.status === "won") won += 1;
-    if (item.status === "lost") lost += 1;
-    if (item.status === "refund") refund += 1;
-    if (item.status === "pending") pending += 1;
-
-    cumulative += trendDelta(item.status);
-    const oddsValue = Number(item.odds);
-    const oddsBias = Number.isFinite(oddsValue) ? clampNumber((oddsValue - 1.6) * 0.2, -0.42, 0.56) : 0;
-    const signalDelta =
-      item.status === "won"
-        ? 1.34 + oddsBias
-        : item.status === "lost"
-          ? -1.08 + oddsBias * 0.7
-          : item.status === "refund"
-            ? 0.26 + oddsBias * 0.55
-            : 0.44 + oddsBias * 0.4;
-    signal += signalDelta;
-
-    return {
-      status: item.status,
-      score: cumulative,
-      signal,
-      won,
-      lost,
-      refund,
-      pending,
-      label: trendLabel(item.event_start_at || item.published_at || "", language),
-    };
-  });
-
-  const minScore = Math.min(...steps.map((step) => step.score));
-  const maxScore = Math.max(...steps.map((step) => step.score));
-  const span = maxScore - minScore || 1;
-
-  return steps.map((step, index) => ({
-    x: steps.length === 1 ? 0 : index / (steps.length - 1),
-    y: 1 - (step.score - minScore) / span,
-    score: step.score,
-    signal: step.signal,
-    won: step.won,
-    lost: step.lost,
-    refund: step.refund,
-    pending: step.pending,
-    status: step.status,
-    label: step.label,
-  }));
-}
+type GroupedDay = { key: string; list: Prediction[] };
 
 export function FeedPage({ useThreeCards = false }: { useThreeCards?: boolean } = {}) {
   const { t, language } = useI18n();
@@ -229,31 +89,15 @@ export function FeedPage({ useThreeCards = false }: { useThreeCards?: boolean } 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
-
-  const [access, setAccess] = useState<AccessFilter>("all");
-  const [mode, setMode] = useState<ModeFilter>("all");
-  const [status, setStatus] = useState<StatusFilter>("all");
-  const [risk, setRisk] = useState<RiskFilter>("all");
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-
-  const onFilterSelect = <T,>(setter: (value: T) => void, value: T) => {
-    triggerHaptic("selection");
-    setter(value);
-  };
+  const [filter, setFilter] = useState<QuickFilter>("all");
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     let alive = true;
     setLoading(true);
     setError("");
-
     api
-      .predictions({
-        access_level: access === "all" ? undefined : access,
-        mode: mode === "all" ? undefined : mode,
-        status: status === "all" ? undefined : status,
-        risk_level: risk === "all" ? undefined : risk,
-        limit: PREDICTIONS_LIMIT,
-      })
+      .predictions({ limit: PREDICTIONS_LIMIT })
       .then((list) => {
         if (!alive) return;
         setItems(list);
@@ -267,350 +111,221 @@ export function FeedPage({ useThreeCards = false }: { useThreeCards?: boolean } 
         if (!alive) return;
         setLoading(false);
       });
-
     return () => {
       alive = false;
     };
-  }, [access, mode, risk, status, reloadKey]);
+  }, [reloadKey]);
 
-  const groups = useMemo<GroupedDay[]>(() => {
-    const sorted = [...items].sort((a, b) => {
+  // Сортировка: свежие сверху
+  const sortedItems = useMemo(() => {
+    return [...items].sort((a, b) => {
       const left = new Date(a.published_at || a.event_start_at).getTime();
       const right = new Date(b.published_at || b.event_start_at).getTime();
       const leftSafe = Number.isNaN(left) ? 0 : left;
       const rightSafe = Number.isNaN(right) ? 0 : right;
       return rightSafe - leftSafe;
     });
+  }, [items]);
+
+  const now = Date.now();
+  const ONE_DAY = 86400000;
+
+  // Live-сигналы (для горизонтальной полосы)
+  const liveItems = useMemo(() => sortedItems.filter((item) => item.mode === "live" && item.status === "pending"), [sortedItems]);
+
+  // Фильтрация по быстрому фильтру + поиску
+  const filtered = useMemo(() => {
+    let list = sortedItems;
+    if (filter === "live") {
+      list = list.filter((item) => item.mode === "live" && item.status === "pending");
+    } else if (filter === "soon") {
+      list = list.filter((item) => {
+        const ts = new Date(item.event_start_at).getTime();
+        return item.mode !== "live" && item.status === "pending" && ts > now && ts - now < ONE_DAY;
+      });
+    } else if (filter === "won") {
+      list = list.filter((item) => item.status === "won");
+    } else if (filter === "vip") {
+      list = list.filter((item) => item.access_level === "premium" || item.access_level === "vip");
+    }
+
+    const q = query.trim().toLowerCase();
+    if (q) {
+      list = list.filter((item) =>
+        `${item.match_name} ${item.league || ""} ${item.sport_type} ${item.signal_type}`
+          .toLowerCase()
+          .includes(q),
+      );
+    }
+    return list;
+  }, [sortedItems, filter, query, now]);
+
+  // Группировка по дням
+  const groups = useMemo<GroupedDay[]>(() => {
     const map = new Map<string, Prediction[]>();
-    sorted.forEach((item) => {
+    filtered.forEach((item) => {
       const key = dayKey(item.event_start_at);
       if (!map.has(key)) map.set(key, []);
       map.get(key)?.push(item);
     });
     return Array.from(map.entries()).map(([key, list]) => ({ key, list }));
-  }, [items]);
+  }, [filtered]);
 
-  const modeOptions: Array<{ value: ModeFilter; label: string }> = [
-    { value: "all", label: t("common.all") },
-    { value: "live", label: t("common.live") },
-    { value: "prematch", label: t("common.prematch") },
-  ];
-
-  const statusOptions: Array<{ value: StatusFilter; label: string }> = [
-    { value: "all", label: t("common.all") },
-    { value: "pending", label: t("feed.status.pending") },
-    { value: "won", label: t("feed.status.won") },
-    { value: "lost", label: t("feed.status.lost") },
-    { value: "refund", label: t("feed.status.refund") },
-  ];
-
-  const accessOptions: Array<{ value: AccessFilter; label: string }> = [
-    { value: "all", label: t("common.all") },
-    { value: "free", label: t("common.free") },
-    { value: "premium", label: t("common.premium") },
-    { value: "vip", label: t("common.vip") },
-  ];
-
-  const riskOptions: Array<{ value: RiskFilter; label: string }> = [
-    { value: "all", label: t("common.all") },
-    { value: "low", label: t("common.risk.low") },
-    { value: "medium", label: t("common.risk.medium") },
-    { value: "high", label: t("common.risk.high") },
-  ];
-
-  const liveCount = items.filter((item) => item.mode === "live").length;
-  const premiumCount = items.filter((item) => item.access_level === "premium" || item.access_level === "vip").length;
+  const liveCount = liveItems.length;
   const pendingCount = items.filter((item) => item.status === "pending").length;
   const wonCount = items.filter((item) => item.status === "won").length;
-  const lostCount = items.filter((item) => item.status === "lost").length;
-  const refundCount = items.filter((item) => item.status === "refund").length;
   const hitRate = items.length > 0 ? Math.round((wonCount / items.length) * 100) : 0;
-  const heroTrend = useMemo(() => buildHeroTrend(items, language), [items, language]);
-  const chart = useMemo(() => {
-    if (heroTrend.length === 0) return null;
 
-    const width = 1000;
-    const height = 308;
-    const padX = 46;
-    const lineTop = 24;
-    const lineBottom = 184;
-    const chartHeight = lineBottom - lineTop;
-    const barsBaseY = 236;
-
-    const source = heroTrend.map((point) => ({
-      x: padX + point.x * (width - padX * 2),
-      score: point.score,
-      signal: point.signal,
-      won: point.won,
-      lost: point.lost,
-      refund: point.refund,
-      pending: point.pending,
-      status: point.status,
-      label: point.label,
-    }));
-
-    const scoreMin = Math.min(...source.map((point) => point.score));
-    const scoreMax = Math.max(...source.map((point) => point.score));
-    const scoreSpan = scoreMax - scoreMin || 1;
-    const signalMin = Math.min(...source.map((point) => point.signal));
-    const signalMax = Math.max(...source.map((point) => point.signal));
-    const signalSpan = signalMax - signalMin || 1;
-    const points = source.map((point) => ({
-      ...point,
-      y: lineTop + (1 - (point.score - scoreMin) / scoreSpan) * chartHeight,
-      sy: lineTop + (1 - (point.signal - signalMin) / signalSpan) * chartHeight,
-    }));
-
-    const linePath = smoothSvgPath(points);
-    const signalPath = smoothSvgPath(points.map((point) => ({ x: point.x, y: point.sy })));
-    const areaBaseY = lineBottom + 10;
-    const areaPath = `${linePath} L ${points[points.length - 1].x.toFixed(2)} ${areaBaseY.toFixed(2)} L ${points[0].x.toFixed(2)} ${areaBaseY.toFixed(2)} Z`;
-
-    const barWidth = clampNumber((width - padX * 2) / (points.length * 2.9), 8, 15);
-    const bars = points.map((point, index) => {
-      const previous = points[index - 1];
-      const delta = index === 0 ? point.score : point.score - previous.score;
-      const heightValue = clampNumber(Math.abs(delta) * 22, 5, 30);
-      const positive = delta >= 0;
-      return {
-        x: point.x - barWidth / 2,
-        y: positive ? barsBaseY - heightValue : barsBaseY,
-        width: barWidth,
-        height: heightValue,
-        positive,
-        status: point.status,
-      };
-    });
-
-    const axisIndices = [0, 0.25, 0.5, 0.75, 1].map((part) => Math.round((points.length - 1) * part));
-    const axisLabels = axisIndices.map((index) => points[index]?.label || "--");
-    const gridY = [0, 0.33, 0.66, 1].map((part) => lineTop + part * (lineBottom - lineTop));
-
-    const latestPoint = points[points.length - 1];
-    const previousPoint = points[points.length - 2] || latestPoint;
-    const latestSignal = Number(latestPoint.signal.toFixed(1));
-    const trendShift = Number((latestPoint.score - points[0].score).toFixed(1));
-    const momentum = Number((latestPoint.score - previousPoint.score).toFixed(2));
-    const signalShift = Number((latestPoint.signal - points[0].signal).toFixed(1));
-    const volatility = Number((bars.reduce((sum, bar) => sum + bar.height, 0) / (bars.length || 1)).toFixed(1));
-
-    return {
-      width,
-      height,
-      padX,
-      lineTop,
-      lineBottom,
-      barsBaseY,
-      points,
-      bars,
-      linePath,
-      signalPath,
-      areaPath,
-      axisLabels,
-      gridY,
-      latestSignal,
-      trendShift,
-      momentum,
-      signalShift,
-      volatility,
-    };
-  }, [heroTrend]);
-
-  const selectedPoint = chart ? chart.points[chart.points.length - 1] : null;
+  const quickFilters: Array<{ value: QuickFilter; label: string; count?: number }> = [
+    { value: "all", label: t("common.all"), count: items.length },
+    { value: "live", label: t("common.live"), count: liveCount },
+    { value: "soon", label: t("feed.quick.soon") },
+    { value: "won", label: t("feed.quick.won") },
+    { value: "vip", label: "VIP" },
+  ];
 
   return (
     <Layout>
       <div className="pb-screen pb-screen-feed">
-        <HeroPanel eyebrow="Signal Desk" title={t("feed.hero.title")} subtitle={t("feed.hero.subtitle")} right={<span className="pb-feed-v4-total">{items.length}</span>}>
-          <SignalPerformanceChart items={items} language={language} />
-      </HeroPanel>
-
-      <section className="pb-premium-panel pb-feed-v4-sticky pb-reveal">
-        <div className="pb-feed-v4-filter-stack">
-          <div className="pb-feed-v4-pill-row primary">
-            {modeOptions.map((item) => (
-              <button
-                key={item.value}
-                type="button"
-                className={item.value === mode ? "pb-feed-v4-pill active" : "pb-feed-v4-pill"}
-                onClick={() => onFilterSelect(setMode, item.value)}
-              >
-                {item.label}
-              </button>
-            ))}
+        {/* Компактная полоска статистики + кнопка «Статистика» */}
+        <div className="pb-feed-topbar">
+          <div className="pb-feed-stats-chips">
+            <span className="pb-feed-chip"><strong>{hitRate}%</strong>{t("feed.quick.hit")}</span>
+            {liveCount > 0 ? (
+              <span className="pb-feed-chip live"><span className="pb-feed-live-dot" />{liveCount} {t("feed.quick.liveShort")}</span>
+            ) : null}
+            <span className="pb-feed-chip">{pendingCount} {t("feed.quick.pending")}</span>
           </div>
+          <Link to="/stats" className="pb-feed-stats-btn" onClick={() => triggerHaptic("selection")}>
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M4 19V5M4 19h16M8 16v-4M12 16V8M16 16v-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            {t("feed.quick.stats")}
+          </Link>
+        </div>
 
-          <div className="pb-feed-v4-pill-row secondary">
-            {statusOptions.map((item) => (
-              <button
-                key={item.value}
-                type="button"
-                className={item.value === status ? "pb-feed-v4-pill soft active" : "pb-feed-v4-pill soft"}
-                onClick={() => onFilterSelect(setStatus, item.value)}
-              >
-                {item.label}
-              </button>
-            ))}
+        {/* Поиск по матчам */}
+        <div className="pb-feed-search">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
+            <line x1="16.5" y1="16.5" x2="21" y2="21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={t("feed.search.placeholder")}
+          />
+          {query ? (
+            <button type="button" className="pb-feed-search-clear" onClick={() => setQuery("")} aria-label="clear">×</button>
+          ) : null}
+        </div>
+
+        {/* Live-полоса (горизонтальный скролл живых матчей) */}
+        {liveItems.length > 0 ? (
+          <section className="pb-feed-live-rail">
+            <div className="pb-feed-live-head">
+              <span className="pb-feed-live-pulse" />
+              <span>{t("feed.live.railTitle")}</span>
+            </div>
+            <div className="pb-feed-live-scroller">
+              {liveItems.map((item) => (
+                <Link key={item.id} className="pb-feed-live-card" to={`/feed/${item.id}`} onClick={() => triggerHaptic("selection")}>
+                  <div className="pb-feed-live-card-top">
+                    <span className="pb-feed-live-sport">{item.sport_type}</span>
+                    <span className="pb-feed-live-kf">{item.odds.toFixed(2)}</span>
+                  </div>
+                  <strong className="pb-feed-live-match">{item.match_name}</strong>
+                  <span className="pb-feed-live-signal">{item.signal_type}</span>
+                </Link>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {/* Быстрые фильтры (сегменты) */}
+        <div className="pb-feed-segments" role="tablist">
+          {quickFilters.map((item) => (
             <button
+              key={item.value}
               type="button"
-              className={showAdvancedFilters ? "pb-feed-v4-pill subtle active" : "pb-feed-v4-pill subtle"}
+              role="tab"
+              aria-selected={filter === item.value}
+              className={`pb-feed-segment ${filter === item.value ? "active" : ""}`}
               onClick={() => {
                 triggerHaptic("selection");
-                setShowAdvancedFilters((prev) => !prev);
+                setFilter(item.value);
               }}
             >
-              {showAdvancedFilters ? t("feed.filter.advanced.hide") : t("feed.filter.advanced.show")}
+              {item.label}
+              {typeof item.count === "number" && item.count > 0 ? <span className="pb-feed-segment-count">{item.count}</span> : null}
             </button>
-          </div>
-
-          <AnimatePresence initial={false}>
-            {showAdvancedFilters ? (
-              <motion.div
-                className="pb-feed-v4-advanced-sheet"
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.2, ease: "easeOut" }}
-              >
-                <div>
-                  <small>{t("feed.filter.access")}</small>
-                  <div className="pb-feed-v4-pill-row">
-                    {accessOptions.map((item) => (
-                      <button
-                        key={item.value}
-                        type="button"
-                        className={item.value === access ? "pb-feed-v4-pill soft active" : "pb-feed-v4-pill soft"}
-                        onClick={() => onFilterSelect(setAccess, item.value)}
-                      >
-                        {item.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <small>{t("feed.filter.risk")}</small>
-                  <div className="pb-feed-v4-pill-row">
-                    {riskOptions.map((item) => (
-                      <button
-                        key={item.value}
-                        type="button"
-                        className={item.value === risk ? "pb-feed-v4-pill subtle active" : "pb-feed-v4-pill subtle"}
-                        onClick={() => onFilterSelect(setRisk, item.value)}
-                      >
-                        {item.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </motion.div>
-            ) : null}
-          </AnimatePresence>
+          ))}
         </div>
-      </section>
 
-      {loading ? (
-        <section className="pb-premium-panel pb-feed-v4-loading pb-reveal">
-          <AIScanningLoader compact />
-          <div className="pb-feed-v4-skeleton-grid" aria-hidden="true">
-            <article className="pb-feed-v4-skeleton-card">
-              <SkeletonBlock className="w-70" />
-              <SkeletonBlock className="w-40" />
-              <SkeletonBlock className="h-72" />
-            </article>
-            <article className="pb-feed-v4-skeleton-card">
-              <SkeletonBlock className="w-65" />
-              <SkeletonBlock className="w-35" />
-              <SkeletonBlock className="h-72" />
-            </article>
-            <article className="pb-feed-v4-skeleton-card">
-              <SkeletonBlock className="w-60" />
-              <SkeletonBlock className="w-45" />
-              <SkeletonBlock className="h-72" />
-            </article>
+        {/* Загрузка */}
+        {loading ? (
+          <div className="pb-feed-skeleton-grid">
+            {[0, 1, 2].map((i) => (
+              <article key={i} className="pb-feed-skeleton-card">
+                <SkeletonBlock className="w-70" />
+                <SkeletonBlock className="w-40" />
+                <SkeletonBlock className="h-72" />
+              </article>
+            ))}
           </div>
-        </section>
-      ) : null}
+        ) : null}
 
-      {!loading && error ? (
-        <section className="pb-premium-panel pb-reveal">
+        {/* Ошибка */}
+        {!loading && error ? (
           <div className="pb-error-state">
             <p>{error || t("feed.error")}</p>
             <button className="pb-btn pb-btn-ghost" type="button" onClick={() => setReloadKey((prev) => prev + 1)}>
               {t("common.retry")}
             </button>
           </div>
-        </section>
-      ) : null}
+        ) : null}
 
-      {!loading && !error && items.length === 0 ? (
-        <section className="pb-premium-panel pb-reveal">
-          <p className="pb-empty-state">{t("feed.empty")}</p>
-        </section>
-      ) : null}
+        {/* Пусто */}
+        {!loading && !error && filtered.length === 0 ? (
+          <p className="pb-empty-state">{query ? t("feed.search.empty") : t("feed.empty")}</p>
+        ) : null}
 
-      {!loading && !error ? (
-        <div className="pb-feed-v4-groups pb-reveal">
-          {groups.map((group) => (
-            <section key={group.key} className="pb-feed-v4-day-group">
-              <h3>{dayHeading(group.key, language, t)}</h3>
-              <div className="pb-feed-v4-grid pb-feed-v4-grid-3d">
-                {group.list.map((item) => (
-                  <div key={item.id} className="pb-feed-v4-card-depth">
-                    {useThreeCards ? (
-                        <ErrorBoundary fallback={<div className="pb-home-r3f-fallback">3D</div>}>
-                          <Suspense fallback={<div className="pb-home-r3f-fallback">3D</div>}>
-                            <SignalCard3D
-                              to={`/feed/${item.id}`}
-                              title={item.match_name}
-                              league={item.league || t("feed.noLeague")}
-                              sport={item.sport_type}
-                              mode={item.mode === "live" ? t("common.live") : t("common.prematch")}
-                              kickoff={formatDate(item.event_start_at, language)}
-                              signal={item.signal_type}
-                              odds={item.odds}
-                              oddsLabel={t("feed.label.odds")}
-                              risk={riskLabel(item.risk_level, t)}
-                              status={item.status}
-                              statusLabel={statusLabel(item.status, t)}
-                              accessLabel={accessLabel(item.access_level, t)}
-                              note={teaser(item.short_description, t("feed.teaserFallback"))}
-                              language={language}
-                              betScreenshot={item.bet_screenshot}
-                              resultScreenshot={item.result_screenshot}
-                              highConfidence={item.risk_level === "low"}
-                            />
-                          </Suspense>
-                        </ErrorBoundary>
-                    ) : (
-                      <SignalCard
-                        to={`/feed/${item.id}`}
-                        title={item.match_name}
-                        league={item.league || t("feed.noLeague")}
-                        sport={item.sport_type}
-                        mode={item.mode === "live" ? t("common.live") : t("common.prematch")}
-                        kickoff={formatDate(item.event_start_at, language)}
-                        signal={item.signal_type}
-                        odds={item.odds}
-                        oddsLabel={t("feed.label.odds")}
-                        risk={riskLabel(item.risk_level, t)}
-                        status={item.status}
-                        statusLabel={statusLabel(item.status, t)}
-                        accessLabel={accessLabel(item.access_level, t)}
-                        note={teaser(item.short_description, t("feed.teaserFallback"))}
-                        language={language}
-                        betScreenshot={item.bet_screenshot}
-                        resultScreenshot={item.result_screenshot}
-                        highConfidence={item.risk_level === "low"}
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
-            </section>
-          ))}
-        </div>
-      ) : null}
+        {/* Лента по дням */}
+        {!loading && !error && filtered.length > 0 ? (
+          <div className="pb-feed-groups">
+            {groups.map((group) => (
+              <section key={group.key} className="pb-feed-day">
+                <h3 className="pb-feed-day-title">{dayHeading(group.key, language, t)}</h3>
+                <div className="pb-feed-grid">
+                  {group.list.map((item) => (
+                    <SignalCard
+                      key={item.id}
+                      to={`/feed/${item.id}`}
+                      title={item.match_name}
+                      league={item.league || t("feed.noLeague")}
+                      sport={item.sport_type}
+                      mode={item.mode === "live" ? t("common.live") : t("common.prematch")}
+                      kickoff={formatDate(item.event_start_at, language)}
+                      signal={item.signal_type}
+                      odds={item.odds}
+                      oddsLabel={t("feed.label.odds")}
+                      risk={riskLabel(item.risk_level, t)}
+                      status={item.status}
+                      statusLabel={statusLabel(item.status, t)}
+                      accessLabel={accessLabel(item.access_level, t)}
+                      note={teaser(item.short_description, t("feed.teaserFallback"))}
+                      language={language}
+                      betScreenshot={item.bet_screenshot}
+                      resultScreenshot={item.result_screenshot}
+                      highConfidence={item.risk_level === "low"}
+                    />
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        ) : null}
 
         <AppDisclaimer />
       </div>

@@ -8,6 +8,7 @@ import "./styles/globals.css";
 import "./styles/design-v2.css";
 import "./styles/bottom-nav.css";
 import "./styles/news.css";
+import "./styles/feed.css";
 
 async function bootstrap() {
   await initTelegramWebApp();

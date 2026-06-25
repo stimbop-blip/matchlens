@@ -4,7 +4,7 @@ import { PageTransition } from "../components/motion/PageTransition";
 export function Signals() {
   return (
     <PageTransition>
-      <FeedPage useThreeCards />
+      <FeedPage />
     </PageTransition>
   );
 }
